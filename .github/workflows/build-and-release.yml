@@ -88,8 +88,8 @@ jobs:
 
           # Build with ldflags to inject version info
           mkdir -p bin
-          go build -v -o bin/mcp-package-version-go \
-            -ldflags "-X github.com/sammcj/mcp-package-version-go/pkg/version.Version=$VERSION -X github.com/sammcj/mcp-package-version-go/pkg/version.Commit=$COMMIT -X github.com/sammcj/mcp-package-version-go/pkg/version.BuildDate=$BUILD_DATE" \
+          go build -v -o bin/mcp-devtools \
+            -ldflags "-X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
             .
 
       - name: Test
@@ -98,8 +98,8 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: mcp-package-version-go
-          path: bin/mcp-package-version-go
+          name: mcp-devtools
+          path: bin/mcp-devtools
           retention-days: 7
 
   release:
@@ -124,11 +124,11 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: mcp-package-version-go
+          name: mcp-devtools
           path: bin/
 
       - name: Make binary executable
-        run: chmod +x bin/mcp-package-version-go
+        run: chmod +x bin/mcp-devtools
 
       - name: Get version
         id: get_version
@@ -186,7 +186,7 @@ jobs:
 
             Download the binary for your platform and run it.
           files: |
-            bin/mcp-package-version-go
+            bin/mcp-devtools
           draft: false
           prerelease: false
           tag_name: ${{ github.ref == 'refs/heads/main' && needs.bump-version.outputs.new_tag || github.ref }}
