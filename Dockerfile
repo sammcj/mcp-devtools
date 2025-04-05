@@ -20,8 +20,8 @@ ARG BUILD_DATE=unknown
 
 # Build with version information
 RUN CGO_ENABLED=0 GOOS=linux go build \
-  -ldflags "-X github.com/sammcj/mcp-package-version-go/pkg/version.Version=${VERSION} -X github.com/sammcj/mcp-package-version-go/pkg/version.Commit=${COMMIT} -X github.com/sammcj/mcp-package-version-go/pkg/version.BuildDate=${BUILD_DATE}" \
-  -o mcp-package-version-go .
+  -ldflags "-X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}" \
+  -o mcp-devtools .
 
 # Final stage
 FROM alpine:latest
@@ -33,10 +33,10 @@ WORKDIR /app
 RUN apk --no-cache add ca-certificates
 
 # Copy the binary from the builder stage
-COPY --from=builder /app/mcp-package-version-go .
+COPY --from=builder /app/mcp-devtools .
 
 # Expose port
 EXPOSE 18080
 
 # Run the application with SSE transport by default
-CMD ["./mcp-package-version-go", "--transport", "sse", "--port", "18080", "--base-url", "http://0.0.0.0"]
+CMD ["./mcp-devtools", "--transport", "sse", "--port", "18080", "--base-url", "http://0.0.0.0"]
