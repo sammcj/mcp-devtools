@@ -1,0 +1,9 @@
+*.log
+*.tmp
+*.bak
+*.swp
+.vscode
+.venv
+node_modules
+__pycache__
+*.pyc
