@@ -115,3 +115,4 @@ graph TD
     classDef default fill:#EAF5EA,stroke:#C6E7C6,color:#77AD77
     class M, R, T, PV, GoMod, Makefile, Dockerfile, README default;
     class ToolsInterface, NPM, GO, PY, DK, BD, GA, SW, JV, Types, FutureToolCategory fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD;
+```

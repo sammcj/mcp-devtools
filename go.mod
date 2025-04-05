@@ -1,4 +1,4 @@
-module github.com/sammcj/mcp-package-version-go
+module github.com/sammcj/mcp-devtools
 
 go 1.24.2
 
