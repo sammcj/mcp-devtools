@@ -1,26 +1,50 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
-	"github.com/sammcj/mcp-package-version-go/pkg/server"
-	"github.com/sammcj/mcp-package-version-go/pkg/version"
+	"github.com/mark3labs/mcp-go/mcp"
+	mcpserver "github.com/mark3labs/mcp-go/server"
+	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+
+	// Import all tool packages to register them
+	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/bedrock"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/docker"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/githubactions"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/go"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/java"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/npm"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/python"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/swift"
+)
+
+// Version information (set during build)
+var (
+	Version   = "dev"
+	Commit    = "none"
+	BuildDate = "unknown"
 )
 
 func main() {
-	// Print version information directly
-	fmt.Printf("Direct version info: %s, %s, %s\n", version.Version, version.Commit, version.BuildDate)
+	// Create a logger
+	logger := logrus.New()
+	logger.SetLevel(logrus.InfoLevel)
+	logger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
 
-	// Create a new package version server
-	packageVersionServer := server.NewPackageVersionServer(version.Version, version.Commit, version.BuildDate)
+	// Initialize the registry
+	registry.Init(logger)
 
 	// Create and run the CLI app
 	app := &cli.App{
-		Name:    "mcp-package-version-go",
-		Usage:   "MCP server for checking package versions",
-		Version: fmt.Sprintf("%s (commit: %s, built: %s)", version.Version, version.Commit, version.BuildDate),
+		Name:    "mcp-devtools",
+		Usage:   "MCP server for developer tools",
+		Version: fmt.Sprintf("%s (commit: %s, built: %s)", Version, Commit, BuildDate),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "transport",
@@ -38,35 +62,74 @@ func main() {
 				Value: "http://localhost",
 				Usage: "Base URL for SSE transport",
 			},
+			&cli.BoolFlag{
+				Name:    "debug",
+				Aliases: []string{"d"},
+				Value:   false,
+				Usage:   "Enable debug logging",
+			},
 		},
 		Commands: []*cli.Command{
 			{
 				Name:  "version",
 				Usage: "Print version information",
 				Action: func(c *cli.Context) error {
-					fmt.Printf("mcp-package-version-go version %s\n", version.Version)
-					fmt.Printf("Commit: %s\n", version.Commit)
-					fmt.Printf("Built: %s\n", version.BuildDate)
+					fmt.Printf("mcp-devtools version %s\n", Version)
+					fmt.Printf("Commit: %s\n", Commit)
+					fmt.Printf("Built: %s\n", BuildDate)
 					return nil
 				},
 			},
 		},
 		Action: func(c *cli.Context) error {
+			// Set debug level if requested
+			if c.Bool("debug") {
+				logger.SetLevel(logrus.DebugLevel)
+				logger.Debug("Debug logging enabled")
+			}
+
+			// Get transport settings
 			transport := c.String("transport")
 			port := c.String("port")
 			baseURL := c.String("base-url")
 
 			// Log version information
-			fmt.Printf("Starting mcp-package-version-go version %s (commit: %s, built: %s)\n",
-				version.Version, version.Commit, version.BuildDate)
+			logger.Infof("Starting mcp-devtools version %s (commit: %s, built: %s)",
+				Version, Commit, BuildDate)
 
-			// Start the MCP server with the specified transport
-			return packageVersionServer.Start(transport, port, baseURL)
+			// Create MCP server
+			server := mcpserver.NewMCPServer("mcp-devtools", "MCP DevTools Server")
+
+			// Register tools
+			for name, tool := range registry.GetTools() {
+				logger.Infof("Registering tool: %s", name)
+				server.AddTool(tool.Definition(), func(toolCtx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+					// Get tool from registry
+					tool, ok := registry.GetTool(name)
+					if !ok {
+						return nil, fmt.Errorf("tool not found: %s", name)
+					}
+
+					// Execute tool
+					logger.Infof("Executing tool: %s", name)
+					return tool.Execute(toolCtx, registry.GetLogger(), registry.GetCache(), request.Params.Arguments)
+				})
+			}
+
+			// Start the server
+			switch transport {
+			case "stdio":
+				return mcpserver.ServeStdio(server)
+			case "sse":
+				sseServer := mcpserver.NewSSEServer(server, mcpserver.WithBaseURL(baseURL))
+				return sseServer.Start(":" + port)
+			default:
+				return fmt.Errorf("unsupported transport: %s", transport)
+			}
 		},
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		logger.Fatalf("Error: %v", err)
 	}
 }
