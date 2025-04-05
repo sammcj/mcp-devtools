@@ -1,7 +1,7 @@
-# Makefile for mcp-package-version-go
+# Makefile for mcp-devtools
 
 # Variables
-BINARY_NAME=mcp-package-version-go
+BINARY_NAME=mcp-devtools
 BINARY_PATH=bin/$(BINARY_NAME)
 GO=go
 GOFLAGS=-v
@@ -19,9 +19,9 @@ all: build
 build:
 	mkdir -p bin
 	$(GO) build $(GOFLAGS) -o $(BINARY_PATH) \
-		-ldflags "-X github.com/sammcj/mcp-package-version-go/pkg/version.Version=$(shell git describe --tags --always --dirty 2>/dev/null || echo '0.1.0-dev') \
-		-X github.com/sammcj/mcp-package-version-go/pkg/version.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo 'unknown') \
-		-X github.com/sammcj/mcp-package-version-go/pkg/version.BuildDate=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+		-ldflags "-X main.Version=$(shell git describe --tags --always --dirty 2>/dev/null || echo '0.1.0-dev') \
+		-X main.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo 'unknown') \
+		-X main.BuildDate=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")" \
 		.
 
 # Run the server with stdio transport (default)

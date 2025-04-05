@@ -1,35 +1,38 @@
-# MCP Package Version Go
+# MCP DevTools
 
-This is a Go implementation of the MCP Package Version server, which provides tools for checking the latest versions of packages from various package managers and registries.
+This is a modular MCP server that provides various developer tools. It started as a package version checker and has been refactored into a modular architecture to support additional tools in the future.
 
 ## Features
 
-- Check latest versions of NPM packages
-- Check latest versions of Python packages (requirements.txt and pyproject.toml)
-- Check latest versions of Java packages (Maven and Gradle)
-- Check latest versions of Go packages (go.mod)
-- Check latest versions of Swift packages
-- Check available tags for Docker images
-- Search and list AWS Bedrock models
-- Check latest versions of GitHub Actions
+Currently, the server provides the following tools:
+
+- **Package Version Checking**:
+  - Check latest versions of NPM packages
+  - Check latest versions of Python packages (requirements.txt and pyproject.toml)
+  - Check latest versions of Java packages (Maven and Gradle)
+  - Check latest versions of Go packages (go.mod)
+  - Check latest versions of Swift packages
+  - Check available tags for Docker images
+  - Search and list AWS Bedrock models
+  - Check latest versions of GitHub Actions
 
 ## Installation
 
 ```bash
-go install github.com/sammcj/mcp-package-version-go@latest
+go install github.com/sammcj/mcp-devtools@latest
 ```
 
 You can also install a specific version:
 
 ```bash
-go install github.com/sammcj/mcp-package-version-go@v1.0.0
+go install github.com/sammcj/mcp-devtools@v1.0.0
 ```
 
 Or clone the repository and build it:
 
 ```bash
-git clone https://github.com/sammcj/mcp-package-version-go.git
-cd mcp-package-version-go
+git clone https://github.com/sammcj/mcp-devtools.git
+cd mcp-devtools
 make
 ```
 
@@ -38,7 +41,7 @@ make
 You can check the version of the installed binary:
 
 ```bash
-mcp-package-version-go version
+mcp-devtools version
 ```
 
 ## Usage
@@ -48,25 +51,25 @@ The server supports two transport modes: stdio (default) and SSE (Server-Sent Ev
 ### STDIO Transport (Default)
 
 ```bash
-mcp-package-version-go
+mcp-devtools
 ```
 
 Or if you built it locally:
 
 ```bash
-./bin/mcp-package-version-go
+./bin/mcp-devtools
 ```
 
 ### SSE Transport
 
 ```bash
-mcp-package-version-go --transport sse --port 18080 --base-url http://localhost
+mcp-devtools --transport sse --port 18080 --base-url http://localhost
 ```
 
 Or if you built it locally:
 
 ```bash
-./bin/mcp-package-version-go --transport sse --port 18080 --base-url http://localhost
+./bin/mcp-devtools --transport sse --port 18080 --base-url http://localhost
 ```
 
 #### Command-line Options
@@ -74,6 +77,7 @@ Or if you built it locally:
 - `--transport`, `-t`: Transport type (stdio or sse). Default: stdio
 - `--port`: Port to use for SSE transport. Default: 18080
 - `--base-url`: Base URL for SSE transport. Default: http://localhost
+- `--debug`, `-d`: Enable debug logging. Default: false
 
 ## Tools
 
@@ -288,7 +292,7 @@ Check the latest versions of Swift packages:
       }
     ],
     "constraints": {
-      "https://github.com/apple/swift-argument-parser": {
+      "swift-argument-parser": {
         "majorVersion": 1
       }
     }
@@ -321,6 +325,40 @@ Check the latest versions of GitHub Actions:
 }
 ```
 
+## Architecture
+
+The server is built with a modular architecture to make it easy to add new tools in the future. The main components are:
+
+- **Core Tool Interface**: Defines the interface that all tools must implement.
+- **Central Tool Registry**: Manages the registration and retrieval of tools.
+- **Tool Modules**: Individual tool implementations organized by category.
+
+### Adding a New Tool
+
+To add a new tool to the server, follow these steps:
+
+1. Create a new package in the appropriate category under `internal/tools/` or create a new category if needed.
+2. Implement the `tools.Tool` interface:
+   ```go
+   type Tool interface {
+       // Definition returns the tool's definition for MCP registration
+       Definition() mcp.Tool
+
+       // Execute executes the tool's logic
+       Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error)
+   }
+   ```
+3. Register your tool in the `init()` function of your package:
+   ```go
+   func init() {
+       registry.Register(&YourTool{})
+   }
+   ```
+4. Import your package in `main.go` to ensure it's registered:
+   ```go
+   import _ "github.com/sammcj/mcp-devtools/internal/tools/your-category/your-tool"
+   ```
+
 ## Releases and CI/CD
 
 This project uses GitHub Actions for continuous integration and deployment. The workflow automatically:
@@ -350,13 +388,13 @@ To create a new release:
 Docker images are available from GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/sammcj/mcp-package-version-go:latest
+docker pull ghcr.io/sammcj/mcp-devtools:latest
 ```
 
 Or with a specific version:
 
 ```bash
-docker pull ghcr.io/sammcj/mcp-package-version-go:v1.0.0
+docker pull ghcr.io/sammcj/mcp-devtools:v1.0.0
 ```
 
 ## License
