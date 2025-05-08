@@ -56,17 +56,17 @@ func (t *GetComponentDetailsTool) Execute(ctx context.Context, logger *logrus.Lo
 	}
 
 	componentURL := fmt.Sprintf("%s/%s", ShadcnDocsComponents, componentName)
-resp, err := t.client.Get(componentURL)
-if err != nil {
-return nil, fmt.Errorf("failed to fetch component page %s: %w", componentURL, err)
-}
-defer func() {
-if err := resp.Body.Close(); err != nil {
-logger.WithError(err).Errorf("Failed to close response body for %s", componentURL)
-}
-}()
+	resp, err := t.client.Get(componentURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch component page %s: %w", componentURL, err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.WithError(err).Errorf("Failed to close response body for %s", componentURL)
+		}
+	}()
 
-if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch component page %s: status %d", componentURL, resp.StatusCode)
 	}
 

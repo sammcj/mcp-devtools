@@ -362,8 +362,8 @@ func (h *BedrockHandler) getLatestClaudeSonnet() (*mcp.CallToolResult, error) {
 		// Check if it's Claude Sonnet
 		if model.Provider == "anthropic" && strings.Contains(model.ModelName, "Sonnet") {
 			return NewToolResultJSON(model)
-}
-}
+		}
+	}
 
-return nil, fmt.Errorf("claude Sonnet model not found") // Lowercased "claude"
+	return nil, fmt.Errorf("claude Sonnet model not found") // Lowercased "claude"
 }

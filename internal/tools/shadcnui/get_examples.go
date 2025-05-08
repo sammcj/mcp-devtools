@@ -63,18 +63,18 @@ func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.L
 
 	// 1. Scrape from component's doc page
 	componentURL := fmt.Sprintf("%s/%s", ShadcnDocsComponents, componentName)
-resp, err := t.client.Get(componentURL)
-if err != nil {
-logger.Warnf("Failed to fetch component page %s for examples: %v", componentURL, err)
-// Continue to try fetching from GitHub demo file
-} else {
-defer func() {
-if err := resp.Body.Close(); err != nil {
-logger.WithError(err).Errorf("Failed to close response body for component page %s", componentURL)
-}
-}()
-if resp.StatusCode == http.StatusOK {
-doc, docErr := goquery.NewDocumentFromReader(resp.Body)
+	resp, err := t.client.Get(componentURL)
+	if err != nil {
+		logger.Warnf("Failed to fetch component page %s for examples: %v", componentURL, err)
+		// Continue to try fetching from GitHub demo file
+	} else {
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				logger.WithError(err).Errorf("Failed to close response body for component page %s", componentURL)
+			}
+		}()
+		if resp.StatusCode == http.StatusOK {
+			doc, docErr := goquery.NewDocumentFromReader(resp.Body)
 			if docErr != nil {
 				logger.Warnf("Failed to parse component page %s for examples: %v", componentURL, docErr)
 			} else {
@@ -107,16 +107,16 @@ doc, docErr := goquery.NewDocumentFromReader(resp.Body)
 	demoURL := fmt.Sprintf("%s/apps/www/registry/default/example/%s-demo.tsx", ShadcnRawGitHubURL, componentName)
 	respDemo, errDemo := t.client.Get(demoURL)
 
-if errDemo != nil {
-logger.Warnf("Failed to fetch demo file %s: %v. Proceeding without it.", demoURL, errDemo)
-} else if respDemo != nil { // Only proceed if errDemo is nil AND respDemo is not nil
-defer func() {
-if err := respDemo.Body.Close(); err != nil {
-logger.WithError(err).Errorf("Failed to close response body for demo file %s", demoURL)
-}
-}()
-if respDemo.StatusCode == http.StatusOK {
-bodyBytes, readErr := io.ReadAll(respDemo.Body)
+	if errDemo != nil {
+		logger.Warnf("Failed to fetch demo file %s: %v. Proceeding without it.", demoURL, errDemo)
+	} else if respDemo != nil { // Only proceed if errDemo is nil AND respDemo is not nil
+		defer func() {
+			if err := respDemo.Body.Close(); err != nil {
+				logger.WithError(err).Errorf("Failed to close response body for demo file %s", demoURL)
+			}
+		}()
+		if respDemo.StatusCode == http.StatusOK {
+			bodyBytes, readErr := io.ReadAll(respDemo.Body)
 			if readErr != nil {
 				logger.Warnf("Failed to read demo file %s: %v", demoURL, readErr)
 			} else {
