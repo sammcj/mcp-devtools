@@ -8,21 +8,21 @@ Currently, the server provides the following tools:
 
 ### Package Versions
 
-  - Check latest versions of NPM packages
-  - Check latest versions of Python packages (requirements.txt and pyproject.toml)
-  - Check latest versions of Java packages (Maven and Gradle)
-  - Check latest versions of Go packages (go.mod)
-  - Check latest versions of Swift packages
-  - Check available tags and image sizes for Docker images (from Docker Hub)
-  - Search and list AWS Bedrock models
-  - Check latest versions of GitHub Actions
+- Check latest versions of NPM packages
+- Check latest versions of Python packages (requirements.txt and pyproject.toml)
+- Check latest versions of Java packages (Maven and Gradle)
+- Check latest versions of Go packages (go.mod)
+- Check latest versions of Swift packages
+- Check available tags and image sizes for Docker images (from Docker Hub)
+- Search and list AWS Bedrock models
+- Check latest versions of GitHub Actions
 
 ### Shadcn/UI Components
 
-  - List all available shadcn/ui components
-  - Search for shadcn/ui components by keyword
-  - Get detailed information (description, installation, usage, props) for a specific component
-  - Get usage examples for a specific component
+- List all available shadcn/ui components
+- Search for shadcn/ui components by keyword
+- Get detailed information (description, installation, usage, props) for a specific component
+- Get usage examples for a specific component
 
 ## Installation
 
