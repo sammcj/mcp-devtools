@@ -221,9 +221,9 @@ func (t *DockerTool) getDockerHubTags(logger *logrus.Logger, owner, repo string,
 			Name        string    `json:"name"`
 			LastUpdated time.Time `json:"last_updated"`
 			Images      []struct {
-				Digest    string `json:"digest"`
-				Size      int64  `json:"size"`
-				Status    string `json:"status"`
+				Digest       string `json:"digest"`
+				Size         int64  `json:"size"`
+				Status       string `json:"status"`
 				Architecture string `json:"architecture"`
 			} `json:"images"`
 		} `json:"results"`
@@ -245,6 +245,9 @@ func (t *DockerTool) getDockerHubTags(logger *logrus.Logger, owner, repo string,
 		if includeDigest && len(result.Images) > 0 {
 			digest := result.Images[0].Digest
 			tag.Digest = &digest
+			// Add Size
+			sizeStr := fmt.Sprintf("%d", result.Images[0].Size)
+			tag.Size = &sizeStr
 		}
 
 		// Add created date
