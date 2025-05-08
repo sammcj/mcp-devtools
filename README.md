@@ -13,9 +13,16 @@ Currently, the server provides the following tools:
   - Check latest versions of Java packages (Maven and Gradle)
   - Check latest versions of Go packages (go.mod)
   - Check latest versions of Swift packages
-  - Check available tags for Docker images
+  - Check available tags and image sizes for Docker images (from Docker Hub)
   - Search and list AWS Bedrock models
   - Check latest versions of GitHub Actions
+
+### Shadcn/UI Components
+
+  - List all available shadcn/ui components
+  - Search for shadcn/ui components by keyword
+  - Get detailed information (description, installation, usage, props) for a specific component
+  - Get usage examples for a specific component
 
 ## Installation
 
@@ -234,7 +241,8 @@ Check available tags for Docker images:
     "registry": "dockerhub",
     "limit": 5,
     "filterTags": ["^1\\."],
-    "includeDigest": true
+    "includeDigest": true,
+    "includeSize": true
   }
 }
 ```
@@ -322,6 +330,50 @@ Check the latest versions of GitHub Actions:
       }
     ],
     "includeDetails": true
+  }
+}
+```
+
+### Shadcn/UI Components
+
+List all available shadcn/ui components:
+
+```json
+{
+  "name": "list_shadcn_components",
+  "arguments": {}
+}
+```
+
+Search for shadcn/ui components:
+
+```json
+{
+  "name": "search_components",
+  "arguments": {
+    "query": "button"
+  }
+}
+```
+
+Get detailed information for a specific shadcn/ui component:
+
+```json
+{
+  "name": "get_component_details",
+  "arguments": {
+    "componentName": "alert-dialog"
+  }
+}
+```
+
+Get usage examples for a specific shadcn/ui component:
+
+```json
+{
+  "name": "get_component_examples",
+  "arguments": {
+    "componentName": "accordion"
   }
 }
 ```
