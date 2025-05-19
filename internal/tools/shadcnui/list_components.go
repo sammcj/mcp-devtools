@@ -1,0 +1,111 @@
+package shadcnui
+
+import (
+	"context" // Re-add for marshalling
+	"fmt"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
+	"github.com/sirupsen/logrus"
+)
+
+// ListShadcnComponentsTool defines the tool for listing shadcn/ui components.
+// listComponentsCacheKey and listComponentsCacheTTL are now in utils.go
+type ListShadcnComponentsTool struct {
+	client HTTPClient
+}
+
+func init() {
+	registry.Register(&ListShadcnComponentsTool{
+		client: DefaultHTTPClient,
+	})
+}
+
+// Definition returns the tool's definition.
+func (t *ListShadcnComponentsTool) Definition() mcp.Tool {
+	return mcp.NewTool(
+		"list_shadcn_components",
+		mcp.WithDescription("Get a list of all available shadcn/ui components."),
+	// No input schema needed as it's an empty object.
+	)
+}
+
+// Execute performs the tool's action.
+func (t *ListShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+	logger.Info("Listing shadcn/ui components")
+
+	// Check cache
+	if cachedData, ok := cache.Load(listComponentsCacheKey); ok {
+		if entry, ok := cachedData.(CacheEntry); ok && time.Since(entry.Timestamp) < listComponentsCacheTTL {
+			logger.Debug("Returning cached list of shadcn/ui components")
+			return packageversions.NewToolResultJSON(entry.Data) // Use packageversions helper
+		}
+	}
+
+	resp, err := t.client.Get(ShadcnDocsComponents)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch shadcn components page: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", resp.StatusCode)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse shadcn components page: %w", err)
+	}
+
+	var components []ComponentInfo
+	doc.Find("a").Each(func(i int, s *goquery.Selection) {
+		href, exists := s.Attr("href")
+		if exists && strings.HasPrefix(href, "/docs/components/") {
+			componentName := strings.TrimPrefix(href, "/docs/components/")
+			// Further parsing might be needed for description if available on this page
+			// For now, just name and URL
+			components = append(components, ComponentInfo{
+				Name: componentName,
+				URL:  ShadcnDocsURL + href,
+				// Description can be scraped from the individual component page later or if a summary is here
+			})
+		}
+	})
+
+	// Remove duplicates if any (though unlikely with this selector)
+	components = removeDuplicateComponents(components)
+
+	// Store in cache
+	cache.Store(listComponentsCacheKey, CacheEntry{
+		Data:      components,
+		Timestamp: time.Now(),
+	})
+
+	logger.WithField("count", len(components)).Info("Successfully fetched and parsed shadcn/ui components list")
+
+	return packageversions.NewToolResultJSON(components) // Use packageversions helper
+}
+
+func removeDuplicateComponents(components []ComponentInfo) []ComponentInfo {
+	seen := make(map[string]bool)
+	result := []ComponentInfo{}
+	for _, component := range components {
+		if _, ok := seen[component.Name]; !ok {
+			seen[component.Name] = true
+			result = append(result, component)
+		}
+	}
+	return result
+}
+
+// packageversions is used for NewToolResultJSON, ensure it's accessible or reimplement.
+// For now, using mcp.NewCallToolResult directly with marshalled JSON.
+// If packageversions.NewToolResultJSON is desired, ensure types are compatible or provide a similar utility in shadcnui.
+// The MCP framework will handle JSON marshalling from the CallToolResult.
+// The newToolResultJSON helper standardises this.

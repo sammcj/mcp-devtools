@@ -1,0 +1,268 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  bump-version:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      new_tag: ${{ steps.tag_version.outputs.new_tag }}
+      changelog: ${{ steps.tag_version.outputs.changelog }}
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release_branches: main
+          default_bump: patch
+          tag_prefix: v
+          create_annotated_tag: true
+
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: [bump-version]
+    if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped')
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          check-latest: true
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Get dependencies
+        run: go mod download
+
+      - name: Build
+        run: |
+          # Get version from tag, bump-version job, or use SHA for non-tag builds
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            # If this is a tag build, use the tag version
+            VERSION=${GITHUB_REF#refs/tags/v}
+          elif [[ "${{ github.ref }}" == "refs/heads/main" && "${{ needs.bump-version.outputs.new_tag }}" != "" ]]; then
+            # If this is a main branch build with a new tag from bump-version job
+            VERSION="${{ needs.bump-version.outputs.new_tag }}"
+            VERSION=${VERSION#v}  # Remove the 'v' prefix
+          else
+            # For PR builds, use the commit SHA
+            VERSION="sha-$(git rev-parse --short HEAD)"
+          fi
+
+          echo "Building version: $VERSION"
+
+          # Get commit hash
+          COMMIT=$(git rev-parse --short HEAD)
+
+          # Get build date
+          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Build with ldflags to inject version info
+          mkdir -p bin
+          go build -v -o bin/mcp-devtools \
+            -ldflags "-X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
+            .
+
+      - name: Test
+        run: make test
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-devtools
+          path: bin/mcp-devtools
+          retention-days: 7
+
+  release:
+    name: Create Release
+    needs: [build, bump-version]
+    if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && needs.bump-version.outputs.new_tag != '')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          check-latest: true
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: mcp-devtools
+          path: bin/
+
+      - name: Make binary executable
+        run: chmod +x bin/mcp-devtools
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            # If this is a tag build, use the tag version
+            VERSION=${GITHUB_REF#refs/tags/v}
+          elif [[ "${{ github.ref }}" == "refs/heads/main" && "${{ needs.bump-version.outputs.new_tag }}" != "" ]]; then
+            # If this is a main branch build with a new tag from bump-version job
+            VERSION="${{ needs.bump-version.outputs.new_tag }}"
+            VERSION=${VERSION#v}  # Remove the 'v' prefix
+          else
+            # Fallback (should not happen due to job condition)
+            VERSION="0.0.0-unknown"
+          fi
+
+          echo "Using version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" && "${{ needs.bump-version.outputs.changelog }}" != "" ]]; then
+            # If this is a main branch build with a changelog from bump-version job
+            CHANGELOG="${{ needs.bump-version.outputs.changelog }}"
+          else
+            # Generate changelog from git history
+            # Get the latest tag before this one
+            PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+            if [ -z "$PREVIOUS_TAG" ]; then
+              # If there's no previous tag, get all commits
+              CHANGELOG=$(git log --pretty=format:"* %s (%h)" --no-merges)
+            else
+              # Get commits between the previous tag and this one
+              CHANGELOG=$(git log --pretty=format:"* %s (%h)" --no-merges ${PREVIOUS_TAG}..HEAD)
+            fi
+          fi
+
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release v${{ steps.get_version.outputs.version }}
+          body: |
+            ## Changes in this Release
+
+            ${{ env.CHANGELOG }}
+
+            ## Installation
+
+            Download the binary for your platform and run it.
+          files: |
+            bin/mcp-devtools
+          draft: false
+          prerelease: false
+          tag_name: ${{ github.ref == 'refs/heads/main' && needs.bump-version.outputs.new_tag || github.ref }}
+
+  docker:
+    name: Build and Push Docker Image
+    needs: [build, bump-version]
+    # Only run for main branch and tag builds, not for PRs
+    if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=branch
+            type=sha
+
+      - name: Get version information
+        id: version_info
+        run: |
+          # Get version from tag, bump-version job, or use SHA for non-tag builds
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            # If this is a tag build, use the tag version
+            VERSION=${GITHUB_REF#refs/tags/v}
+          elif [[ "${{ github.ref }}" == "refs/heads/main" && "${{ needs.bump-version.outputs.new_tag }}" != "" ]]; then
+            # If this is a main branch build with a new tag from bump-version job
+            VERSION="${{ needs.bump-version.outputs.new_tag }}"
+            VERSION=${VERSION#v}  # Remove the 'v' prefix
+          else
+            # For PR builds, use the commit SHA
+            VERSION="sha-$(git rev-parse --short HEAD)"
+          fi
+
+          echo "Using version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+          # Get commit hash
+          COMMIT=$(git rev-parse --short HEAD)
+          echo "COMMIT=$COMMIT" >> $GITHUB_ENV
+
+          # Get build date
+          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            COMMIT=${{ env.COMMIT }}
+            BUILD_DATE=${{ env.BUILD_DATE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
