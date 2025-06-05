@@ -55,9 +55,12 @@ func (t *GoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 		return nil, fmt.Errorf("invalid dependencies format: expected object")
 	}
 
-	// Extract require section
 	var requires []packageversions.GoRequire
+
+	// Handle different input formats
 	if requireRaw, ok := depsMap["require"].([]interface{}); ok {
+		// Complex format: structured go.mod with require array
+		logger.Debug("Processing complex go.mod format with require array")
 		for _, req := range requireRaw {
 			if reqMap, ok := req.(map[string]interface{}); ok {
 				var require packageversions.GoRequire
@@ -77,6 +80,22 @@ func (t *GoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 				}
 
 				requires = append(requires, require)
+			}
+		}
+	} else {
+		// Simple format: key-value pairs are dependencies
+		logger.Debug("Processing simple dependencies format")
+		for path, versionRaw := range depsMap {
+			logger.WithFields(logrus.Fields{
+				"path":    path,
+				"version": versionRaw,
+			}).Debug("Processing dependency")
+
+			if version, ok := versionRaw.(string); ok {
+				requires = append(requires, packageversions.GoRequire{
+					Path:    path,
+					Version: version,
+				})
 			}
 		}
 	}
