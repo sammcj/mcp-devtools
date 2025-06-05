@@ -1,0 +1,4 @@
+# MCP DevTools Rules
+
+- Always use `make` to build the project.
+- Once you've build the project, you can try using the tools if you need to test them as they will automatically be made available to you.

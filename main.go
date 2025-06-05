@@ -112,9 +112,16 @@ func main() {
 						return nil, fmt.Errorf("tool not found: %s", name)
 					}
 
-					// Execute tool
-					logger.Infof("Executing tool: %s", name)
-					return tool.Execute(toolCtx, registry.GetLogger(), registry.GetCache(), request.Params.Arguments)
+				// Execute tool
+				logger.Infof("Executing tool: %s", name)
+
+				// Type assert the arguments to map[string]interface{}
+				args, ok := request.Params.Arguments.(map[string]interface{})
+				if !ok {
+					return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
+				}
+
+				return tool.Execute(toolCtx, registry.GetLogger(), registry.GetCache(), args)
 				})
 			}
 
