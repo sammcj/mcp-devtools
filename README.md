@@ -68,19 +68,23 @@ mcp-devtools version
 
 ## Usage
 
-The server supports two transport modes: stdio (default) and SSE (Server-Sent Events).
+The server supports two transport modes: stdio (default) and SSE (Server-Sent Events), I plan on adding the new Streamable HTTP (with optional SSE) transport in the near future.
 
-### STDIO Transport (Default)
+To run it in STDIO mode, install the package (e.g. `go install github.com/sammcj/mcp-devtools@latest`, or clone and build it with `make build`) and add it to your MCP configuration file:
 
-```bash
-mcp-devtools
+```json
+{
+  "dev-tools": {
+    "type": "stdio",
+    "command": "/Users/samm/go/bin/mcp-devtools",
+    "env": {
+      "BRAVE_API_KEY": "your-brave-api-key-here-if-you-want-to-use-it"
+    }
+  }
+}
 ```
 
-Or if you built it locally:
-
-```bash
-./bin/mcp-devtools
-```
+_Note: replace `/Users/samm/go/bin/mcp-devtools` with the path to your installed binary._
 
 ### SSE Transport
 
