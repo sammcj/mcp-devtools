@@ -136,13 +136,13 @@ The new Streamable HTTP transport provides a more robust HTTP-based communicatio
 
 ```bash
 # Basic Streamable HTTP
-mcp-devtools --transport streamable-http --port 8080
+mcp-devtools --transport http --port 8080
 
 # With authentication
-mcp-devtools --transport streamable-http --port 8080 --auth-token mysecrettoken
+mcp-devtools --transport http --port 8080 --auth-token mysecrettoken
 
 # With custom endpoint path
-mcp-devtools --transport streamable-http --port 8080 --endpoint-path /api/mcp
+mcp-devtools --transport http --port 8080 --endpoint-path /api/mcp
 ```
 
 Configure your MCP client to connect to the Streamable HTTP transport:
@@ -151,7 +151,7 @@ Configure your MCP client to connect to the Streamable HTTP transport:
 {
   "mcpServers": {
     "dev-tools": {
-      "type": "streamable-http",
+      "type": "streamableHttp",
       "url": "http://localhost:8080/http"
     }
   }
@@ -164,7 +164,7 @@ Or with authentication:
 {
   "mcpServers": {
     "dev-tools": {
-      "type": "streamable-http",
+      "type": "streamableHttp",
       "url": "http://localhost:8080/http",
       "headers": {
         "Authorization": "Bearer mysecrettoken"
@@ -201,7 +201,7 @@ And configure your MCP client to connect to the SSE transport:
 
 #### Command-line Options
 
-- `--transport`, `-t`: Transport type (stdio, sse, or streamable-http). Default: stdio
+- `--transport`, `-t`: Transport type (stdio, sse, or http). Default: stdio
 - `--port`: Port to use for HTTP transports (SSE and Streamable HTTP). Default: 18080
 - `--base-url`: Base URL for HTTP transports. Default: http://localhost
 - `--auth-token`: Authentication token for Streamable HTTP transport (optional)

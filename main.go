@@ -55,7 +55,7 @@ func main() {
 				Name:    "transport",
 				Aliases: []string{"t"},
 				Value:   "stdio",
-				Usage:   "Transport type (stdio, sse, or streamable-http)",
+				Usage:   "Transport type (stdio, sse, or http)",
 			},
 			&cli.StringFlag{
 				Name:  "port",
@@ -149,7 +149,7 @@ func main() {
 			case "sse":
 				sseServer := mcpserver.NewSSEServer(server, mcpserver.WithBaseURL(baseURL+"/sse"))
 				return sseServer.Start(":" + port)
-			case "streamable-http":
+			case "http":
 				return startStreamableHTTPServer(c, server, logger)
 			default:
 				return fmt.Errorf("unsupported transport: %s", transport)
