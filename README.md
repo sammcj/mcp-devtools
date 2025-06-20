@@ -1,6 +1,8 @@
 # MCP DevTools
 
-This is a modular MCP server that provides various developer tools. It started as a package version checker and has been refactored into a modular architecture to support additional tools in the future.
+This is a modular MCP server that provides various developer tools that I find useful when working with agentic coding tools such as Cline.
+
+It started as a solution for having to install and run many nodejs and python based MCP servers that were eating up resources and hard to maintain. The goal is to have a single server that can handle multiple tools and provide a consistent interface for them with a modular architecture to support additional tools that I may add as I find a need for them.
 
 ## Features
 
