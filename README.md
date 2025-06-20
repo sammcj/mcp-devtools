@@ -41,13 +41,7 @@ Currently, the server provides the following tools:
 ## Installation
 
 ```bash
-go install github.com/sammcj/mcp-devtools@latest
-```
-
-You can also install a specific version:
-
-```bash
-go install github.com/sammcj/mcp-devtools@v1.0.0
+go install github.com/sammcj/mcp-devtools@HEAD
 ```
 
 Or clone the repository and build it:
@@ -70,15 +64,17 @@ mcp-devtools version
 
 The server supports two transport modes: stdio (default) and SSE (Server-Sent Events), I plan on adding the new Streamable HTTP (with optional SSE) transport in the near future.
 
-To run it in STDIO mode, install the package (e.g. `go install github.com/sammcj/mcp-devtools@latest`, or clone and build it with `make build`) and add it to your MCP configuration file:
+To run it in STDIO mode, install the package (e.g. `go install github.com/sammcj/mcp-devtools@HEAD`, or clone and build it with `make build`) and add it to your MCP configuration file:
 
 ```json
 {
-  "dev-tools": {
-    "type": "stdio",
-    "command": "/Users/samm/go/bin/mcp-devtools",
-    "env": {
-      "BRAVE_API_KEY": "your-brave-api-key-here-if-you-want-to-use-it"
+  "mcpServers": {
+    "dev-tools": {
+      "type": "stdio",
+      "command": "/Users/samm/go/bin/mcp-devtools",
+      "env": {
+        "BRAVE_API_KEY": "your-brave-api-key-here-if-you-want-to-use-it"
+      }
     }
   }
 }
@@ -96,6 +92,19 @@ Or if you built it locally:
 
 ```bash
 ./bin/mcp-devtools --transport sse --port 18080 --base-url http://localhost
+```
+
+And configure your MCP client to connect to the SSE transport:
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "sse",
+      "url": "http://localhost:18080"
+    }
+  }
+}
 ```
 
 #### Command-line Options
