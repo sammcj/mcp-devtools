@@ -4,6 +4,42 @@ This is a modular MCP server that provides various developer tools that I find u
 
 It started as a solution for having to install and run many nodejs and python based MCP servers that were eating up resources and hard to maintain. The goal is to have a single server that can handle multiple tools and provide a consistent interface for them with a modular architecture to support additional tools that I may add as I find a need for them.
 
+- [MCP DevTools](#mcp-devtools)
+  - [Features](#features)
+    - [Package Versions](#package-versions)
+    - [Internet Search](#internet-search)
+    - [Shadcn/UI Components](#shadcnui-components)
+  - [Installation](#installation)
+    - [Version Information](#version-information)
+  - [Usage](#usage)
+    - [Install](#install)
+    - [Configuration](#configuration)
+  - [Tools](#tools)
+    - [NPM Packages](#npm-packages)
+    - [Python Packages (requirements.txt)](#python-packages-requirementstxt)
+    - [Python Packages (pyproject.toml)](#python-packages-pyprojecttoml)
+    - [Java Packages](#java-packages)
+    - [Go Packages](#go-packages)
+    - [Docker Images](#docker-images)
+    - [AWS Bedrock Models](#aws-bedrock-models)
+    - [Swift Packages](#swift-packages)
+    - [GitHub Actions](#github-actions)
+    - [Shadcn/UI Components](#shadcnui-components-1)
+    - [Internet Search (Brave Search API)](#internet-search-brave-search-api)
+  - [Configuration](#configuration-1)
+    - [Environment Variables](#environment-variables)
+  - [Architecture](#architecture)
+  - [Creating New Tools](#creating-new-tools)
+    - [Tool Interface](#tool-interface)
+    - [Tool Structure](#tool-structure)
+    - [Step-by-Step Guide](#step-by-step-guide)
+    - [Example: Hello World Tool](#example-hello-world-tool)
+    - [Testing Your Tool](#testing-your-tool)
+  - [Releases and CI/CD](#releases-and-cicd)
+    - [Creating a Release](#creating-a-release)
+    - [Docker Images](#docker-images-1)
+  - [License](#license)
+
 ## Features
 
 Currently, the server provides the following tools:
@@ -19,13 +55,6 @@ Currently, the server provides the following tools:
 - Search and list AWS Bedrock models
 - Check latest versions of GitHub Actions
 
-### Shadcn/UI Components
-
-- List all available shadcn/ui components
-- Search for shadcn/ui components by keyword
-- Get detailed information (description, installation, usage, props) for a specific component
-- Get usage examples for a specific component
-
 ### Internet Search
 
 #### Brave Search
@@ -37,6 +66,13 @@ Currently, the server provides the following tools:
 - **News Search**: Search for news articles and recent events
 - **Local Search**: Search for local businesses and points of interest (requires Pro API plan)
 - **Video Search**: Search for videos with metadata
+
+### Shadcn/UI Components
+
+- List all available shadcn/ui components
+- Search for shadcn/ui components by keyword
+- Get detailed information (description, installation, usage, props) for a specific component
+- Get usage examples for a specific component
 
 ## Installation
 
@@ -72,7 +108,9 @@ To install mcp-devtools you can either:
 
 ### Configuration
 
-The server supports two transport modes: stdio (default) and SSE (Server-Sent Events), I plan on adding the new Streamable HTTP (with optional SSE) transport in the near future.
+The server supports three transport modes: stdio (default), SSE (Server-Sent Events), and Streamable HTTP (with optional SSE upgrade).
+
+#### STDIO Transport
 
 To run it in STDIO mode add it to your MCP configuration file:
 
@@ -92,7 +130,51 @@ To run it in STDIO mode add it to your MCP configuration file:
 
 _Note: replace `/Users/samm/go/bin/mcp-devtools` with the path to your installed binary._
 
-### SSE Transport
+#### Streamable HTTP Transport
+
+The new Streamable HTTP transport provides a more robust HTTP-based communication with optional authentication:
+
+```bash
+# Basic Streamable HTTP
+mcp-devtools --transport http --port 8080
+
+# With authentication
+mcp-devtools --transport http --port 8080 --auth-token mysecrettoken
+
+# With custom endpoint path
+mcp-devtools --transport http --port 8080 --endpoint-path /api/mcp
+```
+
+Configure your MCP client to connect to the Streamable HTTP transport:
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "streamableHttp",
+      "url": "http://localhost:8080/http"
+    }
+  }
+}
+```
+
+Or with authentication:
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "streamableHttp",
+      "url": "http://localhost:8080/http",
+      "headers": {
+        "Authorization": "Bearer mysecrettoken"
+      }
+    }
+  }
+}
+```
+
+#### SSE (Only) Transport
 
 ```bash
 mcp-devtools --transport sse --port 18080 --base-url http://localhost
@@ -111,7 +193,7 @@ And configure your MCP client to connect to the SSE transport:
   "mcpServers": {
     "dev-tools": {
       "type": "sse",
-      "url": "http://localhost:18080"
+      "url": "http://localhost:18080/sse"
     }
   }
 }
@@ -119,9 +201,12 @@ And configure your MCP client to connect to the SSE transport:
 
 #### Command-line Options
 
-- `--transport`, `-t`: Transport type (stdio or sse). Default: stdio
-- `--port`: Port to use for SSE transport. Default: 18080
-- `--base-url`: Base URL for SSE transport. Default: http://localhost
+- `--transport`, `-t`: Transport type (stdio, sse, or http). Default: stdio
+- `--port`: Port to use for HTTP transports (SSE and Streamable HTTP). Default: 18080
+- `--base-url`: Base URL for HTTP transports. Default: http://localhost
+- `--auth-token`: Authentication token for Streamable HTTP transport (optional)
+- `--endpoint-path`: Endpoint path for Streamable HTTP transport. Default: /http
+- `--session-timeout`: Session timeout for Streamable HTTP transport. Default: 30m0s
 - `--debug`, `-d`: Enable debug logging. Default: false
 
 ## Tools
@@ -191,7 +276,9 @@ Check the latest versions of Python packages from pyproject.toml:
 }
 ```
 
-### Java Packages (Maven)
+### Java Packages
+
+Maven
 
 Check the latest versions of Java packages from Maven:
 
@@ -215,7 +302,7 @@ Check the latest versions of Java packages from Maven:
 }
 ```
 
-### Java Packages (Gradle)
+Gradle
 
 Check the latest versions of Java packages from Gradle:
 
