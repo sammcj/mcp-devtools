@@ -38,8 +38,8 @@ func NewGoHandler(logger *logrus.Logger, cache *sync.Map) *GoHandler {
 
 // GoModuleInfo represents information about a Go module
 type GoModuleInfo struct {
-	Version string   `json:"Version"`
-	Time    string   `json:"Time"`
+	Version  string   `json:"Version"`
+	Time     string   `json:"Time"`
 	Versions []string `json:"Versions"`
 }
 

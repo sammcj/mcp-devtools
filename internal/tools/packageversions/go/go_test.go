@@ -11,9 +11,7 @@ import (
 
 // MockHTTPClient for testing
 type MockHTTPClient struct {
-	responseBody []byte
-	statusCode   int
-	err          error
+	err error
 }
 
 func (m *MockHTTPClient) Do(req interface{}) (interface{}, error) {

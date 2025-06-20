@@ -1,4 +1,7 @@
 # MCP DevTools Rules
 
-- Always use `make` to build the project.
+- Always use `make clean && make build` to build the project.
 - Once you've build the project, you can try using the tools if you need to test them as they will automatically be made available to you.
+- Always ensure `make lint` is passing before stating a task is complete.
+- When adding new tools ensure they are registered in the list of available tools in the server.
+- When creating new MCP tools make sure descriptions are clear and concise as they are what is used as hints to the AI coding agent using the tool, you should also make good use of MCP's annotations.

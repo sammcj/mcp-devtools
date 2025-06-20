@@ -12,8 +12,8 @@ type PackageVersion struct {
 
 // VersionConstraint represents constraints for package version updates
 type VersionConstraint struct {
-	MajorVersion   *int  `json:"majorVersion,omitempty"`
-	ExcludePackage bool  `json:"excludePackage,omitempty"`
+	MajorVersion   *int `json:"majorVersion,omitempty"`
+	ExcludePackage bool `json:"excludePackage,omitempty"`
 }
 
 // VersionConstraints maps package names to their constraints

@@ -52,6 +52,7 @@ fmt:
 # Lint code
 .PHONY: lint
 lint:
+	gofmt -w -s .
 	golangci-lint run
 
 # Install dependencies

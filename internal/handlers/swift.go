@@ -33,10 +33,10 @@ func NewSwiftHandler(logger *logrus.Logger, cache *sync.Map) *SwiftHandler {
 
 // GitHubReleaseResponse represents a response from the GitHub API for releases
 type GitHubReleaseResponse []struct {
-	TagName string `json:"tag_name"`
-	Name    string `json:"name"`
-	Draft   bool   `json:"draft"`
-	Prerelease bool `json:"prerelease"`
+	TagName     string `json:"tag_name"`
+	Name        string `json:"name"`
+	Draft       bool   `json:"draft"`
+	Prerelease  bool   `json:"prerelease"`
 	PublishedAt string `json:"published_at"`
 }
 
@@ -138,9 +138,9 @@ func (h *SwiftHandler) GetLatestVersion(ctx context.Context, args map[string]int
 			if err == nil && latestMajor > targetMajor {
 				// Find the latest version with the target major version
 				h.logger.WithFields(logrus.Fields{
-					"url":          dep.URL,
-					"targetMajor":  targetMajor,
-					"latestMajor":  latestMajor,
+					"url":           dep.URL,
+					"targetMajor":   targetMajor,
+					"latestMajor":   latestMajor,
 					"latestVersion": latestVersion,
 				}).Debug("Applying major version constraint")
 

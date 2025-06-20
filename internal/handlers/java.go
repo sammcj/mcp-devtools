@@ -41,11 +41,11 @@ type MavenSearchResponse struct {
 	Response struct {
 		NumFound int `json:"numFound"`
 		Docs     []struct {
-			ID        string   `json:"id"`
-			GroupID   string   `json:"g"`
+			ID         string   `json:"id"`
+			GroupID    string   `json:"g"`
 			ArtifactID string   `json:"a"`
-			Version   string   `json:"v"`
-			Versions  []string `json:"versions,omitempty"`
+			Version    string   `json:"v"`
+			Versions   []string `json:"versions,omitempty"`
 		} `json:"docs"`
 	} `json:"response"`
 }
