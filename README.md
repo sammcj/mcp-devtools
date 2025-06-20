@@ -344,7 +344,7 @@ List all available shadcn/ui components:
 
 ```json
 {
-  "name": "list_shadcn_components",
+  "name": "shadcn_list_components",
   "arguments": {}
 }
 ```
@@ -353,7 +353,7 @@ Search for shadcn/ui components:
 
 ```json
 {
-  "name": "search_components",
+  "name": "shadcn_search_components",
   "arguments": {
     "query": "button"
   }
@@ -364,7 +364,7 @@ Get detailed information for a specific shadcn/ui component:
 
 ```json
 {
-  "name": "get_component_details",
+  "name": "shadcn_get_component_details",
   "arguments": {
     "componentName": "alert-dialog"
   }
@@ -375,7 +375,7 @@ Get usage examples for a specific shadcn/ui component:
 
 ```json
 {
-  "name": "get_component_examples",
+  "name": "shadcn_get_component_examples",
   "arguments": {
     "componentName": "accordion"
   }

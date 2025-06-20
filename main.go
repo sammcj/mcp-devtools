@@ -20,8 +20,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/npm"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/python"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/swift"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/pythonexec" // Import the pythonexec tool package
-	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"   // Import for shadcnui tools
+	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"
 )
 
 // Version information (set during build)

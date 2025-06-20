@@ -30,7 +30,7 @@ func init() {
 // Definition returns the tool's definition.
 func (t *SearchShadcnComponentsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
-		"search_components",
+		"shadcn_search_components",
 		mcp.WithDescription("Search for shadcn/ui components by keyword in name or description."),
 		mcp.WithString("query", mcp.Description("The keyword to search for."), mcp.Required()),
 	)

@@ -32,7 +32,7 @@ func init() {
 // Definition returns the tool's definition.
 func (t *GetComponentDetailsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
-		"get_component_details",
+		"shadcn_get_component_details",
 		mcp.WithDescription("Get detailed information about a specific shadcn/ui component."),
 		mcp.WithString("componentName", mcp.Description("The name of the component (e.g., 'button', 'accordion')."), mcp.Required()),
 	)

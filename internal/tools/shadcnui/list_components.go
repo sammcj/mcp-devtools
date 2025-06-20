@@ -30,7 +30,7 @@ func init() {
 // Definition returns the tool's definition.
 func (t *ListShadcnComponentsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
-		"list_shadcn_components",
+		"shadcn_list_components",
 		mcp.WithDescription("Get a list of all available shadcn/ui components."),
 	// No input schema needed as it's an empty object.
 	)
