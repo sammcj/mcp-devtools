@@ -24,10 +24,6 @@ Currently, the server provides the following tools:
 - Get detailed information (description, installation, usage, props) for a specific component
 - Get usage examples for a specific component
 
-### Not Yet Implemented
-
-- Micropython Environment Tool (TBC)
-
 ## Installation
 
 ```bash
