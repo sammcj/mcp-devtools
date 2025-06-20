@@ -52,7 +52,11 @@ func (t *ListShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.L
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch shadcn components page: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logger.WithError(closeErr).Warn("Failed to close response body")
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", resp.StatusCode)

@@ -24,6 +24,18 @@ Currently, the server provides the following tools:
 - Get detailed information (description, installation, usage, props) for a specific component
 - Get usage examples for a specific component
 
+### Internet Search
+
+#### Brave Search
+
+**Note**: These tools require a `BRAVE_API_KEY` environment variable to be enabled.
+
+- **Web Search**: General web search using Brave Search API
+- **Image Search**: Search for images with metadata
+- **News Search**: Search for news articles and recent events
+- **Local Search**: Search for local businesses and points of interest (requires Pro API plan)
+- **Video Search**: Search for videos with metadata
+
 ## Installation
 
 ```bash
@@ -377,6 +389,103 @@ Get usage examples for a specific shadcn/ui component:
   }
 }
 ```
+
+### Internet Search (Brave Search API)
+
+**Configuration**: Set the `BRAVE_API_KEY` environment variable to enable these tools:
+
+```bash
+export BRAVE_API_KEY="your-brave-api-key-here"
+```
+
+Get your API key from: https://brave.com/search/api/
+
+#### Web Search
+
+Perform general web searches:
+
+```json
+{
+  "name": "brave_web_search",
+  "arguments": {
+    "query": "golang best practices",
+    "count": 10,
+    "offset": 0,
+    "freshness": "pw"
+  }
+}
+```
+
+#### Image Search
+
+Search for images (maximum 3 results):
+
+```json
+{
+  "name": "brave_image_search",
+  "arguments": {
+    "searchTerm": "golang gopher mascot",
+    "count": 3
+  }
+}
+```
+
+#### News Search
+
+Search for news articles and recent events:
+
+```json
+{
+  "name": "brave_news_search",
+  "arguments": {
+    "query": "artificial intelligence breakthrough",
+    "count": 10,
+    "freshness": "pd"
+  }
+}
+```
+
+#### Video Search
+
+Search for videos:
+
+```json
+{
+  "name": "brave_video_search",
+  "arguments": {
+    "query": "golang tutorial",
+    "count": 10,
+    "freshness": "pm"
+  }
+}
+```
+
+#### Local Search
+
+Search for local businesses and places (requires Pro API plan):
+
+```json
+{
+  "name": "brave_local_search",
+  "arguments": {
+    "query": "pizza near Central Park",
+    "count": 5
+  }
+}
+```
+
+**Freshness Parameter Options:**
+- `pd`: Discovered within the last 24 hours
+- `pw`: Discovered within the last 7 days
+- `pm`: Discovered within the last 31 days
+- `py`: Discovered within the last 365 days
+- `YYYY-MM-DDtoYYYY-MM-DD`: Custom date range (e.g., `2022-04-01to2022-07-30`)
+
+## Configuration
+
+### Environment Variables
+
+- `BRAVE_API_KEY`: Required for Brave search tools to be enabled
 
 ## Architecture
 

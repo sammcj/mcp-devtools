@@ -34,7 +34,7 @@ func NewDockerHandler(logger *logrus.Logger, cache *sync.Map) *DockerHandler {
 
 // DockerHubTagsResponse represents a response from the Docker Hub API
 type DockerHubTagsResponse struct {
-	Count    int `json:"count"`
+	Count    int    `json:"count"`
 	Next     string `json:"next"`
 	Previous string `json:"previous"`
 	Results  []struct {

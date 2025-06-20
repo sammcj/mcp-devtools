@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	// Import all tool packages to register them
+	_ "github.com/sammcj/mcp-devtools/internal/tools/internetsearch/brave"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/bedrock"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/docker"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/githubactions"
@@ -111,16 +112,16 @@ func main() {
 						return nil, fmt.Errorf("tool not found: %s", name)
 					}
 
-				// Execute tool
-				logger.Infof("Executing tool: %s", name)
+					// Execute tool
+					logger.Infof("Executing tool: %s", name)
 
-				// Type assert the arguments to map[string]interface{}
-				args, ok := request.Params.Arguments.(map[string]interface{})
-				if !ok {
-					return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
-				}
+					// Type assert the arguments to map[string]interface{}
+					args, ok := request.Params.Arguments.(map[string]interface{})
+					if !ok {
+						return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
+					}
 
-				return tool.Execute(toolCtx, registry.GetLogger(), registry.GetCache(), args)
+					return tool.Execute(toolCtx, registry.GetLogger(), registry.GetCache(), args)
 				})
 			}
 
