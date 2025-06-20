@@ -62,9 +62,19 @@ mcp-devtools version
 
 ## Usage
 
+### Install
+
+To install mcp-devtools you can either:
+
+- Use go install: `go install github.com/sammcj/mcp-devtools@HEAD`
+- Clone the repo and build it with `make build`
+- Download the latest release binary from the [releases page](https://github.com/sammcj/mcp-devtools/releases) and save it in your PATH (e.g. /usr/local/bin/mcp-devtools)
+
+### Configuration
+
 The server supports two transport modes: stdio (default) and SSE (Server-Sent Events), I plan on adding the new Streamable HTTP (with optional SSE) transport in the near future.
 
-To run it in STDIO mode, install the package (e.g. `go install github.com/sammcj/mcp-devtools@HEAD`, or clone and build it with `make build`) and add it to your MCP configuration file:
+To run it in STDIO mode add it to your MCP configuration file:
 
 ```json
 {
