@@ -25,6 +25,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/python"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/swift"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/webfetch"
 )
 
 // Version information (set during build)

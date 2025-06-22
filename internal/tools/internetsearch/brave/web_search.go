@@ -104,7 +104,7 @@ func (t *BraveWebSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 	}).Debug("Brave web search parameters")
 
 	// Perform the search
-	response, err := t.client.WebSearch(logger, query, count, offset, freshness)
+	response, err := t.client.WebSearch(ctx, logger, query, count, offset, freshness)
 	if err != nil {
 		logger.WithError(err).Error("Brave web search failed")
 		return nil, fmt.Errorf("web search failed: %w", err)

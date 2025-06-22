@@ -71,7 +71,7 @@ func (t *BraveLocalSearchTool) Execute(ctx context.Context, logger *logrus.Logge
 	}).Debug("Brave local search parameters")
 
 	// Perform the local search
-	response, err := t.client.LocalSearch(logger, query, count)
+	response, err := t.client.LocalSearch(ctx, logger, query, count)
 	if err != nil {
 		logger.WithError(err).Error("Brave local search failed")
 		return nil, fmt.Errorf("local search failed: %w", err)
@@ -82,7 +82,7 @@ func (t *BraveLocalSearchTool) Execute(ctx context.Context, logger *logrus.Logge
 		logger.WithField("query", query).Info("No location results found, falling back to web search")
 
 		// Fallback to web search
-		webResponse, err := t.client.WebSearch(logger, query, count, 0, "")
+		webResponse, err := t.client.WebSearch(ctx, logger, query, count, 0, "")
 		if err != nil {
 			logger.WithError(err).Error("Fallback web search failed")
 			return nil, fmt.Errorf("local search found no results and fallback web search failed: %w", err)
@@ -162,12 +162,12 @@ func (t *BraveLocalSearchTool) Execute(ctx context.Context, logger *logrus.Logge
 	done := make(chan bool, 2)
 
 	go func() {
-		poiResponse, poiErr = t.client.LocalPOISearch(logger, locationIDs)
+		poiResponse, poiErr = t.client.LocalPOISearch(ctx, logger, locationIDs)
 		done <- true
 	}()
 
 	go func() {
-		descResponse, descErr = t.client.LocalDescriptionsSearch(logger, locationIDs)
+		descResponse, descErr = t.client.LocalDescriptionsSearch(ctx, logger, locationIDs)
 		done <- true
 	}()
 

@@ -71,7 +71,7 @@ func (t *BraveImageSearchTool) Execute(ctx context.Context, logger *logrus.Logge
 	}).Debug("Brave image search parameters")
 
 	// Perform the search
-	response, err := t.client.ImageSearch(logger, searchTerm, count)
+	response, err := t.client.ImageSearch(ctx, logger, searchTerm, count)
 	if err != nil {
 		logger.WithError(err).Error("Brave image search failed")
 		return nil, fmt.Errorf("image search failed: %w", err)

@@ -80,7 +80,7 @@ func (t *BraveVideoSearchTool) Execute(ctx context.Context, logger *logrus.Logge
 	}).Debug("Brave video search parameters")
 
 	// Perform the search
-	response, err := t.client.VideoSearch(logger, query, count, freshness)
+	response, err := t.client.VideoSearch(ctx, logger, query, count, freshness)
 	if err != nil {
 		logger.WithError(err).Error("Brave video search failed")
 		return nil, fmt.Errorf("video search failed: %w", err)
