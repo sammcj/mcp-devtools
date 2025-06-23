@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -16,13 +15,6 @@ import (
 // GradleTool handles Gradle package version checking
 type GradleTool struct {
 	client packageversions.HTTPClient
-}
-
-// init registers the Gradle tool with the registry
-func init() {
-	registry.Register(&GradleTool{
-		client: packageversions.DefaultHTTPClient,
-	})
 }
 
 // Definition returns the tool's definition for MCP registration

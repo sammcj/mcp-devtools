@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -19,11 +18,14 @@ type GoTool struct {
 	client packageversions.HTTPClient
 }
 
-// init registers the Go tool with the registry
-func init() {
-	registry.Register(&GoTool{
-		client: packageversions.DefaultHTTPClient,
-	})
+// NewGoTool creates a new go tool with the given HTTP client
+func NewGoTool(client packageversions.HTTPClient) *GoTool {
+	if client == nil {
+		client = packageversions.DefaultHTTPClient
+	}
+	return &GoTool{
+		client: client,
+	}
 }
 
 // Definition returns the tool's definition for MCP registration

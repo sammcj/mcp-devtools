@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -25,11 +24,14 @@ type NpmTool struct {
 	client packageversions.HTTPClient
 }
 
-// init registers the npm tool with the registry
-func init() {
-	registry.Register(&NpmTool{
-		client: packageversions.DefaultHTTPClient,
-	})
+// NewNpmTool creates a new npm tool with the given HTTP client
+func NewNpmTool(client packageversions.HTTPClient) *NpmTool {
+	if client == nil {
+		client = packageversions.DefaultHTTPClient
+	}
+	return &NpmTool{
+		client: client,
+	}
 }
 
 // Definition returns the tool's definition for MCP registration

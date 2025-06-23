@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -20,11 +19,14 @@ type PythonTool struct {
 	client packageversions.HTTPClient
 }
 
-// init registers the Python tool with the registry
-func init() {
-	registry.Register(&PythonTool{
-		client: packageversions.DefaultHTTPClient,
-	})
+// NewPythonTool creates a new python tool with the given HTTP client
+func NewPythonTool(client packageversions.HTTPClient) *PythonTool {
+	if client == nil {
+		client = packageversions.DefaultHTTPClient
+	}
+	return &PythonTool{
+		client: client,
+	}
 }
 
 // Definition returns the tool's definition for MCP registration

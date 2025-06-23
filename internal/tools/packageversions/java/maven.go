@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -17,13 +16,6 @@ import (
 // MavenTool handles Maven package version checking
 type MavenTool struct {
 	client packageversions.HTTPClient
-}
-
-// init registers the Maven tool with the registry
-func init() {
-	registry.Register(&MavenTool{
-		client: packageversions.DefaultHTTPClient,
-	})
 }
 
 // Definition returns the tool's definition for MCP registration

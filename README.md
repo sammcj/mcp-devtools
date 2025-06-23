@@ -15,15 +15,7 @@ It started as a solution for having to install and run many nodejs and python ba
     - [Install](#install)
     - [Configuration](#configuration)
   - [Tools](#tools)
-    - [NPM Packages](#npm-packages)
-    - [Python Packages (requirements.txt)](#python-packages-requirementstxt)
-    - [Python Packages (pyproject.toml)](#python-packages-pyprojecttoml)
-    - [Java Packages](#java-packages)
-    - [Go Packages](#go-packages)
-    - [Docker Images](#docker-images)
-    - [AWS Bedrock Models](#aws-bedrock-models)
-    - [Swift Packages](#swift-packages)
-    - [GitHub Actions](#github-actions)
+    - [Unified Package Search](#unified-package-search)
     - [Shadcn/UI Components](#shadcnui-components-1)
     - [Internet Search (Brave Search API)](#internet-search-brave-search-api)
   - [Configuration](#configuration-1)
@@ -46,14 +38,18 @@ Currently, the server provides the following tools:
 
 ### Package Versions
 
-- Check latest versions of NPM packages
-- Check latest versions of Python packages (requirements.txt and pyproject.toml)
-- Check latest versions of Java packages (Maven and Gradle)
-- Check latest versions of Go packages (go.mod)
-- Check latest versions of Swift packages
-- Check available tags and image sizes for Docker images (from Docker Hub)
-- Search and list AWS Bedrock models
-- Check latest versions of GitHub Actions
+**Unified Package Search Tool**: A single tool that handles package version checking across all supported ecosystems:
+
+- **NPM packages** - Node.js dependencies from package.json
+- **Python packages** - PyPI packages from requirements.txt and pyproject.toml
+- **Java packages** - Maven and Gradle dependencies
+- **Go modules** - Dependencies from go.mod
+- **Swift packages** - Swift Package Manager dependencies
+- **Docker images** - Container image tags from Docker Hub, GHCR, and custom registries
+- **AWS Bedrock models** - Search and list available foundation models
+- **GitHub Actions** - Latest versions of GitHub Actions
+
+All package ecosystems are now accessible through the single `search_packages` tool with a consistent interface.
 
 ### Internet Search
 
@@ -211,15 +207,32 @@ And configure your MCP client to connect to the SSE transport:
 
 ## Tools
 
-### NPM Packages
+### Unified Package Search
 
-Check the latest versions of NPM packages:
+The `search_packages` tool provides a single interface for checking package versions across all supported ecosystems. Use the `ecosystem` parameter to specify which package manager to query:
+
+#### NPM Packages
+
+Search for NPM packages:
 
 ```json
 {
-  "name": "check_npm_versions",
+  "name": "search_packages",
   "arguments": {
-    "dependencies": {
+    "ecosystem": "npm",
+    "query": "lodash"
+  }
+}
+```
+
+Or check multiple packages with constraints:
+
+```json
+{
+  "name": "search_packages",
+  "arguments": {
+    "ecosystem": "npm",
+    "data": {
       "react": "^17.0.2",
       "react-dom": "^17.0.2",
       "lodash": "4.17.21"
@@ -233,15 +246,28 @@ Check the latest versions of NPM packages:
 }
 ```
 
-### Python Packages (requirements.txt)
+#### Python Packages
 
-Check the latest versions of Python packages from requirements.txt:
+Search for Python packages (PyPI):
 
 ```json
 {
-  "name": "check_python_versions",
+  "name": "search_packages",
   "arguments": {
-    "requirements": [
+    "ecosystem": "python",
+    "query": "requests"
+  }
+}
+```
+
+Or check packages from requirements.txt format:
+
+```json
+{
+  "name": "search_packages",
+  "arguments": {
+    "ecosystem": "python",
+    "data": [
       "requests==2.28.1",
       "flask>=2.0.0",
       "numpy"
@@ -250,178 +276,89 @@ Check the latest versions of Python packages from requirements.txt:
 }
 ```
 
-### Python Packages (pyproject.toml)
-
-Check the latest versions of Python packages from pyproject.toml:
+For pyproject.toml format:
 
 ```json
 {
-  "name": "check_pyproject_versions",
+  "name": "search_packages",
   "arguments": {
-    "dependencies": {
+    "ecosystem": "python-pyproject",
+    "data": {
       "dependencies": {
         "requests": "^2.28.1",
         "flask": ">=2.0.0"
-      },
-      "optional-dependencies": {
-        "dev": {
-          "pytest": "^7.0.0"
-        }
-      },
-      "dev-dependencies": {
-        "black": "^22.6.0"
       }
     }
   }
 }
 ```
 
-### Java Packages
+#### Go Modules
 
-Maven
-
-Check the latest versions of Java packages from Maven:
+Search for Go modules:
 
 ```json
 {
-  "name": "check_maven_versions",
+  "name": "search_packages",
   "arguments": {
-    "dependencies": [
+    "ecosystem": "go",
+    "query": "github.com/gin-gonic/gin"
+  }
+}
+```
+
+#### Java Packages
+
+Search for Maven dependencies:
+
+```json
+{
+  "name": "search_packages",
+  "arguments": {
+    "ecosystem": "java-maven",
+    "data": [
       {
         "groupId": "org.springframework.boot",
         "artifactId": "spring-boot-starter-web",
         "version": "2.7.0"
-      },
-      {
-        "groupId": "com.google.guava",
-        "artifactId": "guava",
-        "version": "31.1-jre"
       }
     ]
   }
 }
 ```
 
-Gradle
-
-Check the latest versions of Java packages from Gradle:
+Search for Gradle dependencies:
 
 ```json
 {
-  "name": "check_gradle_versions",
+  "name": "search_packages",
   "arguments": {
-    "dependencies": [
+    "ecosystem": "java-gradle",
+    "data": [
       {
         "configuration": "implementation",
         "group": "org.springframework.boot",
         "name": "spring-boot-starter-web",
         "version": "2.7.0"
-      },
-      {
-        "configuration": "testImplementation",
-        "group": "junit",
-        "name": "junit",
-        "version": "4.13.2"
       }
     ]
   }
 }
 ```
 
-### Go Packages
+#### Swift Packages
 
-Check the latest versions of Go packages from go.mod:
+Search for Swift Package Manager dependencies:
 
 ```json
 {
-  "name": "check_go_versions",
+  "name": "search_packages",
   "arguments": {
-    "dependencies": {
-      "module": "github.com/example/mymodule",
-      "require": [
-        {
-          "path": "github.com/gorilla/mux",
-          "version": "v1.8.0"
-        },
-        {
-          "path": "github.com/spf13/cobra",
-          "version": "v1.5.0"
-        }
-      ]
-    }
-  }
-}
-```
-
-### Docker Images
-
-Check available tags for Docker images:
-
-```json
-{
-  "name": "check_docker_tags",
-  "arguments": {
-    "image": "nginx",
-    "registry": "dockerhub",
-    "limit": 5,
-    "filterTags": ["^1\\."],
-    "includeDigest": true,
-    "includeSize": true
-  }
-}
-```
-
-### AWS Bedrock Models
-
-List all AWS Bedrock models:
-
-```json
-{
-  "name": "check_bedrock_models",
-  "arguments": {
-    "action": "list"
-  }
-}
-```
-
-Search for specific AWS Bedrock models:
-
-```json
-{
-  "name": "check_bedrock_models",
-  "arguments": {
-    "action": "search",
-    "query": "claude",
-    "provider": "anthropic"
-  }
-}
-```
-
-Get the latest Claude Sonnet model:
-
-```json
-{
-  "name": "get_latest_bedrock_model",
-  "arguments": {}
-}
-```
-
-### Swift Packages
-
-Check the latest versions of Swift packages:
-
-```json
-{
-  "name": "check_swift_versions",
-  "arguments": {
-    "dependencies": [
+    "ecosystem": "swift",
+    "data": [
       {
         "url": "https://github.com/apple/swift-argument-parser",
         "version": "1.1.4"
-      },
-      {
-        "url": "https://github.com/vapor/vapor",
-        "version": "4.65.1"
       }
     ],
     "constraints": {
@@ -433,27 +370,61 @@ Check the latest versions of Swift packages:
 }
 ```
 
-### GitHub Actions
+#### Docker Images
 
-Check the latest versions of GitHub Actions:
+Search for Docker image tags:
 
 ```json
 {
-  "name": "check_github_actions",
+  "name": "search_packages",
   "arguments": {
-    "actions": [
-      {
-        "owner": "actions",
-        "repo": "checkout",
-        "currentVersion": "v3"
-      },
-      {
-        "owner": "actions",
-        "repo": "setup-node",
-        "currentVersion": "v3"
-      }
-    ],
+    "ecosystem": "docker",
+    "query": "nginx",
+    "registry": "dockerhub",
+    "limit": 5,
     "includeDetails": true
+  }
+}
+```
+
+#### GitHub Actions
+
+Search for GitHub Actions:
+
+```json
+{
+  "name": "search_packages",
+  "arguments": {
+    "ecosystem": "github-actions",
+    "query": "actions/checkout@v3",
+    "includeDetails": true
+  }
+}
+```
+
+#### AWS Bedrock Models
+
+List all AWS Bedrock models:
+
+```json
+{
+  "name": "search_packages",
+  "arguments": {
+    "ecosystem": "bedrock",
+    "action": "list"
+  }
+}
+```
+
+Search for specific models:
+
+```json
+{
+  "name": "search_packages",
+  "arguments": {
+    "ecosystem": "bedrock",
+    "action": "search",
+    "query": "claude"
   }
 }
 ```
