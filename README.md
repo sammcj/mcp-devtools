@@ -13,9 +13,24 @@ graph TD
     A --> F[Think Tool]
 
     B --> B1[search_packages]
-    B --> B2[get_latest_bedrock_model]
+
+    B1 --> B1A[npm]
+    B1 --> B1B[pip]
+    B1 --> B1C[go]
+    B1 --> B1D[java]
+    B1 --> B1E[swift]
+    B1 --> B1F[docker]
+    B1 --> B1G[github_actions]
+    B1 --> B1H[aws_bedrock]
+    B1D --> B1D1[maven]
+    B1D --> B1D2[gradle]
 
     C --> C1[brave_search]
+    C1 --> C1A[web_search]
+    C1 --> C1B[image_search]
+    C1 --> C1C[news_search]
+    C1 --> C1D[local_search]
+    C1 --> C1E[video_search]
 
     D --> D1[shadcn]
 
