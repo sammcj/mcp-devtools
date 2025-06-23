@@ -39,6 +39,21 @@ run-sse: build
 test:
 	$(GOTEST) $(GOFLAGS) ./...
 
+# Run unit tests only (fast)
+.PHONY: test-unit
+test-unit:
+	$(GOTEST) -short -v ./tests/unit/...
+
+# Run tool tests only
+.PHONY: test-tools
+test-tools:
+	$(GOTEST) -short -v ./tests/tools/...
+
+# Run fast tests (unit + tools, no external dependencies)
+.PHONY: test-fast
+test-fast:
+	$(GOTEST) -short -v ./tests/...
+
 # Clean build artifacts
 .PHONY: clean
 clean:
@@ -91,7 +106,10 @@ help:
 	@echo "  build        : Build the server"
 	@echo "  run          : Run the server with stdio transport (default)"
 	@echo "  run-sse      : Run the server with SSE transport"
-	@echo "  test         : Run tests"
+	@echo "  test         : Run all tests"
+	@echo "  test-unit    : Run unit tests only (fast)"
+	@echo "  test-tools   : Run tool tests only"
+	@echo "  test-fast    : Run fast tests (unit + tools, no external dependencies)"
 	@echo "  clean        : Clean build artifacts"
 	@echo "  fmt          : Format code"
 	@echo "  lint         : Lint code"
