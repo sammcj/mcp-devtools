@@ -568,7 +568,8 @@ Search for local businesses and places (requires Pro API plan):
 
 ### Environment Variables
 
-- `BRAVE_API_KEY`: Required for Brave search tools to be enabled
+- `BRAVE_API_KEY`: (optional) Required for Brave search tools to be enabled
+- `DISABLED_FUNCTIONS`: (optional) Comma-separated list of function names to disable, disabled functions will not appear in the tools list presented even if explicitly requested. e.g: `DISABLED_FUNCTIONS="shadcn_get_component_details,shadcn_get_component_examples,brave_local_search,brave_video_search"`
 
 ## Architecture
 
