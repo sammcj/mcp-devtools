@@ -4,41 +4,33 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sirupsen/logrus"
 )
 
 // newToolResultJSON creates a new tool result with JSON content
 func newToolResultJSON(data interface{}) (*mcp.CallToolResult, error) {
-	jsonBytes, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
+	buffer := &strings.Builder{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetIndent("", "  ")
+	encoder.SetEscapeHTML(false) // Don't escape HTML characters like < and >
+
+	if err := encoder.Encode(data); err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	// Remove the trailing newline that Encode adds
+	jsonString := strings.TrimSuffix(buffer.String(), "\n")
+	return mcp.NewToolResultText(jsonString), nil
 }
 
 // BraveWebSearchTool implements web search using Brave Search API
 type BraveWebSearchTool struct {
 	client *BraveClient
-}
-
-// init registers the web search tool with conditional registration
-func init() {
-	apiKey := os.Getenv("BRAVE_API_KEY")
-	if apiKey == "" {
-		// Tool will not be registered - this is expected behaviour
-		return
-	}
-
-	registry.Register(&BraveWebSearchTool{
-		client: NewBraveClient(apiKey),
-	})
 }
 
 // Definition returns the tool's definition for MCP registration
@@ -132,9 +124,9 @@ func (t *BraveWebSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 		}
 
 		results = append(results, SearchResult{
-			Title:       webResult.Title,
+			Title:       decodeHTMLEntities(webResult.Title),
 			URL:         webResult.URL,
-			Description: webResult.Description,
+			Description: decodeHTMLEntities(webResult.Description),
 			Type:        "web",
 			Metadata:    metadata,
 		})

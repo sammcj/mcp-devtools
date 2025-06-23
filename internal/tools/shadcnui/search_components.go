@@ -10,7 +10,6 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
@@ -19,12 +18,6 @@ import (
 type SearchShadcnComponentsTool struct {
 	client HTTPClient
 	// No direct dependency on ListShadcnComponentsTool, but uses its cache key and similar logic.
-}
-
-func init() {
-	registry.Register(&SearchShadcnComponentsTool{
-		client: DefaultHTTPClient,
-	})
 }
 
 // Definition returns the tool's definition.

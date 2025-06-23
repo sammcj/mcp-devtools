@@ -1,6 +1,74 @@
 package brave
 
-import "time"
+import (
+	"html"
+	"regexp"
+	"strings"
+	"time"
+	"unicode"
+)
+
+// decodeHTMLEntities cleans HTML entities and malformed tags, returning clean plain text
+func decodeHTMLEntities(s string) string {
+	// First handle standard HTML entity decoding
+	decoded := html.UnescapeString(s)
+
+	// Remove malformed HTML patterns completely - just strip them out
+	replacements := map[string]string{
+		// Handle escaped patterns that Brave API returns by removing them
+		`\strong\`: ``, `\/strong\`: ``,
+		`\em\`: ``, `\/em\`: ``,
+		`\b\`: ``, `\/b\`: ``,
+		`\i\`: ``, `\/i\`: ``,
+		`\u\`: ``, `\/u\`: ``,
+		// Handle double-escaped patterns
+		`\\strong\\`: ``, `\\/strong\\`: ``,
+		`\\em\\`: ``, `\\/em\\`: ``,
+		`\\b\\`: ``, `\\/b\\`: ``,
+		`\\i\\`: ``, `\\/i\\`: ``,
+		`\\u\\`: ``, `\\/u\\`: ``,
+	}
+
+	// Apply string replacements to remove escaped patterns
+	for malformed, replacement := range replacements {
+		decoded = strings.ReplaceAll(decoded, malformed, replacement)
+	}
+
+	// Handle non-escaped malformed tags using regex (e.g., strongText/strong -> Text)
+	for _, tag := range []string{"strong", "em", "b", "i", "u"} {
+		pattern := regexp.MustCompile(`\b` + tag + `([^/]*?)/` + tag + `\b`)
+		decoded = pattern.ReplaceAllString(decoded, `$1`)
+	}
+
+	// Strip any remaining HTML tags
+	htmlTagRegex := regexp.MustCompile(`<[^>]*>`)
+	decoded = htmlTagRegex.ReplaceAllString(decoded, "")
+
+	// Clean up and normalize the text
+	return normalizeText(decoded)
+}
+
+// normalizeText removes problematic Unicode and normalizes whitespace
+func normalizeText(s string) string {
+	// Remove or replace problematic Unicode characters
+	var cleaned strings.Builder
+	for _, r := range s {
+		// Keep printable ASCII and common Unicode characters
+		if unicode.IsPrint(r) && (r < 127 || unicode.IsLetter(r) || unicode.IsDigit(r) || unicode.IsSpace(r) || unicode.IsPunct(r)) {
+			cleaned.WriteRune(r)
+		} else if unicode.IsSpace(r) {
+			cleaned.WriteRune(' ')
+		}
+	}
+
+	result := cleaned.String()
+
+	// Normalize whitespace
+	result = regexp.MustCompile(`\s+`).ReplaceAllString(result, " ")
+	result = strings.TrimSpace(result)
+
+	return result
+}
 
 // BraveWebSearchResponse represents the response from Brave web search API
 type BraveWebSearchResponse struct {

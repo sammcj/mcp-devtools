@@ -10,23 +10,13 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
 
-const getComponentDetailsCachePrefix = "shadcnui:get_details:"
-const getComponentDetailsCacheTTL = 24 * time.Hour
-
 // GetComponentDetailsTool defines the tool for getting shadcn/ui component details.
 type GetComponentDetailsTool struct {
 	client HTTPClient
-}
-
-func init() {
-	registry.Register(&GetComponentDetailsTool{
-		client: DefaultHTTPClient,
-	})
 }
 
 // Definition returns the tool's definition.
@@ -112,7 +102,7 @@ func (t *GetComponentDetailsTool) Execute(ctx context.Context, logger *logrus.Lo
 	// Scrape Props/Variants (highly dependent on page structure)
 	// This is a placeholder and needs refinement based on actual page structure.
 	// Example: Look for tables within sections titled "Props", "API Reference", or "Examples"
-	info.Props = make(map[string]ComponentProp) // Initialize Props map
+	info.Props = make(map[string]ComponentProp) // Initialise Props map
 
 	// Scrape Source URL (construct)
 	info.SourceURL = fmt.Sprintf("%s/tree/main/apps/www/content/docs/components/%s.mdx", ShadcnGitHubURL, componentName) // Assuming .mdx files

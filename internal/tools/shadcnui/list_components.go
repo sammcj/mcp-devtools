@@ -10,7 +10,6 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
@@ -19,12 +18,6 @@ import (
 // listComponentsCacheKey and listComponentsCacheTTL are now in utils.go
 type ListShadcnComponentsTool struct {
 	client HTTPClient
-}
-
-func init() {
-	registry.Register(&ListShadcnComponentsTool{
-		client: DefaultHTTPClient,
-	})
 }
 
 // Definition returns the tool's definition.
@@ -107,9 +100,3 @@ func removeDuplicateComponents(components []ComponentInfo) []ComponentInfo {
 	}
 	return result
 }
-
-// packageversions is used for NewToolResultJSON, ensure it's accessible or reimplement.
-// For now, using mcp.NewCallToolResult directly with marshalled JSON.
-// If packageversions.NewToolResultJSON is desired, ensure types are compatible or provide a similar utility in shadcnui.
-// The MCP framework will handle JSON marshalling from the CallToolResult.
-// The newToolResultJSON helper standardises this.

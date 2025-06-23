@@ -37,7 +37,7 @@ func main() {
 		FullTimestamp: true,
 	})
 
-	// Initialize the registry
+	// Initialise the registry
 	registry.Init(logger)
 
 	// Create and run the CLI app
