@@ -59,6 +59,7 @@ graph TD
     - [Step-by-Step Guide](#step-by-step-guide)
     - [Example: Hello World Tool](#example-hello-world-tool)
     - [Testing Your Tool](#testing-your-tool)
+  - [Testing](#testing)
   - [Releases and CI/CD](#releases-and-cicd)
     - [Creating a Release](#creating-a-release)
     - [Docker Images](#docker-images-1)
@@ -923,6 +924,24 @@ To test your tool:
     "param2": 42
   }
 }
+```
+
+## Testing
+
+The project includes unit tests for core functionality. Tests are designed to be lightweight and fast, avoiding external dependencies.
+
+```bash
+# Run all tests
+make test
+
+# Run only fast tests (no external dependencies)
+make test-fast
+
+# Run unit tests only
+make test-unit
+
+# Run tool tests only
+make test-tools
 ```
 
 ## Releases and CI/CD
