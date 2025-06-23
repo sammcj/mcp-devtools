@@ -38,5 +38,5 @@ COPY --from=builder /app/mcp-devtools .
 # Expose port
 EXPOSE 18080
 
-# Run the application with SSE transport by default
-CMD ["./mcp-devtools", "--transport", "sse", "--port", "18080", "--base-url", "http://0.0.0.0"]
+# Run the application with HTTP transport by default
+CMD [ "./mcp-devtools", "--transport", "http", "--port", "18080", "--base-url", "http://0.0.0.0" ]
