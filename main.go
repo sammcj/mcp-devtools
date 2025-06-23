@@ -102,36 +102,49 @@ func main() {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			// Set debug level if requested
-			if c.Bool("debug") {
-				logger.SetLevel(logrus.DebugLevel)
-				logger.Debug("Debug logging enabled")
-			}
-
-			// Get transport settings
+			// Get transport settings first
 			transport := c.String("transport")
 			port := c.String("port")
 			baseURL := c.String("base-url")
 
-			// Log version information
-			logger.Infof("Starting mcp-devtools version %s (commit: %s, built: %s)",
-				Version, Commit, BuildDate)
+			// Configure logger appropriately for transport mode
+			if transport == "stdio" {
+				// For stdio mode, disable logging to prevent conflicts with MCP protocol
+				logger.SetOutput(os.Stderr)        // Use stderr instead of stdout
+				logger.SetLevel(logrus.ErrorLevel) // Only log errors to stderr
+			} else {
+				// For non-stdio modes, normal logging is fine
+				if c.Bool("debug") {
+					logger.SetLevel(logrus.DebugLevel)
+					logger.Debug("Debug logging enabled")
+				}
+			}
+
+			// Only log startup info for non-stdio transports
+			if transport != "stdio" {
+				logger.Infof("Starting mcp-devtools version %s (commit: %s, built: %s)",
+					Version, Commit, BuildDate)
+			}
 
 			// Create MCP server
 			server := mcpserver.NewMCPServer("mcp-devtools", "MCP DevTools Server")
 
-			// Register tools
-			for name, tool := range registry.GetTools() {
-				logger.Infof("Registering tool: %s", name)
+			// Register tools - fix race condition by capturing variables properly
+			for toolName, toolImpl := range registry.GetTools() {
+				// Capture variables to avoid closure race condition
+				name := toolName
+				tool := toolImpl
+
+				if transport != "stdio" {
+					logger.Infof("Registering tool: %s", name)
+				}
+
 				server.AddTool(tool.Definition(), func(toolCtx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-					// Get tool from registry
-					tool, ok := registry.GetTool(name)
+					// Get fresh reference from registry to ensure consistency
+					currentTool, ok := registry.GetTool(name)
 					if !ok {
 						return nil, fmt.Errorf("tool not found: %s", name)
 					}
-
-					// Execute tool
-					logger.Infof("Executing tool: %s", name)
 
 					// Type assert the arguments to map[string]interface{}
 					args, ok := request.Params.Arguments.(map[string]interface{})
@@ -139,7 +152,17 @@ func main() {
 						return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
 					}
 
-					return tool.Execute(toolCtx, registry.GetLogger(), registry.GetCache(), args)
+					// Execute tool with error recovery
+					result, err := currentTool.Execute(toolCtx, registry.GetLogger(), registry.GetCache(), args)
+					if err != nil {
+						// Log error to stderr for debugging (won't interfere with stdio)
+						if transport != "stdio" {
+							logger.WithError(err).Errorf("Tool execution failed: %s", name)
+						}
+						return nil, fmt.Errorf("tool execution failed: %w", err)
+					}
+
+					return result, nil
 				})
 			}
 

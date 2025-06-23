@@ -42,7 +42,7 @@ func NewBraveClient(apiKey string) *BraveClient {
 	}
 }
 
-// makeRequest performs an HTTP request to the Brave API
+// makeRequest performs an HTTP request to the Brave API with retry logic
 func (c *BraveClient) makeRequest(ctx context.Context, logger *logrus.Logger, endpoint string, params map[string]string) ([]byte, error) {
 	// Build URL with parameters
 	reqURL, err := url.Parse(c.baseURL + endpoint)
@@ -62,26 +62,72 @@ func (c *BraveClient) makeRequest(ctx context.Context, logger *logrus.Logger, en
 		"endpoint": endpoint,
 	}).Debug("Making Brave API request")
 
-	// Create request with context
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+	// Retry logic for resilient requests
+	maxRetries := 3
+	baseDelay := 100 * time.Millisecond
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		// Check context cancellation before each attempt
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("request canceled: %w", ctx.Err())
+		default:
+		}
+
+		// Create request with context
+		req, err := http.NewRequestWithContext(ctx, "GET", reqURL.String(), nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		// Set headers
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Accept-Encoding", "gzip, deflate, br")
+		req.Header.Set("Connection", "keep-alive")
+		req.Header.Set("X-Subscription-Token", c.apiKey)
+		req.Header.Set("User-Agent", UserAgent)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cache-Control", "no-cache")
+
+		// Make request
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			// Check if error is due to context cancellation
+			if ctx.Err() != nil {
+				return nil, fmt.Errorf("request canceled: %w", ctx.Err())
+			}
+
+			// Log the error and determine if we should retry
+			logger.WithFields(logrus.Fields{
+				"attempt": attempt + 1,
+				"error":   err.Error(),
+			}).Warn("HTTP request failed")
+
+			// Retry on network errors, but not on the last attempt
+			if attempt < maxRetries-1 {
+				delay := time.Duration(attempt+1) * baseDelay
+				logger.WithField("delay", delay).Debug("Retrying request after delay")
+
+				select {
+				case <-ctx.Done():
+					return nil, fmt.Errorf("request canceled during retry: %w", ctx.Err())
+				case <-time.After(delay):
+				}
+				continue
+			}
+
+			return nil, fmt.Errorf("failed to make request after %d attempts: %w", maxRetries, err)
+		}
+
+		// Process successful response
+		return c.processResponse(ctx, logger, resp, attempt+1)
 	}
 
-	// Set headers
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Accept-Encoding", "gzip, deflate, br")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("X-Subscription-Token", c.apiKey)
-	req.Header.Set("User-Agent", UserAgent)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cache-Control", "no-cache")
+	return nil, fmt.Errorf("unexpected end of retry loop")
+}
 
-	// Make request
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make request: %w", err)
-	}
+// processResponse handles the HTTP response processing with proper resource cleanup
+func (c *BraveClient) processResponse(ctx context.Context, logger *logrus.Logger, resp *http.Response, attempt int) ([]byte, error) {
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
 			logger.WithError(closeErr).Warn("Failed to close response body")

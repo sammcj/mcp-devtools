@@ -1,6 +1,8 @@
 package webfetch
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -8,19 +10,20 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/sirupsen/logrus"
 )
 
 const (
 	// DefaultTimeout for HTTP requests
-	DefaultTimeout = 30 * time.Second
+	DefaultTimeout = 15 * time.Second
 
 	// UserAgent for web requests
 	UserAgent = "mcp-devtools-fetch/1.0 (AI Assistant Tool)"
 
-	// MaxContentSize to prevent memory issues (50MB)
-	MaxContentSize = 50 * 1024 * 1024
+	// MaxContentSize to prevent memory issues (20MB)
+	MaxContentSize = 20 * 1024 * 1024
 )
 
 // WebClient handles HTTP requests for fetching web content
@@ -46,6 +49,28 @@ func NewWebClient() *WebClient {
 		},
 		userAgent: UserAgent,
 	}
+}
+
+// decompressGzip decompresses gzip-compressed data
+func decompressGzip(data []byte) ([]byte, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+	}
+	defer func() {
+		if closeErr := reader.Close(); closeErr != nil {
+			// Log error but don't fail the operation as data is already read
+			// This is best practice for cleanup operations where we can't propagate the error
+			_ = closeErr
+		}
+	}()
+
+	decompressed, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decompress gzip data: %w", err)
+	}
+
+	return decompressed, nil
 }
 
 // FetchContent fetches content from a URL with context support
@@ -95,10 +120,13 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 	}()
 
 	logger.WithFields(logrus.Fields{
-		"url":            targetURL,
-		"status_code":    resp.StatusCode,
-		"content_type":   resp.Header.Get("Content-Type"),
-		"content_length": resp.Header.Get("Content-Length"),
+		"url":               targetURL,
+		"status_code":       resp.StatusCode,
+		"content_type":      resp.Header.Get("Content-Type"),
+		"content_length":    resp.Header.Get("Content-Length"),
+		"content_encoding":  resp.Header.Get("Content-Encoding"),
+		"transfer_encoding": resp.Header.Get("Transfer-Encoding"),
+		"all_headers":       resp.Header,
 	}).Debug("Received HTTP response")
 
 	// Check for HTTP errors
@@ -118,12 +146,36 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 	}
 
 	// Limit response size to prevent memory issues
+	// Note: Go's HTTP client automatically handles gzip decompression
 	limitedReader := io.LimitReader(resp.Body, MaxContentSize)
 
 	// Read the response body
 	body, err := io.ReadAll(limitedReader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Handle gzip decompression manually if needed
+	// Go's HTTP client should do this automatically, but sometimes it doesn't work properly
+	contentEncoding := resp.Header.Get("Content-Encoding")
+	if contentEncoding == "gzip" {
+		// Check if content looks like it's still compressed (binary)
+		if len(body) > 0 && !utf8.Valid(body) {
+			logger.Info("Manually decompressing gzip content")
+			decompressedBody, err := decompressGzip(body)
+			if err != nil {
+				logger.WithError(err).Warn("Failed to decompress gzip content, using raw body")
+			} else {
+				body = decompressedBody
+				logger.WithField("original_size", len(body)).WithField("decompressed_size", len(decompressedBody)).Info("Successfully decompressed gzip content")
+			}
+		}
+	}
+
+	// Ensure content is valid UTF-8, replace invalid sequences
+	if !utf8.Valid(body) {
+		logger.Debug("Content contains invalid UTF-8, cleaning up")
+		body = []byte(strings.ToValidUTF8(string(body), "�"))
 	}
 
 	logger.WithFields(logrus.Fields{

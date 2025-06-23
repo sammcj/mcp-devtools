@@ -99,10 +99,8 @@ func (c *MarkdownConverter) cleanMarkdown(markdown string) string {
 	// Join back and clean up excessive newlines
 	result := strings.Join(cleanedLines, "\n")
 
-	// Remove excessive consecutive newlines (more than 2)
-	for strings.Contains(result, "\n\n\n") {
-		result = strings.ReplaceAll(result, "\n\n\n", "\n\n")
-	}
+	// Replace double newlines with single newlines to save tokens
+	result = strings.ReplaceAll(result, "\n\n", "\n")
 
 	// Trim leading and trailing whitespace
 	result = strings.TrimSpace(result)
