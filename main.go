@@ -18,6 +18,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/internetsearch/brave"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/think"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/webfetch"
 )
 

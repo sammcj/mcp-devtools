@@ -4,10 +4,46 @@ This is a modular MCP server that provides various developer tools that I find u
 
 It started as a solution for having to install and run many nodejs and python based MCP servers that were eating up resources and hard to maintain. The goal is to have a single server that can handle multiple tools and provide a consistent interface for them with a modular architecture to support additional tools that I may add as I find a need for them.
 
+```mermaid
+graph TD
+    A[MCP DevTools Server] --> B[Package Versions]
+    A --> C[Internet Search]
+    A --> D[Shadcn/UI Components]
+    A --> E[Web Content Fetching]
+    A --> F[Think Tool]
+
+    B --> B1[search_packages]
+    B --> B2[get_latest_bedrock_model]
+
+    C --> C1[brave_web_search]
+    C --> C2[brave_image_search]
+    C --> C3[brave_news_search]
+    C --> C4[brave_video_search]
+    C --> C5[brave_local_search]
+
+    D --> D1[shadcn_list_components]
+    D --> D2[shadcn_search_components]
+    D --> D3[shadcn_get_component_details]
+    D --> D4[shadcn_get_component_examples]
+
+    E --> E1[fetch_url]
+
+    F --> F1[think]
+
+    classDef toolCategory fill:#E6E6FA,stroke:#756BB1,color:#756BB1
+    classDef tool fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
+
+    class B,C,D,E,F toolCategory
+    class B1,B2,C1,C2,C3,C4,C5,D1,D2,D3,D4,E1,F1 tool
+```
+
+---
+
 - [MCP DevTools](#mcp-devtools)
   - [Features](#features)
     - [Package Versions](#package-versions)
     - [Internet Search](#internet-search)
+    - [Think Tool](#think-tool)
     - [Shadcn/UI Components](#shadcnui-components)
   - [Installation](#installation)
     - [Version Information](#version-information)
@@ -15,6 +51,7 @@ It started as a solution for having to install and run many nodejs and python ba
     - [Install](#install)
     - [Configuration](#configuration)
   - [Tools](#tools)
+    - [Think Tool](#think-tool-1)
     - [Unified Package Search](#unified-package-search)
     - [Shadcn/UI Components](#shadcnui-components-1)
     - [Internet Search (Brave Search API)](#internet-search-brave-search-api)
@@ -62,6 +99,14 @@ All package ecosystems are now accessible through the single `search_packages` t
 - **News Search**: Search for news articles and recent events
 - **Local Search**: Search for local businesses and points of interest (requires Pro API plan)
 - **Video Search**: Search for videos with metadata
+
+### Think Tool
+
+**Structured Reasoning Tool**: A simple tool that provides a dedicated thinking space for AI agents during complex workflows. Based on [Anthropic's research](https://www.anthropic.com/engineering/claude-think-tool) showing significant performance improvements in complex, multi-step scenarios.
+
+- **Purpose**: Enable structured reasoning and analysis during complex workflows
+- **Use Cases**: Analysing tool outputs, breaking down multi-step problems, planning sequential actions
+- **Benefits**: Up to 54% improvement in complex scenarios, better consistency, enhanced decision-making
 
 ### Shadcn/UI Components
 
@@ -206,6 +251,31 @@ And configure your MCP client to connect to the SSE transport:
 - `--debug`, `-d`: Enable debug logging. Default: false
 
 ## Tools
+
+### Think Tool
+
+The `think` tool provides a structured thinking space for AI agents during complex workflows:
+
+```json
+{
+  "name": "think",
+  "arguments": {
+    "thought": "I need to analyze the API response before deciding which action to take next..."
+  }
+}
+```
+
+**When to use the think tool:**
+- Analyzing tool outputs before taking action
+- Breaking down complex multi-step problems
+- Reasoning through policy decisions or constraints
+- Planning sequential actions where mistakes are costly
+- Processing and reflecting on information gathered from previous tool calls
+
+**Benefits:** Based on Anthropic's research, the think tool provides significant improvements in complex scenarios:
+- 54% relative improvement in complex airline domain scenarios
+- Better consistency across multiple trials
+- Enhanced handling of edge cases and unusual scenarios
 
 ### Unified Package Search
 
