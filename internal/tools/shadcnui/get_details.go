@@ -10,23 +10,13 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
 
-const getComponentDetailsCachePrefix = "shadcnui:get_details:"
-const getComponentDetailsCacheTTL = 24 * time.Hour
-
 // GetComponentDetailsTool defines the tool for getting shadcn/ui component details.
 type GetComponentDetailsTool struct {
 	client HTTPClient
-}
-
-func init() {
-	registry.Register(&GetComponentDetailsTool{
-		client: DefaultHTTPClient,
-	})
 }
 
 // Definition returns the tool's definition.

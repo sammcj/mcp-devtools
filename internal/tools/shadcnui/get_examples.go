@@ -14,23 +14,13 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
 
-const getComponentExamplesCachePrefix = "shadcnui:get_examples:"
-const getComponentExamplesCacheTTL = 24 * time.Hour
-
 // GetComponentExamplesTool defines the tool for getting shadcn/ui component examples.
 type GetComponentExamplesTool struct {
 	client HTTPClient
-}
-
-func init() {
-	registry.Register(&GetComponentExamplesTool{
-		client: DefaultHTTPClient,
-	})
 }
 
 // Definition returns the tool's definition.
@@ -145,5 +135,3 @@ func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.L
 	logger.Infof("Successfully processed examples for component: %s, found %d", componentName, len(examples))
 	return packageversions.NewToolResultJSON(examples) // Use packageversions helper
 }
-
-// Removed local ReadAll helper, will use io.ReadAll directly.
