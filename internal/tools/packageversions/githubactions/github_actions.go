@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -18,13 +17,6 @@ import (
 // GitHubActionsTool handles GitHub Actions version checking
 type GitHubActionsTool struct {
 	client packageversions.HTTPClient
-}
-
-// init registers the GitHub Actions tool with the registry
-func init() {
-	registry.Register(&GitHubActionsTool{
-		client: packageversions.DefaultHTTPClient,
-	})
 }
 
 // Definition returns the tool's definition for MCP registration

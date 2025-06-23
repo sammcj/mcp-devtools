@@ -1,6 +1,8 @@
 package registry
 
 import (
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -10,6 +12,9 @@ import (
 var (
 	// toolRegistry is a map of tool names to tool implementations
 	toolRegistry = make(map[string]tools.Tool) // Initialize here
+
+	// disabledFunctions is a set of function names to disable
+	disabledFunctions = make(map[string]bool)
 
 	// logger is the shared logger instance
 	logger *logrus.Logger
@@ -22,7 +27,33 @@ var (
 func Init(l *logrus.Logger) {
 	logger = l
 	cache = &sync.Map{}
-	// toolRegistry = make(map[string]tools.Tool) // REMOVED: toolRegistry is initialized at declaration
+
+	// Parse DISABLED_FUNCTIONS environment variable
+	parseDisabledFunctions()
+}
+
+// parseDisabledFunctions parses the DISABLED_FUNCTIONS environment variable
+func parseDisabledFunctions() {
+	disabledEnv := os.Getenv("DISABLED_FUNCTIONS")
+	if disabledEnv == "" {
+		return
+	}
+
+	// Split by comma and trim whitespace
+	functions := strings.Split(disabledEnv, ",")
+	for _, function := range functions {
+		function = strings.TrimSpace(function)
+		if function != "" {
+			disabledFunctions[function] = true
+			if logger != nil {
+				logger.WithField("function", function).Debug("Function disabled via DISABLED_FUNCTIONS environment variable")
+			}
+		}
+	}
+
+	if logger != nil && len(disabledFunctions) > 0 {
+		logger.WithField("count", len(disabledFunctions)).Debug("Parsed disabled functions from environment")
+	}
 }
 
 // Register adds a tool implementation to the registry
@@ -37,15 +68,27 @@ func Register(tool tools.Tool) {
 	toolRegistry[tool.Definition().Name] = tool
 }
 
-// GetTool retrieves a tool by name
+// GetTool retrieves a tool by name, returns false if disabled
 func GetTool(name string) (tools.Tool, bool) {
+	// Check if function is disabled
+	if disabledFunctions[name] {
+		return nil, false
+	}
 	tool, ok := toolRegistry[name]
 	return tool, ok
 }
 
-// GetTools returns all registered tools
+// GetTools returns all registered tools, excluding disabled ones
 func GetTools() map[string]tools.Tool {
-	return toolRegistry
+	filteredTools := make(map[string]tools.Tool)
+	for name, tool := range toolRegistry {
+		// Skip disabled functions
+		if disabledFunctions[name] {
+			continue
+		}
+		filteredTools[name] = tool
+	}
+	return filteredTools
 }
 
 // GetLogger returns the shared logger instance

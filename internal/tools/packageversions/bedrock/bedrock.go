@@ -9,22 +9,12 @@ import (
 	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
 
 // BedrockTool handles AWS Bedrock model checking
-type BedrockTool struct {
-	client packageversions.HTTPClient
-}
-
-// init registers the bedrock tool with the registry
-func init() {
-	registry.Register(&BedrockTool{
-		client: packageversions.DefaultHTTPClient,
-	})
-}
+type BedrockTool struct{}
 
 // Definition returns the tool's definition for MCP registration
 func (t *BedrockTool) Definition() mcp.Tool {

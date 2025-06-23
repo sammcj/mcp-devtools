@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -22,11 +21,14 @@ type DockerTool struct {
 	client packageversions.HTTPClient
 }
 
-// init registers the docker tool with the registry
-func init() {
-	registry.Register(&DockerTool{
-		client: packageversions.DefaultHTTPClient,
-	})
+// NewDockerTool creates a new docker tool with the given HTTP client
+func NewDockerTool(client packageversions.HTTPClient) *DockerTool {
+	if client == nil {
+		client = packageversions.DefaultHTTPClient
+	}
+	return &DockerTool{
+		client: client,
+	}
 }
 
 // Definition returns the tool's definition for MCP registration

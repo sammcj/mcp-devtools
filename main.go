@@ -16,14 +16,7 @@ import (
 
 	// Import all tool packages to register them
 	_ "github.com/sammcj/mcp-devtools/internal/tools/internetsearch/brave"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/bedrock"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/docker"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/githubactions"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/go"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/java"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/npm"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/python"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/swift"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/webfetch"
 )

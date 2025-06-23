@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -18,13 +17,6 @@ import (
 // SwiftTool handles Swift package version checking
 type SwiftTool struct {
 	client packageversions.HTTPClient
-}
-
-// init registers the Swift tool with the registry
-func init() {
-	registry.Register(&SwiftTool{
-		client: packageversions.DefaultHTTPClient,
-	})
 }
 
 // Definition returns the tool's definition for MCP registration

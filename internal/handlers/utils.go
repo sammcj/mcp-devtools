@@ -81,10 +81,8 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, url
 		if err := resp.Body.Close(); err != nil {
 			if logger != nil {
 				logger.WithError(err).Error("Failed to close response body")
-			} else {
-				// Fallback if logger is nil, though MakeRequestWithLogger usually has one
-				fmt.Printf("Error closing response body: %v\n", err)
 			}
+			// Note: Silently ignore if logger is nil to avoid stdio pollution
 		}
 	}()
 
