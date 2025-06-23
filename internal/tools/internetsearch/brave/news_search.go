@@ -80,7 +80,7 @@ func (t *BraveNewsSearchTool) Execute(ctx context.Context, logger *logrus.Logger
 	}).Debug("Brave news search parameters")
 
 	// Perform the search
-	response, err := t.client.NewsSearch(logger, query, count, freshness)
+	response, err := t.client.NewsSearch(ctx, logger, query, count, freshness)
 	if err != nil {
 		logger.WithError(err).Error("Brave news search failed")
 		return nil, fmt.Errorf("news search failed: %w", err)

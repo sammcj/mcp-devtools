@@ -2,6 +2,7 @@ package brave
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -41,8 +42,8 @@ func NewBraveClient(apiKey string) *BraveClient {
 	}
 }
 
-// makeRequest performs an HTTP request to the Brave API
-func (c *BraveClient) makeRequest(logger *logrus.Logger, endpoint string, params map[string]string) ([]byte, error) {
+// makeRequest performs an HTTP request to the Brave API with retry logic
+func (c *BraveClient) makeRequest(ctx context.Context, logger *logrus.Logger, endpoint string, params map[string]string) ([]byte, error) {
 	// Build URL with parameters
 	reqURL, err := url.Parse(c.baseURL + endpoint)
 	if err != nil {
@@ -61,26 +62,72 @@ func (c *BraveClient) makeRequest(logger *logrus.Logger, endpoint string, params
 		"endpoint": endpoint,
 	}).Debug("Making Brave API request")
 
-	// Create request
-	req, err := http.NewRequest("GET", reqURL.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+	// Retry logic for resilient requests
+	maxRetries := 3
+	baseDelay := 100 * time.Millisecond
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		// Check context cancellation before each attempt
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("request canceled: %w", ctx.Err())
+		default:
+		}
+
+		// Create request with context
+		req, err := http.NewRequestWithContext(ctx, "GET", reqURL.String(), nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		// Set headers
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Accept-Encoding", "gzip, deflate, br")
+		req.Header.Set("Connection", "keep-alive")
+		req.Header.Set("X-Subscription-Token", c.apiKey)
+		req.Header.Set("User-Agent", UserAgent)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cache-Control", "no-cache")
+
+		// Make request
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			// Check if error is due to context cancellation
+			if ctx.Err() != nil {
+				return nil, fmt.Errorf("request canceled: %w", ctx.Err())
+			}
+
+			// Log the error and determine if we should retry
+			logger.WithFields(logrus.Fields{
+				"attempt": attempt + 1,
+				"error":   err.Error(),
+			}).Warn("HTTP request failed")
+
+			// Retry on network errors, but not on the last attempt
+			if attempt < maxRetries-1 {
+				delay := time.Duration(attempt+1) * baseDelay
+				logger.WithField("delay", delay).Debug("Retrying request after delay")
+
+				select {
+				case <-ctx.Done():
+					return nil, fmt.Errorf("request canceled during retry: %w", ctx.Err())
+				case <-time.After(delay):
+				}
+				continue
+			}
+
+			return nil, fmt.Errorf("failed to make request after %d attempts: %w", maxRetries, err)
+		}
+
+		// Process successful response
+		return c.processResponse(ctx, logger, resp, attempt+1)
 	}
 
-	// Set headers
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Accept-Encoding", "gzip, deflate, br")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("X-Subscription-Token", c.apiKey)
-	req.Header.Set("User-Agent", UserAgent)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cache-Control", "no-cache")
+	return nil, fmt.Errorf("unexpected end of retry loop")
+}
 
-	// Make request
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make request: %w", err)
-	}
+// processResponse handles the HTTP response processing with proper resource cleanup
+func (c *BraveClient) processResponse(ctx context.Context, logger *logrus.Logger, resp *http.Response, attempt int) ([]byte, error) {
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
 			logger.WithError(closeErr).Warn("Failed to close response body")
@@ -146,7 +193,7 @@ func (c *BraveClient) makeRequest(logger *logrus.Logger, endpoint string, params
 }
 
 // WebSearch performs a web search using the Brave API
-func (c *BraveClient) WebSearch(logger *logrus.Logger, query string, count int, offset int, freshness string) (*BraveWebSearchResponse, error) {
+func (c *BraveClient) WebSearch(ctx context.Context, logger *logrus.Logger, query string, count int, offset int, freshness string) (*BraveWebSearchResponse, error) {
 	params := map[string]string{
 		"q":      query,
 		"count":  fmt.Sprintf("%d", count),
@@ -157,7 +204,7 @@ func (c *BraveClient) WebSearch(logger *logrus.Logger, query string, count int, 
 		params["freshness"] = freshness
 	}
 
-	body, err := c.makeRequest(logger, "/web/search", params)
+	body, err := c.makeRequest(ctx, logger, "/web/search", params)
 	if err != nil {
 		return nil, err
 	}
@@ -171,13 +218,13 @@ func (c *BraveClient) WebSearch(logger *logrus.Logger, query string, count int, 
 }
 
 // ImageSearch performs an image search using the Brave API
-func (c *BraveClient) ImageSearch(logger *logrus.Logger, query string, count int) (*BraveImageSearchResponse, error) {
+func (c *BraveClient) ImageSearch(ctx context.Context, logger *logrus.Logger, query string, count int) (*BraveImageSearchResponse, error) {
 	params := map[string]string{
 		"q":     query,
 		"count": fmt.Sprintf("%d", count),
 	}
 
-	body, err := c.makeRequest(logger, "/images/search", params)
+	body, err := c.makeRequest(ctx, logger, "/images/search", params)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +238,7 @@ func (c *BraveClient) ImageSearch(logger *logrus.Logger, query string, count int
 }
 
 // NewsSearch performs a news search using the Brave API
-func (c *BraveClient) NewsSearch(logger *logrus.Logger, query string, count int, freshness string) (*BraveNewsSearchResponse, error) {
+func (c *BraveClient) NewsSearch(ctx context.Context, logger *logrus.Logger, query string, count int, freshness string) (*BraveNewsSearchResponse, error) {
 	params := map[string]string{
 		"q":     query,
 		"count": fmt.Sprintf("%d", count),
@@ -201,7 +248,7 @@ func (c *BraveClient) NewsSearch(logger *logrus.Logger, query string, count int,
 		params["freshness"] = freshness
 	}
 
-	body, err := c.makeRequest(logger, "/news/search", params)
+	body, err := c.makeRequest(ctx, logger, "/news/search", params)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +262,7 @@ func (c *BraveClient) NewsSearch(logger *logrus.Logger, query string, count int,
 }
 
 // VideoSearch performs a video search using the Brave API
-func (c *BraveClient) VideoSearch(logger *logrus.Logger, query string, count int, freshness string) (*BraveVideoSearchResponse, error) {
+func (c *BraveClient) VideoSearch(ctx context.Context, logger *logrus.Logger, query string, count int, freshness string) (*BraveVideoSearchResponse, error) {
 	params := map[string]string{
 		"q":     query,
 		"count": fmt.Sprintf("%d", count),
@@ -225,7 +272,7 @@ func (c *BraveClient) VideoSearch(logger *logrus.Logger, query string, count int
 		params["freshness"] = freshness
 	}
 
-	body, err := c.makeRequest(logger, "/videos/search", params)
+	body, err := c.makeRequest(ctx, logger, "/videos/search", params)
 	if err != nil {
 		return nil, err
 	}
@@ -239,14 +286,14 @@ func (c *BraveClient) VideoSearch(logger *logrus.Logger, query string, count int
 }
 
 // LocalSearch performs a local search using the Brave API
-func (c *BraveClient) LocalSearch(logger *logrus.Logger, query string, count int) (*BraveLocalSearchResponse, error) {
+func (c *BraveClient) LocalSearch(ctx context.Context, logger *logrus.Logger, query string, count int) (*BraveLocalSearchResponse, error) {
 	params := map[string]string{
 		"q":             query,
 		"count":         fmt.Sprintf("%d", count),
 		"result_filter": "locations",
 	}
 
-	body, err := c.makeRequest(logger, "/web/search", params)
+	body, err := c.makeRequest(ctx, logger, "/web/search", params)
 	if err != nil {
 		return nil, err
 	}
@@ -260,13 +307,13 @@ func (c *BraveClient) LocalSearch(logger *logrus.Logger, query string, count int
 }
 
 // LocalPOISearch fetches POI details for given location IDs
-func (c *BraveClient) LocalPOISearch(logger *logrus.Logger, ids []string) (*BraveLocalPOIResponse, error) {
+func (c *BraveClient) LocalPOISearch(ctx context.Context, logger *logrus.Logger, ids []string) (*BraveLocalPOIResponse, error) {
 	params := make(map[string]string)
 	for i, id := range ids {
 		params[fmt.Sprintf("ids[%d]", i)] = id
 	}
 
-	body, err := c.makeRequest(logger, "/local/pois", params)
+	body, err := c.makeRequest(ctx, logger, "/local/pois", params)
 	if err != nil {
 		return nil, err
 	}
@@ -280,13 +327,13 @@ func (c *BraveClient) LocalPOISearch(logger *logrus.Logger, ids []string) (*Brav
 }
 
 // LocalDescriptionsSearch fetches descriptions for given location IDs
-func (c *BraveClient) LocalDescriptionsSearch(logger *logrus.Logger, ids []string) (*BraveLocalDescriptionsResponse, error) {
+func (c *BraveClient) LocalDescriptionsSearch(ctx context.Context, logger *logrus.Logger, ids []string) (*BraveLocalDescriptionsResponse, error) {
 	params := make(map[string]string)
 	for i, id := range ids {
 		params[fmt.Sprintf("ids[%d]", i)] = id
 	}
 
-	body, err := c.makeRequest(logger, "/local/descriptions", params)
+	body, err := c.makeRequest(ctx, logger, "/local/descriptions", params)
 	if err != nil {
 		return nil, err
 	}
