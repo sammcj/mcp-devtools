@@ -18,7 +18,7 @@ func TestThinkTool_Definition(t *testing.T) {
 
 	// Test that description contains key phrases
 	desc := definition.Description
-	if !contains(desc, "think about something") {
+	if !testutils.Contains(desc, "think about something") {
 		t.Errorf("Expected description to contain 'think about something', got: %s", desc)
 	}
 
@@ -58,7 +58,7 @@ func TestThinkTool_Execute_ValidInput(t *testing.T) {
 		t.Errorf("Expected content type 'text', got: %s", textContent.Type)
 	}
 
-	if !contains(textContent.Text, "This is a test thought") {
+	if !testutils.Contains(textContent.Text, "This is a test thought") {
 		t.Errorf("Expected result to contain thought text, got: %s", textContent.Text)
 	}
 }
@@ -137,24 +137,7 @@ func TestThinkTool_Execute_LongThought(t *testing.T) {
 		t.Fatal("Expected TextContent, got different type")
 	}
 
-	if !contains(textContent.Text, longThought) {
+	if !testutils.Contains(textContent.Text, longThought) {
 		t.Error("Expected result to contain full long thought")
 	}
-}
-
-// Helper function for string contains check
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
-		(len(s) > len(substr) && s[:len(substr)] == substr) ||
-		(len(s) > len(substr) && s[len(s)-len(substr):] == substr) ||
-		containsMiddle(s, substr))
-}
-
-func containsMiddle(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

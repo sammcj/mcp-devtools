@@ -47,7 +47,7 @@ func AssertErrorContains(t *testing.T, err error, expected string) {
 	if err == nil {
 		t.Fatal("Expected error, got nil")
 	}
-	if !contains(err.Error(), expected) {
+	if !Contains(err.Error(), expected) {
 		t.Fatalf("Expected error to contain '%s', got: %v", expected, err)
 	}
 }
@@ -68,8 +68,8 @@ func AssertEqual(t *testing.T, expected, actual interface{}) {
 	}
 }
 
-// contains checks if a string contains a substring
-func contains(s, substr string) bool {
+// Contains checks if a string contains a substring
+func Contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
 		(len(s) > len(substr) && s[:len(substr)] == substr) ||
 		(len(s) > len(substr) && s[len(s)-len(substr):] == substr) ||
