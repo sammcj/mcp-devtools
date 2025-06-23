@@ -102,7 +102,7 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 	// Set headers for polite web scraping
 	req.Header.Set("User-Agent", c.userAgent)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8,*/*;q=0.7")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("Accept-Language", "en-GB,en;q=0.5")
 	req.Header.Set("Accept-Encoding", "gzip, deflate")
 	req.Header.Set("DNT", "1")
 	req.Header.Set("Connection", "keep-alive")
