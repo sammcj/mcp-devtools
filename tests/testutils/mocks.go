@@ -3,6 +3,7 @@ package testutils
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -59,20 +60,31 @@ func (m *MockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 
 // MockHTTPClient for testing HTTP-based tools
 type MockHTTPClient struct {
-	responses map[string]interface{}
+	responses map[string]*MockHTTPResponse
 	err       error
+}
+
+// MockHTTPResponse simulates an HTTP response
+type MockHTTPResponse struct {
+	StatusCode int
+	Body       string
+	Headers    map[string]string
 }
 
 // NewMockHTTPClient creates a new mock HTTP client
 func NewMockHTTPClient() *MockHTTPClient {
 	return &MockHTTPClient{
-		responses: make(map[string]interface{}),
+		responses: make(map[string]*MockHTTPResponse),
 	}
 }
 
 // WithResponse configures a response for a specific URL
-func (m *MockHTTPClient) WithResponse(url string, response interface{}) *MockHTTPClient {
-	m.responses[url] = response
+func (m *MockHTTPClient) WithResponse(url string, statusCode int, body string) *MockHTTPClient {
+	m.responses[url] = &MockHTTPResponse{
+		StatusCode: statusCode,
+		Body:       body,
+		Headers:    make(map[string]string),
+	}
 	return m
 }
 
@@ -82,19 +94,46 @@ func (m *MockHTTPClient) WithError(err error) *MockHTTPClient {
 	return m
 }
 
-// Do simulates an HTTP request
-func (m *MockHTTPClient) Do(req interface{}) (interface{}, error) {
+// Get simulates an HTTP GET request (implements shadcnui.HTTPClient interface)
+func (m *MockHTTPClient) Get(url string) (*http.Response, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
 
-	// For simple testing, we'll just return based on string representation
-	key := fmt.Sprintf("%v", req)
-	if response, ok := m.responses[key]; ok {
-		return response, nil
+	if response, ok := m.responses[url]; ok {
+		return &http.Response{
+			StatusCode: response.StatusCode,
+			Body:       &MockReadCloser{content: response.Body},
+			Header:     make(http.Header),
+		}, nil
 	}
 
-	return nil, fmt.Errorf("no mock response configured for: %v", req)
+	return &http.Response{
+		StatusCode: 404,
+		Body:       &MockReadCloser{content: "Not Found"},
+		Header:     make(http.Header),
+	}, nil
+}
+
+// MockReadCloser implements io.ReadCloser for mock responses
+type MockReadCloser struct {
+	content string
+	pos     int
+}
+
+// Read implements io.Reader
+func (m *MockReadCloser) Read(p []byte) (n int, err error) {
+	if m.pos >= len(m.content) {
+		return 0, fmt.Errorf("EOF")
+	}
+	n = copy(p, m.content[m.pos:])
+	m.pos += n
+	return n, nil
+}
+
+// Close implements io.Closer
+func (m *MockReadCloser) Close() error {
+	return nil
 }
 
 // MockCache provides a controllable cache for testing

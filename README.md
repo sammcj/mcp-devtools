@@ -40,6 +40,7 @@ graph TD
     - [Internet Search](#internet-search)
     - [Think Tool](#think-tool)
     - [Shadcn/UI Components](#shadcnui-components)
+  - [Screenshots](#screenshots)
   - [Installation](#installation)
     - [Version Information](#version-information)
   - [Usage](#usage)
@@ -110,6 +111,10 @@ All package ecosystems are now accessible through the single `search_packages` t
 - Search for shadcn/ui components by keyword
 - Get detailed information (description, installation, usage, props) for a specific component
 - Get usage examples for a specific component
+
+## Screenshots
+
+![](./screenshots/mcp-devtools-1.jpeg)
 
 ## Installation
 
@@ -936,12 +941,6 @@ make test
 
 # Run only fast tests (no external dependencies)
 make test-fast
-
-# Run unit tests only
-make test-unit
-
-# Run tool tests only
-make test-tools
 ```
 
 ## Releases and CI/CD

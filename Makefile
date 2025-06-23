@@ -29,27 +29,17 @@ build:
 run: build
 	./$(BINARY_PATH)
 
-# Run the server with SSE transport
-.PHONY: run-sse
-run-sse: build
-	./$(BINARY_PATH) --transport sse --port 18080 --base-url http://localhost
+# Run the server with HTTP transport
+.PHONY: run-http
+run-http: build
+	./$(BINARY_PATH) --transport http --port 18080 --base-url http://localhost
 
-# Run tests
+# Run tests (all tests including external dependencies)
 .PHONY: test
 test:
 	$(GOTEST) $(GOFLAGS) ./...
 
-# Run unit tests only (fast)
-.PHONY: test-unit
-test-unit:
-	$(GOTEST) -short -v ./tests/unit/...
-
-# Run tool tests only
-.PHONY: test-tools
-test-tools:
-	$(GOTEST) -short -v ./tests/tools/...
-
-# Run fast tests (unit + tools, no external dependencies)
+# Run fast tests (no external dependencies)
 .PHONY: test-fast
 test-fast:
 	$(GOTEST) -short -v ./tests/...
@@ -105,17 +95,15 @@ help:
 	@echo "  all          : Build the server (default)"
 	@echo "  build        : Build the server"
 	@echo "  run          : Run the server with stdio transport (default)"
-	@echo "  run-sse      : Run the server with SSE transport"
-	@echo "  test         : Run all tests"
-	@echo "  test-unit    : Run unit tests only (fast)"
-	@echo "  test-tools   : Run tool tests only"
-	@echo "  test-fast    : Run fast tests (unit + tools, no external dependencies)"
+	@echo "  run-http     : Run the server with Streamable HTTP transport"
+	@echo "  test         : Run all tests (including external dependencies)"
+	@echo "  test-fast    : Run fast tests (no external dependencies)"
 	@echo "  clean        : Clean build artifacts"
 	@echo "  fmt          : Format code"
 	@echo "  lint         : Lint code"
 	@echo "  deps         : Install dependencies"
 	@echo "  update-deps  : Update dependencies"
 	@echo "  docker-build : Build Docker image"
-	@echo "  docker-run   : Run Docker container with SSE transport"
+	@echo "  docker-run   : Run Docker container with HTTP transport"
 	@echo "  release      : Create a new release (requires VERSION=x.y.z)"
 	@echo "  help         : Show this help message"
