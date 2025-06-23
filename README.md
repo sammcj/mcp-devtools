@@ -8,12 +8,11 @@ It started as a solution for having to install and run many nodejs and python ba
 graph TD
     A[MCP DevTools Server] --> B[Package Versions]
     A --> C[Internet Search]
-    A --> D[Shadcn/UI Components]
-    A --> E[Web Content Fetching]
-    A --> F[Think Tool]
+    A --> D[Fetch Webpage]
+    A --> E[Think Tool]
+    A --> F[Shadcn/UI Components]
 
-    B --> B1[search_packages]
-
+    B --> B1[Search Packages]
     B1 --> B1A[npm]
     B1 --> B1B[pip]
     B1 --> B1C[go]
@@ -25,26 +24,24 @@ graph TD
     B1D --> B1D1[maven]
     B1D --> B1D2[gradle]
 
-    C --> C1[brave_search]
-    C1 --> C1A[web_search]
-    C1 --> C1B[image_search]
-    C1 --> C1C[news_search]
-    C1 --> C1D[local_search]
-    C1 --> C1E[video_search]
+    C --> C1[Brave Search]
+    C1 --> C1A[Web]
+    C1 --> C1B[Image]
+    C1 --> C1C[News]
+    C1 --> C1D[Local]
+    C1 --> C1E[Video]
 
-    D --> D1[shadcn]
+    F --> F1[Shadcn UI Components]
 
-    E --> E1[fetch_url]
-
-    F --> F1[think]
+    D --> D1[Fetch URL as Markdown]
 
     classDef toolCategory fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef tool fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
-    classDef unifiedTool fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
+    classDef searchTool fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
 
     class B,C,D,E,F toolCategory
     class B1,B2,E1,F1 tool
-    class C1,D1 unifiedTool
+    class B1,C1,D1,F1 searchTool
 ```
 
 ---
