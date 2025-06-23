@@ -3,31 +3,16 @@ package brave
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sirupsen/logrus"
 )
 
 // BraveVideoSearchTool implements video search using Brave Search API
 type BraveVideoSearchTool struct {
 	client *BraveClient
-}
-
-// init registers the video search tool with conditional registration
-func init() {
-	apiKey := os.Getenv("BRAVE_API_KEY")
-	if apiKey == "" {
-		// Tool will not be registered - this is expected behaviour
-		return
-	}
-
-	registry.Register(&BraveVideoSearchTool{
-		client: NewBraveClient(apiKey),
-	})
 }
 
 // Definition returns the tool's definition for MCP registration

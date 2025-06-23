@@ -34,7 +34,7 @@ func init() {
 func (t *UnifiedShadcnTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"shadcn",
-		mcp.WithDescription(`Unified tool for shadcn/ui component operations. Supports listing, searching, getting details, and examples for shadcn/ui components.
+		mcp.WithDescription(`shadcn/ui components. Supports listing, searching, getting details, and examples for shadcn/ui components.
 
 Actions:
 - list: Get all available shadcn/ui components
@@ -214,7 +214,7 @@ func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.L
 		}
 	})
 
-	// Initialize Props map
+	// Initialise Props map
 	info.Props = make(map[string]ComponentProp)
 
 	// Construct Source URL

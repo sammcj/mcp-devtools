@@ -3,31 +3,16 @@ package brave
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sirupsen/logrus"
 )
 
 // BraveNewsSearchTool implements news search using Brave Search API
 type BraveNewsSearchTool struct {
 	client *BraveClient
-}
-
-// init registers the news search tool with conditional registration
-func init() {
-	apiKey := os.Getenv("BRAVE_API_KEY")
-	if apiKey == "" {
-		// Tool will not be registered - this is expected behaviour
-		return
-	}
-
-	registry.Register(&BraveNewsSearchTool{
-		client: NewBraveClient(apiKey),
-	})
 }
 
 // Definition returns the tool's definition for MCP registration

@@ -102,7 +102,7 @@ func (t *GetComponentDetailsTool) Execute(ctx context.Context, logger *logrus.Lo
 	// Scrape Props/Variants (highly dependent on page structure)
 	// This is a placeholder and needs refinement based on actual page structure.
 	// Example: Look for tables within sections titled "Props", "API Reference", or "Examples"
-	info.Props = make(map[string]ComponentProp) // Initialize Props map
+	info.Props = make(map[string]ComponentProp) // Initialise Props map
 
 	// Scrape Source URL (construct)
 	info.SourceURL = fmt.Sprintf("%s/tree/main/apps/www/content/docs/components/%s.mdx", ShadcnGitHubURL, componentName) // Assuming .mdx files

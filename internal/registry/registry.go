@@ -11,7 +11,7 @@ import (
 
 var (
 	// toolRegistry is a map of tool names to tool implementations
-	toolRegistry = make(map[string]tools.Tool) // Initialize here
+	toolRegistry = make(map[string]tools.Tool) // Initialise here
 
 	// disabledFunctions is a set of function names to disable
 	disabledFunctions = make(map[string]bool)
@@ -58,7 +58,7 @@ func parseDisabledFunctions() {
 
 // Register adds a tool implementation to the registry
 func Register(tool tools.Tool) {
-	// No need to check for nil if toolRegistry is initialized at declaration.
+	// No need to check for nil if toolRegistry is Initialised at declaration.
 	// If it could somehow be nil due to other logic, the check can remain,
 	// but the primary initialization is now at var declaration.
 	// For safety, keeping the nil check might be okay, but it shouldn't be hit.
