@@ -15,16 +15,9 @@ graph TD
     B --> B1[search_packages]
     B --> B2[get_latest_bedrock_model]
 
-    C --> C1[brave_web_search]
-    C --> C2[brave_image_search]
-    C --> C3[brave_news_search]
-    C --> C4[brave_video_search]
-    C --> C5[brave_local_search]
+    C --> C1[brave_search]
 
-    D --> D1[shadcn_list_components]
-    D --> D2[shadcn_search_components]
-    D --> D3[shadcn_get_component_details]
-    D --> D4[shadcn_get_component_examples]
+    D --> D1[shadcn]
 
     E --> E1[fetch_url]
 
@@ -32,9 +25,11 @@ graph TD
 
     classDef toolCategory fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef tool fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
+    classDef unifiedTool fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
 
     class B,C,D,E,F toolCategory
-    class B1,B2,C1,C2,C3,C4,C5,D1,D2,D3,D4,E1,F1 tool
+    class B1,B2,E1,F1 tool
+    class C1,D1 unifiedTool
 ```
 
 ---
@@ -501,12 +496,16 @@ Search for specific models:
 
 ### Shadcn/UI Components
 
+The `shadcn` tool provides a unified interface for working with shadcn/ui components. Use the `action` parameter to specify what you want to do:
+
 List all available shadcn/ui components:
 
 ```json
 {
-  "name": "shadcn_list_components",
-  "arguments": {}
+  "name": "shadcn",
+  "arguments": {
+    "action": "list"
+  }
 }
 ```
 
@@ -514,8 +513,9 @@ Search for shadcn/ui components:
 
 ```json
 {
-  "name": "shadcn_search_components",
+  "name": "shadcn",
   "arguments": {
+    "action": "search",
     "query": "button"
   }
 }
@@ -525,8 +525,9 @@ Get detailed information for a specific shadcn/ui component:
 
 ```json
 {
-  "name": "shadcn_get_component_details",
+  "name": "shadcn",
   "arguments": {
+    "action": "details",
     "componentName": "alert-dialog"
   }
 }
@@ -536,8 +537,9 @@ Get usage examples for a specific shadcn/ui component:
 
 ```json
 {
-  "name": "shadcn_get_component_examples",
+  "name": "shadcn",
   "arguments": {
+    "action": "examples",
     "componentName": "accordion"
   }
 }
@@ -545,7 +547,7 @@ Get usage examples for a specific shadcn/ui component:
 
 ### Internet Search (Brave Search API)
 
-**Configuration**: Set the `BRAVE_API_KEY` environment variable to enable these tools:
+**Configuration**: Set the `BRAVE_API_KEY` environment variable to enable this tool:
 
 ```bash
 export BRAVE_API_KEY="your-brave-api-key-here"
@@ -553,14 +555,17 @@ export BRAVE_API_KEY="your-brave-api-key-here"
 
 Get your API key from: https://brave.com/search/api/
 
+The `brave_search` tool provides a unified interface for all types of Brave Search operations. Use the `type` parameter to specify the search type:
+
 #### Web Search
 
 Perform general web searches:
 
 ```json
 {
-  "name": "brave_web_search",
+  "name": "brave_search",
   "arguments": {
+    "type": "web",
     "query": "golang best practices",
     "count": 10,
     "offset": 0,
@@ -575,9 +580,10 @@ Search for images (maximum 3 results):
 
 ```json
 {
-  "name": "brave_image_search",
+  "name": "brave_search",
   "arguments": {
-    "searchTerm": "golang gopher mascot",
+    "type": "image",
+    "query": "golang gopher mascot",
     "count": 3
   }
 }
@@ -589,8 +595,9 @@ Search for news articles and recent events:
 
 ```json
 {
-  "name": "brave_news_search",
+  "name": "brave_search",
   "arguments": {
+    "type": "news",
     "query": "artificial intelligence breakthrough",
     "count": 10,
     "freshness": "pd"
@@ -604,8 +611,9 @@ Search for videos:
 
 ```json
 {
-  "name": "brave_video_search",
+  "name": "brave_search",
   "arguments": {
+    "type": "video",
     "query": "golang tutorial",
     "count": 10,
     "freshness": "pm"
@@ -619,13 +627,21 @@ Search for local businesses and places (requires Pro API plan):
 
 ```json
 {
-  "name": "brave_local_search",
+  "name": "brave_search",
   "arguments": {
+    "type": "local",
     "query": "pizza near Central Park",
     "count": 5
   }
 }
 ```
+
+**Search Types:**
+- `web`: General web search for broad information gathering
+- `image`: Search for images (max 3 results)
+- `news`: Search for recent news articles and events
+- `video`: Search for video content and tutorials
+- `local`: Search for local businesses and places (requires Pro API plan)
 
 **Freshness Parameter Options:**
 - `pd`: Discovered within the last 24 hours
