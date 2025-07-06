@@ -35,7 +35,7 @@ func init() {
 func (t *SearchPackagesTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"search_packages",
-		mcp.WithDescription("Search for packages (by name) and check versions across multiple ecosystems (npm, Go, Python, Java, Swift, GitHub Actions, Docker, AWS Bedrock). EFFICIENCY TIP: When checking multiple packages, pass them all in a single call using the 'data' parameter rather than making separate calls for each package - this is significantly more efficient."),
+		mcp.WithDescription("Search for packages (by name) and check versions across multiple ecosystems (npm, Go, Python, Java, Swift, GitHub Actions, Docker, AWS Bedrock). EFFICIENCY TIP: When checking multiple packages, pass them all in a single call using the 'data' parameter rather than making separate calls for each package - this is significantly more efficient than individual calls per package."),
 		mcp.WithString("ecosystem",
 			mcp.Description("Package ecosystem to search. Options: 'npm' (Node.js packages), 'go' (Go modules), 'python' (PyPI packages), 'python-pyproject' (pyproject.toml format), 'java-maven' (Maven dependencies), 'java-gradle' (Gradle dependencies), 'swift' (Swift Package Manager), 'github-actions' (GitHub Actions), 'docker' (container images), 'bedrock' (AWS Bedrock models)"),
 			mcp.Enum("npm", "go", "python", "python-pyproject", "java-maven", "java-gradle", "swift", "github-actions", "docker", "bedrock"),
