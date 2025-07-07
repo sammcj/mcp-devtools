@@ -18,7 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GetComponentExamplesTool defines the tool for getting shadcn/ui component examples.
+// GetComponentExamplesTool defines the tool for getting shadcn ui component examples.
 type GetComponentExamplesTool struct {
 	client HTTPClient
 }
@@ -27,7 +27,7 @@ type GetComponentExamplesTool struct {
 func (t *GetComponentExamplesTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"shadcn_get_component_examples",
-		mcp.WithDescription("Get usage examples for a specific shadcn/ui component."),
+		mcp.WithDescription("Get usage examples for a specific shadcn ui component."),
 		mcp.WithString("componentName", mcp.Description("The name of the component (e.g., 'button', 'accordion')."), mcp.Required()),
 	)
 }
@@ -38,7 +38,7 @@ func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.L
 	if !ok || componentName == "" {
 		return nil, fmt.Errorf("componentName is a required argument and must be a non-empty string")
 	}
-	logger.Infof("Getting examples for shadcn/ui component: %s", componentName)
+	logger.Infof("Getting examples for shadcn ui component: %s", componentName)
 
 	cacheKey := getComponentExamplesCachePrefix + componentName
 	// Check cache
@@ -114,7 +114,7 @@ func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.L
 				examples = append(examples, ComponentExample{
 					Title:       fmt.Sprintf("%s Demo from GitHub", titleCaser.String(componentName)),
 					Code:        string(bodyBytes),
-					Description: "Example .tsx demo file from the official shadcn/ui GitHub repository.",
+					Description: "Example .tsx demo file from the official shadcn ui GitHub repository.",
 				})
 			}
 		} else {

@@ -16,7 +16,7 @@ type ComponentExample struct {
 	Description string `json:"description,omitempty"`
 }
 
-// ComponentInfo holds all details for a shadcn/ui component.
+// ComponentInfo holds all details for a shadcn ui component.
 type ComponentInfo struct {
 	Name         string                   `json:"name"`
 	Description  string                   `json:"description"`

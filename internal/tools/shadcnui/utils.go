@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	// listComponentsCacheKey is the cache key for the list of all shadcn/ui components.
+	// listComponentsCacheKey is the cache key for the list of all shadcn ui components.
 	listComponentsCacheKey = "shadcnui:list_components"
 	// listComponentsCacheTTL is the TTL for the component list cache.
 	listComponentsCacheTTL = 24 * time.Hour

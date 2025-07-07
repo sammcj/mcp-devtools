@@ -18,8 +18,8 @@ func TestUnifiedShadcnTool_Definition(t *testing.T) {
 
 	// Test that description contains key phrases
 	desc := definition.Description
-	if !testutils.Contains(desc, "shadcn/ui components") || !testutils.Contains(desc, "list") {
-		t.Errorf("Expected description to contain key phrases about shadcn/ui components and actions, got: %s", desc)
+	if !testutils.Contains(desc, "shadcn ui components") || !testutils.Contains(desc, "list") {
+		t.Errorf("Expected description to contain key phrases about shadcn ui components and actions, got: %s", desc)
 	}
 
 	// Test input schema exists

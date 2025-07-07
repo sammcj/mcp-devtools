@@ -35,7 +35,7 @@ func init() {
 func (t *SearchPackagesTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"search_packages",
-		mcp.WithDescription("Search for packages (by name) and check versions across multiple ecosystems (npm, Go, Python, Java, Swift, GitHub Actions, Docker, AWS Bedrock). EFFICIENCY TIP: When checking multiple packages, pass them all in a single call using the 'data' parameter rather than making separate calls for each package - this is significantly more efficient than individual calls per package."),
+		mcp.WithDescription("Search for packages / libraries (by name) and check versions across multiple ecosystems (npm, Go, Python, Java, Swift, GitHub Actions, Docker, AWS Bedrock). This tool is especially useful when writing software and adding dependencies to projects to ensure you get the latest stable version. TIP: When checking multiple packages, pass them all in a single call using the 'data' parameter rather than making separate calls for each package - this is significantly more efficient than individual calls per package."),
 		mcp.WithString("ecosystem",
 			mcp.Description("Package ecosystem to search. Options: 'npm' (Node.js packages), 'go' (Go modules), 'python' (PyPI packages), 'python-pyproject' (pyproject.toml format), 'java-maven' (Maven dependencies), 'java-gradle' (Gradle dependencies), 'swift' (Swift Package Manager), 'github-actions' (GitHub Actions), 'docker' (container images), 'bedrock' (AWS Bedrock models)"),
 			mcp.Enum("npm", "go", "python", "python-pyproject", "java-maven", "java-gradle", "swift", "github-actions", "docker", "bedrock"),
@@ -46,10 +46,10 @@ func (t *SearchPackagesTool) Definition() mcp.Tool {
 			mcp.Required(),
 		),
 mcp.WithObject("data",
-mcp.Description("Ecosystem-specific data object for checking multiple packages, structure depends on the ecosystem (e.g., for python: `[\"requests\", \"numpy\"]`, for npm: `{\"react\": \"latest\", \"lodash\": \"^4.0.0\"}`). (Optional)"),
+mcp.Description("Ecosystem-specific data object for checking multiple packages / libraries, structure depends on the ecosystem (e.g., for python: `[\"requests\", \"numpy\"]`, for npm: `{\"react\": \"latest\", \"lodash\": \"^4.0.0\"}`). (Optional)"),
 ),
 		mcp.WithObject("constraints",
-			mcp.Description("Constraints for specific packages (version constraints, exclusions, etc.) (Optional)"),
+			mcp.Description("Constraints for specific packages / libraries (version constraints, exclusions, etc.) (Optional)"),
 		),
 		mcp.WithString("action",
 			mcp.Description("Action for specific ecosystems. For bedrock: 'list', 'search', 'get'. For docker: 'tags', 'info'. Defaults to appropriate action for ecosystem. (Optional)"),

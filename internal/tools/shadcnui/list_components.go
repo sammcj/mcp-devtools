@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ListShadcnComponentsTool defines the tool for listing shadcn/ui components.
+// ListShadcnComponentsTool defines the tool for listing shadcn ui components.
 // listComponentsCacheKey and listComponentsCacheTTL are now in utils.go
 type ListShadcnComponentsTool struct {
 	client HTTPClient
@@ -24,19 +24,19 @@ type ListShadcnComponentsTool struct {
 func (t *ListShadcnComponentsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"shadcn_list_components",
-		mcp.WithDescription("Get a list of all available shadcn/ui components."),
+		mcp.WithDescription("Get a list of all available shadcn ui components."),
 	// No input schema needed as it's an empty object.
 	)
 }
 
 // Execute performs the tool's action.
 func (t *ListShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
-	logger.Info("Listing shadcn/ui components")
+	logger.Info("Listing shadcn ui components")
 
 	// Check cache
 	if cachedData, ok := cache.Load(listComponentsCacheKey); ok {
 		if entry, ok := cachedData.(CacheEntry); ok && time.Since(entry.Timestamp) < listComponentsCacheTTL {
-			logger.Debug("Returning cached list of shadcn/ui components")
+			logger.Debug("Returning cached list of shadcn ui components")
 			return packageversions.NewToolResultJSON(entry.Data) // Use packageversions helper
 		}
 	}
@@ -84,7 +84,7 @@ func (t *ListShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.L
 		Timestamp: time.Now(),
 	})
 
-	logger.WithField("count", len(components)).Info("Successfully fetched and parsed shadcn/ui components list")
+	logger.WithField("count", len(components)).Info("Successfully fetched and parsed shadcn ui components list")
 
 	return packageversions.NewToolResultJSON(components) // Use packageversions helper
 }

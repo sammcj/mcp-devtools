@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GetComponentDetailsTool defines the tool for getting shadcn/ui component details.
+// GetComponentDetailsTool defines the tool for getting shadcn ui component details.
 type GetComponentDetailsTool struct {
 	client HTTPClient
 }
@@ -23,7 +23,7 @@ type GetComponentDetailsTool struct {
 func (t *GetComponentDetailsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"shadcn_get_component_details",
-		mcp.WithDescription("Get detailed information about a specific shadcn/ui component."),
+		mcp.WithDescription("Get detailed information about a specific shadcn ui component."),
 		mcp.WithString("componentName", mcp.Description("The name of the component (e.g., 'button', 'accordion')."), mcp.Required()),
 	)
 }
@@ -34,7 +34,7 @@ func (t *GetComponentDetailsTool) Execute(ctx context.Context, logger *logrus.Lo
 	if !ok || componentName == "" {
 		return nil, fmt.Errorf("componentName is a required argument and must be a non-empty string")
 	}
-	logger.Infof("Getting details for shadcn/ui component: %s", componentName)
+	logger.Infof("Getting details for shadcn ui component: %s", componentName)
 
 	cacheKey := getComponentDetailsCachePrefix + componentName
 	// Check cache

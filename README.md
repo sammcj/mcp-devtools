@@ -10,7 +10,7 @@ graph TD
     A --> C[Internet Search]
     A --> D[Fetch Webpage]
     A --> E[Think Tool]
-    A --> F[Shadcn/UI Components]
+    A --> F[shadcn ui Components]
 
     B --> B1[Search Packages]
     B1 --> B1A[npm]
@@ -51,7 +51,7 @@ graph TD
     - [Package Versions](#package-versions)
     - [Internet Search](#internet-search)
     - [Think Tool](#think-tool)
-    - [Shadcn/UI Components](#shadcnui-components)
+    - [shadcn ui Components](#shadcnui-components)
   - [Screenshots](#screenshots)
   - [Installation](#installation)
     - [Version Information](#version-information)
@@ -61,7 +61,7 @@ graph TD
   - [Tools](#tools)
     - [Think Tool](#think-tool-1)
     - [Unified Package Search](#unified-package-search)
-    - [Shadcn/UI Components](#shadcnui-components-1)
+    - [shadcn ui Components](#shadcnui-components-1)
     - [Internet Search (Brave Search API)](#internet-search-brave-search-api)
   - [Configuration](#configuration-1)
     - [Environment Variables](#environment-variables)
@@ -117,10 +117,10 @@ All package ecosystems are now accessible through the single `search_packages` t
 - **Use Cases**: Analysing tool outputs, breaking down multi-step problems, planning sequential actions
 - **Benefits**: Up to 54% improvement in complex scenarios, better consistency, enhanced decision-making
 
-### Shadcn/UI Components
+### shadcn ui Components
 
-- List all available shadcn/ui components
-- Search for shadcn/ui components by keyword
+- List all available shadcn ui components
+- Search for shadcn ui components by keyword
 - Get detailed information (description, installation, usage, props) for a specific component
 - Get usage examples for a specific component
 
@@ -512,11 +512,11 @@ Search for specific models:
 }
 ```
 
-### Shadcn/UI Components
+### shadcn ui Components
 
-The `shadcn` tool provides a unified interface for working with shadcn/ui components. Use the `action` parameter to specify what you want to do:
+The `shadcn` tool provides a unified interface for working with shadcn ui components. Use the `action` parameter to specify what you want to do:
 
-List all available shadcn/ui components:
+List all available shadcn ui components:
 
 ```json
 {
@@ -527,7 +527,7 @@ List all available shadcn/ui components:
 }
 ```
 
-Search for shadcn/ui components:
+Search for shadcn ui components:
 
 ```json
 {
@@ -539,7 +539,7 @@ Search for shadcn/ui components:
 }
 ```
 
-Get detailed information for a specific shadcn/ui component:
+Get detailed information for a specific shadcn ui component:
 
 ```json
 {
@@ -551,7 +551,7 @@ Get detailed information for a specific shadcn/ui component:
 }
 ```
 
-Get usage examples for a specific shadcn/ui component:
+Get usage examples for a specific shadcn ui component:
 
 ```json
 {

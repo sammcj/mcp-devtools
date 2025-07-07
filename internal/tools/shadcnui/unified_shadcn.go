@@ -19,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// UnifiedShadcnTool provides a single interface for all shadcn/ui operations
+// UnifiedShadcnTool provides a single interface for all shadcn ui operations
 type UnifiedShadcnTool struct {
 	client HTTPClient
 }
@@ -34,10 +34,10 @@ func init() {
 func (t *UnifiedShadcnTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"shadcn",
-		mcp.WithDescription(`shadcn/ui components. Supports listing, searching, getting details, and examples for shadcn/ui components.
+		mcp.WithDescription(`shadcn ui components. Supports listing, searching, getting details, and examples for shadcn ui components.
 
 Actions:
-- list: Get all available shadcn/ui components
+- list: Get all available shadcn ui components
 - search: Search components by keyword in name or description
 - details: Get detailed information about a specific component
 - examples: Get usage examples for a specific component
@@ -99,12 +99,12 @@ func (t *UnifiedShadcnTool) Execute(ctx context.Context, logger *logrus.Logger, 
 
 // executeList handles the list action
 func (t *UnifiedShadcnTool) executeList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
-	logger.Info("Listing shadcn/ui components")
+	logger.Info("Listing shadcn ui components")
 
 	// Check cache
 	if cachedData, ok := cache.Load(listComponentsCacheKey); ok {
 		if entry, ok := cachedData.(CacheEntry); ok && time.Since(entry.Timestamp) < listComponentsCacheTTL {
-			logger.Debug("Returning cached list of shadcn/ui components")
+			logger.Debug("Returning cached list of shadcn ui components")
 			return packageversions.NewToolResultJSON(entry.Data)
 		}
 	}
@@ -114,19 +114,19 @@ func (t *UnifiedShadcnTool) executeList(ctx context.Context, logger *logrus.Logg
 		return nil, fmt.Errorf("failed to fetch components list: %w", err)
 	}
 
-	logger.WithField("count", len(components)).Info("Successfully fetched and parsed shadcn/ui components list")
+	logger.WithField("count", len(components)).Info("Successfully fetched and parsed shadcn ui components list")
 	return packageversions.NewToolResultJSON(components)
 }
 
 // executeSearch handles the search action
 func (t *UnifiedShadcnTool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
-	logger.Infof("Searching shadcn/ui components with query: %s", query)
+	logger.Infof("Searching shadcn ui components with query: %s", query)
 
 	// Get component list (from cache or fetch)
 	var allComponents []ComponentInfo
 	if cachedData, found := cache.Load(listComponentsCacheKey); found {
 		if entry, valid := cachedData.(CacheEntry); valid && time.Since(entry.Timestamp) < listComponentsCacheTTL {
-			logger.Debug("Using cached list of shadcn/ui components for search")
+			logger.Debug("Using cached list of shadcn ui components for search")
 			allComponents = entry.Data.([]ComponentInfo)
 		}
 	}
@@ -156,7 +156,7 @@ func (t *UnifiedShadcnTool) executeSearch(ctx context.Context, logger *logrus.Lo
 
 // executeDetails handles the details action
 func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
-	logger.Infof("Getting details for shadcn/ui component: %s", componentName)
+	logger.Infof("Getting details for shadcn ui component: %s", componentName)
 
 	cacheKey := getComponentDetailsCachePrefix + componentName
 	// Check cache
@@ -232,7 +232,7 @@ func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.L
 
 // executeExamples handles the examples action
 func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
-	logger.Infof("Getting examples for shadcn/ui component: %s", componentName)
+	logger.Infof("Getting examples for shadcn ui component: %s", componentName)
 
 	cacheKey := getComponentExamplesCachePrefix + componentName
 	// Check cache
@@ -300,7 +300,7 @@ func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.
 				examples = append(examples, ComponentExample{
 					Title:       fmt.Sprintf("%s Demo from GitHub", titleCaser.String(componentName)),
 					Code:        string(bodyBytes),
-					Description: "Example .tsx demo file from the official shadcn/ui GitHub repository.",
+					Description: "Example .tsx demo file from the official shadcn ui GitHub repository.",
 				})
 			}
 		} else {

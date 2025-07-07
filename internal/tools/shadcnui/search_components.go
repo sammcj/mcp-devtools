@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SearchShadcnComponentsTool defines the tool for searching shadcn/ui components.
+// SearchShadcnComponentsTool defines the tool for searching shadcn ui components.
 type SearchShadcnComponentsTool struct {
 	client HTTPClient
 	// No direct dependency on ListShadcnComponentsTool, but uses its cache key and similar logic.
@@ -24,7 +24,7 @@ type SearchShadcnComponentsTool struct {
 func (t *SearchShadcnComponentsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"shadcn_search_components",
-		mcp.WithDescription("Search for shadcn/ui components by keyword in name or description."),
+		mcp.WithDescription("Search for shadcn ui components by keyword in name or description."),
 		mcp.WithString("query", mcp.Description("The keyword to search for."), mcp.Required()),
 	)
 }
@@ -80,7 +80,7 @@ func (t *SearchShadcnComponentsTool) fetchAndCacheComponentList(logger *logrus.L
 		Data:      components,
 		Timestamp: time.Now(),
 	})
-	logger.WithField("count", len(components)).Info("Fetched and cached shadcn/ui components list for search.")
+	logger.WithField("count", len(components)).Info("Fetched and cached shadcn ui components list for search.")
 	return components, nil
 }
 
@@ -90,14 +90,14 @@ func (t *SearchShadcnComponentsTool) Execute(ctx context.Context, logger *logrus
 	if !ok || query == "" {
 		return nil, fmt.Errorf("query is a required argument and must be a non-empty string")
 	}
-	logger.Infof("Searching shadcn/ui components with query: %s", query)
+	logger.Infof("Searching shadcn ui components with query: %s", query)
 
 	var allComponents []ComponentInfo
 
 	// Try to load component list from cache using shared constants from utils.go
 	if cachedData, found := cache.Load(listComponentsCacheKey); found {
 		if entry, valid := cachedData.(CacheEntry); valid && time.Since(entry.Timestamp) < listComponentsCacheTTL {
-			logger.Debug("Using cached list of shadcn/ui components for search")
+			logger.Debug("Using cached list of shadcn ui components for search")
 			allComponents = entry.Data.([]ComponentInfo) // Type assertion
 		}
 	}

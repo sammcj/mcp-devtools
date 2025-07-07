@@ -29,18 +29,14 @@ func init() {
 func (t *FetchURLTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"fetch_url",
-		mcp.WithDescription(`Fetches a URL from the internet and converts HTML content to readable markdown format.
+		mcp.WithDescription(`Fetches content from URL and returns it in a readable markdown format.
 
-This tool enables fetching web content for AI analysis and processing. It automatically converts HTML to clean markdown, filters out navigation elements, ads, and other non-content elements, and supports pagination for large content.
+This tool enables fetching web content for analysis and processing.
 
-Features:
-- Automatic HTML-to-markdown conversion for better readability
-- Content type detection (HTML, plain text, binary)
-- Pagination support for large content
-- Context-aware HTTP requests with proper error handling
-- Raw content option for debugging
+Additional features include pagination support, context-aware HTTP requests, raw content option.
 
-Use this when you need to fetch and analyse web content, documentation, articles, or any web-based information.`),
+This tool is useful for fetching web content - for example to get documentation, information from blog posts, changelogs, implementation guidelines and content from search results.
+`),
 		mcp.WithString("url",
 			mcp.Required(),
 			mcp.Description("The URL to fetch (must be http or https)"),
