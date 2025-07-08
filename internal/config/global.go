@@ -12,9 +12,9 @@ import (
 // StateFile represents the cached state for mcp-devtools
 type StateFile struct {
 	// Python configuration state
-	PythonPath       string `json:"python_path,omitempty"`
-	DoclingAvailable bool   `json:"docling_available"`
-	LastChecked      int64  `json:"last_checked,omitempty"` // Unix timestamp
+	PythonPath         string `json:"python_path,omitempty"`
+	DoclingAvailable   bool   `json:"docling_available"`
+	DoclingLastChecked int64  `json:"docling_last_checked,omitempty"` // Unix timestamp
 
 	// Other cached state can be added here in the future
 	mu sync.RWMutex `json:"-"`
@@ -75,7 +75,7 @@ func (s *StateFile) SetPythonPath(path string, doclingAvailable bool) error {
 	s.mu.Lock()
 	s.PythonPath = path
 	s.DoclingAvailable = doclingAvailable
-	s.LastChecked = getCurrentTimestamp()
+	s.DoclingLastChecked = getCurrentTimestamp()
 	s.mu.Unlock()
 
 	return s.Save()
@@ -93,12 +93,12 @@ func (s *StateFile) IsStale() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if s.LastChecked == 0 {
+	if s.DoclingLastChecked == 0 {
 		return true
 	}
 
-	// Consider stale if older than 24 hours
-	return getCurrentTimestamp()-s.LastChecked > 24*60*60
+	// Consider stale if older than 2 months
+	return getCurrentTimestamp()-s.DoclingLastChecked > 60*60*24*30*2 // 2 months in seconds
 }
 
 // getStatePath returns the path to the global state file
