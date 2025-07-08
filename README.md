@@ -6,50 +6,30 @@ It started as a solution for having to install and run many nodejs and python ba
 
 ```mermaid
 graph TD
-    A[MCP DevTools Server] --> B[Package Versions]
+    A[MCP DevTools Server] --> B[Search Package Versions]
     A --> C[Internet Search]
     A --> D[Fetch Webpage]
-    A --> E[Think Tool]
-    A --> F[shadcn ui Components]
+    A --> E[Think]
+    A --> F[ShadCN UI Components]
+    A --> G[Memory]
 
-    B --> B1[Search Packages]
-    B1 --> B1A[npm]
-    B1 --> B1B[pip]
-    B1 --> B1C[go]
-    B1 --> B1D[java]
-    B1 --> B1E[swift]
-    B1 --> B1F[docker]
-    B1 --> B1G[github_actions]
-    B1 --> B1H[aws_bedrock]
-    B1D --> B1D1[maven]
-    B1D --> B1D2[gradle]
-
-    C --> C1[Brave Search]
-    C1 --> C1A[Web]
-    C1 --> C1B[Image]
-    C1 --> C1C[News]
-    C1 --> C1D[Local]
-    C1 --> C1E[Video]
-
+    C --> C1[Brave]
     C --> C2[SearXNG]
-    C2 --> C2A[Web]
-    C2 --> C2B[Image]
-    C2 --> C2C[News]
-    C2 --> C2D[View]
-
     C --> C3[DuckDuckGo]
-
-    F --> F1[Shadcn UI Components]
 
     D --> D1[Fetch URL as Markdown]
 
     classDef toolCategory fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef tool fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
     classDef searchTool fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
+    classDef memoryTool fill:#FFF3E6,stroke:#FF9800,color:#F57C00
+    classDef webTool fill:#E6F7FF,stroke:#2196F3,color:#1976D2
 
     class B,C,D,E,F toolCategory
     class B1,B2,E1,F1 tool
-    class B1,C1,D1,F1 searchTool
+    class B1,C1,C2,C3 searchTool
+    class G memoryTool
+    class D1 webTool
 ```
 
 ---
@@ -59,6 +39,7 @@ graph TD
     - [Package Versions](#package-versions)
     - [Internet Search](#internet-search)
     - [Think Tool](#think-tool)
+    - [Memory Tool](#memory-tool)
     - [shadcn ui Components](#shadcn-ui-components)
   - [Screenshots](#screenshots)
   - [Installation](#installation)
@@ -148,6 +129,17 @@ You can override the default provider by specifying the `provider` parameter in 
 - **Purpose**: Enable structured reasoning and analysis during complex workflows
 - **Use Cases**: Analysing tool outputs, breaking down multi-step problems, planning sequential actions
 - **Benefits**: Up to 54% improvement in complex scenarios, better consistency, enhanced decision-making
+
+### Memory Tool
+
+**Persistent Knowledge Graph Storage**: A tool that provides persistent memory capabilities for AI agents using a structured knowledge graph approach.
+
+- **Entities**: Named nodes with types and observations (facts)
+- **Relations**: Directed connections between entities
+- **Namespaces**: Separate memory spaces for different projects/contexts
+- **Fuzzy Search**: Enhanced search capabilities with relevance scoring
+- **Concurrent Access**: Safe file operations with locking mechanisms
+- **Configurable Storage**: Environment variable configuration for storage location
 
 ### shadcn ui Components
 
@@ -738,6 +730,8 @@ Basic web search using DuckDuckGo (no API key required):
 - `SEARXNG_BASE_URL`: (optional) Required for SearXNG search tools to be enabled (e.g., `https://your-searxng-instance.com`)
 - `SEARXNG_USERNAME`: (optional) Username for SearXNG authentication
 - `SEARXNG_PASSWORD`: (optional) Password for SearXNG authentication
+- `MEMORY_FILE_PATH`: (optional) Base directory or file path for memory storage (default: `~/.mcp-devtools/`)
+- `MEMORY_ENABLE_FUZZY_SEARCH`: (optional) Enable fuzzy search capabilities for memory tool (default: `true`)
 - `DISABLED_FUNCTIONS`: (optional) Comma-separated list of function names to disable, disabled functions will not appear in the tools list presented even if explicitly requested. e.g: `DISABLED_FUNCTIONS="shadcn_get_component_details,shadcn_get_component_examples,brave_local_search,brave_video_search"`
 
 ## Architecture
