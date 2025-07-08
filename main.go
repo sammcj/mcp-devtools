@@ -16,6 +16,7 @@ import (
 
 	// Import all tool packages to register them
 	_ "github.com/sammcj/mcp-devtools/internal/tools/internetsearch/unified"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/memory"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/think"
