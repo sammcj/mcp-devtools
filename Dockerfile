@@ -57,12 +57,12 @@ COPY internal/tools/docprocessing/docling_processor.py ./internal/tools/docproce
 RUN mkdir -p /app/.mcp-devtools/docling-cache
 
 # Set environment variables for document processing
-ENV DOCLING_PYTHON_PATH=/usr/local/bin/python3
-ENV DOCLING_CACHE_DIR=/app/.mcp-devtools/docling-cache
-ENV DOCLING_CACHE_ENABLED=true
-ENV DOCLING_HARDWARE_ACCELERATION=auto
-ENV DOCLING_TIMEOUT=300
-ENV DOCLING_MAX_FILE_SIZE=100
+# ENV DOCLING_PYTHON_PATH=/usr/local/bin/python3
+# ENV DOCLING_CACHE_DIR=/app/.mcp-devtools/docling-cache
+# ENV DOCLING_CACHE_ENABLED=true
+# ENV DOCLING_HARDWARE_ACCELERATION=auto
+# ENV DOCLING_TIMEOUT=300
+# ENV DOCLING_MAX_FILE_SIZE=100
 # ENV MEMORY_FILE_PATH=
 # ENV BRAVE_API_KEY=
 # ENV SEARXNG_BASE_URL=
