@@ -253,8 +253,6 @@ func getCommonPythonPaths() []string {
 	commonVenvPaths := []string{
 		filepath.Join(homeDir, ".venv", "bin"),
 		filepath.Join(homeDir, "venv", "bin"),
-		filepath.Join(homeDir, ".virtualenv", "bin"),
-		filepath.Join(homeDir, "virtualenv", "bin"),
 		filepath.Join(homeDir, ".pyenv", "shims"),
 	}
 
@@ -271,7 +269,6 @@ func getCommonPythonPaths() []string {
 	if runtime.GOOS == "darwin" {
 		brewPaths := []string{
 			"/opt/homebrew/bin", // Apple Silicon
-			"/usr/local/bin",    // Intel Mac
 			"/opt/homebrew/opt/python@3.13/bin",
 			"/opt/homebrew/opt/python@3.12/bin",
 			"/opt/homebrew/opt/python@3.11/bin",
@@ -280,6 +277,7 @@ func getCommonPythonPaths() []string {
 			"/usr/local/opt/python@3.12/bin",
 			"/usr/local/opt/python@3.11/bin",
 			"/usr/local/opt/python@3.10/bin",
+			"/usr/local/bin", // Intel Mac
 		}
 
 		for _, brewPath := range brewPaths {
