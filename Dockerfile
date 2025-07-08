@@ -46,7 +46,7 @@ RUN pip install --no-cache-dir docling
 COPY --from=builder /app/mcp-devtools .
 
 # Copy the Python scripts
-COPY internal/tools/docprocessing/docling_processor.py ./scripts/
+COPY internal/tools/docprocessing/docling_processor.py ./internal/tools/docprocessing/
 
 # Create cache directory
 RUN mkdir -p /app/.mcp-devtools/docling-cache
