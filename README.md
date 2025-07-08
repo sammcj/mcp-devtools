@@ -31,6 +31,14 @@ graph TD
     C1 --> C1D[Local]
     C1 --> C1E[Video]
 
+    C --> C2[SearXNG]
+    C2 --> C2A[Web]
+    C2 --> C2B[Image]
+    C2 --> C2C[News]
+    C2 --> C2D[View]
+
+    C --> C3[DuckDuckGo]
+
     F --> F1[Shadcn UI Components]
 
     D --> D1[Fetch URL as Markdown]
