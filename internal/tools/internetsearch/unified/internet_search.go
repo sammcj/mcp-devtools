@@ -10,6 +10,7 @@ import (
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/brave"
+	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/duckduckgo"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/searxng"
 	"github.com/sirupsen/logrus"
 )
@@ -41,6 +42,11 @@ func init() {
 		tool.providers["searxng"] = searxngProvider
 	}
 
+	// DuckDuckGo is always available since it doesn't require an API key
+	if duckduckgoProvider := duckduckgo.NewDuckDuckGoProvider(); duckduckgoProvider != nil && duckduckgoProvider.IsAvailable() {
+		tool.providers["duckduckgo"] = duckduckgoProvider
+	}
+
 	// Only register if we have at least one provider
 	if len(tool.providers) > 0 {
 		registry.Register(tool)
@@ -68,9 +74,16 @@ func (t *InternetSearchTool) Definition() mcp.Tool {
 		typesList = append(typesList, searchType)
 	}
 
-	// Default provider (prefer brave if available, otherwise first available)
-	defaultProvider := "brave"
-	if _, exists := t.providers[defaultProvider]; !exists {
+	// Default provider priority: brave > searxng > duckduckgo
+	var defaultProvider string
+	if _, exists := t.providers["brave"]; exists {
+		defaultProvider = "brave"
+	} else if _, exists := t.providers["searxng"]; exists {
+		defaultProvider = "searxng"
+	} else if _, exists := t.providers["duckduckgo"]; exists {
+		defaultProvider = "duckduckgo"
+	} else {
+		// Fallback to first available provider
 		for name := range t.providers {
 			defaultProvider = name
 			break
@@ -188,9 +201,16 @@ func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 		return nil, fmt.Errorf("missing or invalid required parameter: query")
 	}
 
-	// Get provider (default to brave if available, otherwise first available)
-	providerName := "brave"
-	if _, exists := t.providers[providerName]; !exists {
+	// Get provider using the same priority logic as in Definition
+	var providerName string
+	if _, exists := t.providers["brave"]; exists {
+		providerName = "brave"
+	} else if _, exists := t.providers["searxng"]; exists {
+		providerName = "searxng"
+	} else if _, exists := t.providers["duckduckgo"]; exists {
+		providerName = "duckduckgo"
+	} else {
+		// Fallback to first available provider
 		for name := range t.providers {
 			providerName = name
 			break

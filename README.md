@@ -120,7 +120,18 @@ The server provides unified internet search capabilities through multiple provid
 - **News Search**: Search for news articles and recent events
 - **Video Search**: Search for videos through SearXNG
 
-**Provider Selection**: The internet search tool automatically detects available providers and allows you to specify which one to use. If both providers are configured, you can choose between them using the `provider` parameter.
+#### DuckDuckGo
+
+**Note**: DuckDuckGo is always available as it doesn't require an API key or configuration. However, it provides lower quality results compared to Brave Search or SearXNG and only supports web search.
+
+- **Web Search**: General web search using DuckDuckGo HTML interface
+
+**Provider Selection**: The internet search tool automatically detects available providers and prioritises them as follows:
+1. **Brave** (if API key is configured) - Highest quality results
+2. **SearXNG** (if base URL is configured) - Privacy-focused with good quality
+3. **DuckDuckGo** (always available) - Basic web search, no API key required
+
+You can override the default provider by specifying the `provider` parameter in your search request.
 
 ### Think Tool
 
@@ -286,13 +297,13 @@ The `think` tool provides a structured thinking space for AI agents during compl
 {
   "name": "think",
   "arguments": {
-    "thought": "I need to analyze the API response before deciding which action to take next..."
+    "thought": "I need to analyse the API response before deciding which action to take next..."
   }
 }
 ```
 
 **When to use the think tool:**
-- Analyzing tool outputs before taking action
+- Analysing tool outputs before taking action
 - Breaking down complex multi-step problems
 - Reasoning through policy decisions or constraints
 - Planning sequential actions where mistakes are costly
@@ -654,6 +665,7 @@ Search for videos:
 ```json
 {
   "name": "internet_search",
+  "name": "internet_search",
   "arguments": {
     "type": "video",
     "query": "golang tutorial",
@@ -673,9 +685,25 @@ Search for local businesses and places (Brave only, requires Pro API plan):
   "name": "internet_search",
   "arguments": {
     "type": "local",
-    "query": "pizza near Central Park",
+    "query": "Penny farthing bicycle shops in Fitzroy",
     "count": 5,
     "provider": "brave"
+  }
+}
+```
+
+#### DuckDuckGo Web Search
+
+Basic web search using DuckDuckGo (no API key required):
+
+```json
+{
+  "name": "internet_search",
+  "arguments": {
+    "type": "web",
+    "query": "golang best practices",
+    "count": 5,
+    "provider": "duckduckgo"
   }
 }
 ```

@@ -4,7 +4,7 @@ A simple MCP tool that provides a structured thinking space for AI agents during
 
 ## Overview
 
-The `think` tool allows AI agents to pause and reason about complex problems, analyze tool outputs, and plan sequential actions. It simply returns the provided thought string, creating a dedicated space for structured reasoning without any side effects.
+The `think` tool allows AI agents to pause and reason about complex problems, analyse tool outputs, and plan sequential actions. It simply returns the provided thought string, creating a dedicated space for structured reasoning without any side effects.
 
 ## Based on Research
 
