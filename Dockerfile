@@ -45,7 +45,7 @@ RUN apk --no-cache add \
     make
 
 # Install Python dependencies for document processing
-RUN pip install --no-cache-dir docling
+# RUN pip install --no-cache-dir docling
 
 # Copy the binary from the builder stage
 COPY --from=builder /app/mcp-devtools .
