@@ -31,6 +31,14 @@ graph TD
     C1 --> C1D[Local]
     C1 --> C1E[Video]
 
+    C --> C2[SearXNG]
+    C2 --> C2A[Web]
+    C2 --> C2B[Image]
+    C2 --> C2C[News]
+    C2 --> C2D[View]
+
+    C --> C3[DuckDuckGo]
+
     F --> F1[Shadcn UI Components]
 
     D --> D1[Fetch URL as Markdown]
@@ -51,7 +59,7 @@ graph TD
     - [Package Versions](#package-versions)
     - [Internet Search](#internet-search)
     - [Think Tool](#think-tool)
-    - [shadcn ui Components](#shadcnui-components)
+    - [shadcn ui Components](#shadcn-ui-components)
   - [Screenshots](#screenshots)
   - [Installation](#installation)
     - [Version Information](#version-information)
@@ -61,8 +69,8 @@ graph TD
   - [Tools](#tools)
     - [Think Tool](#think-tool-1)
     - [Unified Package Search](#unified-package-search)
-    - [shadcn ui Components](#shadcnui-components-1)
-    - [Internet Search (Brave Search API)](#internet-search-brave-search-api)
+    - [shadcn ui Components](#shadcn-ui-components-1)
+    - [Internet Search](#internet-search-1)
   - [Configuration](#configuration-1)
     - [Environment Variables](#environment-variables)
   - [Architecture](#architecture)
@@ -99,6 +107,8 @@ All package ecosystems are now accessible through the single `search_packages` t
 
 ### Internet Search
 
+The server provides unified internet search capabilities through multiple providers:
+
 #### Brave Search
 
 **Note**: These tools require a `BRAVE_API_KEY` environment variable to be enabled.
@@ -108,6 +118,28 @@ All package ecosystems are now accessible through the single `search_packages` t
 - **News Search**: Search for news articles and recent events
 - **Local Search**: Search for local businesses and points of interest (requires Pro API plan)
 - **Video Search**: Search for videos with metadata
+
+#### SearXNG
+
+**Note**: These tools require a `SEARXNG_BASE_URL` environment variable to be enabled. Optional authentication can be configured with `SEARXNG_USERNAME` and `SEARXNG_PASSWORD`.
+
+- **Web Search**: General web search using SearXNG instance
+- **Image Search**: Search for images through SearXNG
+- **News Search**: Search for news articles and recent events
+- **Video Search**: Search for videos through SearXNG
+
+#### DuckDuckGo
+
+**Note**: DuckDuckGo is always available as it doesn't require an API key or configuration. However, it provides lower quality results compared to Brave Search or SearXNG and only supports web search.
+
+- **Web Search**: General web search using DuckDuckGo HTML interface
+
+**Provider Selection**: The internet search tool automatically detects available providers and prioritises them as follows:
+1. **Brave** (if API key is configured) - Highest quality results
+2. **SearXNG** (if base URL is configured) - Privacy-focused with good quality
+3. **DuckDuckGo** (always available) - Basic web search, no API key required
+
+You can override the default provider by specifying the `provider` parameter in your search request.
 
 ### Think Tool
 
@@ -273,13 +305,13 @@ The `think` tool provides a structured thinking space for AI agents during compl
 {
   "name": "think",
   "arguments": {
-    "thought": "I need to analyze the API response before deciding which action to take next..."
+    "thought": "I need to analyse the API response before deciding which action to take next..."
   }
 }
 ```
 
 **When to use the think tool:**
-- Analyzing tool outputs before taking action
+- Analysing tool outputs before taking action
 - Breaking down complex multi-step problems
 - Reasoning through policy decisions or constraints
 - Planning sequential actions where mistakes are costly
@@ -563,17 +595,25 @@ Get usage examples for a specific shadcn ui component:
 }
 ```
 
-### Internet Search (Brave Search API)
+### Internet Search
 
-**Configuration**: Set the `BRAVE_API_KEY` environment variable to enable this tool:
+**Configuration**: The internet search tool supports multiple providers. Configure the appropriate environment variables:
 
+**For Brave Search:**
 ```bash
 export BRAVE_API_KEY="your-brave-api-key-here"
 ```
-
 Get your API key from: https://brave.com/search/api/
 
-The `brave_search` tool provides a unified interface for all types of Brave Search operations. Use the `type` parameter to specify the search type:
+**For SearXNG:**
+```bash
+export SEARXNG_BASE_URL="https://your-searxng-instance.com"
+# Optional authentication:
+export SEARXNG_USERNAME="your-username"
+export SEARXNG_PASSWORD="your-password"
+```
+
+The `internet_search` tool provides a unified interface for all internet search operations across different providers. Use the `type` parameter to specify the search type and `provider` to choose between available providers:
 
 #### Web Search
 
@@ -581,11 +621,12 @@ Perform general web searches:
 
 ```json
 {
-  "name": "brave_search",
+  "name": "internet_search",
   "arguments": {
     "type": "web",
     "query": "golang best practices",
     "count": 10,
+    "provider": "brave",
     "offset": 0,
     "freshness": "pw"
   }
@@ -594,15 +635,16 @@ Perform general web searches:
 
 #### Image Search
 
-Search for images (maximum 3 results):
+Search for images:
 
 ```json
 {
-  "name": "brave_search",
+  "name": "internet_search",
   "arguments": {
     "type": "image",
     "query": "golang gopher mascot",
-    "count": 3
+    "count": 3,
+    "provider": "searxng"
   }
 }
 ```
@@ -613,11 +655,12 @@ Search for news articles and recent events:
 
 ```json
 {
-  "name": "brave_search",
+  "name": "internet_search",
   "arguments": {
     "type": "news",
     "query": "artificial intelligence breakthrough",
     "count": 10,
+    "provider": "brave",
     "freshness": "pd"
   }
 }
@@ -629,27 +672,46 @@ Search for videos:
 
 ```json
 {
-  "name": "brave_search",
+  "name": "internet_search",
+  "name": "internet_search",
   "arguments": {
     "type": "video",
     "query": "golang tutorial",
     "count": 10,
-    "freshness": "pm"
+    "provider": "searxng",
+    "time_range": "month"
   }
 }
 ```
 
 #### Local Search
 
-Search for local businesses and places (requires Pro API plan):
+Search for local businesses and places (Brave only, requires Pro API plan):
 
 ```json
 {
-  "name": "brave_search",
+  "name": "internet_search",
   "arguments": {
     "type": "local",
-    "query": "pizza near Central Park",
-    "count": 5
+    "query": "Penny farthing bicycle shops in Fitzroy",
+    "count": 5,
+    "provider": "brave"
+  }
+}
+```
+
+#### DuckDuckGo Web Search
+
+Basic web search using DuckDuckGo (no API key required):
+
+```json
+{
+  "name": "internet_search",
+  "arguments": {
+    "type": "web",
+    "query": "golang best practices",
+    "count": 5,
+    "provider": "duckduckgo"
   }
 }
 ```
@@ -673,6 +735,9 @@ Search for local businesses and places (requires Pro API plan):
 ### Environment Variables
 
 - `BRAVE_API_KEY`: (optional) Required for Brave search tools to be enabled
+- `SEARXNG_BASE_URL`: (optional) Required for SearXNG search tools to be enabled (e.g., `https://your-searxng-instance.com`)
+- `SEARXNG_USERNAME`: (optional) Username for SearXNG authentication
+- `SEARXNG_PASSWORD`: (optional) Password for SearXNG authentication
 - `DISABLED_FUNCTIONS`: (optional) Comma-separated list of function names to disable, disabled functions will not appear in the tools list presented even if explicitly requested. e.g: `DISABLED_FUNCTIONS="shadcn_get_component_details,shadcn_get_component_examples,brave_local_search,brave_video_search"`
 
 ## Architecture

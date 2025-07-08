@@ -19,7 +19,7 @@ func TestFetchURLTool_Definition(t *testing.T) {
 
 	// Test that description contains key phrases
 	desc := definition.Description
-	if !testutils.Contains(desc, "Fetches a URL") || !testutils.Contains(desc, "markdown") {
+	if !testutils.Contains(desc, "Fetches content from URL") || !testutils.Contains(desc, "markdown") {
 		t.Errorf("Expected description to contain key phrases about URL fetching and markdown conversion, got: %s", desc)
 	}
 

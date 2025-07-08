@@ -15,7 +15,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	// Import all tool packages to register them
-	_ "github.com/sammcj/mcp-devtools/internal/tools/internetsearch/brave"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/internetsearch/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/think"
