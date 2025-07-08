@@ -41,6 +41,7 @@ RUN apk --no-cache add \
     libxslt-dev \
     py3-pip \
     g++ \
+    cython \
     make
 
 # Install Python dependencies for document processing
@@ -62,7 +63,12 @@ ENV DOCLING_CACHE_ENABLED=true
 ENV DOCLING_HARDWARE_ACCELERATION=auto
 ENV DOCLING_TIMEOUT=300
 ENV DOCLING_MAX_FILE_SIZE=100
+# ENV MEMORY_FILE_PATH=
 # ENV BRAVE_API_KEY=
+# ENV SEARXNG_BASE_URL=
+# ENV SEARXNG_USERNAME=
+# ENV SEARXNG_PASSWORD=
+# ENV DISABLED_FUNCTIONS=
 
 VOLUME ["/app/.mcp-devtools/docling-cache"]
 
