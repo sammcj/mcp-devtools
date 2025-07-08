@@ -31,9 +31,14 @@ func (t *FetchURLTool) Definition() mcp.Tool {
 		"fetch_url",
 		mcp.WithDescription(`Fetches content from URL and returns it in a readable markdown format.
 
-This tool enables fetching web content for analysis and processing.
+This tool enables fetching web content for analysis and processing with enhanced pagination support.
 
-Additional features include pagination support, context-aware HTTP requests, raw content option.
+Response includes detailed pagination information:
+- total_lines: Total number of lines in the content
+- start_line/end_line: Line numbers for the returned chunk
+- remaining_lines: Number of lines remaining after current chunk
+- next_chunk_preview: Preview of what comes next
+- approx_tokens: Estimated token count for the returned content
 
 This tool is useful for fetching web content - for example to get documentation, information from blog posts, changelogs, implementation guidelines and content from search results.
 `),
@@ -42,8 +47,8 @@ This tool is useful for fetching web content - for example to get documentation,
 			mcp.Description("The URL to fetch (must be http or https)"),
 		),
 		mcp.WithNumber("max_length",
-			mcp.Description("Maximum number of characters to return (default: 5000, max: 1000000)"),
-			mcp.DefaultNumber(5000),
+			mcp.Description("Maximum number of characters to return (default: 6000, max: 1000000)"),
+			mcp.DefaultNumber(6000),
 		),
 		mcp.WithNumber("start_index",
 			mcp.Description("Starting character index for pagination (default: 0)"),
@@ -127,7 +132,7 @@ func (t *FetchURLTool) parseRequest(args map[string]interface{}) (*FetchURLReque
 
 	request := &FetchURLRequest{
 		URL:        url,
-		MaxLength:  5000,  // Default
+		MaxLength:  6000,  // Default
 		StartIndex: 0,     // Default
 		Raw:        false, // Default
 	}
@@ -161,59 +166,136 @@ func (t *FetchURLTool) parseRequest(args map[string]interface{}) (*FetchURLReque
 	return request, nil
 }
 
-// applyPagination applies pagination logic to the content
+// applyPagination applies enhanced pagination logic to the content
 func (t *FetchURLTool) applyPagination(originalResponse *FetchURLResponse, processedContent string, request *FetchURLRequest) *FetchURLResponse {
 	totalLength := len(processedContent)
+
+	// Split content into lines for better analysis
+	lines := strings.Split(processedContent, "\n")
+	totalLines := len(lines)
 
 	// Check if start_index is beyond content length
 	if request.StartIndex >= totalLength {
 		return &FetchURLResponse{
-			URL:         originalResponse.URL,
-			ContentType: originalResponse.ContentType,
-			StatusCode:  originalResponse.StatusCode,
-			Content:     "",
-			Truncated:   false,
-			StartIndex:  request.StartIndex,
-			EndIndex:    request.StartIndex,
-			TotalLength: totalLength,
-			Timestamp:   originalResponse.Timestamp,
-			Message:     "start_index is beyond content length",
+			URL:            originalResponse.URL,
+			ContentType:    originalResponse.ContentType,
+			StatusCode:     originalResponse.StatusCode,
+			Content:        "",
+			Truncated:      false,
+			StartIndex:     request.StartIndex,
+			EndIndex:       request.StartIndex,
+			TotalLength:    totalLength,
+			TotalLines:     totalLines,
+			StartLine:      0,
+			EndLine:        0,
+			ApproxTokens:   0,
+			RemainingLines: 0,
+			Timestamp:      originalResponse.Timestamp,
+			Message:        "start_index is beyond content length",
 		}
 	}
 
-	// Calculate end index
+	// Calculate end index with smart truncation
 	endIndex := request.StartIndex + request.MaxLength
 	if endIndex > totalLength {
 		endIndex = totalLength
 	}
 
-	// Extract the requested slice
+	// Try to truncate at natural boundaries (end of lines, paragraphs)
 	content := processedContent[request.StartIndex:endIndex]
-
-	// Determine if content is truncated
 	truncated := endIndex < totalLength
 
-	// Create response
+	// If we're truncating and not at the end, try to find a better break point
+	if truncated && endIndex < totalLength {
+		// Look for natural break points within the last 200 characters
+		lookbackStart := max(0, endIndex-200)
+		lookbackSection := processedContent[lookbackStart:endIndex]
+
+		// Try to find paragraph breaks first
+		if lastParaBreak := strings.LastIndex(lookbackSection, "\n\n"); lastParaBreak != -1 {
+			endIndex = lookbackStart + lastParaBreak + 2
+			content = processedContent[request.StartIndex:endIndex]
+		} else if lastLineBreak := strings.LastIndex(lookbackSection, "\n"); lastLineBreak != -1 {
+			// Fall back to line breaks
+			endIndex = lookbackStart + lastLineBreak + 1
+			content = processedContent[request.StartIndex:endIndex]
+		}
+	}
+
+	// Calculate line numbers
+	startLine := t.calculateLineNumber(processedContent, request.StartIndex)
+	endLine := t.calculateLineNumber(processedContent, endIndex)
+
+	// Generate next chunk preview if truncated
+	var nextChunkPreview string
+	remainingLines := 0
+	if truncated {
+		remainingLines = totalLines - endLine
+		// Get a preview of the next chunk (first 200 chars)
+		previewStart := endIndex
+		previewEnd := min(previewStart+200, totalLength)
+		preview := processedContent[previewStart:previewEnd]
+
+		// Clean up the preview
+		if idx := strings.Index(preview, "\n"); idx != -1 && idx < 100 {
+			preview = preview[:idx] + "..."
+		}
+		nextChunkPreview = strings.TrimSpace(preview)
+		if len(nextChunkPreview) > 150 {
+			nextChunkPreview = nextChunkPreview[:150] + "..."
+		}
+	}
+
+	// Estimate tokens (rough approximation: ~4 characters per token)
+	approxTokens := len(content) / 4
+
+	// Create enhanced response
 	response := &FetchURLResponse{
-		URL:         originalResponse.URL,
-		ContentType: originalResponse.ContentType,
-		StatusCode:  originalResponse.StatusCode,
-		Content:     content,
-		Truncated:   truncated,
-		StartIndex:  request.StartIndex,
-		EndIndex:    endIndex,
-		TotalLength: totalLength,
-		Timestamp:   originalResponse.Timestamp,
-		Message:     "",
+		URL:              originalResponse.URL,
+		ContentType:      originalResponse.ContentType,
+		StatusCode:       originalResponse.StatusCode,
+		Content:          content,
+		Truncated:        truncated,
+		StartIndex:       request.StartIndex,
+		EndIndex:         endIndex,
+		TotalLength:      totalLength,
+		TotalLines:       totalLines,
+		StartLine:        startLine,
+		EndLine:          endLine,
+		ApproxTokens:     approxTokens,
+		NextChunkPreview: nextChunkPreview,
+		RemainingLines:   remainingLines,
+		Timestamp:        originalResponse.Timestamp,
+		Message:          "",
 	}
 
 	// Add helpful pagination message if content is truncated
 	if truncated {
 		nextStartIndex := endIndex
-		response.Message = fmt.Sprintf("Content truncated. To fetch more content, call with start_index=%d", nextStartIndex)
+		response.Message = fmt.Sprintf("Content truncated at line %d of %d total lines. %d lines remaining. To fetch more content, call with start_index=%d",
+			endLine, totalLines, remainingLines, nextStartIndex)
 	}
 
 	return response
+}
+
+// calculateLineNumber calculates the line number for a given character index
+func (t *FetchURLTool) calculateLineNumber(content string, charIndex int) int {
+	if charIndex <= 0 {
+		return 1
+	}
+	if charIndex >= len(content) {
+		return len(strings.Split(content, "\n"))
+	}
+	return strings.Count(content[:charIndex], "\n") + 1
+}
+
+// max returns the maximum of two integers
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // newToolResultJSON creates a new tool result with JSON content

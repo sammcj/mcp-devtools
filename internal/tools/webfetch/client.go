@@ -132,16 +132,22 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 	// Check for HTTP errors
 	if resp.StatusCode >= 400 {
 		return &FetchURLResponse{
-			URL:         targetURL,
-			ContentType: resp.Header.Get("Content-Type"),
-			StatusCode:  resp.StatusCode,
-			Content:     "",
-			Truncated:   false,
-			StartIndex:  0,
-			EndIndex:    0,
-			TotalLength: 0,
-			Timestamp:   time.Now(),
-			Message:     fmt.Sprintf("HTTP error %d: %s", resp.StatusCode, resp.Status),
+			URL:              targetURL,
+			ContentType:      resp.Header.Get("Content-Type"),
+			StatusCode:       resp.StatusCode,
+			Content:          "",
+			Truncated:        false,
+			StartIndex:       0,
+			EndIndex:         0,
+			TotalLength:      0,
+			TotalLines:       0,
+			StartLine:        0,
+			EndLine:          0,
+			ApproxTokens:     0,
+			NextChunkPreview: "",
+			RemainingLines:   0,
+			Timestamp:        time.Now(),
+			Message:          fmt.Sprintf("HTTP error %d: %s", resp.StatusCode, resp.Status),
 		}, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, resp.Status)
 	}
 
@@ -185,16 +191,22 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 	}).Debug("Successfully fetched content")
 
 	return &FetchURLResponse{
-		URL:         targetURL,
-		ContentType: resp.Header.Get("Content-Type"),
-		StatusCode:  resp.StatusCode,
-		Content:     string(body),
-		Truncated:   false, // Will be set later during pagination
-		StartIndex:  0,
-		EndIndex:    len(body),
-		TotalLength: len(body),
-		Timestamp:   time.Now(),
-		Message:     "",
+		URL:              targetURL,
+		ContentType:      resp.Header.Get("Content-Type"),
+		StatusCode:       resp.StatusCode,
+		Content:          string(body),
+		Truncated:        false, // Will be set later during pagination
+		StartIndex:       0,
+		EndIndex:         len(body),
+		TotalLength:      len(body),
+		TotalLines:       len(strings.Split(string(body), "\n")),
+		StartLine:        1,
+		EndLine:          len(strings.Split(string(body), "\n")),
+		ApproxTokens:     len(body) / 4, // Rough approximation
+		NextChunkPreview: "",
+		RemainingLines:   0,
+		Timestamp:        time.Now(),
+		Message:          "",
 	}, nil
 }
 
