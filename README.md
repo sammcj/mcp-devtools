@@ -77,7 +77,7 @@ graph TD
 
 ## Features
 
-Currently, the server provides the following tools:
+Currently, the server provides the following tools that should work across both macOS and Linux:
 
 ### Package Versions
 

@@ -591,12 +591,12 @@ func attemptDoclingInstall(pythonPath string) bool {
 		return false
 	}
 
-	// Try to install docling using pip with a reasonable timeout (2 minutes)
+	// Try to install docling using pip with a reasonable timeout (1 minute)
 	// Use --quiet to reduce output and --no-warn-script-location to avoid warnings
 	installCmd := fmt.Sprintf(`%s -m pip install --quiet --no-warn-script-location docling`, pythonPath)
 
 	// Attempt installation with a longer timeout since package installation can take time
-	if err := runCommand(installCmd, 120); err != nil {
+	if err := runCommand(installCmd, 60); err != nil {
 		return false
 	}
 
