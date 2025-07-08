@@ -37,6 +37,8 @@ RUN apk --no-cache add \
     libffi-dev \
     openssl-dev \
     python3-dev \
+    libxml2-dev \
+    libxslt-dev \
     py3-pip
 
 # Install Python dependencies for document processing
