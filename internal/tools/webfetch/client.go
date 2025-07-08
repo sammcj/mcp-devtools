@@ -132,16 +132,20 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 	// Check for HTTP errors
 	if resp.StatusCode >= 400 {
 		return &FetchURLResponse{
-			URL:         targetURL,
-			ContentType: resp.Header.Get("Content-Type"),
-			StatusCode:  resp.StatusCode,
-			Content:     "",
-			Truncated:   false,
-			StartIndex:  0,
-			EndIndex:    0,
-			TotalLength: 0,
-			Timestamp:   time.Now(),
-			Message:     fmt.Sprintf("HTTP error %d: %s", resp.StatusCode, resp.Status),
+			URL:              targetURL,
+			ContentType:      resp.Header.Get("Content-Type"),
+			StatusCode:       resp.StatusCode,
+			Content:          "",
+			Truncated:        false,
+			StartIndex:       0,
+			EndIndex:         0,
+			TotalLength:      0,
+			TotalLines:       0,
+			StartLine:        0,
+			EndLine:          0,
+			NextChunkPreview: "",
+			RemainingLines:   0,
+			Message:          fmt.Sprintf("HTTP error %d: %s", resp.StatusCode, resp.Status),
 		}, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, resp.Status)
 	}
 
@@ -184,18 +188,31 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 		"status_code": resp.StatusCode,
 	}).Debug("Successfully fetched content")
 
-	return &FetchURLResponse{
-		URL:         targetURL,
-		ContentType: resp.Header.Get("Content-Type"),
-		StatusCode:  resp.StatusCode,
-		Content:     string(body),
-		Truncated:   false, // Will be set later during pagination
-		StartIndex:  0,
-		EndIndex:    len(body),
-		TotalLength: len(body),
-		Timestamp:   time.Now(),
-		Message:     "",
-	}, nil
+	response := &FetchURLResponse{
+		URL:              targetURL,
+		Content:          string(body),
+		Truncated:        false, // Will be set later during pagination
+		StartIndex:       0,
+		EndIndex:         len(body),
+		TotalLength:      len(body),
+		TotalLines:       len(strings.Split(string(body), "\n")),
+		StartLine:        1,
+		EndLine:          len(strings.Split(string(body), "\n")),
+		NextChunkPreview: "",
+		RemainingLines:   0,
+		Message:          "",
+	}
+
+	// Only include ContentType and StatusCode if they're not defaults
+	contentType := resp.Header.Get("Content-Type")
+	if contentType != "" {
+		response.ContentType = contentType
+	}
+	if resp.StatusCode != 200 {
+		response.StatusCode = resp.StatusCode
+	}
+
+	return response, nil
 }
 
 // DetectContentType analyses the content type and determines how to process it

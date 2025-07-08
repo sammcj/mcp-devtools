@@ -1,7 +1,5 @@
 package webfetch
 
-import "time"
-
 // FetchURLRequest represents the parameters for the fetch-url tool
 type FetchURLRequest struct {
 	URL        string `json:"url"`
@@ -12,16 +10,20 @@ type FetchURLRequest struct {
 
 // FetchURLResponse represents the response from the fetch-url tool
 type FetchURLResponse struct {
-	URL         string    `json:"url"`
-	ContentType string    `json:"content_type"`
-	StatusCode  int       `json:"status_code"`
-	Content     string    `json:"content"`
-	Truncated   bool      `json:"truncated"`
-	StartIndex  int       `json:"start_index"`
-	EndIndex    int       `json:"end_index"`
-	TotalLength int       `json:"total_length"`
-	Timestamp   time.Time `json:"timestamp"`
-	Message     string    `json:"message,omitempty"`
+	URL              string `json:"url"`
+	ContentType      string `json:"content_type,omitempty"`
+	StatusCode       int    `json:"status_code,omitempty"`
+	Content          string `json:"content"`
+	Truncated        bool   `json:"truncated"`
+	StartIndex       int    `json:"start_index"`
+	EndIndex         int    `json:"end_index"`
+	TotalLength      int    `json:"total_length"`
+	TotalLines       int    `json:"total_lines"`
+	StartLine        int    `json:"start_line"`
+	EndLine          int    `json:"end_line"`
+	NextChunkPreview string `json:"next_chunk_preview,omitempty"`
+	RemainingLines   int    `json:"remaining_lines"`
+	Message          string `json:"message,omitempty"`
 }
 
 // ContentTypeInfo represents information about detected content type
