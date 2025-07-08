@@ -38,7 +38,6 @@ Response includes detailed pagination information:
 - start_line/end_line: Line numbers for the returned chunk
 - remaining_lines: Number of lines remaining after current chunk
 - next_chunk_preview: Preview of what comes next
-- approx_tokens: Estimated token count for the returned content
 
 This tool is useful for fetching web content - for example to get documentation, information from blog posts, changelogs, implementation guidelines and content from search results.
 `),
@@ -178,8 +177,6 @@ func (t *FetchURLTool) applyPagination(originalResponse *FetchURLResponse, proce
 	if request.StartIndex >= totalLength {
 		return &FetchURLResponse{
 			URL:            originalResponse.URL,
-			ContentType:    originalResponse.ContentType,
-			StatusCode:     originalResponse.StatusCode,
 			Content:        "",
 			Truncated:      false,
 			StartIndex:     request.StartIndex,
@@ -188,9 +185,7 @@ func (t *FetchURLTool) applyPagination(originalResponse *FetchURLResponse, proce
 			TotalLines:     totalLines,
 			StartLine:      0,
 			EndLine:        0,
-			ApproxTokens:   0,
 			RemainingLines: 0,
-			Timestamp:      originalResponse.Timestamp,
 			Message:        "start_index is beyond content length",
 		}
 	}
@@ -246,14 +241,9 @@ func (t *FetchURLTool) applyPagination(originalResponse *FetchURLResponse, proce
 		}
 	}
 
-	// Estimate tokens (rough approximation: ~4 characters per token)
-	approxTokens := len(content) / 4
-
 	// Create enhanced response
 	response := &FetchURLResponse{
 		URL:              originalResponse.URL,
-		ContentType:      originalResponse.ContentType,
-		StatusCode:       originalResponse.StatusCode,
 		Content:          content,
 		Truncated:        truncated,
 		StartIndex:       request.StartIndex,
@@ -262,11 +252,17 @@ func (t *FetchURLTool) applyPagination(originalResponse *FetchURLResponse, proce
 		TotalLines:       totalLines,
 		StartLine:        startLine,
 		EndLine:          endLine,
-		ApproxTokens:     approxTokens,
 		NextChunkPreview: nextChunkPreview,
 		RemainingLines:   remainingLines,
-		Timestamp:        originalResponse.Timestamp,
 		Message:          "",
+	}
+
+	// Only include ContentType and StatusCode if they're not defaults
+	if originalResponse.ContentType != "" {
+		response.ContentType = originalResponse.ContentType
+	}
+	if originalResponse.StatusCode != 200 {
+		response.StatusCode = originalResponse.StatusCode
 	}
 
 	// Add helpful pagination message if content is truncated

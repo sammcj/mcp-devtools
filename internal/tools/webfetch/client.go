@@ -143,10 +143,8 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 			TotalLines:       0,
 			StartLine:        0,
 			EndLine:          0,
-			ApproxTokens:     0,
 			NextChunkPreview: "",
 			RemainingLines:   0,
-			Timestamp:        time.Now(),
 			Message:          fmt.Sprintf("HTTP error %d: %s", resp.StatusCode, resp.Status),
 		}, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, resp.Status)
 	}
@@ -190,10 +188,8 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 		"status_code": resp.StatusCode,
 	}).Debug("Successfully fetched content")
 
-	return &FetchURLResponse{
+	response := &FetchURLResponse{
 		URL:              targetURL,
-		ContentType:      resp.Header.Get("Content-Type"),
-		StatusCode:       resp.StatusCode,
 		Content:          string(body),
 		Truncated:        false, // Will be set later during pagination
 		StartIndex:       0,
@@ -202,12 +198,21 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 		TotalLines:       len(strings.Split(string(body), "\n")),
 		StartLine:        1,
 		EndLine:          len(strings.Split(string(body), "\n")),
-		ApproxTokens:     len(body) / 4, // Rough approximation
 		NextChunkPreview: "",
 		RemainingLines:   0,
-		Timestamp:        time.Now(),
 		Message:          "",
-	}, nil
+	}
+
+	// Only include ContentType and StatusCode if they're not defaults
+	contentType := resp.Header.Get("Content-Type")
+	if contentType != "" {
+		response.ContentType = contentType
+	}
+	if resp.StatusCode != 200 {
+		response.StatusCode = resp.StatusCode
+	}
+
+	return response, nil
 }
 
 // DetectContentType analyses the content type and determines how to process it
