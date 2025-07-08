@@ -268,7 +268,7 @@ func (t *FetchURLTool) applyPagination(originalResponse *FetchURLResponse, proce
 	// Add helpful pagination message if content is truncated
 	if truncated {
 		nextStartIndex := endIndex
-		response.Message = fmt.Sprintf("Content truncated at line %d of %d total lines. %d lines remaining. To fetch more content, call with start_index=%d",
+		response.Message = fmt.Sprintf("Content truncated at line %d of %d total lines. %d lines remaining. To fetch more content, call with start_index=%d you can also optionally specify max_length to fetch more content at once.",
 			endLine, totalLines, remainingLines, nextStartIndex)
 	}
 
