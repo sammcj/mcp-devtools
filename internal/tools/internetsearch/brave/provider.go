@@ -4,111 +4,72 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sirupsen/logrus"
 )
 
-// UnifiedBraveSearchTool provides a single interface for all Brave Search operations
-type UnifiedBraveSearchTool struct {
+// BraveProvider implements the unified SearchProvider interface
+type BraveProvider struct {
 	client *BraveClient
 }
 
-func init() {
+// NewBraveProvider creates a new Brave search provider
+func NewBraveProvider() *BraveProvider {
 	apiKey := os.Getenv("BRAVE_API_KEY")
 	if apiKey == "" {
-		// Tool will not be registered - this is expected behaviour
-		return
+		return nil
 	}
 
-	registry.Register(&UnifiedBraveSearchTool{
+	return &BraveProvider{
 		client: NewBraveClient(apiKey),
-	})
+	}
 }
 
-// Definition returns the tool's definition for MCP registration
-func (t *UnifiedBraveSearchTool) Definition() mcp.Tool {
-	return mcp.NewTool(
-		"brave_search",
-		mcp.WithDescription(`Brave Internet Search. Supports web, image, news, video, and local search with a single interface.
-
-Search Types:
-- web: General web search for broad information gathering
-- image: Search for images (max 3 results)
-- news: Search for recent news articles and events
-- video: Search for video content and tutorials
-- local: Search for local businesses and places (requires Pro API plan)
-
-Examples:
-- Web search: {"type": "web", "query": "golang best practices", "count": 10}
-- Image search: {"type": "image", "query": "golang gopher mascot", "count": 3}
-- News search: {"type": "news", "query": "AI breakthrough", "freshness": "pd"}
-- Video search: {"type": "video", "query": "golang tutorial"}
-- Local search: {"type": "local", "query": "pizza near Central Park"}
-
-Freshness options (web/news/video): pd (24h), pw (7d), pm (31d), py (365d), or custom range (YYYY-MM-DDtoYYYY-MM-DD)`),
-		mcp.WithString("type",
-			mcp.Required(),
-			mcp.Description("Search type: 'web', 'image', 'news', 'video', or 'local'"),
-			mcp.Enum("web", "image", "news", "video", "local"),
-		),
-		mcp.WithString("query",
-			mcp.Required(),
-			mcp.Description("Search query term"),
-		),
-		mcp.WithNumber("count",
-			mcp.Description("Number of results (1-20 for most types, 1-3 for images)"),
-			mcp.DefaultNumber(10),
-		),
-		mcp.WithNumber("offset",
-			mcp.Description("Pagination offset (web search only)"),
-			mcp.DefaultNumber(0),
-		),
-		mcp.WithString("freshness",
-			mcp.Description("Time filter for web/news/video: pd, pw, pm, py, or custom range"),
-		),
-	)
+// GetName returns the provider name
+func (p *BraveProvider) GetName() string {
+	return "brave"
 }
 
-// Execute executes the unified Brave search tool
-func (t *UnifiedBraveSearchTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
-	// Parse required parameters
-	searchType, ok := args["type"].(string)
-	if !ok || searchType == "" {
-		return nil, fmt.Errorf("missing or invalid required parameter: type")
-	}
+// IsAvailable checks if the provider is available
+func (p *BraveProvider) IsAvailable() bool {
+	return p.client != nil && os.Getenv("BRAVE_API_KEY") != ""
+}
 
-	query, ok := args["query"].(string)
-	if !ok || query == "" {
-		return nil, fmt.Errorf("missing or invalid required parameter: query")
-	}
+// GetSupportedTypes returns the search types this provider supports
+func (p *BraveProvider) GetSupportedTypes() []string {
+	return []string{"web", "image", "news", "video", "local"}
+}
+
+// Search executes a search using the Brave provider
+func (p *BraveProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+	query := args["query"].(string)
 
 	logger.WithFields(logrus.Fields{
-		"type":  searchType,
-		"query": query,
-	}).Info("Executing unified Brave search")
+		"provider": "brave",
+		"type":     searchType,
+		"query":    query,
+	}).Debug("Brave search parameters")
 
 	switch searchType {
 	case "web":
-		return t.executeWebSearch(ctx, logger, cache, args)
+		return p.executeWebSearch(ctx, logger, args)
 	case "image":
-		return t.executeImageSearch(ctx, logger, cache, args)
+		return p.executeImageSearch(ctx, logger, args)
 	case "news":
-		return t.executeNewsSearch(ctx, logger, cache, args)
+		return p.executeNewsSearch(ctx, logger, args)
 	case "video":
-		return t.executeVideoSearch(ctx, logger, cache, args)
+		return p.executeVideoSearch(ctx, logger, args)
 	case "local":
-		return t.executeLocalSearch(ctx, logger, cache, args)
+		return p.executeLocalSearch(ctx, logger, args)
 	default:
-		return nil, fmt.Errorf("invalid search type: %s. Must be one of: web, image, news, video, local", searchType)
+		return nil, fmt.Errorf("unsupported search type for Brave: %s", searchType)
 	}
 }
 
 // executeWebSearch handles web search
-func (t *UnifiedBraveSearchTool) executeWebSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (p *BraveProvider) executeWebSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -133,31 +94,24 @@ func (t *UnifiedBraveSearchTool) executeWebSearch(ctx context.Context, logger *l
 		freshness = freshnessRaw
 	}
 
-	logger.WithFields(logrus.Fields{
-		"query":     query,
-		"count":     count,
-		"offset":    offset,
-		"freshness": freshness,
-	}).Debug("Brave web search parameters")
-
-	response, err := t.client.WebSearch(ctx, logger, query, count, offset, freshness)
+	response, err := p.client.WebSearch(ctx, logger, query, count, offset, freshness)
 	if err != nil {
 		return nil, fmt.Errorf("web search failed: %w", err)
 	}
 
 	// Convert to unified format
 	if response.Web == nil || len(response.Web.Results) == 0 {
-		return t.createEmptyResponse(query)
+		return p.createEmptyResponse(query)
 	}
 
-	results := make([]SearchResult, 0, len(response.Web.Results))
+	results := make([]internetsearch.SearchResult, 0, len(response.Web.Results))
 	for _, webResult := range response.Web.Results {
 		metadata := make(map[string]interface{})
 		if webResult.Age != "" {
 			metadata["age"] = webResult.Age
 		}
 
-		results = append(results, SearchResult{
+		results = append(results, internetsearch.SearchResult{
 			Title:       decodeHTMLEntities(webResult.Title),
 			URL:         webResult.URL,
 			Description: decodeHTMLEntities(webResult.Description),
@@ -166,11 +120,11 @@ func (t *UnifiedBraveSearchTool) executeWebSearch(ctx context.Context, logger *l
 		})
 	}
 
-	return t.createSuccessResponse(query, results, logger)
+	return p.createSuccessResponse(query, results, logger)
 }
 
 // executeImageSearch handles image search
-func (t *UnifiedBraveSearchTool) executeImageSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (p *BraveProvider) executeImageSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -182,22 +136,17 @@ func (t *UnifiedBraveSearchTool) executeImageSearch(ctx context.Context, logger 
 		}
 	}
 
-	logger.WithFields(logrus.Fields{
-		"query": query,
-		"count": count,
-	}).Debug("Brave image search parameters")
-
-	response, err := t.client.ImageSearch(ctx, logger, query, count)
+	response, err := p.client.ImageSearch(ctx, logger, query, count)
 	if err != nil {
 		return nil, fmt.Errorf("image search failed: %w", err)
 	}
 
 	// Convert to unified format
 	if len(response.Results) == 0 {
-		return t.createEmptyResponse(query)
+		return p.createEmptyResponse(query)
 	}
 
-	results := make([]SearchResult, 0, len(response.Results))
+	results := make([]internetsearch.SearchResult, 0, len(response.Results))
 	for _, imageResult := range response.Results {
 		metadata := make(map[string]interface{})
 		metadata["imageURL"] = imageResult.Properties.URL
@@ -211,7 +160,7 @@ func (t *UnifiedBraveSearchTool) executeImageSearch(ctx context.Context, logger 
 			metadata["height"] = imageResult.Properties.Height
 		}
 
-		results = append(results, SearchResult{
+		results = append(results, internetsearch.SearchResult{
 			Title:       decodeHTMLEntities(imageResult.Title),
 			URL:         imageResult.URL,
 			Description: fmt.Sprintf("Image: %s", decodeHTMLEntities(imageResult.Title)),
@@ -220,11 +169,11 @@ func (t *UnifiedBraveSearchTool) executeImageSearch(ctx context.Context, logger 
 		})
 	}
 
-	return t.createSuccessResponse(query, results, logger)
+	return p.createSuccessResponse(query, results, logger)
 }
 
 // executeNewsSearch handles news search
-func (t *UnifiedBraveSearchTool) executeNewsSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (p *BraveProvider) executeNewsSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -241,30 +190,24 @@ func (t *UnifiedBraveSearchTool) executeNewsSearch(ctx context.Context, logger *
 		freshness = freshnessRaw
 	}
 
-	logger.WithFields(logrus.Fields{
-		"query":     query,
-		"count":     count,
-		"freshness": freshness,
-	}).Debug("Brave news search parameters")
-
-	response, err := t.client.NewsSearch(ctx, logger, query, count, freshness)
+	response, err := p.client.NewsSearch(ctx, logger, query, count, freshness)
 	if err != nil {
 		return nil, fmt.Errorf("news search failed: %w", err)
 	}
 
 	// Convert to unified format
 	if len(response.Results) == 0 {
-		return t.createEmptyResponse(query)
+		return p.createEmptyResponse(query)
 	}
 
-	results := make([]SearchResult, 0, len(response.Results))
+	results := make([]internetsearch.SearchResult, 0, len(response.Results))
 	for _, newsResult := range response.Results {
 		metadata := make(map[string]interface{})
 		if newsResult.Age != "" {
 			metadata["age"] = newsResult.Age
 		}
 
-		results = append(results, SearchResult{
+		results = append(results, internetsearch.SearchResult{
 			Title:       decodeHTMLEntities(newsResult.Title),
 			URL:         newsResult.URL,
 			Description: decodeHTMLEntities(newsResult.Description),
@@ -273,11 +216,11 @@ func (t *UnifiedBraveSearchTool) executeNewsSearch(ctx context.Context, logger *
 		})
 	}
 
-	return t.createSuccessResponse(query, results, logger)
+	return p.createSuccessResponse(query, results, logger)
 }
 
 // executeVideoSearch handles video search
-func (t *UnifiedBraveSearchTool) executeVideoSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (p *BraveProvider) executeVideoSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -294,23 +237,17 @@ func (t *UnifiedBraveSearchTool) executeVideoSearch(ctx context.Context, logger 
 		freshness = freshnessRaw
 	}
 
-	logger.WithFields(logrus.Fields{
-		"query":     query,
-		"count":     count,
-		"freshness": freshness,
-	}).Debug("Brave video search parameters")
-
-	response, err := t.client.VideoSearch(ctx, logger, query, count, freshness)
+	response, err := p.client.VideoSearch(ctx, logger, query, count, freshness)
 	if err != nil {
 		return nil, fmt.Errorf("video search failed: %w", err)
 	}
 
 	// Convert to unified format
 	if len(response.Results) == 0 {
-		return t.createEmptyResponse(query)
+		return p.createEmptyResponse(query)
 	}
 
-	results := make([]SearchResult, 0, len(response.Results))
+	results := make([]internetsearch.SearchResult, 0, len(response.Results))
 	for _, videoResult := range response.Results {
 		metadata := make(map[string]interface{})
 		if videoResult.Video.Duration != "" {
@@ -323,7 +260,7 @@ func (t *UnifiedBraveSearchTool) executeVideoSearch(ctx context.Context, logger 
 			metadata["creator"] = videoResult.Video.Creator
 		}
 
-		results = append(results, SearchResult{
+		results = append(results, internetsearch.SearchResult{
 			Title:       decodeHTMLEntities(videoResult.Title),
 			URL:         videoResult.URL,
 			Description: fmt.Sprintf("Video: %s", decodeHTMLEntities(videoResult.Title)),
@@ -332,11 +269,11 @@ func (t *UnifiedBraveSearchTool) executeVideoSearch(ctx context.Context, logger 
 		})
 	}
 
-	return t.createSuccessResponse(query, results, logger)
+	return p.createSuccessResponse(query, results, logger)
 }
 
 // executeLocalSearch handles local search with web fallback
-func (t *UnifiedBraveSearchTool) executeLocalSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (p *BraveProvider) executeLocalSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -348,34 +285,29 @@ func (t *UnifiedBraveSearchTool) executeLocalSearch(ctx context.Context, logger 
 		}
 	}
 
-	logger.WithFields(logrus.Fields{
-		"query": query,
-		"count": count,
-	}).Debug("Brave local search parameters")
-
-	response, err := t.client.LocalSearch(ctx, logger, query, count)
+	response, err := p.client.LocalSearch(ctx, logger, query, count)
 	if err != nil {
 		return nil, fmt.Errorf("local search failed: %w", err)
 	}
 
 	// Check for local results first
 	if response.Locations != nil && len(response.Locations.Results) > 0 {
-		return t.processLocalResults(ctx, logger, query, count, response)
+		return p.processLocalResults(ctx, logger, query, count, response)
 	}
 
 	// Fallback to web search
 	logger.WithField("query", query).Info("No location results found, falling back to web search")
-	webResponse, err := t.client.WebSearch(ctx, logger, query, count, 0, "")
+	webResponse, err := p.client.WebSearch(ctx, logger, query, count, 0, "")
 	if err != nil {
 		return nil, fmt.Errorf("local search found no results and fallback web search failed: %w", err)
 	}
 
 	if webResponse.Web == nil || len(webResponse.Web.Results) == 0 {
-		return t.createEmptyResponse(query)
+		return p.createEmptyResponse(query)
 	}
 
 	// Convert web results with fallback indicator
-	results := make([]SearchResult, 0, len(webResponse.Web.Results))
+	results := make([]internetsearch.SearchResult, 0, len(webResponse.Web.Results))
 	for _, webResult := range webResponse.Web.Results {
 		metadata := make(map[string]interface{})
 		metadata["fallback"] = "web_search"
@@ -383,7 +315,7 @@ func (t *UnifiedBraveSearchTool) executeLocalSearch(ctx context.Context, logger 
 			metadata["age"] = webResult.Age
 		}
 
-		results = append(results, SearchResult{
+		results = append(results, internetsearch.SearchResult{
 			Title:       decodeHTMLEntities(webResult.Title),
 			URL:         webResult.URL,
 			Description: decodeHTMLEntities(webResult.Description),
@@ -392,11 +324,11 @@ func (t *UnifiedBraveSearchTool) executeLocalSearch(ctx context.Context, logger 
 		})
 	}
 
-	return t.createSuccessResponse(query, results, logger)
+	return p.createSuccessResponse(query, results, logger)
 }
 
 // processLocalResults processes local search results with POI details
-func (t *UnifiedBraveSearchTool) processLocalResults(ctx context.Context, logger *logrus.Logger, query string, count int, response *BraveLocalSearchResponse) (*mcp.CallToolResult, error) {
+func (p *BraveProvider) processLocalResults(ctx context.Context, logger *logrus.Logger, query string, count int, response *BraveLocalSearchResponse) (*internetsearch.SearchResponse, error) {
 	// Extract location IDs for detailed information
 	locationIDs := make([]string, 0, len(response.Locations.Results))
 	for _, location := range response.Locations.Results {
@@ -418,12 +350,12 @@ func (t *UnifiedBraveSearchTool) processLocalResults(ctx context.Context, logger
 	done := make(chan bool, 2)
 
 	go func() {
-		poiResponse, poiErr = t.client.LocalPOISearch(ctx, logger, locationIDs)
+		poiResponse, poiErr = p.client.LocalPOISearch(ctx, logger, locationIDs)
 		done <- true
 	}()
 
 	go func() {
-		descResponse, descErr = t.client.LocalDescriptionsSearch(ctx, logger, locationIDs)
+		descResponse, descErr = p.client.LocalDescriptionsSearch(ctx, logger, locationIDs)
 		done <- true
 	}()
 
@@ -454,7 +386,7 @@ func (t *UnifiedBraveSearchTool) processLocalResults(ctx context.Context, logger
 	}
 
 	// Convert results to unified format
-	results := make([]SearchResult, 0, len(response.Locations.Results))
+	results := make([]internetsearch.SearchResult, 0, len(response.Locations.Results))
 	for i, location := range response.Locations.Results {
 		if i >= count {
 			break
@@ -495,7 +427,7 @@ func (t *UnifiedBraveSearchTool) processLocalResults(ctx context.Context, logger
 			description = desc
 		}
 
-		results = append(results, SearchResult{
+		results = append(results, internetsearch.SearchResult{
 			Title:       decodeHTMLEntities(location.Title),
 			URL:         location.URL,
 			Description: decodeHTMLEntities(description),
@@ -504,27 +436,27 @@ func (t *UnifiedBraveSearchTool) processLocalResults(ctx context.Context, logger
 		})
 	}
 
-	return t.createSuccessResponse(query, results, logger)
+	return p.createSuccessResponse(query, results, logger)
 }
 
 // Helper functions
-func (t *UnifiedBraveSearchTool) createEmptyResponse(query string) (*mcp.CallToolResult, error) {
-	result := SearchResponse{
+func (p *BraveProvider) createEmptyResponse(query string) (*internetsearch.SearchResponse, error) {
+	result := &internetsearch.SearchResponse{
 		Query:       query,
 		ResultCount: 0,
-		Results:     []SearchResult{},
-		Provider:    "Brave",
+		Results:     []internetsearch.SearchResult{},
+		Provider:    "brave",
 		Timestamp:   time.Now(),
 	}
-	return newToolResultJSON(result)
+	return result, nil
 }
 
-func (t *UnifiedBraveSearchTool) createSuccessResponse(query string, results []SearchResult, logger *logrus.Logger) (*mcp.CallToolResult, error) {
-	result := SearchResponse{
+func (p *BraveProvider) createSuccessResponse(query string, results []internetsearch.SearchResult, logger *logrus.Logger) (*internetsearch.SearchResponse, error) {
+	result := &internetsearch.SearchResponse{
 		Query:       query,
 		ResultCount: len(results),
 		Results:     results,
-		Provider:    "Brave",
+		Provider:    "brave",
 		Timestamp:   time.Now(),
 	}
 
@@ -533,5 +465,5 @@ func (t *UnifiedBraveSearchTool) createSuccessResponse(query string, results []S
 		"result_count": len(results),
 	}).Info("Brave search completed successfully")
 
-	return newToolResultJSON(result)
+	return result, nil
 }
