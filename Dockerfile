@@ -46,7 +46,7 @@ RUN pip install --no-cache-dir docling
 COPY --from=builder /app/mcp-devtools .
 
 # Copy the Python scripts
-COPY scripts/ ./scripts/
+COPY internal/tools/docprocessing/docling_processor.py ./scripts/
 
 # Create cache directory
 RUN mkdir -p /app/.mcp-devtools/docling-cache
@@ -58,7 +58,9 @@ ENV DOCLING_CACHE_ENABLED=true
 ENV DOCLING_HARDWARE_ACCELERATION=auto
 ENV DOCLING_TIMEOUT=300
 ENV DOCLING_MAX_FILE_SIZE=100
-# ENV BRAVE_API_KEY=ob
+# ENV BRAVE_API_KEY=
+
+VOLUME ["/app/.mcp-devtools/docling-cache"]
 
 # Expose port
 EXPOSE 18080
