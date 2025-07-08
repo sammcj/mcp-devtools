@@ -39,7 +39,9 @@ RUN apk --no-cache add \
     python3-dev \
     libxml2-dev \
     libxslt-dev \
-    py3-pip
+    py3-pip \
+    g++ \
+    make
 
 # Install Python dependencies for document processing
 RUN pip install --no-cache-dir docling
