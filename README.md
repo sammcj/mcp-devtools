@@ -12,6 +12,7 @@ graph TD
     A --> E[Think]
     A --> F[ShadCN UI Components]
     A --> G[Memory]
+    A --> H[Document Processing]
 
     C --> C1[Brave]
     C --> C2[SearXNG]
@@ -19,17 +20,22 @@ graph TD
 
     D --> D1[Fetch URL as Markdown]
 
+    H --> H5[OCR Support]
+    H --> H6[vLLM Support]
+
     classDef toolCategory fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef tool fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
     classDef searchTool fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
     classDef memoryTool fill:#FFF3E6,stroke:#FF9800,color:#F57C00
     classDef webTool fill:#E6F7FF,stroke:#2196F3,color:#1976D2
+    classDef docTool fill:#F0E6FF,stroke:#9C27B0,color:#7B1FA2
 
-    class B,C,D,E,F toolCategory
+    class B,C,D,E,F,H toolCategory
     class B1,B2,E1,F1 tool
     class B1,C1,C2,C3 searchTool
     class G memoryTool
     class D1 webTool
+    class H1,H2,H3,H4,H5,H6 docTool
 ```
 
 ---
@@ -40,6 +46,7 @@ graph TD
     - [Internet Search](#internet-search)
     - [Think Tool](#think-tool)
     - [Memory Tool](#memory-tool)
+    - [Document Processing](#document-processing)
     - [shadcn ui Components](#shadcn-ui-components)
   - [Screenshots](#screenshots)
   - [Installation](#installation)
@@ -51,8 +58,9 @@ graph TD
     - [Think Tool](#think-tool-1)
     - [Unified Package Search](#unified-package-search)
     - [shadcn ui Components](#shadcn-ui-components-1)
+    - [Document Processing](#document-processing-1)
     - [Internet Search](#internet-search-1)
-  - [Configuration](#configuration-1)
+  - [Configuration](#configuration-2)
     - [Environment Variables](#environment-variables)
   - [Architecture](#architecture)
   - [Creating New Tools](#creating-new-tools)
@@ -69,7 +77,7 @@ graph TD
 
 ## Features
 
-Currently, the server provides the following tools:
+Currently, the server provides the following tools that should work across both macOS and Linux:
 
 ### Package Versions
 
@@ -140,6 +148,21 @@ You can override the default provider by specifying the `provider` parameter in 
 - **Fuzzy Search**: Enhanced search capabilities with relevance scoring
 - **Concurrent Access**: Safe file operations with locking mechanisms
 - **Configurable Storage**: Environment variable configuration for storage location
+
+### Document Processing
+
+**Intelligent Document Conversion Tool**: A powerful tool that converts PDF, DOCX, XLSX, and PPTX documents to structured Markdown using the [Docling](https://docling-project.github.io/docling/) library.
+
+- **Multi-format Support**: PDF, DOCX, XLSX, PPTX document processing
+- **Intelligent Conversion**: Preserves document structure and formatting
+- **OCR Support**: Extract text from scanned documents
+- **Hardware Acceleration**: Supports MPS (macOS), CUDA, and CPU processing
+- **Caching System**: Intelligent caching to avoid reprocessing identical documents
+- **Metadata Extraction**: Extracts document metadata (title, author, page count, etc.)
+- **Table & Image Extraction**: Preserves tables and images in markdown format
+- **Flexible Processing Modes**: Basic, advanced, OCR-focused, table-focused, and image-focused modes
+
+**Note**: The document processor tool requires Python 3.12+ with the Docling library installed (`pip install docling`), mcp-devtools will attempt to install the package if it's unavailable, if you don't see the tool available in your client check that you have docling installed and Python in your path. See the [Document Processing README](internal/tools/docprocessing/README.md) for detailed installation and configuration instructions.
 
 ### shadcn ui Components
 
@@ -586,6 +609,81 @@ Get usage examples for a specific shadcn ui component:
   }
 }
 ```
+
+### Document Processing
+
+The `process_document` tool provides intelligent document conversion capabilities for PDF, DOCX, XLSX, and PPTX files:
+
+#### Basic Document Processing
+
+Process a PDF document:
+
+```json
+{
+  "name": "process_document",
+  "arguments": {
+    "source": "/path/to/document.pdf"
+  }
+}
+```
+
+#### Advanced Document Processing
+
+Process a document with OCR and image preservation:
+
+```json
+{
+  "name": "process_document",
+  "arguments": {
+    "source": "/path/to/document.pdf",
+    "processing_mode": "advanced",
+    "enable_ocr": true,
+    "ocr_languages": ["en", "fr"],
+    "preserve_images": true,
+    "output_format": "markdown",
+    "cache_enabled": true,
+    "timeout": 600
+  }
+}
+```
+
+#### Processing Modes
+
+- **`basic`** (default): Fast processing using code-only parsing
+- **`advanced`**: Uses vision models for better structure recognition
+- **`ocr`**: Optimised for scanned documents with OCR
+- **`tables`**: Focus on accurate table extraction
+- **`images`**: Focus on image extraction and preservation
+
+#### Configuration
+
+The document processing tool can be configured via environment variables:
+
+```bash
+# Python Configuration
+export DOCLING_PYTHON_PATH="/path/to/python"  # Auto-detected if not set
+
+# Cache Configuration
+export DOCLING_CACHE_DIR="~/.mcp-devtools/docling-cache"
+export DOCLING_CACHE_ENABLED="true"
+
+# Hardware Acceleration
+export DOCLING_HARDWARE_ACCELERATION="auto"  # auto, mps, cuda, cpu
+
+# Processing Configuration
+export DOCLING_TIMEOUT="300"        # 5 minutes
+export DOCLING_MAX_FILE_SIZE="100"  # 100 MB
+
+# OCR Configuration
+export DOCLING_OCR_LANGUAGES="en,fr,de"
+```
+
+**Prerequisites**: This tool requires Python 3.9+ with Docling installed:
+```bash
+pip install docling
+```
+
+For detailed installation and configuration instructions, see the [Document Processing README](internal/tools/docprocessing/README.md).
 
 ### Internet Search
 

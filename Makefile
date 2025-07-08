@@ -71,6 +71,43 @@ update-deps:
 	$(GO) get -u ./...
 	$(GO) mod tidy
 
+# Install Python dependencies for document processing
+.PHONY: install-docling
+install-docling:
+	@echo "Installing Python dependencies for document processing..."
+	@if command -v python3 >/dev/null 2>&1; then \
+		echo "Found python3, installing docling..."; \
+		python3 -m pip install --user docling; \
+	elif command -v python >/dev/null 2>&1; then \
+		echo "Found python, installing docling..."; \
+		python -m pip install --user docling; \
+	else \
+		echo "Error: Python 3.9+ is required for document processing"; \
+		echo "Please install Python 3.9+ and try again"; \
+		exit 1; \
+	fi
+	@echo "Docling installation complete!"
+
+# Check if docling is available
+.PHONY: check-docling
+check-docling:
+	@echo "Checking docling availability..."
+	@if command -v python3 >/dev/null 2>&1; then \
+		python3 -c "import docling; print('✓ Docling is available')" 2>/dev/null || \
+		(echo "✗ Docling not found. Run 'make install-docling' to install it."; exit 1); \
+	elif command -v python >/dev/null 2>&1; then \
+		python -c "import docling; print('✓ Docling is available')" 2>/dev/null || \
+		(echo "✗ Docling not found. Run 'make install-docling' to install it."; exit 1); \
+	else \
+		echo "✗ Python 3.9+ is required for document processing"; \
+		exit 1; \
+	fi
+
+# Install all dependencies (Go + Python)
+.PHONY: install-all
+install-all: deps install-docling
+	@echo "All dependencies installed successfully!"
+
 # Build Docker image
 .PHONY: docker-build
 docker-build:
@@ -101,8 +138,11 @@ help:
 	@echo "  clean        : Clean build artifacts"
 	@echo "  fmt          : Format code"
 	@echo "  lint         : Lint code"
-	@echo "  deps         : Install dependencies"
-	@echo "  update-deps  : Update dependencies"
+	@echo "  deps         : Install Go dependencies"
+	@echo "  update-deps  : Update Go dependencies"
+	@echo "  install-docling : Install Python dependencies for document processing"
+	@echo "  check-docling   : Check if docling is available"
+	@echo "  install-all     : Install all dependencies (Go + Python)"
 	@echo "  docker-build : Build Docker image"
 	@echo "  docker-run   : Run Docker container with HTTP transport"
 	@echo "  release      : Create a new release (requires VERSION=x.y.z)"
