@@ -82,8 +82,8 @@ install-docling:
 		echo "Found python, installing docling..."; \
 		python -m pip install --user docling; \
 	else \
-		echo "Error: Python 3.9+ is required for document processing"; \
-		echo "Please install Python 3.9+ and try again"; \
+		echo "Error: Python 3.10+ is required for document processing"; \
+		echo "Please install Python 3.10+ and try again"; \
 		exit 1; \
 	fi
 	@echo "Docling installation complete!"
@@ -99,7 +99,7 @@ check-docling:
 		python -c "import docling; print('✓ Docling is available')" 2>/dev/null || \
 		(echo "✗ Docling not found. Run 'make install-docling' to install it."; exit 1); \
 	else \
-		echo "✗ Python 3.9+ is required for document processing"; \
+		echo "✗ Python 3.10+ is required for document processing"; \
 		exit 1; \
 	fi
 
