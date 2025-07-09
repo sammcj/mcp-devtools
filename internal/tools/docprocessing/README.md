@@ -2,6 +2,8 @@
 
 The Document Processing tool provides intelligent document conversion capabilities for PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, and JPG files using the powerful [Docling](https://docling-project.github.io/docling/) library. It converts documents to structured Markdown while preserving formatting, extracting tables, images, and metadata.
 
+**Experimental!** This tool is in active development and has more than a few rough edges.
+
 ## Features
 
 - **Multi-format Support**: PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG document processing

@@ -8,7 +8,7 @@ This module handles image extraction, processing, and file operations.
 import base64
 import io
 import os
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -459,46 +459,32 @@ Please recreate this table using proper markdown table syntax with:
 3. All data accurately represented
 4. Consistent formatting
 
-If the extracted text contains tabular data, organize it into appropriate rows and columns."""
+If the extracted text contains tabular data, organise it into appropriate rows and columns, ensuring the content remains correct."""
 
         elif any(keyword in text_content for keyword in ['flowchart', 'process', 'flow', 'step', 'decision']):
             suggested_format = "mermaid"
-            prompt = f"""This is an image of a flowchart or process diagram. You must now carefully and accurately reproduce it in Mermaid flowchart syntax.
+            prompt = f"""This is an image of a flowchart or process diagram. You must now carefully and accurately reproduce it in Mermaid flowchart syntax, ensuring the content remains correct.
 
 Caption: {caption if caption else 'Flowchart'}
 Extracted text elements: {', '.join(extracted_text) if extracted_text else 'None detected'}
 
-Please recreate this flowchart using Mermaid syntax with:
-1. Proper node shapes (rectangles for processes, diamonds for decisions)
-2. Clear connections and flow direction
-3. All text labels accurately represented
-4. Logical flow structure
-
-Use Mermaid flowchart syntax like:
-```
-flowchart TD
-    A[Start] --> B{{Decision?}}
-    B -->|Yes| C[Process]
-    B -->|No| D[End]
+Please recreate this flowchart using Mermaid syntax. Ensure you use British English spelling. Ensure the content remains correct.
 ```"""
 
         elif any(keyword in text_content for keyword in ['chart', 'graph', 'data', 'plot', 'axis']):
             suggested_format = "mermaid"
-            prompt = f"""This is an image of a chart or graph. You must now carefully and accurately reproduce it in an appropriate text format.
+            prompt = f"""This is an image of a chart or graph. You must now carefully and accurately reproduce it in an appropriate text format, ensuring the content remains correct.
 
 Caption: {caption if caption else 'Chart'}
 Extracted text elements: {', '.join(extracted_text) if extracted_text else 'None detected'}
 
-Please recreate this chart using one of these formats:
+Please recreate this chart using the most appropriate format:
 1. Mermaid chart syntax (for simple charts)
 2. ASCII table format (for data tables)
 3. Structured data description
 
-Choose the most appropriate format based on the chart type. Include:
-1. All data points and labels
-2. Axis information if applicable
-3. Legend or key information
-4. Proper scaling and relationships"""
+Ensure you use British English spelling.
+"""
 
         elif any(keyword in text_content for keyword in ['architecture', 'system', 'component', 'service', 'database']):
             suggested_format = "mermaid"
@@ -507,18 +493,7 @@ Choose the most appropriate format based on the chart type. Include:
 Caption: {caption if caption else 'Architecture Diagram'}
 Extracted text elements: {', '.join(extracted_text) if extracted_text else 'None detected'}
 
-Please recreate this architecture diagram using Mermaid syntax with:
-1. Proper component representation
-2. Clear relationships and connections
-3. All labels and annotations
-4. Appropriate diagram type (graph, C4, etc.)
-
-Use Mermaid syntax like:
-```mermaid
-graph TD
-    A[Component A] --> B[Component B]
-    B --> C[(Database)]
-```"""
+Please recreate this architecture diagram using Mermaid syntax. Ensure you use British English spelling."""
 
         else:
             # Generic diagram
@@ -528,12 +503,7 @@ graph TD
 Caption: {caption if caption else 'Diagram'}
 Extracted text elements: {', '.join(extracted_text) if extracted_text else 'None detected'}
 
-Please analyse the image and recreate it using the most appropriate format:
-1. Mermaid syntax for structured diagrams
-2. ASCII art for simple layouts
-3. Structured text description for complex diagrams
-
-Include all visible text, shapes, connections, and relationships. Choose the format that best represents the original structure and content."""
+Please analyse the image and recreate it using the most appropriate format, ensuring the content remains correct. Ensure you use British English spelling."""
 
         return prompt, suggested_format
 
