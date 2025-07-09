@@ -15,6 +15,23 @@ const (
 	ProcessingModeImages   ProcessingMode = "images"   // Image extraction focus
 )
 
+// TableFormerMode defines the TableFormer processing mode for table structure recognition
+type TableFormerMode string
+
+const (
+	TableFormerModeFast     TableFormerMode = "fast"     // Faster but less accurate table processing
+	TableFormerModeAccurate TableFormerMode = "accurate" // More accurate but slower table processing (default)
+)
+
+// VisionProcessingMode defines the vision model processing mode for enhanced document understanding
+type VisionProcessingMode string
+
+const (
+	VisionModeStandard    VisionProcessingMode = "standard"    // Standard vision processing
+	VisionModeSmolDocling VisionProcessingMode = "smoldocling" // Compact vision-language model (256M parameters)
+	VisionModeAdvanced    VisionProcessingMode = "advanced"    // Advanced vision processing with remote services
+)
+
 // OutputFormat defines the output format for processed documents
 type OutputFormat string
 
@@ -36,15 +53,23 @@ const (
 
 // DocumentProcessingRequest represents the input parameters for document processing
 type DocumentProcessingRequest struct {
-	Source         string         `json:"source"`                    // File path, URL, or base64 content
-	ProcessingMode ProcessingMode `json:"processing_mode,omitempty"` // Processing mode (default: basic)
-	OutputFormat   OutputFormat   `json:"output_format,omitempty"`   // Output format (default: markdown)
-	EnableOCR      bool           `json:"enable_ocr,omitempty"`      // Enable OCR processing
-	OCRLanguages   []string       `json:"ocr_languages,omitempty"`   // OCR language codes
-	PreserveImages bool           `json:"preserve_images,omitempty"` // Extract and preserve images
-	CacheEnabled   *bool          `json:"cache_enabled,omitempty"`   // Override global cache setting
-	Timeout        *int           `json:"timeout,omitempty"`         // Processing timeout in seconds
-	MaxFileSize    *int           `json:"max_file_size,omitempty"`   // Maximum file size in MB
+	Source               string               `json:"source"`                           // File path, URL, or base64 content
+	ProcessingMode       ProcessingMode       `json:"processing_mode,omitempty"`        // Processing mode (default: basic)
+	OutputFormat         OutputFormat         `json:"output_format,omitempty"`          // Output format (default: markdown)
+	EnableOCR            bool                 `json:"enable_ocr,omitempty"`             // Enable OCR processing
+	OCRLanguages         []string             `json:"ocr_languages,omitempty"`          // OCR language codes
+	PreserveImages       bool                 `json:"preserve_images,omitempty"`        // Extract and preserve images
+	CacheEnabled         *bool                `json:"cache_enabled,omitempty"`          // Override global cache setting
+	Timeout              *int                 `json:"timeout,omitempty"`                // Processing timeout in seconds
+	MaxFileSize          *int                 `json:"max_file_size,omitempty"`          // Maximum file size in MB
+	ExportFile           string               `json:"export_file,omitempty"`            // Optional fully qualified path to save the converted content
+	ClearFileCache       bool                 `json:"clear_file_cache,omitempty"`       // Force clear all cache entries for this source file before processing
+	TableFormerMode      TableFormerMode      `json:"table_former_mode,omitempty"`      // TableFormer processing mode for table structure recognition
+	CellMatching         *bool                `json:"cell_matching,omitempty"`          // Control table cell matching (true: use PDF cells, false: use predicted cells)
+	VisionMode           VisionProcessingMode `json:"vision_mode,omitempty"`            // Vision processing mode for enhanced document understanding
+	DiagramDescription   bool                 `json:"diagram_description,omitempty"`    // Enable diagram and chart description using vision models
+	ChartDataExtraction  bool                 `json:"chart_data_extraction,omitempty"`  // Enable data extraction from charts and graphs
+	EnableRemoteServices bool                 `json:"enable_remote_services,omitempty"` // Allow communication with external vision model services
 }
 
 // DocumentProcessingResponse represents the output from document processing
@@ -113,6 +138,7 @@ type BoundingBox struct {
 // ProcessingInfo contains information about the processing operation
 type ProcessingInfo struct {
 	ProcessingMode       ProcessingMode       `json:"processing_mode"`           // Mode used for processing
+	ProcessingMethod     string               `json:"processing_method"`         // Concise description of processing method used
 	HardwareAcceleration HardwareAcceleration `json:"hardware_acceleration"`     // Hardware acceleration used
 	VisionModel          string               `json:"vision_model,omitempty"`    // Vision model used (if any)
 	OCREnabled           bool                 `json:"ocr_enabled"`               // Whether OCR was enabled

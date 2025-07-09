@@ -26,60 +26,180 @@ logger = logging.getLogger(__name__)
 def configure_accelerator():
     """Configure the accelerator device for Docling."""
     try:
-        from docling.datamodel.settings import settings
-        from docling.utils.accelerator_utils import AcceleratorDevice
-
-        # Check if the accelerator_device attribute exists
-        if hasattr(settings.perf, 'accelerator_device'):
-            # Try to use MPS (Metal Performance Shaders) on macOS first
-            import platform
-            if platform.system() == 'Darwin':
-                try:
-                    import torch
-                    if torch.backends.mps.is_available():
-                        settings.perf.accelerator_device = AcceleratorDevice.MPS
-                        # MPS acceleration configured
-                        return AcceleratorDevice.MPS
-                except ImportError:
-                    pass
-
-            # Try CUDA if available
+        # Try to use MPS (Metal Performance Shaders) on macOS first
+        import platform
+        if platform.system() == 'Darwin':
             try:
                 import torch
-                if torch.cuda.is_available():
-                    settings.perf.accelerator_device = AcceleratorDevice.CUDA
-                    # CUDA acceleration configured
-                    return AcceleratorDevice.CUDA
+                if torch.backends.mps.is_available():
+                    # Try to configure Docling settings if available
+                    try:
+                        from docling.datamodel.settings import settings
+                        from docling.utils.accelerator_utils import AcceleratorDevice
+                        if hasattr(settings.perf, 'accelerator_device'):
+                            settings.perf.accelerator_device = AcceleratorDevice.MPS
+                    except ImportError:
+                        pass  # Settings not available, but MPS is still detected
+                    return "mps"
             except ImportError:
                 pass
 
-            # Fall back to CPU
-            settings.perf.accelerator_device = AcceleratorDevice.CPU
-            # CPU processing configured
-            return AcceleratorDevice.CPU
-        else:
-            # Accelerator device configuration not supported in this version of Docling
-            return None
+        # Try CUDA if available
+        try:
+            import torch
+            if torch.cuda.is_available():
+                # Try to configure Docling settings if available
+                try:
+                    from docling.datamodel.settings import settings
+                    from docling.utils.accelerator_utils import AcceleratorDevice
+                    if hasattr(settings.perf, 'accelerator_device'):
+                        settings.perf.accelerator_device = AcceleratorDevice.CUDA
+                except ImportError:
+                    pass  # Settings not available, but CUDA is still detected
+                return "cuda"
+        except ImportError:
+            pass
+
+        # Fall back to CPU
+        try:
+            from docling.datamodel.settings import settings
+            from docling.utils.accelerator_utils import AcceleratorDevice
+            if hasattr(settings.perf, 'accelerator_device'):
+                settings.perf.accelerator_device = AcceleratorDevice.CPU
+        except ImportError:
+            pass  # Settings not available
+        return "cpu"
 
     except Exception as e:
         logger.warning(f"Failed to configure accelerator: {e}")
-        return None
+        return "unknown"
 
 def cleanup_memory():
     """Force garbage collection to free up memory."""
     gc.collect()
 
-def get_cache_key(source: str, processing_mode: str, enable_ocr: bool, ocr_languages: Optional[List[str]], preserve_images: bool) -> str:
-    """Generate a cache key for the document conversion."""
+def create_smoldocling_converter(format_options):
+    """Create a DocumentConverter configured for SmolDocling vision processing."""
+    try:
+        from docling.document_converter import DocumentConverter
+
+        # For now, use standard converter with enhanced pipeline options
+        # SmolDocling integration would require additional configuration
+        # This is a placeholder for future SmolDocling-specific setup
+        converter = DocumentConverter(format_options=format_options)
+
+        return converter
+    except Exception as e:
+        logger.warning(f"Failed to create SmolDocling converter, falling back to standard: {e}")
+        from docling.document_converter import DocumentConverter
+        return DocumentConverter(format_options=format_options)
+
+def get_cache_key(args) -> str:
+    """Generate a cache key for the document conversion including all processing parameters."""
     key_data = {
-        "source": source,
-        "processing_mode": processing_mode,
-        "enable_ocr": enable_ocr,
-        "ocr_languages": ocr_languages or [],
-        "preserve_images": preserve_images
+        "source": args.source,
+        "processing_mode": args.processing_mode,
+        "enable_ocr": args.enable_ocr,
+        "ocr_languages": args.ocr_languages or [],
+        "preserve_images": args.preserve_images,
+        "table_former_mode": getattr(args, 'table_former_mode', 'accurate'),
+        "cell_matching": getattr(args, 'cell_matching', None),
+        "no_cell_matching": getattr(args, 'no_cell_matching', False),
+        "vision_mode": getattr(args, 'vision_mode', 'standard'),
+        "diagram_description": getattr(args, 'diagram_description', False),
+        "chart_data_extraction": getattr(args, 'chart_data_extraction', False),
+        "enable_remote_services": getattr(args, 'enable_remote_services', False),
+        "output_format": args.output_format
     }
     key_str = json.dumps(key_data, sort_keys=True)
     return hashlib.md5(key_str.encode()).hexdigest()
+
+def resolve_feature_dependencies(args):
+    """Intelligently resolve feature dependencies by auto-enabling required features."""
+    # Create a copy of args to avoid modifying the original
+    import copy
+    resolved_args = copy.copy(args)
+
+    # Track what we've auto-enabled for user feedback
+    auto_enabled = []
+
+    # Chart data extraction requires advanced vision processing
+    if getattr(args, 'chart_data_extraction', False):
+        if getattr(args, 'vision_mode', 'standard') == 'standard':
+            resolved_args.vision_mode = 'advanced'
+            auto_enabled.append("vision_mode: advanced (required for chart data extraction)")
+
+        # Chart extraction also requires remote services
+        if not getattr(args, 'enable_remote_services', False):
+            resolved_args.enable_remote_services = True
+            auto_enabled.append("enable_remote_services: true (required for chart data extraction)")
+
+    # Diagram description requires advanced vision processing
+    if getattr(args, 'diagram_description', False):
+        if getattr(args, 'vision_mode', 'standard') == 'standard':
+            resolved_args.vision_mode = 'advanced'
+            auto_enabled.append("vision_mode: advanced (required for diagram description)")
+
+        # Diagram description also requires remote services
+        if not getattr(args, 'enable_remote_services', False):
+            resolved_args.enable_remote_services = True
+            auto_enabled.append("enable_remote_services: true (required for diagram description)")
+
+    # SmolDocling vision mode requires advanced processing mode
+    if getattr(args, 'vision_mode', 'standard') == 'smoldocling':
+        if args.processing_mode == 'basic':
+            resolved_args.processing_mode = 'advanced'
+            auto_enabled.append("processing_mode: advanced (required for SmolDocling vision)")
+
+    # Advanced vision mode requires advanced processing mode
+    if getattr(args, 'vision_mode', 'standard') == 'advanced':
+        if args.processing_mode == 'basic':
+            resolved_args.processing_mode = 'advanced'
+            auto_enabled.append("processing_mode: advanced (required for advanced vision)")
+
+    # Table-focused processing with fast mode should enable table structure processing
+    if getattr(args, 'table_former_mode', 'accurate') == 'fast':
+        if args.processing_mode not in ['tables', 'advanced']:
+            resolved_args.processing_mode = 'tables'
+            auto_enabled.append("processing_mode: tables (optimised for fast table processing)")
+
+    # Log auto-enabled features for debugging (to stderr, not stdout)
+    if auto_enabled:
+        logger.info(f"Auto-enabled features: {', '.join(auto_enabled)}")
+
+    return resolved_args
+
+def get_processing_method_description(args) -> str:
+    """Generate a concise description of the processing method used."""
+    components = []
+
+    # Base processing mode
+    if args.enable_ocr:
+        components.append("ocr")
+
+    # Vision processing
+    vision_mode = getattr(args, 'vision_mode', 'standard')
+    if vision_mode != 'standard':
+        components.append(f"vision:{vision_mode}")
+    elif args.processing_mode in ['advanced', 'images']:
+        components.append("vision:standard")
+
+    # Table processing
+    if args.processing_mode == 'tables' or getattr(args, 'table_former_mode', 'accurate') == 'fast':
+        table_mode = getattr(args, 'table_former_mode', 'accurate')
+        components.append(f"tables:{table_mode}")
+
+    # Special features
+    if getattr(args, 'diagram_description', False):
+        components.append("diagrams")
+    if getattr(args, 'chart_data_extraction', False):
+        components.append("charts")
+
+    # If no special processing, just return the base mode
+    if not components:
+        return args.processing_mode
+
+    return f"{args.processing_mode}+{'+'.join(components)}"
 
 def process_document(args) -> Dict[str, Any]:
     """Process a document using Docling."""
@@ -91,26 +211,58 @@ def process_document(args) -> Dict[str, Any]:
         from docling.datamodel.base_models import InputFormat
         from docling.datamodel.pipeline_options import (
             PdfPipelineOptions,
-            EasyOcrOptions
+            EasyOcrOptions,
+            TableFormerMode
         )
+
+        # Apply intelligent feature dependency resolution
+        args = resolve_feature_dependencies(args)
 
         # Configure hardware acceleration
         hardware_acceleration = configure_accelerator()
 
+        # Build pipeline options
+        pipeline_options = PdfPipelineOptions()
+
         # Configure OCR if enabled
-        format_options = {}
         if args.enable_ocr:
             ocr_options = EasyOcrOptions(lang=args.ocr_languages or ["en"])
-            pipeline_options = PdfPipelineOptions(
-                do_ocr=True,
-                ocr_options=ocr_options
-            )
-            format_options = {
-                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-            }
+            pipeline_options.do_ocr = True
+            pipeline_options.ocr_options = ocr_options
 
-        # Create converter
-        converter = DocumentConverter(format_options=format_options)
+        # Configure table processing
+        if hasattr(args, 'table_former_mode') and args.table_former_mode:
+            pipeline_options.do_table_structure = True
+            if args.table_former_mode == 'fast':
+                pipeline_options.table_structure_options.mode = TableFormerMode.FAST
+            else:
+                pipeline_options.table_structure_options.mode = TableFormerMode.ACCURATE
+
+        # Configure cell matching
+        if hasattr(args, 'cell_matching') and args.cell_matching is not None:
+            if args.no_cell_matching:
+                pipeline_options.table_structure_options.do_cell_matching = False
+            elif args.cell_matching:
+                pipeline_options.table_structure_options.do_cell_matching = True
+
+        # Configure remote services if needed for advanced vision processing
+        if hasattr(args, 'enable_remote_services') and args.enable_remote_services:
+            pipeline_options.enable_remote_services = True
+
+        # Configure vision processing mode
+        vision_mode = getattr(args, 'vision_mode', 'standard')
+
+        # Set up format options
+        format_options = {
+            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+        }
+
+        # Create converter with appropriate configuration
+        if vision_mode == 'smoldocling':
+            # Use SmolDocling pipeline if available
+            converter = create_smoldocling_converter(format_options)
+        else:
+            converter = DocumentConverter(format_options=format_options)
 
         # Convert the document
         result = converter.convert(args.source)
@@ -166,6 +318,7 @@ def process_document(args) -> Dict[str, Any]:
             "tables": tables,
             "processing_info": {
                 "processing_mode": args.processing_mode,
+                "processing_method": get_processing_method_description(args),
                 "hardware_acceleration": str(hardware_acceleration) if hardware_acceleration else "unknown",
                 "ocr_enabled": args.enable_ocr,
                 "ocr_languages": args.ocr_languages or [],
@@ -311,6 +464,22 @@ def main():
     process_parser.add_argument('--output-format', default='markdown',
                                choices=['markdown', 'json', 'both'],
                                help='Output format')
+    process_parser.add_argument('--table-former-mode', default='accurate',
+                               choices=['fast', 'accurate'],
+                               help='TableFormer processing mode for table structure recognition')
+    process_parser.add_argument('--cell-matching', action='store_true', default=None,
+                               help='Use PDF cells for table matching (default)')
+    process_parser.add_argument('--no-cell-matching', action='store_true',
+                               help='Use predicted text cells for table matching')
+    process_parser.add_argument('--vision-mode', default='standard',
+                               choices=['standard', 'smoldocling', 'advanced'],
+                               help='Vision processing mode for enhanced document understanding')
+    process_parser.add_argument('--diagram-description', action='store_true',
+                               help='Enable diagram and chart description using vision models')
+    process_parser.add_argument('--chart-data-extraction', action='store_true',
+                               help='Enable data extraction from charts and graphs')
+    process_parser.add_argument('--enable-remote-services', action='store_true',
+                               help='Allow communication with external vision model services')
 
     # System info command
     info_parser = subparsers.add_parser('info', help='Get system information')

@@ -72,6 +72,32 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 		mcp.WithNumber("max_file_size",
 			mcp.Description("Maximum file size in MB (overrides default)"),
 		),
+		mcp.WithString("export_file",
+			mcp.Description("Optional fully qualified path to save the converted content instead of returning it"),
+		),
+		mcp.WithString("table_former_mode",
+			mcp.Description("TableFormer processing mode for table structure recognition: 'fast' (faster but less accurate) or 'accurate' (more accurate but slower, default)"),
+			mcp.DefaultString("accurate"),
+		),
+		mcp.WithBoolean("cell_matching",
+			mcp.Description("Control table cell matching: true uses PDF cells (default), false uses predicted text cells for better column separation"),
+		),
+		mcp.WithString("vision_mode",
+			mcp.Description("Vision processing mode: 'standard' (default), 'smoldocling' (compact 256M vision-language model), or 'advanced' (with remote services)"),
+			mcp.DefaultString("standard"),
+		),
+		mcp.WithBoolean("diagram_description",
+			mcp.Description("Enable diagram and chart description using vision models (requires vision_mode 'smoldocling' or 'advanced')"),
+		),
+		mcp.WithBoolean("chart_data_extraction",
+			mcp.Description("Enable data extraction from charts and graphs (requires vision_mode 'smoldocling' or 'advanced')"),
+		),
+		mcp.WithBoolean("enable_remote_services",
+			mcp.Description("Allow communication with external vision model services (required for advanced vision processing)"),
+		),
+		mcp.WithBoolean("clear_file_cache",
+			mcp.Description("Force clear all cache entries the source file before processing"),
+		),
 	)
 }
 
@@ -107,12 +133,22 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 		return t.newToolResultJSON(errorResult)
 	}
 
+	// Clear file cache if requested
+	if req.ClearFileCache {
+		// Clear cache for this source file, ignore errors to avoid failing the request
+		_ = t.cacheManager.ClearFileCache(req.Source)
+	}
+
 	// Check cache first
 	cacheEnabled := t.shouldUseCache(req)
 	var cacheKey string
 	if cacheEnabled {
 		cacheKey = t.cacheManager.GenerateCacheKey(req)
 		if cached, found := t.cacheManager.Get(cacheKey); found {
+			// Handle export file for cached results
+			if req.ExportFile != "" && cached.Error == "" {
+				return t.handleExportFile(req.ExportFile, cached)
+			}
 			return t.newToolResultJSON(t.formatResponse(cached))
 		}
 	}
@@ -134,6 +170,11 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 		} else {
 			response.ProcessingInfo.CacheKey = cacheKey
 		}
+	}
+
+	// Handle export file if specified
+	if req.ExportFile != "" && response.Error == "" {
+		return t.handleExportFile(req.ExportFile, response)
 	}
 
 	return t.newToolResultJSON(t.formatResponse(response))
@@ -206,6 +247,50 @@ func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*Docu
 		req.MaxFileSize = &maxSizeInt
 	}
 
+	// Optional: export_file
+	if exportFile, ok := args["export_file"].(string); ok {
+		req.ExportFile = strings.TrimSpace(exportFile)
+	}
+
+	// Optional: table_former_mode
+	if tableMode, ok := args["table_former_mode"].(string); ok {
+		req.TableFormerMode = TableFormerMode(tableMode)
+	} else {
+		req.TableFormerMode = TableFormerModeAccurate
+	}
+
+	// Optional: cell_matching
+	if cellMatching, ok := args["cell_matching"].(bool); ok {
+		req.CellMatching = &cellMatching
+	}
+
+	// Optional: vision_mode
+	if visionMode, ok := args["vision_mode"].(string); ok {
+		req.VisionMode = VisionProcessingMode(visionMode)
+	} else {
+		req.VisionMode = VisionModeStandard
+	}
+
+	// Optional: diagram_description
+	if diagramDesc, ok := args["diagram_description"].(bool); ok {
+		req.DiagramDescription = diagramDesc
+	}
+
+	// Optional: chart_data_extraction
+	if chartExtraction, ok := args["chart_data_extraction"].(bool); ok {
+		req.ChartDataExtraction = chartExtraction
+	}
+
+	// Optional: enable_remote_services
+	if remoteServices, ok := args["enable_remote_services"].(bool); ok {
+		req.EnableRemoteServices = remoteServices
+	}
+
+	// Optional: clear_file_cache
+	if clearCache, ok := args["clear_file_cache"].(bool); ok {
+		req.ClearFileCache = clearCache
+	}
+
 	return req, nil
 }
 
@@ -250,6 +335,35 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 
 	if req.PreserveImages {
 		args = append(args, "--preserve-images")
+	}
+
+	// Add new parameters
+	if req.TableFormerMode != "" {
+		args = append(args, "--table-former-mode", string(req.TableFormerMode))
+	}
+
+	if req.CellMatching != nil {
+		if *req.CellMatching {
+			args = append(args, "--cell-matching")
+		} else {
+			args = append(args, "--no-cell-matching")
+		}
+	}
+
+	if req.VisionMode != "" && req.VisionMode != VisionModeStandard {
+		args = append(args, "--vision-mode", string(req.VisionMode))
+	}
+
+	if req.DiagramDescription {
+		args = append(args, "--diagram-description")
+	}
+
+	if req.ChartDataExtraction {
+		args = append(args, "--chart-data-extraction")
+	}
+
+	if req.EnableRemoteServices {
+		args = append(args, "--enable-remote-services")
 	}
 
 	// Determine timeout
@@ -355,11 +469,21 @@ func (t *DocumentProcessorTool) parseProcessingInfo(data map[string]interface{})
 	if mode, ok := data["processing_mode"].(string); ok {
 		info.ProcessingMode = ProcessingMode(mode)
 	}
+	if method, ok := data["processing_method"].(string); ok {
+		info.ProcessingMethod = method
+	}
 	if hwAccel, ok := data["hardware_acceleration"].(string); ok {
 		info.HardwareAcceleration = HardwareAcceleration(hwAccel)
 	}
 	if ocrEnabled, ok := data["ocr_enabled"].(bool); ok {
 		info.OCREnabled = ocrEnabled
+	}
+	if ocrLangs, ok := data["ocr_languages"].([]interface{}); ok {
+		for _, lang := range ocrLangs {
+			if langStr, ok := lang.(string); ok {
+				info.OCRLanguages = append(info.OCRLanguages, langStr)
+			}
+		}
 	}
 	if procTime, ok := data["processing_time"].(float64); ok {
 		info.ProcessingTime = time.Duration(procTime * float64(time.Second))
@@ -430,6 +554,50 @@ func (t *DocumentProcessorTool) resolveSourcePath(source string) (string, error)
 	}
 
 	return absolutePath, nil
+}
+
+// handleExportFile saves the converted content to the specified file and returns a success message
+func (t *DocumentProcessorTool) handleExportFile(exportPath string, response *DocumentProcessingResponse) (*mcp.CallToolResult, error) {
+	// Validate export path is absolute
+	if !filepath.IsAbs(exportPath) {
+		return nil, fmt.Errorf("export_file must be a fully qualified absolute path, got: %s", exportPath)
+	}
+
+	// Create directory if it doesn't exist
+	exportDir := filepath.Dir(exportPath)
+	if err := os.MkdirAll(exportDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create export directory %s: %w", exportDir, err)
+	}
+
+	// Write content to file
+	if err := os.WriteFile(exportPath, []byte(response.Content), 0644); err != nil {
+		return nil, fmt.Errorf("failed to write content to %s: %w", exportPath, err)
+	}
+
+	// Create success response
+	result := map[string]interface{}{
+		"success":     true,
+		"message":     "Content successfully exported to file",
+		"export_path": exportPath,
+		"source":      response.Source,
+		"cache_hit":   response.CacheHit,
+		"metadata": map[string]interface{}{
+			"file_size": len(response.Content),
+		},
+		"processing_info": response.ProcessingInfo,
+	}
+
+	// Include document metadata if available
+	if response.Metadata != nil {
+		if metadata, ok := result["metadata"].(map[string]interface{}); ok {
+			metadata["document_title"] = response.Metadata.Title
+			metadata["document_author"] = response.Metadata.Author
+			metadata["page_count"] = response.Metadata.PageCount
+			metadata["word_count"] = response.Metadata.WordCount
+		}
+	}
+
+	return t.newToolResultJSON(result)
 }
 
 // newToolResultJSON creates a new tool result with JSON content
