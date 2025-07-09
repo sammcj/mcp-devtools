@@ -98,6 +98,24 @@ Enhance the `process_document` tool with:
 - [x] `chart_data_extraction`: Enable chart data extraction
 - [x] `enable_remote_services`: Allow external vision services
 - [x] `export_file`: Optional fully qualified path to save converted content
+- [x] `clear_file_cache`: Force clear all cache entries for specific source file
+
+### ✅ COMPLETED - Enhanced Table Processing
+- [x] **Task 2.3: Table Export Formats** - Added CSV, HTML, and Markdown export for extracted tables
+- [x] Enhanced table extraction with multiple export formats (CSV, HTML, Markdown)
+- [x] Structured table data extraction with headers, rows, and metadata
+- [x] HTML escaping for safe table output
+- [x] Bounding box extraction for table positioning
+- [x] Support for different table data formats from Docling API
+
+### ✅ COMPLETED - Structured JSON Export Foundation
+- [x] **Task 3.1: Structured JSON Export** - Foundation implemented
+- [x] Added `export_structured_json` function with comprehensive document structure
+- [x] Document hierarchy extraction (pages, elements, tables, images)
+- [x] Element categorisation (headings, paragraphs, lists, sections)
+- [x] Document statistics and metadata extraction
+- [x] Bounding box and positioning information
+- [x] Support for multiple output formats (markdown, json, both)
 
 ### 🔄 REMAINING IMPLEMENTATION TASKS
 
