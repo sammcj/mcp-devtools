@@ -55,6 +55,14 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-docling-3.13
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Set up Go cache
         uses: actions/cache@v4
         with:
@@ -137,6 +145,14 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-docling-3.13
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Set up Go cache
         uses: actions/cache@v4
         with:
@@ -215,6 +231,14 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/pip
+          key: ${{ runner.os }}-pip-docling-3.13
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Set up Go cache
         uses: actions/cache@v4
