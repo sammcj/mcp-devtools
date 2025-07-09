@@ -128,6 +128,7 @@ Choose from preset profiles that configure multiple parameters automatically:
 - Diagram detection and description
 - Chart data extraction
 - No external LLM required
+- Slower than `text-and-image`
 
 #### `llm-external` - Advanced Diagram Processing
 ```json
@@ -139,6 +140,8 @@ Choose from preset profiles that configure multiple parameters automatically:
 - Full diagram-to-Mermaid conversion
 - Requires LLM environment variables
 - Most advanced processing capabilities
+- Slower processing time
+- Best for documents with diagrams and charts
 - Only available when `DOCLING_LLM_*` environment variables are configured
 
 ### Output Control
