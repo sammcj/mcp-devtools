@@ -1011,27 +1011,52 @@ func (t *DocumentProcessorTool) insertMermaidDiagramsIntoMarkdown(content string
 			continue // Skip diagrams without Mermaid code
 		}
 
-		// Create the Mermaid code block
-		mermaidBlock := fmt.Sprintf("\n\n```mermaid\n%s\n```\n\n*Enhanced diagram: %s*\n",
-			diagram.MermaidCode, diagram.Description)
+		// Create the Mermaid code block with reference to original image
+		mermaidBlock := fmt.Sprintf("\n\n**Mermaid Diagram (converted from %s):**\n\n```mermaid\n%s\n```\n\n*%s*\n",
+			diagram.ID, diagram.MermaidCode, diagram.Description)
 
-		// Try to find a good insertion point based on diagram caption or description
-		insertionPoint := ""
-		if diagram.Caption != "" {
-			insertionPoint = diagram.Caption
-		} else if diagram.Description != "" {
-			// Use first few words of description
-			words := strings.Fields(diagram.Description)
-			if len(words) > 3 {
-				insertionPoint = strings.Join(words[:3], " ")
+		// Try to find the original image reference to insert the Mermaid diagram nearby
+		imagePattern := fmt.Sprintf("![%s]", diagram.ID)
+		if strings.Contains(updatedContent, imagePattern) {
+			// Find the end of the image details section for this diagram
+			imageIndex := strings.Index(updatedContent, imagePattern)
+
+			// Look for the end of the details section (</details>)
+			detailsEndPattern := "</details>"
+			searchStart := imageIndex
+			detailsEndIndex := strings.Index(updatedContent[searchStart:], detailsEndPattern)
+
+			if detailsEndIndex != -1 {
+				// Insert after the details section
+				insertIndex := searchStart + detailsEndIndex + len(detailsEndPattern)
+				updatedContent = updatedContent[:insertIndex] + mermaidBlock + updatedContent[insertIndex:]
 			} else {
-				insertionPoint = diagram.Description
+				// Fallback: insert after the image line
+				nextLineIndex := strings.Index(updatedContent[imageIndex:], "\n")
+				if nextLineIndex != -1 {
+					insertIndex := imageIndex + nextLineIndex
+					updatedContent = updatedContent[:insertIndex] + mermaidBlock + updatedContent[insertIndex:]
+				} else {
+					// Last resort: append at the end
+					updatedContent += mermaidBlock
+				}
 			}
-		}
+		} else {
+			// Try to find a good insertion point based on diagram caption or description
+			insertionPoint := ""
+			if diagram.Caption != "" {
+				insertionPoint = diagram.Caption
+			} else if diagram.Description != "" {
+				// Use first few words of description
+				words := strings.Fields(diagram.Description)
+				if len(words) > 3 {
+					insertionPoint = strings.Join(words[:3], " ")
+				} else {
+					insertionPoint = diagram.Description
+				}
+			}
 
-		if insertionPoint != "" {
-			// Look for the insertion point in the content
-			if strings.Contains(updatedContent, insertionPoint) {
+			if insertionPoint != "" && strings.Contains(updatedContent, insertionPoint) {
 				// Insert the Mermaid block after the first occurrence
 				insertIndex := strings.Index(updatedContent, insertionPoint) + len(insertionPoint)
 				updatedContent = updatedContent[:insertIndex] + mermaidBlock + updatedContent[insertIndex:]
@@ -1039,9 +1064,6 @@ func (t *DocumentProcessorTool) insertMermaidDiagramsIntoMarkdown(content string
 				// Fallback: append at the end
 				updatedContent += mermaidBlock
 			}
-		} else {
-			// No good insertion point found, append at the end
-			updatedContent += mermaidBlock
 		}
 	}
 

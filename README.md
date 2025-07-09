@@ -151,6 +151,8 @@ You can override the default provider by specifying the `provider` parameter in 
 
 ### Document Processing
 
+**Experimental!** This tool is in active development and has more than a few rough edges.
+
 **Intelligent Document Conversion Tool**: A powerful tool that converts PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, and JPG documents to structured Markdown using the [Docling](https://docling-project.github.io/docling/) library.
 
 - **Multi-format Support**: PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG document processing
