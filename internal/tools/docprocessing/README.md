@@ -62,7 +62,7 @@ DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
 
 # LLM Configuration (for advanced diagram processing)
 DOCLING_LLM_OPENAI_API_BASE="http://localhost:11434/v1"
-DOCLING_LLM_MODEL_NAME="mistral-small-3.2-24b-2506-ud:q6_k_xl"
+DOCLING_LLM_MODEL_NAME="mistral-small3.2:24b"
 DOCLING_LLM_OPENAI_API_KEY="your-api-key-here"
 ```
 
@@ -261,7 +261,7 @@ The tool supports any OpenAI-compatible API endpoint, e.g:
 - **OpenAI**: `https://api.openai.com/v1`
 - **OpenRouter**: `https://openrouter.ai/api/v1`
 
-Ensure you select a model that supports vision input (e.g., `mistral-small-3.2-24b-2506-ud:q6_k_xl`, `gpt-4-vision-preview`, `claude-3-sonnet`).
+Ensure you select a model that supports vision input (e.g., `mistral-small3.2:24b`, `gpt-4-vision-preview`, `claude-3-sonnet`).
 
 ### Diagram Analysis Features
 
