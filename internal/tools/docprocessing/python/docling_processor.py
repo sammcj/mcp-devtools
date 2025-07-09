@@ -1027,6 +1027,11 @@ def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
                 "confidence": 0.0
             }
 
+            # Extract base64 image data for LLM vision processing
+            base64_data = extract_base64_image_data(figure)
+            if base64_data:
+                diagram_data["base64_data"] = base64_data
+
             # Extract basic information
             if hasattr(figure, 'alt_text') and figure.alt_text:
                 diagram_data["description"] = figure.alt_text
@@ -1131,6 +1136,59 @@ def generate_vision_description(figure, args) -> Optional[Dict[str, Any]]:
 
     except Exception as e:
         logger.warning(f"Failed to generate vision description: {e}")
+        return None
+
+def extract_base64_image_data(figure) -> Optional[str]:
+    """Extract base64-encoded image data from a Docling figure element for LLM vision processing."""
+    try:
+        import base64
+
+        # Try to extract raw image bytes first
+        image_bytes = extract_image_data_from_figure(figure)
+        if image_bytes:
+            # Encode as base64 string
+            return base64.b64encode(image_bytes).decode('utf-8')
+
+        # Alternative: Try to extract from Docling's image structure
+        if hasattr(figure, 'image'):
+            image_obj = figure.image
+
+            # Check for PIL Image object
+            if hasattr(image_obj, 'save'):
+                import io
+                buffer = io.BytesIO()
+                # Save as PNG for consistent format
+                image_obj.save(buffer, format='PNG')
+                image_bytes = buffer.getvalue()
+                return base64.b64encode(image_bytes).decode('utf-8')
+
+            # Check for image data in different formats
+            if hasattr(image_obj, 'data') and image_obj.data:
+                if isinstance(image_obj.data, bytes):
+                    return base64.b64encode(image_obj.data).decode('utf-8')
+                elif isinstance(image_obj.data, str) and image_obj.data.startswith('data:image/'):
+                    # Already base64 encoded
+                    return image_obj.data.split(',')[1]
+
+        # Try to extract from document pages if figure has page reference
+        if hasattr(figure, 'page_number') and hasattr(figure, '_parent_document'):
+            try:
+                doc = figure._parent_document
+                if hasattr(doc, 'pages') and figure.page_number <= len(doc.pages):
+                    page = doc.pages[figure.page_number - 1]
+                    if hasattr(page, 'images'):
+                        # Find matching image on the page
+                        for img in page.images:
+                            if hasattr(img, 'data') and isinstance(img.data, bytes):
+                                return base64.b64encode(img.data).decode('utf-8')
+            except Exception as e:
+                logger.warning(f"Failed to extract from page images: {e}")
+
+        logger.info("No base64 image data available for this figure")
+        return None
+
+    except Exception as e:
+        logger.warning(f"Failed to extract base64 image data: {e}")
         return None
 
 def extract_image_data_from_figure(figure) -> Optional[bytes]:
@@ -1549,14 +1607,19 @@ def replace_image_placeholders_with_links(content: str, images: List[Dict[str, A
             # Create relative path from markdown file to image
             image_path = image.get('file_path', '')
             if image_path:
-                # Get just the filename and subdirectory for relative path
-                # e.g., if image is at /path/to/doc/extracted_images/picture_1.png
-                # and markdown might be at /path/to/doc/output.md
-                # we want: extracted_images/picture_1.png
+                # Calculate proper relative path from export file to image
                 try:
-                    image_filename = os.path.basename(image_path)
-                    image_dir = os.path.basename(os.path.dirname(image_path))
-                    relative_path = f"{image_dir}/{image_filename}"
+                    # Get the absolute path of the image
+                    abs_image_path = os.path.abspath(image_path)
+
+                    # Get the directory where the markdown file will be saved
+                    if hasattr(args, 'export_file') and args.export_file:
+                        export_dir = os.path.dirname(os.path.abspath(args.export_file))
+                        # Calculate relative path from export directory to image
+                        relative_path = os.path.relpath(abs_image_path, export_dir)
+                    else:
+                        # Fallback: use relative path from current working directory
+                        relative_path = os.path.relpath(abs_image_path, os.getcwd())
                 except:
                     # Fallback to just the filename
                     relative_path = os.path.basename(image_path)
@@ -1606,10 +1669,12 @@ def save_image_to_file(image_data: str, filename: str, args=None) -> str:
         import os
 
         # Determine the output directory
-        # Default to same directory as source file if no export path provided
         output_dir = None
 
-        if args and hasattr(args, 'source'):
+        # If export_file is provided, use its directory
+        if args and hasattr(args, 'export_file') and args.export_file:
+            output_dir = os.path.dirname(os.path.abspath(args.export_file))
+        elif args and hasattr(args, 'source'):
             source_path = args.source
             # Check if source is a file path (not URL)
             if not source_path.startswith(('http://', 'https://')):
@@ -1622,12 +1687,8 @@ def save_image_to_file(image_data: str, filename: str, args=None) -> str:
             # Fallback to current working directory
             output_dir = os.getcwd()
 
-        # Create images subdirectory
-        images_dir = os.path.join(output_dir, 'extracted_images')
-        os.makedirs(images_dir, exist_ok=True)
-
-        # Create full file path
-        file_path = os.path.join(images_dir, filename)
+        # Save images directly in the same directory as the markdown (no subdirectory)
+        file_path = os.path.join(output_dir, filename)
 
         # Decode base64 data and save to file
         image_bytes = base64.b64decode(image_data)

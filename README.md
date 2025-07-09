@@ -151,16 +151,19 @@ You can override the default provider by specifying the `provider` parameter in 
 
 ### Document Processing
 
-**Intelligent Document Conversion Tool**: A powerful tool that converts PDF, DOCX, XLSX, and PPTX documents to structured Markdown using the [Docling](https://docling-project.github.io/docling/) library.
+**Intelligent Document Conversion Tool**: A powerful tool that converts PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, and JPG documents to structured Markdown using the [Docling](https://docling-project.github.io/docling/) library.
 
-- **Multi-format Support**: PDF, DOCX, XLSX, PPTX document processing
+- **Multi-format Support**: PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG document processing
+- **Processing Profiles**: Simplified interface with preset configurations for common use cases
 - **Intelligent Conversion**: Preserves document structure and formatting
 - **OCR Support**: Extract text from scanned documents
 - **Hardware Acceleration**: Supports MPS (macOS), CUDA, and CPU processing
 - **Caching System**: Intelligent caching to avoid reprocessing identical documents
 - **Metadata Extraction**: Extracts document metadata (title, author, page count, etc.)
 - **Table & Image Extraction**: Preserves tables and images in markdown format
-- **Flexible Processing Modes**: Basic, advanced, OCR-focused, table-focused, and image-focused modes
+- **Diagram Analysis**: Advanced diagram detection and description using vision models
+- **Mermaid Generation**: Convert diagrams to editable Mermaid syntax using external LLM
+- **Auto-Save**: Automatically saves processed content to files by default
 
 **Note**: The document processor tool requires Python 3.10+ (ideally 3.13+) with the Docling library installed (`pip install docling`), mcp-devtools will attempt to install the package if it's unavailable, if you don't see the tool available in your client check that you have docling installed and Python in your path. See the [Document Processing README](internal/tools/docprocessing/README.md) for detailed installation and configuration instructions.
 
@@ -612,11 +615,11 @@ Get usage examples for a specific shadcn ui component:
 
 ### Document Processing
 
-The `process_document` tool provides intelligent document conversion capabilities for PDF, DOCX, XLSX, and PPTX files:
+The `process_document` tool provides intelligent document conversion capabilities for PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, and JPG files:
 
-#### Basic Document Processing
+#### Simple Usage (Recommended)
 
-Process a PDF document:
+Process a document using the simplified interface with processing profiles:
 
 ```json
 {
@@ -627,9 +630,67 @@ Process a PDF document:
 }
 ```
 
-#### Advanced Document Processing
+This uses the default `text-and-image` profile and automatically saves the processed content to `/path/to/document.md`.
 
-Process a document with OCR and image preservation:
+#### Processing Profiles
+
+Choose from preset profiles that configure multiple parameters automatically:
+
+**Basic Text Extraction:**
+```json
+{
+  "name": "process_document",
+  "arguments": {
+    "source": "/path/to/document.pdf",
+    "profile": "basic"
+  }
+}
+```
+
+**Scanned Document Processing:**
+```json
+{
+  "name": "process_document",
+  "arguments": {
+    "source": "/path/to/scanned-document.pdf",
+    "profile": "scanned"
+  }
+}
+```
+
+**Advanced Diagram Processing (requires LLM configuration):**
+```json
+{
+  "name": "process_document",
+  "arguments": {
+    "source": "/path/to/document.pdf",
+    "profile": "llm-external"
+  }
+}
+```
+
+**Return Content Inline:**
+```json
+{
+  "name": "process_document",
+  "arguments": {
+    "source": "/path/to/document.pdf",
+    "inline": true
+  }
+}
+```
+
+#### Available Profiles
+
+- **`basic`**: Fast text extraction only
+- **`text-and-image`**: Text and image extraction with tables (default)
+- **`scanned`**: OCR-focused processing for scanned documents
+- **`llm-smoldocling`**: Enhanced with SmolDocling vision model
+- **`llm-external`**: Full diagram-to-Mermaid conversion (requires LLM configuration)
+
+#### Advanced Usage
+
+For fine-grained control, you can still use individual parameters:
 
 ```json
 {
@@ -640,20 +701,13 @@ Process a document with OCR and image preservation:
     "enable_ocr": true,
     "ocr_languages": ["en", "fr"],
     "preserve_images": true,
-    "output_format": "markdown",
+    "vision_mode": "smoldocling",
+    "diagram_description": true,
     "cache_enabled": true,
     "timeout": 600
   }
 }
 ```
-
-#### Processing Modes
-
-- **`basic`** (default): Fast processing using code-only parsing
-- **`advanced`**: Uses vision models for better structure recognition
-- **`ocr`**: Optimised for scanned documents with OCR
-- **`tables`**: Focus on accurate table extraction
-- **`images`**: Focus on image extraction and preservation
 
 #### Configuration
 
@@ -661,21 +715,21 @@ The document processing tool can be configured via environment variables:
 
 ```bash
 # Python Configuration
-export DOCLING_PYTHON_PATH="/path/to/python"  # Auto-detected if not set
+DOCLING_PYTHON_PATH="/path/to/python"  # Auto-detected if not set
 
 # Cache Configuration
-export DOCLING_CACHE_DIR="~/.mcp-devtools/docling-cache"
-export DOCLING_CACHE_ENABLED="true"
+DOCLING_CACHE_DIR="~/.mcp-devtools/docling-cache"
+DOCLING_CACHE_ENABLED="true"
 
 # Hardware Acceleration
-export DOCLING_HARDWARE_ACCELERATION="auto"  # auto, mps, cuda, cpu
+DOCLING_HARDWARE_ACCELERATION="auto"  # auto, mps, cuda, cpu
 
 # Processing Configuration
-export DOCLING_TIMEOUT="300"        # 5 minutes
-export DOCLING_MAX_FILE_SIZE="100"  # 100 MB
+DOCLING_TIMEOUT="300"        # 5 minutes
+DOCLING_MAX_FILE_SIZE="100"  # 100 MB
 
 # OCR Configuration
-export DOCLING_OCR_LANGUAGES="en,fr,de"
+DOCLING_OCR_LANGUAGES="en,fr,de"
 ```
 
 **Prerequisites**: This tool requires Python 3.10+ (ideally 3.13+) with Docling installed:
@@ -686,7 +740,7 @@ pip install docling
 **Use With Custom MITM Certs**: The document processing tool performs a pip install docling (if it's not found) and if you choose to use the advanced vLLM processing also has to download the SmolDocling model, as such some corporate environments that use MITM privacy-breaking proxies may need additional certs provided. Set the `DOCLING_EXTRA_CA_CERTS` environment variable to point to your certificate bundle:
 
 ```bash
-export DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
+DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
 ```
 
 For detailed installation and configuration instructions, see the [Document Processing README](internal/tools/docprocessing/README.md).

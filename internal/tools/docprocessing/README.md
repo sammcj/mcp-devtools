@@ -1,17 +1,20 @@
 # Document Processing Tool
 
-The Document Processing tool provides intelligent document conversion capabilities for PDF, DOCX, XLSX, and PPTX files using the powerful [Docling](https://docling-project.github.io/docling/) library. It converts documents to structured Markdown while preserving formatting, extracting tables, images, and metadata.
+The Document Processing tool provides intelligent document conversion capabilities for PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, and JPG files using the powerful [Docling](https://docling-project.github.io/docling/) library. It converts documents to structured Markdown while preserving formatting, extracting tables, images, and metadata.
 
 ## Features
 
-- **Multi-format Support**: PDF, DOCX, XLSX, PPTX document processing
+- **Multi-format Support**: PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG document processing
+- **Processing Profiles**: Simplified interface with preset configurations for common use cases
 - **Intelligent Conversion**: Preserves document structure and formatting
 - **OCR Support**: Extract text from scanned documents
 - **Hardware Acceleration**: Supports MPS (macOS), CUDA, and CPU processing
 - **Caching System**: Intelligent caching to avoid reprocessing identical documents
 - **Metadata Extraction**: Extracts document metadata (title, author, page count, etc.)
 - **Table & Image Extraction**: Preserves tables and images in markdown format
-- **Flexible Processing Modes**: Basic, advanced, OCR-focused, table-focused, and image-focused modes
+- **Diagram Analysis**: Advanced diagram detection and description using vision models
+- **Mermaid Generation**: Convert diagrams to editable Mermaid syntax by using an external LLM provider
+- **Auto-Save**: Automatically saves processed content to files by default
 
 ## Installation
 
@@ -35,32 +38,39 @@ The tool can be configured via environment variables:
 
 ```bash
 # Python Configuration
-export DOCLING_PYTHON_PATH="/path/to/python"  # Auto-detected if not set
+DOCLING_PYTHON_PATH="/path/to/python"  # Auto-detected if not set
 
 # Cache Configuration
-export DOCLING_CACHE_DIR="~/.mcp-devtools/docling-cache"
-export DOCLING_CACHE_ENABLED="true"
+DOCLING_CACHE_DIR="~/.mcp-devtools/docling-cache"
+DOCLING_CACHE_ENABLED="true"
 
 # Hardware Acceleration
-export DOCLING_HARDWARE_ACCELERATION="auto"  # auto, mps, cuda, cpu
+DOCLING_HARDWARE_ACCELERATION="auto"  # auto, mps, cuda, cpu
 
 # Processing Configuration
-export DOCLING_TIMEOUT="300"        # 5 minutes
-export DOCLING_MAX_FILE_SIZE="100"  # 100 MB
+DOCLING_TIMEOUT="300"        # 5 minutes
+DOCLING_MAX_FILE_SIZE="100"  # 100 MB
 
 # OCR Configuration
-export DOCLING_OCR_LANGUAGES="en,fr,de"
+DOCLING_OCR_LANGUAGES="en,fr,de"
 
 # Vision Model Configuration
-export DOCLING_VISION_MODEL="SmolDocling"
+DOCLING_VISION_MODEL="SmolDocling"
 
 # Certificate Configuration (for MITM proxies)
-export DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
+DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
+
+# LLM Configuration (for advanced diagram processing)
+DOCLING_LLM_OPENAI_API_BASE="http://localhost:11434/v1"
+DOCLING_LLM_MODEL_NAME="mistral-small3.2:24b"
+DOCLING_LLM_OPENAI_API_KEY="your-api-key-here"
 ```
 
 ## Usage
 
-### Basic Usage
+### Simple Usage (Recommended)
+
+The tool now features a simplified interface using processing profiles that automatically configure all necessary parameters:
 
 ```json
 {
@@ -68,35 +78,108 @@ export DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
 }
 ```
 
-### Advanced Usage
+This uses the default `text-and-image` profile and automatically saves the processed content to `/path/to/document.md`.
 
+### Processing Profiles
+
+Choose from preset profiles that configure multiple parameters automatically:
+
+#### `basic` - Fast Text Extraction
 ```json
 {
   "source": "/path/to/document.pdf",
-  "processing_mode": "advanced",
-  "enable_ocr": true,
-  "ocr_languages": ["en", "fr"],
-  "preserve_images": true,
-  "output_format": "markdown",
-  "cache_enabled": true,
-  "timeout": 600,
-  "max_file_size": 200
+  "profile": "basic"
 }
 ```
+- Text extraction only
+- Fastest processing
+- No image or diagram analysis
 
-### Processing Modes
+#### `text-and-image` - Balanced Processing (Default)
+```json
+{
+  "source": "/path/to/document.pdf",
+  "profile": "text-and-image"
+}
+```
+- Text and image extraction
+- Table processing
+- Good balance of speed and features
 
-- **`basic`** (default): Fast processing using code-only parsing
-- **`advanced`**: Uses vision models for better structure recognition
-- **`ocr`**: Optimised for scanned documents with OCR
-- **`tables`**: Focus on accurate table extraction
-- **`images`**: Focus on image extraction and preservation
+#### `scanned` - OCR Processing
+```json
+{
+  "source": "/path/to/scanned-document.pdf",
+  "profile": "scanned"
+}
+```
+- Optimised for scanned documents
+- OCR enabled by default
+- Best for image-based PDFs
 
-### OCR (Optical Character Recognition)
+#### `llm-smoldocling` - Vision Enhancement
+```json
+{
+  "source": "/path/to/document.pdf",
+  "profile": "llm-smoldocling"
+}
+```
+- Enhanced with SmolDocling vision model
+- Diagram detection and description
+- Chart data extraction
+- No external LLM required
+- Slower than `text-and-image`
+
+#### `llm-external` - Advanced Diagram Processing
+```json
+{
+  "source": "/path/to/document.pdf",
+  "profile": "llm-external"
+}
+```
+- Full diagram-to-Mermaid conversion
+- Requires LLM environment variables
+- Most advanced processing capabilities
+- Slower processing time
+- Best for documents with diagrams and charts
+- Only available when `DOCLING_LLM_*` environment variables are configured
+
+### Output Control
+
+#### Save to File (Default)
+```json
+{
+  "source": "/path/to/document.pdf"
+}
+```
+- Automatically saves to `/path/to/document.md` and if images are extracted, they will be saved in the same directory
+- Returns success message with file path
+
+#### Custom Save Location
+```json
+{
+  "source": "/path/to/document.pdf",
+  "save_to": "/custom/path/output.md"
+}
+```
+- Saves to specified location
+- Must be an absolute path
+
+#### Return Content Inline
+```json
+{
+  "source": "/path/to/document.pdf",
+  "inline": true
+}
+```
+- Returns content in the response
+- No file is saved
+
+## OCR (Optical Character Recognition)
 
 The tool supports OCR processing for extracting text from scanned documents and images. Understanding when to use OCR is important for optimal results:
 
-#### OCR Disabled (Default)
+### OCR Disabled (Default for most profiles)
 - **Best for**: Digital documents (native PDFs, Word documents, Excel files)
 - **How it works**: Extracts text directly from the document's digital structure
 - **Advantages**:
@@ -106,7 +189,7 @@ The tool supports OCR processing for extracting text from scanned documents and 
   - Lower resource usage
 - **Limitations**: Cannot process scanned documents or image-based PDFs
 
-#### OCR Enabled
+### OCR Enabled (Default for `scanned` profile)
 - **Best for**: Scanned documents, image-based PDFs, photos of documents
 - **How it works**: Uses computer vision to recognise text from images
 - **Advantages**:
@@ -119,41 +202,106 @@ The tool supports OCR processing for extracting text from scanned documents and 
   - Formatting may not be perfectly preserved
   - Higher resource usage
 
-#### When to Use Each Mode
+### OCR Language Support
 
-**Use OCR Disabled when:**
-- Processing native digital documents (Word, Excel, native PDFs)
-- You need perfect text accuracy
-- Speed is important
-- The document has complex formatting you want to preserve
-
-**Use OCR Enabled when:**
-- Processing scanned documents or PDFs created from scans
-- Working with image files (PNG, JPEG) containing text
-- The document fails to process with OCR disabled
-- You need to extract text from photos of documents
-
-#### OCR Language Support
-
-When OCR is enabled, you can specify languages for better recognition accuracy:
+When using the `scanned` profile or enabling OCR manually, you can specify languages:
 
 ```json
 {
-  "enable_ocr": true,
+  "profile": "scanned",
   "ocr_languages": ["en", "fr", "de", "es"]
 }
 ```
 
 Supported languages include: English (en), French (fr), German (de), Spanish (es), Italian (it), Portuguese (pt), Dutch (nl), Russian (ru), Chinese (zh), Japanese (ja), Korean (ko), and many others.
 
-### Output Formats
+## Diagram Analysis and Mermaid Generation
 
-- **`markdown`** (default): Returns processed content as Markdown
-- **`json`**: Returns metadata only
-- **`both`**: Returns both content and detailed metadata
+### Basic Diagram Analysis (`llm-smoldocling` profile)
+
+Uses the built-in SmolDocling vision model for diagram detection and description:
+
+```json
+{
+  "source": "/path/to/document.pdf",
+  "profile": "llm-smoldocling"
+}
+```
+
+### Advanced Mermaid Generation (`llm-external` profile)
+
+For diagram-to-Mermaid conversion, first configure external LLM integration:
+
+```bash
+# Required environment variables
+export DOCLING_LLM_OPENAI_API_BASE="http://localhost:11434/v1"   # Any OpenAI-compatible endpoint
+export DOCLING_LLM_MODEL_NAME="llava:latest"                     # Vision-capable model
+export DOCLING_LLM_OPENAI_API_KEY="your-api-key-here"            # API key
+
+# Optional configuration
+export DOCLING_LLM_MAX_TOKENS="16384"        # Maximum tokens for LLM response
+export DOCLING_LLM_TEMPERATURE="0.1"         # Temperature for LLM inference
+export DOCLING_LLM_TIMEOUT="240"             # Timeout for LLM requests in seconds
+```
+
+Then use the `llm-external` profile:
+
+```json
+{
+  "source": "/path/to/document.pdf",
+  "profile": "llm-external"
+}
+```
+
+### Supported LLM Providers
+
+The tool supports any OpenAI-compatible API endpoint, e.g:
+- **Ollama** (local): `http://localhost:11434/v1`
+- **LM Studio** (local): `http://localhost:1234/v1`
+- **OpenAI**: `https://api.openai.com/v1`
+- **OpenRouter**: `https://openrouter.ai/api/v1`
+
+Ensure you select a model that supports vision input (e.g., `mistral-small3.2:24b`, `gpt-4-vision-preview`, `claude-3-sonnet`).
+
+### Diagram Analysis Features
+
+- **Automatic Detection**: Identifies diagrams, flowcharts, architecture diagrams, and charts
+- **Type Classification**: Classifies diagram types with confidence scoring
+- **Mermaid Conversion**: Generates valid Mermaid syntax for diagrams
+- **Element Extraction**: Extracts text elements and structural components
+- **AWS Colour Coding**: Applies consistent colour schemes for architecture diagrams
+- **Validation**: Validates generated Mermaid syntax for correctness
+- **Fallback Handling**: Gracefully falls back to basic analysis if LLM is unavailable
 
 ## Response Format
 
+### File Save Response (Default)
+```json
+{
+  "success": true,
+  "message": "Content successfully exported to file",
+  "save_path": "/path/to/document.md",
+  "source": "/path/to/document.pdf",
+  "cache_hit": false,
+  "metadata": {
+    "file_size": 15420,
+    "document_title": "Document Title",
+    "document_author": "Author Name",
+    "page_count": 10,
+    "word_count": 1500
+  },
+  "processing_info": {
+    "processing_mode": "advanced",
+    "processing_method": "advanced+vision:standard",
+    "hardware_acceleration": "mps",
+    "ocr_enabled": false,
+    "processing_time": 2.5,
+    "timestamp": "2025-07-09T22:12:15+10:00"
+  }
+}
+```
+
+### Inline Content Response
 ```json
 {
   "source": "/path/to/document.pdf",
@@ -166,13 +314,32 @@ Supported languages include: English (en), French (fr), German (de), Spanish (es
     "page_count": 10,
     "word_count": 1500
   },
+  "images": [
+    {
+      "id": "image_1",
+      "type": "picture",
+      "caption": "Figure 1",
+      "file_path": "/path/to/extracted/image_1.png",
+      "width": 800,
+      "height": 600
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "diagram_1",
+      "type": "flowchart",
+      "description": "Process flow diagram showing...",
+      "mermaid_code": "flowchart TD\n    A[Start] --> B[Process]\n    B --> C[End]",
+      "confidence": 0.95
+    }
+  ],
   "processing_info": {
-    "processing_mode": "basic",
+    "processing_mode": "advanced",
+    "processing_method": "advanced+vision:smoldocling+llm:enhanced",
     "hardware_acceleration": "mps",
     "ocr_enabled": false,
-    "processing_time": "2.5s",
-    "cache_key": "abc123...",
-    "timestamp": "2025-07-08T17:56:05+10:00"
+    "processing_time": 8.2,
+    "timestamp": "2025-07-09T22:12:15+10:00"
   }
 }
 ```
@@ -198,10 +365,11 @@ The tool provides detailed error information:
 
 ### Components
 
-1. **DocumentProcessorTool**: Main MCP tool interface
+1. **DocumentProcessorTool**: Main MCP tool interface with simplified profile system
 2. **Config**: Configuration management with environment variable support
 3. **CacheManager**: Intelligent caching system with TTL support
-4. **Python Wrapper**: Subprocess interface to Docling Python library
+4. **LLMClient**: External LLM integration for advanced diagram processing
+5. **Python Wrapper**: Subprocess interface to Docling Python library
 
 ### File Structure
 
@@ -209,22 +377,24 @@ The tool provides detailed error information:
 internal/tools/docprocessing/
 ├── README.md                    # This file
 ├── document_processor.go        # Main tool implementation
-├── types.go                     # Type definitions
+├── types.go                     # Type definitions including profiles
 ├── config.go                    # Configuration management
 ├── cache.go                     # Caching system
-└── scripts/
-    └── docling_processor.py     # Python wrapper script
+├── llm_client.go               # LLM integration for diagram processing
+└── python/
+    ├── docling_processor.py     # Main Python wrapper script
+    ├── image_processing.py      # Image extraction and processing
+    └── table_processing.py      # Table extraction and formatting
 ```
 
-### Python Wrapper
+### Processing Profiles Implementation
 
-The tool uses a Python subprocess wrapper (`scripts/docling_processor.py`) that:
+The profile system automatically configures multiple parameters:
 
-- Handles Docling library integration
-- Manages hardware acceleration detection and configuration
-- Provides structured JSON output
-- Handles errors gracefully
-- Supports multiple processing modes
+- **Profile Selection**: Chooses appropriate processing mode, vision settings, and features
+- **Dependency Resolution**: Automatically enables required services and parameters
+- **Environment Awareness**: `llm-external` profile only available when LLM is configured
+- **Backward Compatibility**: Individual parameters still work for advanced users
 
 ## Performance
 
@@ -232,7 +402,7 @@ The tool uses a Python subprocess wrapper (`scripts/docling_processor.py`) that:
 
 The tool implements intelligent caching based on:
 - Document source (file path/URL)
-- Processing parameters (mode, OCR settings, etc.)
+- Processing parameters (profile, mode, OCR settings, etc.)
 - File modification time (for local files)
 
 Cache entries have a 24-hour TTL by default and are stored as JSON files.
@@ -240,35 +410,32 @@ Cache entries have a 24-hour TTL by default and are stored as JSON files.
 ### Hardware Acceleration
 
 Processing performance varies by hardware:
-- **CPU**: Baseline performance, works everywhere but slow
+- **CPU**: Baseline performance, works everywhere
 - **MPS (macOS)**: 2-5x faster on Apple Silicon
 - **CUDA**: 3-10x faster on NVIDIA GPUs
 
+### Profile Performance Comparison
+
+- **`basic`**: Fastest, 1-5 seconds for typical documents
+- **`text-and-image`**: Moderate, 5-15 seconds with image extraction
+- **`scanned`**: Slower, 10-30 seconds with OCR processing
+- **`llm-smoldocling`**: Moderate, 10-20 seconds with vision analysis
+- **`llm-external`**: Slowest, 15-60 seconds with full LLM processing
+
 ## Use With Custom MITM Certs
 
-The document processing tool performs a pip install docling (if it's not found) and if you choose to use the advanced vLLM processing also has to download the SmolDocling model, as such some corporate environments that use MITM privacy-breaking proxies may need additional certs provided. Set the `DOCLING_EXTRA_CA_CERTS` environment variable to point to your certificate bundle:
+The document processing tool performs a pip install docling (if it's not found) and downloads models, so corporate environments with MITM proxies may need additional certs. Set the `DOCLING_EXTRA_CA_CERTS` environment variable:
 
 ```bash
-export DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem" # or a directory
+export DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
 ```
 
 ### Supported Certificate Formats
 
-The tool supports the following certificate file formats:
 - `.pem` - PEM encoded certificates
 - `.crt` - Certificate files
 - `.cer` - Certificate files
 - `.ca-bundle` - Certificate bundles
-
-### How It Works
-
-When `DOCLING_EXTRA_CA_CERTS` is configured, the tool automatically sets the following environment variables for all Python subprocess calls:
-
-- `SSL_CERT_FILE` - For general SSL/TLS connections
-- `REQUESTS_CA_BUNDLE` - For Python requests library
-- `CURL_CA_BUNDLE` - For curl-based downloads
-- `PIP_CERT` - For pip package installations
-- `CONDA_SSL_VERIFY` - For conda package installations (if detected and used)
 
 ## Troubleshooting
 
@@ -290,63 +457,65 @@ When `DOCLING_EXTRA_CA_CERTS` is configured, the tool automatically sets the fol
    - Install appropriate PyTorch version for your hardware
    - Check system compatibility with `python -c "import torch; print(torch.backends.mps.is_available())"`
 
-5. **"Certificate path does not exist"**
+5. **"LLM external profile not available"**
+   - Ensure all `DOCLING_LLM_*` environment variables are set
+   - Verify LLM endpoint is accessible
+   - Check model supports vision input
+
+6. **"Certificate path does not exist"**
    - Verify the path specified in `DOCLING_EXTRA_CA_CERTS` exists
    - Ensure the certificate file or directory is readable
-   - Check that certificate files have the correct extensions (.pem, .crt, .cer, .ca-bundle)
 
 ### Debug Mode
 
-Enable debug logging by setting the MCP server to debug mode. The tool logs processing steps and performance metrics.
+Enable debug mode to see detailed processing information:
 
-## Examples
-
-### Process a PDF with OCR
-
-```bash
-echo '{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "process_document",
-    "arguments": {
-      "source": "/path/to/scanned.pdf",
-      "processing_mode": "ocr",
-      "enable_ocr": true,
-      "ocr_languages": ["en"]
-    }
-  }
-}' | mcp-devtools stdio
+```json
+{
+  "source": "/path/to/document.pdf",
+  "debug": true
+}
 ```
 
-### Process a DOCX with table focus
 
-```bash
-echo '{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "process_document",
-    "arguments": {
-      "source": "/path/to/document.docx",
-      "processing_mode": "tables",
-      "preserve_images": true
-    }
-  }
-}' | mcp-devtools stdio
-```
+## Potential Future Enhancements
 
-## Contributing
+### Document Structure Enhancement
+- **Reading Order Detection**: Improve paragraph and section ordering algorithms
+- **Metadata Extraction**: Enhanced title, author, reference detection using NLP
+- **Language Detection**: Automatic document language identification with confidence scores
+- **Figure-Caption Matching**: Automatic association of figures with their captions using proximity and semantic analysis
 
-When contributing to the document processing tool:
+### Processing Pipeline Options
+- **Batch Processing**: Support for processing multiple documents efficiently with shared model loading
+- **Resource Limits**: Configurable page limits, file size limits, CPU thread limits for enterprise deployment
+- **Remote Services**: Optional integration with cloud-based OCR or vision services (Azure, AWS, GCP)
+- **Custom Model Pipelines**: Extensible architecture for adding new models via plugin system
 
-1. Follow the existing code patterns and error handling
-2. Add appropriate tests for new functionality
-3. Update this README for new features
-4. Ensure compatibility with both macOS and Linux
-5. Test with various document types and sizes
+### Advanced Output Formats
+- **Custom Chunking**: Integration with HybridChunker for RAG applications
+- **Semantic Markup**: Add semantic tags for better downstream processing
+
+### Diagram/Chart Processing (External Integration)
+- **External Service Integration**: Use services like "Diagram to Mermaid Converter" APIs
+- **Vision Model Integration**: Potentially add support for using an external LLM API for diagram processing
+- **OCR + Pattern Recognition**: Extract text from diagrams and attempt to reconstruct logical structure
+- **Flowchart Recognition**: Specific support for flowchart-to-Mermaid conversion
+
+### Performance and Scalability
+- **Streaming Processing**: Support for processing large documents in chunks
+- **Distributed Processing**: Support for processing across multiple nodes
+
+### Quality and Accuracy Improvements
+- **Confidence Scoring**: Add confidence scores for all extracted elements
+- **Quality Metrics**: Implement quality assessment for extracted content
+- **Error Recovery**: Better handling of corrupted or unusual document formats
+
+#### Smart Defaults and Auto-Detection
+- **Language Detection**: Auto-detect instead of requiring `ocr_languages`
+- **Processing Mode**: Auto-select based on document analysis
+- **Table Processing**: Always use optimal settings
+
 
 ## License
 

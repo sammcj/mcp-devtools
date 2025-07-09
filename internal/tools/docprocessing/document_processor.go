@@ -42,64 +42,41 @@ func init() {
 
 // Definition returns the MCP tool definition
 func (t *DocumentProcessorTool) Definition() mcp.Tool {
+	// Build profile description dynamically based on available features
+	profileDesc := "Processing profile: 'text-and-image' (text and images, default), 'basic' (text only), 'scanned' (OCR), 'llm-smoldocling' (SmolDocling vision)"
+
+	// Only include llm-external if LLM environment variables are configured
+	if IsLLMConfigured() {
+		profileDesc += ", 'llm-external' (external LLM for chart / diagram conversion to mermaid)"
+	}
+
 	return mcp.NewTool(
 		"process_document",
 		mcp.WithDescription("Process documents (PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG) and convert them to structured Markdown with optional OCR, image extraction, and table processing. Supports hardware acceleration and intelligent caching."),
 		mcp.WithString("source",
 			mcp.Required(),
-			mcp.Description("Document source: MUST be a fully qualified absolute file path (e.g., /Users/user/documents/file.pdf), complete URL (e.g., https://example.com/doc.pdf), or base64-encoded content. Relative paths are NOT supported - always provide the complete absolute path to the file."),
+			mcp.Description("Document source: MUST be a fully qualified absolute file path (e.g., /Users/user/documents/file.pdf), complete URL (e.g., https://example.com/doc.pdf). Relative paths are NOT supported - always provide the complete absolute path to the file."),
 		),
-		mcp.WithString("processing_mode",
-			mcp.Description("Processing mode: basic (fast), advanced (vision model), ocr (scanned docs), tables (table focus), images (image focus)"),
-			mcp.DefaultString("basic"),
+		mcp.WithString("profile",
+			mcp.Description(profileDesc),
 		),
-		mcp.WithString("output_format",
-			mcp.Description("Output format: markdown (default), json (metadata only), or both"),
-			mcp.DefaultString("markdown"),
+		mcp.WithBoolean("inline",
+			mcp.Description("Return content inline in response instead of to files (default: false)."),
 		),
-		mcp.WithBoolean("enable_ocr",
-			mcp.Description("Enable OCR processing with a recognition model for scanned documents"),
-		),
-		mcp.WithBoolean("preserve_images",
-			mcp.Description("Extract and preserve images from the document"),
+		mcp.WithString("save_to",
+			mcp.Description("Override the file path for saved content (default: same directory as source file). MUST be a fully qualified absolute path"),
 		),
 		mcp.WithBoolean("cache_enabled",
-			mcp.Description("Override global cache setting for this request"),
+			mcp.Description("Override global cache setting for this request (default: true)"),
 		),
 		mcp.WithNumber("timeout",
 			mcp.Description("Processing timeout in seconds (overrides default)"),
 		),
-		mcp.WithNumber("max_file_size",
-			mcp.Description("Maximum file size in MB (overrides default)"),
-		),
-		mcp.WithString("export_file",
-			mcp.Description("Optional fully qualified path to save the converted content instead of returning it"),
-		),
-		mcp.WithString("table_former_mode",
-			mcp.Description("TableFormer processing mode for table structure recognition: 'fast' (faster but less accurate) or 'accurate' (more accurate but slower, default)"),
-			mcp.DefaultString("accurate"),
-		),
-		mcp.WithBoolean("cell_matching",
-			mcp.Description("Control table cell matching: true uses PDF cells (default), false uses predicted text cells for better column separation"),
-		),
-		mcp.WithString("vision_mode",
-			mcp.Description("Vision processing mode: 'standard' (default), 'smoldocling' (compact 256M vision-language model), or 'advanced' (with remote services)"),
-			mcp.DefaultString("standard"),
-		),
-		mcp.WithBoolean("diagram_description",
-			mcp.Description("Enable diagram and chart description using vision models (requires vision_mode 'smoldocling' or 'advanced')"),
-		),
-		mcp.WithBoolean("chart_data_extraction",
-			mcp.Description("Enable data extraction from charts and graphs (requires vision_mode 'smoldocling' or 'advanced')"),
-		),
-		mcp.WithBoolean("enable_remote_services",
-			mcp.Description("Allow communication with external vision model services (required for advanced vision processing)"),
-		),
-		mcp.WithBoolean("convert_diagrams_to_mermaid",
-			mcp.Description("Convert detected diagrams to Mermaid syntax using AI vision models (requires diagram_description and enable_remote_services)"),
-		),
 		mcp.WithBoolean("clear_file_cache",
 			mcp.Description("Force clear all cache entries the source file before processing"),
+		),
+		mcp.WithBoolean("debug",
+			mcp.Description("Return debug information including environment variables (secrets masked)"),
 		),
 	)
 }
@@ -127,6 +104,12 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 		return nil, fmt.Errorf("invalid request: %w", err)
 	}
 
+	// Handle debug mode - return debug information without processing
+	if req.Debug {
+		debugInfo := t.getDebugInfo()
+		return t.newToolResultJSON(debugInfo)
+	}
+
 	// Validate configuration
 	if err := t.config.Validate(); err != nil {
 		errorResult := map[string]interface{}{
@@ -148,9 +131,9 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 	if cacheEnabled {
 		cacheKey = t.cacheManager.GenerateCacheKey(req)
 		if cached, found := t.cacheManager.Get(cacheKey); found {
-			// Handle export file for cached results
-			if req.ExportFile != "" && cached.Error == "" {
-				return t.handleExportFile(req.ExportFile, cached)
+			// Handle file saving for cached results
+			if t.shouldSaveToFile(req) && cached.Error == "" {
+				return t.handleSaveToFile(req.SaveTo, cached)
 			}
 			return t.newToolResultJSON(t.formatResponse(cached))
 		}
@@ -171,9 +154,9 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 		_ = t.cacheManager.Set(cacheKey, response)
 	}
 
-	// Handle export file if specified
-	if req.ExportFile != "" && response.Error == "" {
-		return t.handleExportFile(req.ExportFile, response)
+	// Handle file saving if specified
+	if t.shouldSaveToFile(req) && response.Error == "" {
+		return t.handleSaveToFile(req.SaveTo, response)
 	}
 
 	return t.newToolResultJSON(t.formatResponse(response))
@@ -246,9 +229,21 @@ func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*Docu
 		req.MaxFileSize = &maxSizeInt
 	}
 
-	// Optional: export_file
-	if exportFile, ok := args["export_file"].(string); ok {
-		req.ExportFile = strings.TrimSpace(exportFile)
+	// Optional: inline (default: false)
+	if inline, ok := args["inline"].(bool); ok {
+		req.Inline = &inline
+	}
+
+	// Optional: save_to
+	if saveTo, ok := args["save_to"].(string); ok {
+		req.SaveTo = strings.TrimSpace(saveTo)
+	}
+
+	// Optional: profile (default: text-and-image)
+	if profile, ok := args["profile"].(string); ok {
+		req.Profile = ProcessingProfile(profile)
+	} else {
+		req.Profile = ProfileTextAndImage
 	}
 
 	// Optional: table_former_mode
@@ -290,12 +285,98 @@ func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*Docu
 		req.ConvertDiagramsToMermaid = convertMermaid
 	}
 
+	// Optional: generate_diagrams
+	if generateDiagrams, ok := args["generate_diagrams"].(bool); ok {
+		req.GenerateDiagrams = generateDiagrams
+	}
+
 	// Optional: clear_file_cache
 	if clearCache, ok := args["clear_file_cache"].(bool); ok {
 		req.ClearFileCache = clearCache
 	}
 
+	// Optional: extract_images
+	if extractImages, ok := args["extract_images"].(bool); ok {
+		req.ExtractImages = extractImages
+	}
+
+	// Optional: debug
+	if debug, ok := args["debug"].(bool); ok {
+		req.Debug = debug
+	}
+
+	// Apply profile settings if specified
+	if req.Profile != "" {
+		t.applyProfile(req)
+	}
+
 	return req, nil
+}
+
+// applyProfile applies the specified processing profile to the request
+func (t *DocumentProcessorTool) applyProfile(req *DocumentProcessingRequest) {
+	switch req.Profile {
+	case ProfileBasic:
+		// Text extraction only (fast processing)
+		req.ProcessingMode = ProcessingModeBasic
+		req.VisionMode = VisionModeStandard
+		req.DiagramDescription = false
+		req.ChartDataExtraction = false
+		req.EnableRemoteServices = false
+		req.GenerateDiagrams = false
+
+	case ProfileTextAndImage:
+		// Text and image extraction with tables
+		req.ProcessingMode = ProcessingModeAdvanced
+		req.VisionMode = VisionModeStandard
+		req.PreserveImages = true
+		req.DiagramDescription = false
+		req.ChartDataExtraction = false
+		req.EnableRemoteServices = false
+		req.GenerateDiagrams = false
+
+	case ProfileScanned:
+		// OCR-focused processing for scanned documents
+		req.ProcessingMode = ProcessingModeOCR
+		req.EnableOCR = true
+		req.VisionMode = VisionModeStandard
+		req.DiagramDescription = false
+		req.ChartDataExtraction = false
+		req.EnableRemoteServices = false
+		req.GenerateDiagrams = false
+
+	case ProfileLLMSmolDocling:
+		// Text and image extraction enhanced with SmolDocling vision model
+		req.ProcessingMode = ProcessingModeAdvanced
+		req.VisionMode = VisionModeSmolDocling
+		req.PreserveImages = true
+		req.DiagramDescription = true
+		req.ChartDataExtraction = true
+		req.EnableRemoteServices = true
+		req.GenerateDiagrams = false // SmolDocling only, no external LLM
+
+	case ProfileLLMExternal:
+		// Text and image extraction enhanced with external vision LLM for diagram conversion to Mermaid
+		// Only available when DOCLING_LLM_* environment variables are configured
+		if IsLLMConfigured() {
+			req.ProcessingMode = ProcessingModeAdvanced
+			req.VisionMode = VisionModeSmolDocling
+			req.PreserveImages = true
+			req.DiagramDescription = true
+			req.ChartDataExtraction = true
+			req.EnableRemoteServices = true
+			req.GenerateDiagrams = true // Enable external LLM enhancement
+		} else {
+			// Fall back to SmolDocling profile if LLM not configured
+			req.ProcessingMode = ProcessingModeAdvanced
+			req.VisionMode = VisionModeSmolDocling
+			req.PreserveImages = true
+			req.DiagramDescription = true
+			req.ChartDataExtraction = true
+			req.EnableRemoteServices = true
+			req.GenerateDiagrams = false
+		}
+	}
 }
 
 // shouldUseCache determines if caching should be used for this request
@@ -374,8 +455,8 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 		args = append(args, "--convert-diagrams-to-mermaid")
 	}
 
-	// Auto-enable image extraction when export file is provided
-	if req.ExportFile != "" {
+	// Auto-enable image extraction when saving to file or extract_images is true
+	if t.shouldSaveToFile(req) || req.ExtractImages {
 		args = append(args, "--extract-images")
 	}
 
@@ -464,6 +545,30 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 		response.Images = t.parseImages(imagesData)
 	}
 
+	// Enhance diagrams with LLM if requested and configured
+	if req.GenerateDiagrams && len(response.Diagrams) > 0 {
+		enhancedDiagrams, err := t.enhanceDiagramsWithLLM(response.Diagrams)
+		if err != nil {
+			// Log the error but don't fail the entire processing - fall back gracefully
+			// Add a note to the processing info that LLM enhancement was attempted but failed
+			if response.ProcessingInfo.ProcessingMethod != "" {
+				response.ProcessingInfo.ProcessingMethod += "+llm:failed"
+			}
+			// Continue with original diagrams instead of failing
+		} else {
+			// LLM enhancement succeeded
+			response.Diagrams = enhancedDiagrams
+			if response.ProcessingInfo.ProcessingMethod != "" {
+				response.ProcessingInfo.ProcessingMethod += "+llm:enhanced"
+			}
+
+			// Update the markdown content to include the enhanced diagrams with Mermaid code
+			if req.OutputFormat == OutputFormatMarkdown || req.OutputFormat == OutputFormatBoth {
+				response.Content = t.insertMermaidDiagramsIntoMarkdown(response.Content, enhancedDiagrams)
+			}
+		}
+	}
+
 	return response, nil
 }
 
@@ -549,6 +654,9 @@ func (t *DocumentProcessorTool) parseDiagrams(data []interface{}) []ExtractedDia
 			}
 			if mermaidCode, ok := diagramData["mermaid_code"].(string); ok {
 				diagram.MermaidCode = mermaidCode
+			}
+			if base64Data, ok := diagramData["base64_data"].(string); ok {
+				diagram.Base64Data = base64Data
 			}
 			if pageNum, ok := diagramData["page_number"].(float64); ok {
 				diagram.PageNumber = int(pageNum)
@@ -763,31 +871,227 @@ func (t *DocumentProcessorTool) resolveSourcePath(source string) (string, error)
 	return absolutePath, nil
 }
 
-// handleExportFile saves the converted content to the specified file and returns a success message
-func (t *DocumentProcessorTool) handleExportFile(exportPath string, response *DocumentProcessingResponse) (*mcp.CallToolResult, error) {
-	// Validate export path is absolute
-	if !filepath.IsAbs(exportPath) {
-		return nil, fmt.Errorf("export_file must be a fully qualified absolute path, got: %s", exportPath)
+// enhanceDiagramsWithLLM enhances diagrams using external LLM analysis
+func (t *DocumentProcessorTool) enhanceDiagramsWithLLM(diagrams []ExtractedDiagram) ([]ExtractedDiagram, error) {
+	// Check if LLM is configured
+	if !IsLLMConfigured() {
+		return diagrams, fmt.Errorf("LLM not configured: required environment variables %s, %s, %s not set",
+			EnvOpenAIAPIBase, EnvOpenAIModel, EnvOpenAIAPIKey)
+	}
+
+	// Create LLM client
+	llmClient, err := NewDiagramLLMClient()
+	if err != nil {
+		return diagrams, fmt.Errorf("failed to create LLM client: %w", err)
+	}
+
+	// Process each diagram
+	enhancedDiagrams := make([]ExtractedDiagram, len(diagrams))
+	for i, diagram := range diagrams {
+		// Start with the original diagram
+		enhancedDiagrams[i] = diagram
+
+		// Enhance with LLM analysis
+		analysis, err := llmClient.AnalyseDiagram(&diagram)
+		if err != nil {
+			// Return error instead of silently continuing - this was the bug!
+			return diagrams, fmt.Errorf("LLM analysis failed for diagram %s: %w", diagram.ID, err)
+		}
+
+		// Update diagram with LLM analysis
+		if analysis.Description != "" {
+			enhancedDiagrams[i].Description = analysis.Description
+		}
+		if analysis.DiagramType != "" {
+			enhancedDiagrams[i].DiagramType = analysis.DiagramType
+		}
+		if analysis.MermaidCode != "" {
+			enhancedDiagrams[i].MermaidCode = analysis.MermaidCode
+		}
+		if len(analysis.Elements) > 0 {
+			enhancedDiagrams[i].Elements = analysis.Elements
+		}
+		if analysis.Confidence > 0 {
+			enhancedDiagrams[i].Confidence = analysis.Confidence
+		}
+
+		// Merge properties
+		if enhancedDiagrams[i].Properties == nil {
+			enhancedDiagrams[i].Properties = make(map[string]interface{})
+		}
+		if analysis.Properties != nil {
+			for key, value := range analysis.Properties {
+				enhancedDiagrams[i].Properties[key] = value
+			}
+		}
+
+		// Add LLM processing metadata
+		enhancedDiagrams[i].Properties["llm_enhanced"] = true
+		enhancedDiagrams[i].Properties["llm_processing_time"] = analysis.ProcessingTime.Seconds()
+	}
+
+	return enhancedDiagrams, nil
+}
+
+// getDebugInfo returns debug information including environment variables (with secrets masked)
+func (t *DocumentProcessorTool) getDebugInfo() map[string]interface{} {
+	debugInfo := map[string]interface{}{
+		"debug_mode":  true,
+		"timestamp":   time.Now().Format(time.RFC3339),
+		"system_info": t.config.GetSystemInfo(),
+	}
+
+	// Environment variables related to document processing
+	envVars := map[string]interface{}{
+		// LLM Configuration
+		"DOCLING_LLM_OPENAI_API_BASE": maskSecret(os.Getenv("DOCLING_LLM_OPENAI_API_BASE")),
+		"DOCLING_LLM_MODEL_NAME":      os.Getenv("DOCLING_LLM_MODEL_NAME"),
+		"DOCLING_LLM_OPENAI_API_KEY":  maskSecret(os.Getenv("DOCLING_LLM_OPENAI_API_KEY")),
+		"DOCLING_LLM_MAX_TOKENS":      os.Getenv("DOCLING_LLM_MAX_TOKENS"),
+		"DOCLING_LLM_TEMPERATURE":     os.Getenv("DOCLING_LLM_TEMPERATURE"),
+		"DOCLING_LLM_TIMEOUT":         os.Getenv("DOCLING_LLM_TIMEOUT"),
+
+		// Cache Configuration
+		"DOCLING_CACHE_MAX_AGE_HOURS": os.Getenv("DOCLING_CACHE_MAX_AGE_HOURS"),
+		"DOCLING_CACHE_ENABLED":       os.Getenv("DOCLING_CACHE_ENABLED"),
+
+		// Processing Configuration
+		"DOCLING_TIMEOUT":     os.Getenv("DOCLING_TIMEOUT"),
+		"DOCLING_MAX_FILE_MB": os.Getenv("DOCLING_MAX_FILE_MB"),
+
+		// Certificate Configuration
+		"SSL_CERT_FILE": maskSecret(os.Getenv("SSL_CERT_FILE")),
+		"SSL_CERT_DIR":  os.Getenv("SSL_CERT_DIR"),
+	}
+
+	debugInfo["environment_variables"] = envVars
+
+	// LLM Configuration Status
+	llmStatus := map[string]interface{}{
+		"configured":   IsLLMConfigured(),
+		"api_base_set": os.Getenv("DOCLING_LLM_OPENAI_API_BASE") != "",
+		"model_set":    os.Getenv("DOCLING_LLM_MODEL_NAME") != "",
+		"api_key_set":  os.Getenv("DOCLING_LLM_OPENAI_API_KEY") != "",
+	}
+
+	if IsLLMConfigured() {
+		// Test LLM client creation (but don't make API calls)
+		if _, err := NewDiagramLLMClient(); err != nil {
+			llmStatus["client_creation_error"] = err.Error()
+		} else {
+			llmStatus["client_creation"] = "success"
+		}
+	}
+
+	debugInfo["llm_status"] = llmStatus
+
+	// Configuration details
+	configInfo := map[string]interface{}{
+		"python_path":       t.config.PythonPath,
+		"script_path":       t.config.GetScriptPath(),
+		"cache_enabled":     t.config.CacheEnabled,
+		"cache_directory":   "cache", // Default cache directory
+		"timeout":           t.config.Timeout,
+		"max_file_size":     t.config.MaxFileSize,
+		"docling_available": t.config.isDoclingAvailable(),
+	}
+
+	debugInfo["configuration"] = configInfo
+
+	return debugInfo
+}
+
+// insertMermaidDiagramsIntoMarkdown inserts Mermaid code blocks into the markdown content
+func (t *DocumentProcessorTool) insertMermaidDiagramsIntoMarkdown(content string, diagrams []ExtractedDiagram) string {
+	// For each diagram with Mermaid code, find a suitable place to insert it
+	updatedContent := content
+
+	for _, diagram := range diagrams {
+		if diagram.MermaidCode == "" {
+			continue // Skip diagrams without Mermaid code
+		}
+
+		// Create the Mermaid code block
+		mermaidBlock := fmt.Sprintf("\n\n```mermaid\n%s\n```\n\n*Enhanced diagram: %s*\n",
+			diagram.MermaidCode, diagram.Description)
+
+		// Try to find a good insertion point based on diagram caption or description
+		insertionPoint := ""
+		if diagram.Caption != "" {
+			insertionPoint = diagram.Caption
+		} else if diagram.Description != "" {
+			// Use first few words of description
+			words := strings.Fields(diagram.Description)
+			if len(words) > 3 {
+				insertionPoint = strings.Join(words[:3], " ")
+			} else {
+				insertionPoint = diagram.Description
+			}
+		}
+
+		if insertionPoint != "" {
+			// Look for the insertion point in the content
+			if strings.Contains(updatedContent, insertionPoint) {
+				// Insert the Mermaid block after the first occurrence
+				insertIndex := strings.Index(updatedContent, insertionPoint) + len(insertionPoint)
+				updatedContent = updatedContent[:insertIndex] + mermaidBlock + updatedContent[insertIndex:]
+			} else {
+				// Fallback: append at the end
+				updatedContent += mermaidBlock
+			}
+		} else {
+			// No good insertion point found, append at the end
+			updatedContent += mermaidBlock
+		}
+	}
+
+	return updatedContent
+}
+
+// shouldSaveToFile determines if content should be saved to a file
+func (t *DocumentProcessorTool) shouldSaveToFile(req *DocumentProcessingRequest) bool {
+	// If inline is explicitly set to true, return content inline
+	if req.Inline != nil && *req.Inline {
+		return false
+	}
+	// Default behaviour: save to file (inline=false by default)
+	return true
+}
+
+// handleSaveToFile saves the converted content to the specified file and returns a success message
+func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *DocumentProcessingResponse) (*mcp.CallToolResult, error) {
+	// Auto-generate save path if not provided
+	if savePath == "" {
+		generatedPath, err := t.generateSavePath(response.Source)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate save path: %w", err)
+		}
+		savePath = generatedPath
+	}
+
+	// Validate save path is absolute
+	if !filepath.IsAbs(savePath) {
+		return nil, fmt.Errorf("save_to must be a fully qualified absolute path, got: %s", savePath)
 	}
 
 	// Create directory if it doesn't exist
-	exportDir := filepath.Dir(exportPath)
-	if err := os.MkdirAll(exportDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create export directory %s: %w", exportDir, err)
+	saveDir := filepath.Dir(savePath)
+	if err := os.MkdirAll(saveDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create save directory %s: %w", saveDir, err)
 	}
 
 	// Write content to file
-	if err := os.WriteFile(exportPath, []byte(response.Content), 0644); err != nil {
-		return nil, fmt.Errorf("failed to write content to %s: %w", exportPath, err)
+	if err := os.WriteFile(savePath, []byte(response.Content), 0644); err != nil {
+		return nil, fmt.Errorf("failed to write content to %s: %w", savePath, err)
 	}
 
 	// Create success response
 	result := map[string]interface{}{
-		"success":     true,
-		"message":     "Content successfully exported to file",
-		"export_path": exportPath,
-		"source":      response.Source,
-		"cache_hit":   response.CacheHit,
+		"success":   true,
+		"message":   "Content successfully exported to file",
+		"save_path": savePath,
+		"source":    response.Source,
+		"cache_hit": response.CacheHit,
 		"metadata": map[string]interface{}{
 			"file_size": len(response.Content),
 		},
@@ -805,6 +1109,60 @@ func (t *DocumentProcessorTool) handleExportFile(exportPath string, response *Do
 	}
 
 	return t.newToolResultJSON(result)
+}
+
+// generateSavePath generates a save path in the same directory as the source file with .md extension
+func (t *DocumentProcessorTool) generateSavePath(source string) (string, error) {
+	// Check if it's a URL
+	if parsedURL, err := url.Parse(source); err == nil && parsedURL.Scheme != "" {
+		// For URLs, use the filename from the path or a default name
+		urlPath := parsedURL.Path
+		if urlPath == "" || urlPath == "/" {
+			return "", fmt.Errorf("cannot generate save path for URL without filename: %s", source)
+		}
+
+		// Extract filename from URL path
+		filename := filepath.Base(urlPath)
+		if filename == "." || filename == "/" {
+			filename = "document"
+		}
+
+		// Remove extension and add .md
+		nameWithoutExt := strings.TrimSuffix(filename, filepath.Ext(filename))
+		return filepath.Join(".", nameWithoutExt+".md"), nil
+	}
+
+	// For file paths, generate save path in the same directory
+	if !filepath.IsAbs(source) {
+		// Make relative path absolute first
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("failed to get current working directory: %w", err)
+		}
+		source = filepath.Join(cwd, source)
+	}
+
+	// Get directory and filename
+	sourceDir := filepath.Dir(source)
+	sourceFilename := filepath.Base(source)
+
+	// Remove extension and add .md
+	nameWithoutExt := strings.TrimSuffix(sourceFilename, filepath.Ext(sourceFilename))
+	savePath := filepath.Join(sourceDir, nameWithoutExt+".md")
+
+	return savePath, nil
+}
+
+// maskSecret masks sensitive information in environment variables
+func maskSecret(value string) string {
+	if value == "" {
+		return "(not set)"
+	}
+	if len(value) <= 8 {
+		return "***"
+	}
+	// Show first 4 and last 4 characters, mask the middle
+	return value[:4] + "..." + value[len(value)-4:]
 }
 
 // newToolResultJSON creates a new tool result with JSON content
