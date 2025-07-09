@@ -550,9 +550,9 @@ func (c *Config) GetScriptPath() string {
 
 		// Look for the script in common locations relative to the binary
 		possiblePaths := []string{
-			filepath.Join(binDir, "internal", "tools", "docprocessing", "docling_processor.py"),               // Same level as bin/
-			filepath.Join(binDir, "..", "internal", "tools", "docprocessing", "docling_processor.py"),         // One level up
-			filepath.Join(filepath.Dir(binDir), "internal", "tools", "docprocessing", "docling_processor.py"), // Project root
+			filepath.Join(binDir, "internal", "tools", "docprocessing", "python", "docling_processor.py"),               // Same level as bin/
+			filepath.Join(binDir, "..", "internal", "tools", "docprocessing", "python", "docling_processor.py"),         // One level up
+			filepath.Join(filepath.Dir(binDir), "internal", "tools", "docprocessing", "python", "docling_processor.py"), // Project root
 		}
 
 		for _, path := range possiblePaths {
@@ -564,14 +564,14 @@ func (c *Config) GetScriptPath() string {
 
 	// Fall back to current working directory
 	if cwd, err := os.Getwd(); err == nil {
-		scriptPath := filepath.Join(cwd, "internal", "tools", "docprocessing", "docling_processor.py")
+		scriptPath := filepath.Join(cwd, "internal", "tools", "docprocessing", "python", "docling_processor.py")
 		if _, err := os.Stat(scriptPath); err == nil {
 			return scriptPath
 		}
 	}
 
 	// Last resort - return relative path (new location)
-	return "internal/tools/docprocessing/docling_processor.py"
+	return "internal/tools/docprocessing/python/docling_processor.py"
 }
 
 // runCommand runs a command with a timeout and returns an error if it fails

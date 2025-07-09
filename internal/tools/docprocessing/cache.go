@@ -26,19 +26,31 @@ func NewCacheManager(config *Config) *CacheManager {
 func (cm *CacheManager) GenerateCacheKey(req *DocumentProcessingRequest) string {
 	// Create a hash based on the request parameters that affect the output
 	keyData := struct {
-		Source         string         `json:"source"`
-		ProcessingMode ProcessingMode `json:"processing_mode"`
-		EnableOCR      bool           `json:"enable_ocr"`
-		OCRLanguages   []string       `json:"ocr_languages"`
-		PreserveImages bool           `json:"preserve_images"`
-		OutputFormat   OutputFormat   `json:"output_format"`
+		Source               string               `json:"source"`
+		ProcessingMode       ProcessingMode       `json:"processing_mode"`
+		EnableOCR            bool                 `json:"enable_ocr"`
+		OCRLanguages         []string             `json:"ocr_languages"`
+		PreserveImages       bool                 `json:"preserve_images"`
+		OutputFormat         OutputFormat         `json:"output_format"`
+		TableFormerMode      TableFormerMode      `json:"table_former_mode"`
+		CellMatching         *bool                `json:"cell_matching"`
+		VisionMode           VisionProcessingMode `json:"vision_mode"`
+		DiagramDescription   bool                 `json:"diagram_description"`
+		ChartDataExtraction  bool                 `json:"chart_data_extraction"`
+		EnableRemoteServices bool                 `json:"enable_remote_services"`
 	}{
-		Source:         req.Source,
-		ProcessingMode: req.ProcessingMode,
-		EnableOCR:      req.EnableOCR,
-		OCRLanguages:   req.OCRLanguages,
-		PreserveImages: req.PreserveImages,
-		OutputFormat:   req.OutputFormat,
+		Source:               req.Source,
+		ProcessingMode:       req.ProcessingMode,
+		EnableOCR:            req.EnableOCR,
+		OCRLanguages:         req.OCRLanguages,
+		PreserveImages:       req.PreserveImages,
+		OutputFormat:         req.OutputFormat,
+		TableFormerMode:      req.TableFormerMode,
+		CellMatching:         req.CellMatching,
+		VisionMode:           req.VisionMode,
+		DiagramDescription:   req.DiagramDescription,
+		ChartDataExtraction:  req.ChartDataExtraction,
+		EnableRemoteServices: req.EnableRemoteServices,
 	}
 
 	// Convert to JSON and hash
@@ -135,6 +147,38 @@ func (cm *CacheManager) Delete(cacheKey string) error {
 	filePath := cm.GetCacheFilePath(cacheKey)
 	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to delete cache file: %w", err)
+	}
+
+	return nil
+}
+
+// ClearFileCache removes all cache entries for a specific source file
+func (cm *CacheManager) ClearFileCache(source string) error {
+	if !cm.config.CacheEnabled {
+		return nil
+	}
+
+	// Find all cache files that match this source
+	pattern := filepath.Join(cm.config.CacheDir, "*.json")
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("failed to find cache files: %w", err)
+	}
+
+	var removedCount int
+	for _, match := range matches {
+		// Read cache file to check if it matches the source
+		if data, err := os.ReadFile(match); err == nil {
+			var cachedResponse CachedResponse
+			if err := json.Unmarshal(data, &cachedResponse); err == nil {
+				// Check if this cache entry is for the same source file
+				if cachedResponse.Response.Source == source {
+					if err := os.Remove(match); err == nil {
+						removedCount++
+					}
+				}
+			}
+		}
 	}
 
 	return nil

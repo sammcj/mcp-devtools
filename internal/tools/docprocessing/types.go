@@ -15,6 +15,23 @@ const (
 	ProcessingModeImages   ProcessingMode = "images"   // Image extraction focus
 )
 
+// TableFormerMode defines the TableFormer processing mode for table structure recognition
+type TableFormerMode string
+
+const (
+	TableFormerModeFast     TableFormerMode = "fast"     // Faster but less accurate table processing
+	TableFormerModeAccurate TableFormerMode = "accurate" // More accurate but slower table processing (default)
+)
+
+// VisionProcessingMode defines the vision model processing mode for enhanced document understanding
+type VisionProcessingMode string
+
+const (
+	VisionModeStandard    VisionProcessingMode = "standard"    // Standard vision processing
+	VisionModeSmolDocling VisionProcessingMode = "smoldocling" // Compact vision-language model (256M parameters)
+	VisionModeAdvanced    VisionProcessingMode = "advanced"    // Advanced vision processing with remote services
+)
+
 // OutputFormat defines the output format for processed documents
 type OutputFormat string
 
@@ -36,27 +53,38 @@ const (
 
 // DocumentProcessingRequest represents the input parameters for document processing
 type DocumentProcessingRequest struct {
-	Source         string         `json:"source"`                    // File path, URL, or base64 content
-	ProcessingMode ProcessingMode `json:"processing_mode,omitempty"` // Processing mode (default: basic)
-	OutputFormat   OutputFormat   `json:"output_format,omitempty"`   // Output format (default: markdown)
-	EnableOCR      bool           `json:"enable_ocr,omitempty"`      // Enable OCR processing
-	OCRLanguages   []string       `json:"ocr_languages,omitempty"`   // OCR language codes
-	PreserveImages bool           `json:"preserve_images,omitempty"` // Extract and preserve images
-	CacheEnabled   *bool          `json:"cache_enabled,omitempty"`   // Override global cache setting
-	Timeout        *int           `json:"timeout,omitempty"`         // Processing timeout in seconds
-	MaxFileSize    *int           `json:"max_file_size,omitempty"`   // Maximum file size in MB
+	Source                   string               `json:"source"`                                // File path, URL, or base64 content
+	ProcessingMode           ProcessingMode       `json:"processing_mode,omitempty"`             // Processing mode (default: basic)
+	OutputFormat             OutputFormat         `json:"output_format,omitempty"`               // Output format (default: markdown)
+	EnableOCR                bool                 `json:"enable_ocr,omitempty"`                  // Enable OCR processing
+	OCRLanguages             []string             `json:"ocr_languages,omitempty"`               // OCR language codes
+	PreserveImages           bool                 `json:"preserve_images,omitempty"`             // Extract and preserve images
+	CacheEnabled             *bool                `json:"cache_enabled,omitempty"`               // Override global cache setting
+	Timeout                  *int                 `json:"timeout,omitempty"`                     // Processing timeout in seconds
+	MaxFileSize              *int                 `json:"max_file_size,omitempty"`               // Maximum file size in MB
+	ExportFile               string               `json:"export_file,omitempty"`                 // Optional fully qualified path to save the converted content
+	ClearFileCache           bool                 `json:"clear_file_cache,omitempty"`            // Force clear all cache entries for this source file before processing
+	TableFormerMode          TableFormerMode      `json:"table_former_mode,omitempty"`           // TableFormer processing mode for table structure recognition
+	CellMatching             *bool                `json:"cell_matching,omitempty"`               // Control table cell matching (true: use PDF cells, false: use predicted cells)
+	VisionMode               VisionProcessingMode `json:"vision_mode,omitempty"`                 // Vision processing mode for enhanced document understanding
+	DiagramDescription       bool                 `json:"diagram_description,omitempty"`         // Enable diagram and chart description using vision models
+	ChartDataExtraction      bool                 `json:"chart_data_extraction,omitempty"`       // Enable data extraction from charts and graphs
+	EnableRemoteServices     bool                 `json:"enable_remote_services,omitempty"`      // Allow communication with external vision model services
+	ConvertDiagramsToMermaid bool                 `json:"convert_diagrams_to_mermaid,omitempty"` // Convert detected diagrams to Mermaid syntax using AI vision models
+	ExtractImages            bool                 `json:"extract_images,omitempty"`              // Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts
 }
 
 // DocumentProcessingResponse represents the output from document processing
 type DocumentProcessingResponse struct {
-	Source         string            `json:"source"`             // Original source
-	Content        string            `json:"content"`            // Processed content (markdown)
-	Metadata       *DocumentMetadata `json:"metadata,omitempty"` // Document metadata
-	Images         []ExtractedImage  `json:"images,omitempty"`   // Extracted images
-	Tables         []ExtractedTable  `json:"tables,omitempty"`   // Extracted tables
-	ProcessingInfo ProcessingInfo    `json:"processing_info"`    // Processing information
-	CacheHit       bool              `json:"cache_hit"`          // Whether result came from cache
-	Error          string            `json:"error,omitempty"`    // Error message if processing failed
+	Source         string             `json:"source"`             // Original source
+	Content        string             `json:"content"`            // Processed content (markdown)
+	Metadata       *DocumentMetadata  `json:"metadata,omitempty"` // Document metadata
+	Images         []ExtractedImage   `json:"images,omitempty"`   // Extracted images
+	Tables         []ExtractedTable   `json:"tables,omitempty"`   // Extracted tables
+	Diagrams       []ExtractedDiagram `json:"diagrams,omitempty"` // Extracted diagrams
+	ProcessingInfo ProcessingInfo     `json:"processing_info"`    // Processing information
+	CacheHit       bool               `json:"cache_hit"`          // Whether result came from cache
+	Error          string             `json:"error,omitempty"`    // Error message if processing failed
 }
 
 // DocumentMetadata contains metadata about the processed document
@@ -78,16 +106,18 @@ type DocumentMetadata struct {
 
 // ExtractedImage represents an image extracted from the document
 type ExtractedImage struct {
-	ID          string       `json:"id"`                     // Unique image identifier
-	Caption     string       `json:"caption,omitempty"`      // Image caption if available
-	AltText     string       `json:"alt_text,omitempty"`     // Alternative text
-	Format      string       `json:"format"`                 // Image format (PNG, JPEG, etc.)
-	Width       int          `json:"width,omitempty"`        // Image width in pixels
-	Height      int          `json:"height,omitempty"`       // Image height in pixels
-	Size        int64        `json:"size,omitempty"`         // Image size in bytes
-	Base64Data  string       `json:"base64_data,omitempty"`  // Base64-encoded image data
-	PageNumber  int          `json:"page_number,omitempty"`  // Page number where image appears
-	BoundingBox *BoundingBox `json:"bounding_box,omitempty"` // Position on page
+	ID            string       `json:"id"`                       // Unique image identifier
+	Type          string       `json:"type"`                     // Type of image (picture, table, chart, diagram)
+	Caption       string       `json:"caption,omitempty"`        // Image caption if available
+	AltText       string       `json:"alt_text,omitempty"`       // Alternative text
+	Format        string       `json:"format"`                   // Image format (PNG, JPEG, etc.)
+	Width         int          `json:"width,omitempty"`          // Image width in pixels
+	Height        int          `json:"height,omitempty"`         // Image height in pixels
+	Size          int64        `json:"size,omitempty"`           // Image size in bytes
+	FilePath      string       `json:"file_path,omitempty"`      // Path to saved image file
+	PageNumber    int          `json:"page_number,omitempty"`    // Page number where image appears
+	BoundingBox   *BoundingBox `json:"bounding_box,omitempty"`   // Position on page
+	ExtractedText []string     `json:"extracted_text,omitempty"` // Text elements extracted from the image
 }
 
 // ExtractedTable represents a table extracted from the document
@@ -102,6 +132,29 @@ type ExtractedTable struct {
 	CSV         string       `json:"csv,omitempty"`          // CSV representation
 }
 
+// ExtractedDiagram represents a diagram extracted from the document
+type ExtractedDiagram struct {
+	ID          string                 `json:"id"`                     // Unique diagram identifier
+	Type        string                 `json:"type"`                   // Type of diagram (flowchart, chart, diagram, etc.)
+	Caption     string                 `json:"caption,omitempty"`      // Diagram caption if available
+	Description string                 `json:"description,omitempty"`  // Generated description of the diagram
+	DiagramType string                 `json:"diagram_type,omitempty"` // Classified diagram type (flowchart, chart, etc.)
+	MermaidCode string                 `json:"mermaid_code,omitempty"` // Generated Mermaid syntax for the diagram
+	Elements    []DiagramElement       `json:"elements,omitempty"`     // Text elements within the diagram
+	PageNumber  int                    `json:"page_number,omitempty"`  // Page number where diagram appears
+	BoundingBox *BoundingBox           `json:"bounding_box,omitempty"` // Position on page
+	Confidence  float64                `json:"confidence,omitempty"`   // Confidence score for diagram analysis
+	Properties  map[string]interface{} `json:"properties,omitempty"`   // Additional diagram-specific properties
+}
+
+// DiagramElement represents a text or structural element within a diagram
+type DiagramElement struct {
+	Type        string       `json:"type"`                   // Element type (text, shape, connector, etc.)
+	Content     string       `json:"content,omitempty"`      // Text content of the element
+	Position    string       `json:"position,omitempty"`     // Position description within diagram
+	BoundingBox *BoundingBox `json:"bounding_box,omitempty"` // Position within the diagram
+}
+
 // BoundingBox represents the position and size of an element on a page
 type BoundingBox struct {
 	X      float64 `json:"x"`      // X coordinate (left)
@@ -113,11 +166,12 @@ type BoundingBox struct {
 // ProcessingInfo contains information about the processing operation
 type ProcessingInfo struct {
 	ProcessingMode       ProcessingMode       `json:"processing_mode"`           // Mode used for processing
+	ProcessingMethod     string               `json:"processing_method"`         // Concise description of processing method used
 	HardwareAcceleration HardwareAcceleration `json:"hardware_acceleration"`     // Hardware acceleration used
 	VisionModel          string               `json:"vision_model,omitempty"`    // Vision model used (if any)
 	OCREnabled           bool                 `json:"ocr_enabled"`               // Whether OCR was enabled
 	OCRLanguages         []string             `json:"ocr_languages,omitempty"`   // OCR languages used
-	ProcessingTime       time.Duration        `json:"processing_time"`           // Time taken to process
+	ProcessingTime       float64              `json:"processing_time"`           // Time taken to process in seconds
 	PythonVersion        string               `json:"python_version,omitempty"`  // Python version used
 	DoclingVersion       string               `json:"docling_version,omitempty"` // Docling version used
 	CacheKey             string               `json:"cache_key,omitempty"`       // Cache key used

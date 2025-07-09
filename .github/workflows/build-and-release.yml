@@ -401,14 +401,16 @@ jobs:
             ${{ env.CHANGELOG }}
 
             ## Installation
-
-            Download the binary for your platform:
+            
+            1. Download the binary for your platform:
 
             - **Linux AMD64**: `mcp-devtools-linux-amd64`
             - **Linux ARM64**: `mcp-devtools-linux-arm64`
             - **macOS Apple Silicon**: `mcp-devtools-darwin-arm64`
+            
+            2. Rename it to `mcp-devtools` and place it in your path (e.g., `mv mcp-devtools-darwin-arm64 /usr/local/bin/mcp-devtools`).
+            3. Make the binary executable e.g. `chmod +x /usr/local/bin/mcp-devtools` and configure it in your MCP client as per the README.md
 
-            Make the binary executable with `chmod +x <binary-name>` and run it.
           files: |
             release/mcp-devtools-linux-amd64
             release/mcp-devtools-linux-arm64
