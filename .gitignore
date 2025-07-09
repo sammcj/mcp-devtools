@@ -48,6 +48,10 @@ dist/
 
 .claude
 
-**/*/extracted_images/*
+**/*/extracted_images
 **/*/exported_output.md
 **/*/__pycache__
+**/*.pyc
+**/*.pyo
+**/*/.venv
+**/*/venv
