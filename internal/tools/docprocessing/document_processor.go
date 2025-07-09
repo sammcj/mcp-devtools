@@ -98,6 +98,9 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 		mcp.WithBoolean("convert_diagrams_to_mermaid",
 			mcp.Description("Convert detected diagrams to Mermaid syntax using AI vision models (requires diagram_description and enable_remote_services)"),
 		),
+		mcp.WithBoolean("generate_diagrams",
+			mcp.Description("Generate enhanced diagram analysis using external LLM"),
+		),
 		mcp.WithBoolean("clear_file_cache",
 			mcp.Description("Force clear all cache entries the source file before processing"),
 		),
@@ -290,9 +293,19 @@ func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*Docu
 		req.ConvertDiagramsToMermaid = convertMermaid
 	}
 
+	// Optional: generate_diagrams
+	if generateDiagrams, ok := args["generate_diagrams"].(bool); ok {
+		req.GenerateDiagrams = generateDiagrams
+	}
+
 	// Optional: clear_file_cache
 	if clearCache, ok := args["clear_file_cache"].(bool); ok {
 		req.ClearFileCache = clearCache
+	}
+
+	// Optional: extract_images
+	if extractImages, ok := args["extract_images"].(bool); ok {
+		req.ExtractImages = extractImages
 	}
 
 	return req, nil
@@ -374,8 +387,8 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 		args = append(args, "--convert-diagrams-to-mermaid")
 	}
 
-	// Auto-enable image extraction when export file is provided
-	if req.ExportFile != "" {
+	// Auto-enable image extraction when export file is provided or extract_images is true
+	if req.ExportFile != "" || req.ExtractImages {
 		args = append(args, "--extract-images")
 	}
 
@@ -464,6 +477,16 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 		response.Images = t.parseImages(imagesData)
 	}
 
+	// Enhance diagrams with LLM if requested and configured
+	if req.GenerateDiagrams && len(response.Diagrams) > 0 {
+		enhancedDiagrams, err := t.enhanceDiagramsWithLLM(response.Diagrams)
+		if err != nil {
+			// Return the error instead of silently ignoring it
+			return nil, fmt.Errorf("LLM diagram enhancement failed: %w", err)
+		}
+		response.Diagrams = enhancedDiagrams
+	}
+
 	return response, nil
 }
 
@@ -549,6 +572,9 @@ func (t *DocumentProcessorTool) parseDiagrams(data []interface{}) []ExtractedDia
 			}
 			if mermaidCode, ok := diagramData["mermaid_code"].(string); ok {
 				diagram.MermaidCode = mermaidCode
+			}
+			if base64Data, ok := diagramData["base64_data"].(string); ok {
+				diagram.Base64Data = base64Data
 			}
 			if pageNum, ok := diagramData["page_number"].(float64); ok {
 				diagram.PageNumber = int(pageNum)
@@ -805,6 +831,68 @@ func (t *DocumentProcessorTool) handleExportFile(exportPath string, response *Do
 	}
 
 	return t.newToolResultJSON(result)
+}
+
+// enhanceDiagramsWithLLM enhances diagrams using external LLM analysis
+func (t *DocumentProcessorTool) enhanceDiagramsWithLLM(diagrams []ExtractedDiagram) ([]ExtractedDiagram, error) {
+	// Check if LLM is configured
+	if !IsLLMConfigured() {
+		return diagrams, fmt.Errorf("LLM not configured: required environment variables %s, %s, %s not set",
+			EnvOpenAIAPIBase, EnvOpenAIModel, EnvOpenAIAPIKey)
+	}
+
+	// Create LLM client
+	llmClient, err := NewDiagramLLMClient()
+	if err != nil {
+		return diagrams, fmt.Errorf("failed to create LLM client: %w", err)
+	}
+
+	// Process each diagram
+	enhancedDiagrams := make([]ExtractedDiagram, len(diagrams))
+	for i, diagram := range diagrams {
+		// Start with the original diagram
+		enhancedDiagrams[i] = diagram
+
+		// Enhance with LLM analysis
+		analysis, err := llmClient.AnalyseDiagram(&diagram)
+		if err != nil {
+			// Return error instead of silently continuing - this was the bug!
+			return diagrams, fmt.Errorf("LLM analysis failed for diagram %s: %w", diagram.ID, err)
+		}
+
+		// Update diagram with LLM analysis
+		if analysis.Description != "" {
+			enhancedDiagrams[i].Description = analysis.Description
+		}
+		if analysis.DiagramType != "" {
+			enhancedDiagrams[i].DiagramType = analysis.DiagramType
+		}
+		if analysis.MermaidCode != "" {
+			enhancedDiagrams[i].MermaidCode = analysis.MermaidCode
+		}
+		if len(analysis.Elements) > 0 {
+			enhancedDiagrams[i].Elements = analysis.Elements
+		}
+		if analysis.Confidence > 0 {
+			enhancedDiagrams[i].Confidence = analysis.Confidence
+		}
+
+		// Merge properties
+		if enhancedDiagrams[i].Properties == nil {
+			enhancedDiagrams[i].Properties = make(map[string]interface{})
+		}
+		if analysis.Properties != nil {
+			for key, value := range analysis.Properties {
+				enhancedDiagrams[i].Properties[key] = value
+			}
+		}
+
+		// Add LLM processing metadata
+		enhancedDiagrams[i].Properties["llm_enhanced"] = true
+		enhancedDiagrams[i].Properties["llm_processing_time"] = analysis.ProcessingTime.Seconds()
+	}
+
+	return enhancedDiagrams, nil
 }
 
 // newToolResultJSON creates a new tool result with JSON content

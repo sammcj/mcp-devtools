@@ -71,6 +71,7 @@ type DocumentProcessingRequest struct {
 	ChartDataExtraction      bool                 `json:"chart_data_extraction,omitempty"`       // Enable data extraction from charts and graphs
 	EnableRemoteServices     bool                 `json:"enable_remote_services,omitempty"`      // Allow communication with external vision model services
 	ConvertDiagramsToMermaid bool                 `json:"convert_diagrams_to_mermaid,omitempty"` // Convert detected diagrams to Mermaid syntax using AI vision models
+	GenerateDiagrams         bool                 `json:"generate_diagrams,omitempty"`           // Generate enhanced diagram analysis using external LLM (requires DOCLING_LLM_OPENAI_API_BASE, DOCLING_LLM_MODEL_NAME, DOCLING_LLM_OPENAI_API_KEY environment variables)
 	ExtractImages            bool                 `json:"extract_images,omitempty"`              // Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts
 }
 
@@ -140,6 +141,7 @@ type ExtractedDiagram struct {
 	Description string                 `json:"description,omitempty"`  // Generated description of the diagram
 	DiagramType string                 `json:"diagram_type,omitempty"` // Classified diagram type (flowchart, chart, etc.)
 	MermaidCode string                 `json:"mermaid_code,omitempty"` // Generated Mermaid syntax for the diagram
+	Base64Data  string                 `json:"base64_data,omitempty"`  // Base64-encoded image data for LLM vision processing
 	Elements    []DiagramElement       `json:"elements,omitempty"`     // Text elements within the diagram
 	PageNumber  int                    `json:"page_number,omitempty"`  // Page number where diagram appears
 	BoundingBox *BoundingBox           `json:"bounding_box,omitempty"` // Position on page

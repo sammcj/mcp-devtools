@@ -11,6 +11,8 @@ The Document Processing tool provides intelligent document conversion capabiliti
 - **Caching System**: Intelligent caching to avoid reprocessing identical documents
 - **Metadata Extraction**: Extracts document metadata (title, author, page count, etc.)
 - **Table & Image Extraction**: Preserves tables and images in markdown format
+- **Diagram Analysis**: Advanced diagram detection and description using vision models
+- **Mermaid Generation**: Convert diagrams to editable Mermaid syntax using external LLM
 - **Flexible Processing Modes**: Basic, advanced, OCR-focused, table-focused, and image-focused modes
 
 ## Installation
@@ -145,6 +147,78 @@ When OCR is enabled, you can specify languages for better recognition accuracy:
 ```
 
 Supported languages include: English (en), French (fr), German (de), Spanish (es), Italian (it), Portuguese (pt), Dutch (nl), Russian (ru), Chinese (zh), Japanese (ja), Korean (ko), and many others.
+
+### Diagram Analysis and Mermaid Generation
+
+The tool supports advanced diagram analysis and conversion to Mermaid syntax using external LLM vision models.
+
+#### Basic Diagram Analysis
+
+Enable diagram detection and description using the built-in SmolDocling vision model:
+
+```json
+{
+  "source": "/path/to/document.pdf",
+  "diagram_description": true,
+  "vision_mode": "smoldocling"
+}
+```
+
+#### LLM-Enhanced Mermaid Generation
+
+For advanced diagram-to-Mermaid conversion, configure external LLM integration:
+
+```bash
+# Required environment variables for LLM integration
+export DOCLING_LLM_OPENAI_API_BASE="https://api.openai.com/v1"     # Or any OpenAI-compatible endpoint
+export DOCLING_LLM_MODEL_NAME="gpt-4-vision-preview"        # Model name for the provider
+export DOCLING_LLM_OPENAI_API_KEY="your-api-key-here"              # API key for authentication
+
+# Optional LLM configuration (with defaults)
+export DOCLING_LLM_MAX_TOKENS="16384"        # Maximum tokens for LLM response
+export DOCLING_LLM_TEMPERATURE="0.1"        # Temperature for LLM inference
+export DOCLING_LLM_TIMEOUT="240"             # Timeout for LLM requests in seconds
+```
+
+Then enable enhanced diagram generation:
+
+```json
+{
+  "source": "/path/to/document.pdf",
+  "diagram_description": true,
+  "generate_diagrams": true,
+  "vision_mode": "smoldocling"
+}
+```
+
+#### Supported LLM Providers
+
+The tool supports any OpenAI compatible API endpoint, e.g: Ollama, LM Studio, OpenRouter, OpenAI, Google etc. via their OpenAI compatible APIs as long as you select a model that supports vision input.
+
+#### Custom Prompts
+
+You can customise the prompts used for diagram analysis:
+
+```bash
+# Base prompt for all diagram analysis
+export DOCLING_LLM_PROMPT_BASE="You are an expert at analysing diagrams..."
+
+# Type-specific prompts
+export DOCLING_LLM_PROMPT_FLOWCHART="This appears to be a flowchart..."
+export DOCLING_LLM_PROMPT_ARCHITECTURE="This appears to be an architecture diagram..."
+export DOCLING_LLM_PROMPT_CHART="This appears to be a chart or graph..."
+export DOCLING_LLM_PROMPT_GENERIC="Analyse this diagram and..."
+```
+
+#### Diagram Analysis Features
+
+- **Automatic Detection**: Identifies diagrams, flowcharts, architecture diagrams, and charts
+- **Type Classification**: Classifies diagram types with confidence scoring
+- **Mermaid Conversion**: Generates valid Mermaid syntax for diagrams
+- **Element Extraction**: Extracts text elements and structural components
+- **AWS Colour Coding**: Applies consistent colour schemes for architecture diagrams
+- **Validation**: Validates generated Mermaid syntax for correctness
+- **Fallback Handling**: Gracefully falls back to basic analysis if LLM is unavailable
 
 ### Output Formats
 
@@ -338,15 +412,30 @@ echo '{
 }' | mcp-devtools stdio
 ```
 
-## Contributing
+### Process a PDF with diagram-to-Mermaid conversion
 
-When contributing to the document processing tool:
+```bash
+# First, set up LLM environment variables
+export DOCLING_LLM_OPENAI_API_BASE="https://api.openai.com/v1"
+export DOCLING_LLM_MODEL_NAME="gpt-4-vision-preview"
+export DOCLING_LLM_OPENAI_API_KEY="your-api-key-here"
 
-1. Follow the existing code patterns and error handling
-2. Add appropriate tests for new functionality
-3. Update this README for new features
-4. Ensure compatibility with both macOS and Linux
-5. Test with various document types and sizes
+# Then process the document
+echo '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "process_document",
+    "arguments": {
+      "source": "/path/to/document-with-diagrams.pdf",
+      "diagram_description": true,
+      "generate_diagrams": true,
+      "vision_mode": "smoldocling"
+    }
+  }
+}' | mcp-devtools stdio
+```
 
 ## License
 

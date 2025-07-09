@@ -18,10 +18,12 @@ def save_image_to_file(image_data: str, filename: str, args=None) -> str:
     """Save base64 image data to a file and return the file path."""
     try:
         # Determine the output directory
-        # Default to same directory as source file if no export path provided
         output_dir = None
 
-        if args and hasattr(args, 'source'):
+        # If export_file is provided, use its directory
+        if args and hasattr(args, 'export_file') and args.export_file:
+            output_dir = os.path.dirname(os.path.abspath(args.export_file))
+        elif args and hasattr(args, 'source'):
             source_path = args.source
             # Check if source is a file path (not URL)
             if not source_path.startswith(('http://', 'https://')):
@@ -34,12 +36,8 @@ def save_image_to_file(image_data: str, filename: str, args=None) -> str:
             # Fallback to current working directory
             output_dir = os.getcwd()
 
-        # Create images subdirectory
-        images_dir = os.path.join(output_dir, 'extracted_images')
-        os.makedirs(images_dir, exist_ok=True)
-
-        # Create full file path
-        file_path = os.path.join(images_dir, filename)
+        # Save images directly in the same directory as the markdown (no subdirectory)
+        file_path = os.path.join(output_dir, filename)
 
         # Decode base64 data and save to file
         image_bytes = base64.b64decode(image_data)
@@ -104,17 +102,9 @@ def replace_image_placeholders_with_links(content: str, images: List[Dict[str, A
             # Create relative path from markdown file to image
             image_path = image.get('file_path', '')
             if image_path:
-                # Get just the filename and subdirectory for relative path
-                # e.g., if image is at /path/to/doc/extracted_images/picture_1.png
-                # and markdown might be at /path/to/doc/output.md
-                # we want: extracted_images/picture_1.png
-                try:
-                    image_filename = os.path.basename(image_path)
-                    image_dir = os.path.basename(os.path.dirname(image_path))
-                    relative_path = f"{image_dir}/{image_filename}"
-                except:
-                    # Fallback to just the filename
-                    relative_path = os.path.basename(image_path)
+                # Since images are now saved in the same directory as the markdown,
+                # just use the filename
+                relative_path = os.path.basename(image_path)
             else:
                 relative_path = f"image_{image_index + 1}.png"
 
