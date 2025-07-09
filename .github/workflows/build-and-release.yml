@@ -194,7 +194,8 @@ jobs:
 
             ## Installation
 
-            Download the binary for your platform and run it.
+            1. Download the binary for your platform.
+            2. Rename it to `mcp-devtools` and place it in your path (e.g., `mv mcp-devtools-darwin-arm64 /usr/local/bin/mcp-devtools`).
           files: |
             bin/mcp-devtools
           draft: false
