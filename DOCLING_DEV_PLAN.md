@@ -216,6 +216,7 @@ Enhance the `process_document` tool with:
   This enables users to process documents containing diagrams and get both the original visual content plus machine-readable Mermaid representations that can be edited, version-controlled, and programmatically manipulated.
 
   **Implementation Tasks:**
+  First:
   - [ ] Add `generate_diagrams` boolean parameter (only available when environment variables are set)
   - [ ] Check for required environment variables: `OPENAI_API_BASE`, `OPENAI_MODEL_NAME`, `OPENAI_API_KEY`
   - [ ] Add gollm dependency to go.mod for unified LLM provider support
@@ -223,7 +224,6 @@ Enhance the `process_document` tool with:
   - [ ] Add support for any gollm-compatible provider (OpenAI, Anthropic, Groq, Ollama, OpenRouter, etc.)
   - [ ] Implement rate limiting and error handling for API calls in Go
   - [ ] Use SmolDocling as the default vision model (already integrated)
-  - [ ] Fall back to SmolDocling when LLM API is unavailable or fails
   - [ ] Pass extracted diagram data from Python to Go for LLM processing
   - [ ] Implement diagram-specific prompt engineering for different types (flowchart, architecture, etc.)
   - [ ] Add Mermaid syntax validation and error handling
