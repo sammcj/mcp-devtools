@@ -35,6 +35,9 @@ type Config struct {
 
 	// Vision Model Configuration
 	VisionModel string // Vision model to use
+
+	// Certificate Configuration
+	ExtraCACerts string // Path to additional CA certificates file or directory
 }
 
 // DefaultConfig returns the default configuration
@@ -115,6 +118,11 @@ func LoadConfig() *Config {
 		config.VisionModel = visionModel
 	}
 
+	// Certificate Configuration
+	if extraCACerts := os.Getenv("DOCLING_EXTRA_CA_CERTS"); extraCACerts != "" {
+		config.ExtraCACerts = extraCACerts
+	}
+
 	return config
 }
 
@@ -143,6 +151,11 @@ func (c *Config) Validate() error {
 	// Validate OCR languages
 	if len(c.OCRLanguages) == 0 {
 		return fmt.Errorf("at least one OCR language must be specified")
+	}
+
+	// Validate certificates if configured
+	if err := c.ValidateCertificates(); err != nil {
+		return fmt.Errorf("certificate validation failed: %w", err)
 	}
 
 	return nil
@@ -591,17 +604,92 @@ func attemptDoclingInstall(pythonPath string) bool {
 		return false
 	}
 
+	// Load configuration to get certificate settings
+	config := LoadConfig()
+
 	// Try to install docling using pip with a reasonable timeout (1 minute)
 	// Use --quiet to reduce output and --no-warn-script-location to avoid warnings
 	installCmd := fmt.Sprintf(`%s -m pip install --quiet --no-warn-script-location docling`, pythonPath)
 
-	// Attempt installation with a longer timeout since package installation can take time
-	if err := runCommand(installCmd, 60); err != nil {
+	// Attempt installation with certificate support and a longer timeout since package installation can take time
+	if _, err := runCommandWithCertificates(installCmd, 60, config); err != nil {
 		return false
 	}
 
 	// Verify that docling is now available
 	return isDoclingAvailableInPython(pythonPath)
+}
+
+// GetCertificateEnvironment returns environment variables for certificate configuration
+func (c *Config) GetCertificateEnvironment() []string {
+	var env []string
+
+	if c.ExtraCACerts != "" {
+		// Validate that the certificate path exists
+		if _, err := os.Stat(c.ExtraCACerts); err == nil {
+			// Set environment variables for both Python and system certificate handling
+			env = append(env, fmt.Sprintf("SSL_CERT_FILE=%s", c.ExtraCACerts))
+			env = append(env, fmt.Sprintf("REQUESTS_CA_BUNDLE=%s", c.ExtraCACerts))
+			env = append(env, fmt.Sprintf("CURL_CA_BUNDLE=%s", c.ExtraCACerts))
+
+			// For pip and Python package installations
+			env = append(env, fmt.Sprintf("PIP_CERT=%s", c.ExtraCACerts))
+			env = append(env, "PIP_TRUSTED_HOST=pypi.org,pypi.python.org,files.pythonhosted.org")
+
+			// For conda if used
+			env = append(env, fmt.Sprintf("CONDA_SSL_VERIFY=%s", c.ExtraCACerts))
+		}
+	}
+
+	return env
+}
+
+// ValidateCertificates validates the certificate configuration
+func (c *Config) ValidateCertificates() error {
+	if c.ExtraCACerts == "" {
+		return nil // No certificates configured, which is fine
+	}
+
+	// Check if the certificate path exists
+	info, err := os.Stat(c.ExtraCACerts)
+	if err != nil {
+		return fmt.Errorf("certificate path does not exist: %s", c.ExtraCACerts)
+	}
+
+	// Check if it's a file or directory
+	if info.IsDir() {
+		// If it's a directory, check if it contains certificate files
+		entries, err := os.ReadDir(c.ExtraCACerts)
+		if err != nil {
+			return fmt.Errorf("cannot read certificate directory: %s", c.ExtraCACerts)
+		}
+
+		// Look for common certificate file extensions
+		hasCerts := false
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				name := strings.ToLower(entry.Name())
+				if strings.HasSuffix(name, ".pem") || strings.HasSuffix(name, ".crt") ||
+					strings.HasSuffix(name, ".cer") || strings.HasSuffix(name, ".ca-bundle") {
+					hasCerts = true
+					break
+				}
+			}
+		}
+
+		if !hasCerts {
+			return fmt.Errorf("certificate directory contains no certificate files: %s", c.ExtraCACerts)
+		}
+	} else {
+		// If it's a file, check if it's readable
+		file, err := os.Open(c.ExtraCACerts)
+		if err != nil {
+			return fmt.Errorf("cannot read certificate file: %s", c.ExtraCACerts)
+		}
+		_ = file.Close()
+	}
+
+	return nil
 }
 
 // runCommandWithOutput runs a command with a timeout and returns the output
@@ -615,6 +703,37 @@ func runCommandWithOutput(cmdStr string, timeoutSeconds int) (string, error) {
 		cmd = exec.CommandContext(ctx, "cmd", "/C", cmdStr)
 	} else {
 		cmd = exec.CommandContext(ctx, "sh", "-c", cmdStr)
+	}
+
+	output, err := cmd.Output()
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return "", fmt.Errorf("command timeout after %d seconds", timeoutSeconds)
+		}
+		return "", err
+	}
+
+	return string(output), nil
+}
+
+// runCommandWithCertificates runs a command with certificate environment variables
+func runCommandWithCertificates(cmdStr string, timeoutSeconds int, config *Config) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	// Execute command through shell to handle complex commands properly
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.CommandContext(ctx, "cmd", "/C", cmdStr)
+	} else {
+		cmd = exec.CommandContext(ctx, "sh", "-c", cmdStr)
+	}
+
+	// Set up environment with certificate configuration
+	cmd.Env = os.Environ() // Start with current environment
+	if config != nil {
+		certEnv := config.GetCertificateEnvironment()
+		cmd.Env = append(cmd.Env, certEnv...)
 	}
 
 	output, err := cmd.Output()

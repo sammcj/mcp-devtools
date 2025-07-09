@@ -162,7 +162,7 @@ You can override the default provider by specifying the `provider` parameter in 
 - **Table & Image Extraction**: Preserves tables and images in markdown format
 - **Flexible Processing Modes**: Basic, advanced, OCR-focused, table-focused, and image-focused modes
 
-**Note**: The document processor tool requires Python 3.12+ with the Docling library installed (`pip install docling`), mcp-devtools will attempt to install the package if it's unavailable, if you don't see the tool available in your client check that you have docling installed and Python in your path. See the [Document Processing README](internal/tools/docprocessing/README.md) for detailed installation and configuration instructions.
+**Note**: The document processor tool requires Python 3.10+ (ideally 3.13+) with the Docling library installed (`pip install docling`), mcp-devtools will attempt to install the package if it's unavailable, if you don't see the tool available in your client check that you have docling installed and Python in your path. See the [Document Processing README](internal/tools/docprocessing/README.md) for detailed installation and configuration instructions.
 
 ### shadcn ui Components
 
@@ -678,9 +678,15 @@ export DOCLING_MAX_FILE_SIZE="100"  # 100 MB
 export DOCLING_OCR_LANGUAGES="en,fr,de"
 ```
 
-**Prerequisites**: This tool requires Python 3.9+ with Docling installed:
+**Prerequisites**: This tool requires Python 3.10+ (ideally 3.13+) with Docling installed:
 ```bash
 pip install docling
+```
+
+**Use With Custom MITM Certs**: The document processing tool performs a pip install docling (if it's not found) and if you choose to use the advanced vLLM processing also has to download the SmolDocling model, as such some corporate environments that use MITM privacy-breaking proxies may need additional certs provided. Set the `DOCLING_EXTRA_CA_CERTS` environment variable to point to your certificate bundle:
+
+```bash
+export DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
 ```
 
 For detailed installation and configuration instructions, see the [Document Processing README](internal/tools/docprocessing/README.md).

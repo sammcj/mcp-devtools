@@ -396,6 +396,11 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 		cmd.Dir = cwd
 	}
 
+	// Set up environment with certificate configuration
+	cmd.Env = os.Environ() // Start with current environment
+	certEnv := t.config.GetCertificateEnvironment()
+	cmd.Env = append(cmd.Env, certEnv...)
+
 	// Only capture stdout to avoid mixing with stderr logs
 	output, err := cmd.Output()
 	if err != nil {

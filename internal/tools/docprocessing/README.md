@@ -53,6 +53,9 @@ export DOCLING_OCR_LANGUAGES="en,fr,de"
 
 # Vision Model Configuration
 export DOCLING_VISION_MODEL="SmolDocling"
+
+# Certificate Configuration (for MITM proxies)
+export DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
 ```
 
 ## Usage
@@ -237,16 +240,42 @@ Cache entries have a 24-hour TTL by default and are stored as JSON files.
 ### Hardware Acceleration
 
 Processing performance varies by hardware:
-- **CPU**: Baseline performance, works everywhere
+- **CPU**: Baseline performance, works everywhere but slow
 - **MPS (macOS)**: 2-5x faster on Apple Silicon
 - **CUDA**: 3-10x faster on NVIDIA GPUs
+
+## Use With Custom MITM Certs
+
+The document processing tool performs a pip install docling (if it's not found) and if you choose to use the advanced vLLM processing also has to download the SmolDocling model, as such some corporate environments that use MITM privacy-breaking proxies may need additional certs provided. Set the `DOCLING_EXTRA_CA_CERTS` environment variable to point to your certificate bundle:
+
+```bash
+export DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem" # or a directory
+```
+
+### Supported Certificate Formats
+
+The tool supports the following certificate file formats:
+- `.pem` - PEM encoded certificates
+- `.crt` - Certificate files
+- `.cer` - Certificate files
+- `.ca-bundle` - Certificate bundles
+
+### How It Works
+
+When `DOCLING_EXTRA_CA_CERTS` is configured, the tool automatically sets the following environment variables for all Python subprocess calls:
+
+- `SSL_CERT_FILE` - For general SSL/TLS connections
+- `REQUESTS_CA_BUNDLE` - For Python requests library
+- `CURL_CA_BUNDLE` - For curl-based downloads
+- `PIP_CERT` - For pip package installations
+- `CONDA_SSL_VERIFY` - For conda package installations (if detected and used)
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **"Python path is required but not found"**
-   - Install Python 3.9+ and ensure it's in PATH
+   - Install Python 3.10+ (ideally 3.13+) and ensure it's in PATH
    - Or set `DOCLING_PYTHON_PATH` environment variable
 
 2. **"Docling not available"**
@@ -260,6 +289,11 @@ Processing performance varies by hardware:
 4. **"Hardware acceleration not working"**
    - Install appropriate PyTorch version for your hardware
    - Check system compatibility with `python -c "import torch; print(torch.backends.mps.is_available())"`
+
+5. **"Certificate path does not exist"**
+   - Verify the path specified in `DOCLING_EXTRA_CA_CERTS` exists
+   - Ensure the certificate file or directory is readable
+   - Check that certificate files have the correct extensions (.pem, .crt, .cer, .ca-bundle)
 
 ### Debug Mode
 
