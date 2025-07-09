@@ -265,6 +265,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install docling
 
+      - name: Test
+        run: make test
+
       - name: Build
         env:
           GOOS: darwin
@@ -298,9 +301,6 @@ jobs:
           go build -v -o "bin/mcp-devtools" \
             -ldflags "-X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
             .
-
-      - name: Test
-        run: make test
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
