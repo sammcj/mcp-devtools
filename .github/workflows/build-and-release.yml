@@ -60,7 +60,6 @@ jobs:
         with:
           path: |
             ~/.cache/pip
-            /opt/hostedtoolcache/Python/*/x64/lib/python*/site-packages
           key: ${{ runner.os }}-pip-docling-3.13
           restore-keys: |
             ${{ runner.os }}-pip-
@@ -152,7 +151,6 @@ jobs:
         with:
           path: |
             ~/.cache/pip
-            /opt/hostedtoolcache/Python/*/x64/lib/python*/site-packages
           key: ${{ runner.os }}-pip-docling-3.13
           restore-keys: |
             ${{ runner.os }}-pip-
