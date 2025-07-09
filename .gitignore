@@ -47,3 +47,7 @@ bin/
 dist/
 
 .claude
+
+**/*/extracted_images/*
+**/*/exported_output.md
+**/*/__pycache__

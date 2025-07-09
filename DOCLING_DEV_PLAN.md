@@ -130,21 +130,127 @@ Enhance the `process_document` tool with:
 - [x] Intelligent dependency resolution (auto-enables advanced vision + remote services)
 - [x] Processing method reporting shows diagram processing status
 
+### ✅ COMPLETED - Python File Reorganisation and Image Processing Enhancements
+- [x] **Python File Reorganisation** - Successfully moved all Python files to `python/` subfolder
+- [x] **Modular Architecture** - Split into `docling_processor.py`, `image_processing.py`, `table_processing.py`
+- [x] **Import Path Fixes** - Updated relative imports with fallback for direct execution
+- [x] **Go Configuration Updates** - Updated Go config to point to new Python file locations
+- [x] **pdfimages Fallback** - Added `extract_images_with_pdfimages` function for robust image extraction
+- [x] **Auto Image Extraction** - Images automatically extracted when `export_file` is provided
+- [x] **Removed extract_images Parameter** - Simplified tool interface by removing explicit parameter
+- [x] **Processing Time Rounding** - All processing times now rounded to nearest second
+- [x] **Markdown Formatting Cleanup** - Added `clean_markdown_formatting` function
+- [x] **HTML Entity Fixes** - Converts `&amp;` → `&`, `&lt;` → `<`, etc.
+- [x] **Bullet Point Cleanup** - Replaces `●` with `-` and cleans up `- ●` patterns
+- [x] **Collapsible Image Details** - Image descriptions wrapped in HTML `<details>` tags
+- [x] **Image Placeholder Replacement** - Proper replacement of `<!-- image -->` with markdown links
+- [x] **Relative Path Generation** - Correct relative paths from markdown to extracted images
+- [x] **British English Compliance** - All code and outputs use British English spelling
+
 ### 🔄 REMAINING IMPLEMENTATION TASKS
 
 ### Phase 1: Enhanced Vision Processing
 
-#### Task 1.1: SmolDocling Integration - 🔄 FOUNDATION COMPLETE
+#### Task 1.1: SmolDocling Integration - 🔄
 - [x] Research SmolDocling CLI and API integration methods
 - [x] Add SmolDocling as processing mode option in Go types
 - [x] Implement SmolDocling pipeline foundation in Python wrapper
-- [ ] Add SmolDocling-specific configuration options
-- [ ] Test SmolDocling performance vs standard pipeline
+
+#### Task 1.1.2: Diagrams to Mermaid
+
+- [x] Read and understand this blog post and the code within it (fetch with a large maximum size as it's long): https://subaud.io/blog/converting-blog-diagrams-to-mermaid
+- [x] Identify what lessons from the blog post and it's code that we could apply to add diagram to Mermaid functionality to the `process_document` tool.
+- [x] Update this checklist of tasks to add in the tasks that need to be done to implement the diagram to Mermaid functionality
+
+**Key Lessons from Blog Post:**
+1. **Image Classification**: Distinguish diagrams from screenshots using AI vision models
+2. **Mermaid Conversion**: Use Claude/vision models to convert diagrams to Mermaid syntax
+3. **Validation**: Validate generated Mermaid code for syntax correctness
+4. **Prompt Engineering**: Use specific prompts for different diagram types (flowchart, architecture, etc.)
+5. **AWS Color Coding**: Apply consistent colour schemes for different service types
+6. **Fallback Handling**: Graceful degradation when vision models aren't available
+
+**Implementation Tasks:**
+
+- [x] **Task 1.1.2.1: Add Mermaid Conversion Parameter**
+  - [x] Add `convert_diagrams_to_mermaid` boolean parameter to Go types
+  - [x] Update tool definition with new parameter and clear description
+  - [x] Add parameter validation and dependency resolution
+
+- [x] **Task 1.1.2.2: Implement Diagram Classification**
+  - [x] Create `classify_diagram_vs_screenshot()` function in Python
+  - [x] Use vision models to distinguish diagrams from screenshots/UI images
+  - [x] Implement confidence scoring (≥0.8 for conversion)
+  - [x] Add fallback heuristic classification based on filename/context
+
+- [x] **Task 1.1.2.3: Implement Mermaid Conversion Engine**
+  - [x] Create `convert_diagram_to_mermaid()` function
+  - [x] Implement diagram type detection (flowchart, architecture, chart, etc.)
+  - [x] Add specific prompt engineering for each diagram type
+  - [x] Include AWS service colour coding for architecture diagrams
+  - [x] Handle different Mermaid syntax types (flowchart, graph, sequence, etc.)
+
+- [x] **Task 1.1.2.4: Add Mermaid Validation**
+  - [x] Create `validate_mermaid_syntax()` function
+  - [x] Check for basic Mermaid structure and syntax
+  - [x] Validate bracket/parentheses matching
+  - [x] Ensure proper diagram type declarations
+
+- [x] **Task 1.1.2.5: Integrate with Existing Diagram Processing**
+  - [x] Modify `extract_diagram_descriptions()` to include Mermaid conversion
+  - [x] Add `mermaid_code` field to `ExtractedDiagram` struct
+  - [x] Update response structure to include Mermaid output
+  - [x] Ensure backward compatibility with existing diagram extraction
+
+- [ ] **Task 1.1.2.6: Add gollm-based LLM Integration for Advanced Diagram Analysis**
+
+  **Goal**: Implement the same diagram-to-Mermaid conversion capability demonstrated in the blog post (https://subaud.io/blog/converting-blog-diagrams-to-mermaid), but integrated into our document processing tool. When users enable `generate_diagrams=true` and provide LLM credentials, the tool should:
+
+  1. **Detect diagrams** in documents using our existing SmolDocling pipeline
+  2. **Classify diagram types** (flowchart, architecture, chart, screenshot) with confidence scoring
+  3. **Convert diagrams to Mermaid syntax** using external LLM vision models (GPT-4V, Claude, etc.)
+  4. **Validate generated Mermaid** code for syntax correctness
+  5. **Include both original images AND Mermaid code** in the output for maximum utility
+  6. **Gracefully fall back** to SmolDocling-only results when LLM is unavailable
+
+  This enables users to process documents containing diagrams and get both the original visual content plus machine-readable Mermaid representations that can be edited, version-controlled, and programmatically manipulated.
+
+  **Implementation Tasks:**
+  - [ ] Add `generate_diagrams` boolean parameter (only available when environment variables are set)
+  - [ ] Check for required environment variables: `OPENAI_API_BASE`, `OPENAI_MODEL_NAME`, `OPENAI_API_KEY`
+  - [ ] Add gollm dependency to go.mod for unified LLM provider support
+  - [ ] Implement Go-based LLM client using gollm package for diagram analysis
+  - [ ] Add support for any gollm-compatible provider (OpenAI, Anthropic, Groq, Ollama, OpenRouter, etc.)
+  - [ ] Implement rate limiting and error handling for API calls in Go
+  - [ ] Use SmolDocling as the default vision model (already integrated)
+  - [ ] Fall back to SmolDocling when LLM API is unavailable or fails
+  - [ ] Pass extracted diagram data from Python to Go for LLM processing
+  - [ ] Implement diagram-specific prompt engineering for different types (flowchart, architecture, etc.)
+  - [ ] Add Mermaid syntax validation and error handling
+  - [ ] Include AWS-style colour coding for architecture diagrams
+
+- [ ] **Task 1.1.2.7: Update Output Formats**
+  - [ ] Include Mermaid code blocks in markdown output
+  - [ ] Add Mermaid diagrams to structured JSON export
+  - [ ] Create separate Mermaid-only export option
+  - [ ] Handle mixed content (original image + Mermaid code)
+
+- [ ] **Task 1.1.2.8: Testing and Validation**
+  - [ ] Create test documents with various diagram types
+  - [ ] Test conversion accuracy for different diagram categories
+  - [ ] Validate Mermaid syntax correctness
+  - [ ] Performance testing with large documents containing multiple diagrams
 
 **Technical Notes:**
-- SmolDocling can be invoked via: `docling --pipeline vlm --vlm-model smoldocling`
+- SmolDocling is now the default vision model for diagram processing
 - Uses MLX acceleration on Apple Silicon, CUDA on Linux
 - 256M parameter compact vision-language model
+- OpenAI-compatible API integration allows use of any provider:
+  - OpenAI GPT-4 Vision
+  - Anthropic Claude with vision
+  - Google Gemini Vision
+  - Local models via Ollama, LM Studio, etc.
+  - Any OpenAI-compatible endpoint
 
 #### Task 1.2: Diagram Description Implementation
 - [ ] Add diagram detection and description capability
@@ -238,6 +344,115 @@ pipeline_options.table_structure_options.do_cell_matching = False  # uses predic
 
 ## Technical Architecture Changes
 
+### gollm-based LLM Integration Architecture
+
+The new architecture will use the gollm package to handle LLM calls from Go code instead of Python, providing better integration and unified provider support.
+
+#### Architecture Flow:
+1. **Python**: Extract diagrams and basic metadata using Docling + SmolDocling
+2. **Go**: Receive diagram data from Python, use gollm to enhance with external LLM
+3. **Go**: Generate Mermaid code using LLM analysis, validate, and return
+
+#### Implementation Plan:
+
+**Phase 1: Go Dependencies and Setup**
+```go
+// Add to go.mod
+require (
+    github.com/teilomillet/gollm v1.x.x
+)
+```
+
+**Phase 2: Environment Variable Configuration**
+```go
+// Environment variables required for LLM integration
+const (
+    EnvOpenAIAPIBase  = "OPENAI_API_BASE"   // e.g., "https://api.openai.com/v1"
+    EnvOpenAIModel    = "OPENAI_MODEL_NAME" // e.g., "gpt-4-vision-preview"
+    EnvOpenAIAPIKey   = "OPENAI_API_KEY"    // API key for the provider
+)
+```
+
+**Phase 3: LLM Client Integration**
+```go
+// New LLM client for diagram analysis
+type DiagramLLMClient struct {
+    llm    gollm.LLM
+    config *LLMConfig
+}
+
+type LLMConfig struct {
+    Provider string
+    Model    string
+    APIKey   string
+    BaseURL  string
+}
+
+func NewDiagramLLMClient() (*DiagramLLMClient, error) {
+    // Check environment variables
+    baseURL := os.Getenv(EnvOpenAIAPIBase)
+    model := os.Getenv(EnvOpenAIModel)
+    apiKey := os.Getenv(EnvOpenAIAPIKey)
+
+    if baseURL == "" || model == "" || apiKey == "" {
+        return nil, fmt.Errorf("LLM environment variables not configured")
+    }
+
+    // Initialize gollm client
+    llm, err := gollm.NewLLM(
+        gollm.SetProvider("openai"),
+        gollm.SetModel(model),
+        gollm.SetAPIKey(apiKey),
+        gollm.SetBaseURL(baseURL),
+        gollm.SetMaxTokens(4000),
+        gollm.SetTemperature(0.1),
+    )
+
+    return &DiagramLLMClient{
+        llm: llm,
+        config: &LLMConfig{
+            Provider: "openai",
+            Model:    model,
+            APIKey:   apiKey,
+            BaseURL:  baseURL,
+        },
+    }, nil
+}
+```
+
+**Phase 4: Diagram Analysis Pipeline**
+```go
+func (c *DiagramLLMClient) AnalyzeDiagram(diagram *ExtractedDiagram) (*DiagramAnalysis, error) {
+    // Create prompt based on diagram type and extracted data
+    prompt := c.buildDiagramPrompt(diagram)
+
+    // Call LLM using gollm
+    response, err := c.llm.Generate(context.Background(), prompt)
+    if err != nil {
+        return nil, fmt.Errorf("LLM analysis failed: %w", err)
+    }
+
+    // Parse response and extract Mermaid code
+    analysis := c.parseAnalysisResponse(response)
+
+    // Validate generated Mermaid
+    if analysis.MermaidCode != "" {
+        if !validateMermaidSyntax(analysis.MermaidCode) {
+            return nil, fmt.Errorf("generated Mermaid code failed validation")
+        }
+    }
+
+    return analysis, nil
+}
+```
+
+**Phase 5: Integration Points**
+- Python extracts diagrams using existing SmolDocling pipeline
+- Go receives diagram data via JSON from Python subprocess
+- Go conditionally calls LLM if `generate_diagrams=true` and env vars are set
+- Go falls back to SmolDocling results if LLM unavailable
+- Go returns enhanced diagram data with Mermaid code
+
 ### New Go Types Required
 
 ```go
@@ -293,6 +508,15 @@ class EnhancedDoclingProcessor:
 
 ## Dependencies and Requirements
 
+### Go Dependencies (New)
+
+```go
+// Add to go.mod
+require (
+    github.com/teilomillet/gollm v1.x.x  // Unified LLM provider interface
+)
+```
+
 ### Python Dependencies (New)
 
 Note: Always check and use the latest package versions available by using the tools you have available.
@@ -302,6 +526,21 @@ torch>=1.9.0  # For SmolDocling and advanced vision
 transformers>=4.20.0  # For vision models
 pillow>=8.0.0  # For image processing
 pandas>=1.3.0  # For table data manipulation
+```
+
+### Environment Variables (Required for LLM Integration)
+
+```bash
+# Required for external LLM integration (all must be set)
+export OPENAI_API_BASE="https://api.openai.com/v1"     # Or any OpenAI-compatible endpoint
+export OPENAI_MODEL_NAME="gpt-4-vision-preview"        # Model name for the provider
+export OPENAI_API_KEY="your-api-key-here"              # API key for authentication
+
+# Examples for different providers:
+# OpenAI: OPENAI_API_BASE="https://api.openai.com/v1", MODEL="gpt-4-vision-preview"
+# Anthropic: OPENAI_API_BASE="https://api.anthropic.com/v1", MODEL="claude-3-sonnet-20240229"
+# Ollama: OPENAI_API_BASE="http://localhost:11434/v1", MODEL="llava:latest"
+# Groq: OPENAI_API_BASE="https://api.groq.com/openai/v1", MODEL="llava-v1.5-7b-4096-preview"
 ```
 
 ### System Requirements

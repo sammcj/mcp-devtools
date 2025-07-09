@@ -53,24 +53,25 @@ const (
 
 // DocumentProcessingRequest represents the input parameters for document processing
 type DocumentProcessingRequest struct {
-	Source               string               `json:"source"`                           // File path, URL, or base64 content
-	ProcessingMode       ProcessingMode       `json:"processing_mode,omitempty"`        // Processing mode (default: basic)
-	OutputFormat         OutputFormat         `json:"output_format,omitempty"`          // Output format (default: markdown)
-	EnableOCR            bool                 `json:"enable_ocr,omitempty"`             // Enable OCR processing
-	OCRLanguages         []string             `json:"ocr_languages,omitempty"`          // OCR language codes
-	PreserveImages       bool                 `json:"preserve_images,omitempty"`        // Extract and preserve images
-	CacheEnabled         *bool                `json:"cache_enabled,omitempty"`          // Override global cache setting
-	Timeout              *int                 `json:"timeout,omitempty"`                // Processing timeout in seconds
-	MaxFileSize          *int                 `json:"max_file_size,omitempty"`          // Maximum file size in MB
-	ExportFile           string               `json:"export_file,omitempty"`            // Optional fully qualified path to save the converted content
-	ClearFileCache       bool                 `json:"clear_file_cache,omitempty"`       // Force clear all cache entries for this source file before processing
-	TableFormerMode      TableFormerMode      `json:"table_former_mode,omitempty"`      // TableFormer processing mode for table structure recognition
-	CellMatching         *bool                `json:"cell_matching,omitempty"`          // Control table cell matching (true: use PDF cells, false: use predicted cells)
-	VisionMode           VisionProcessingMode `json:"vision_mode,omitempty"`            // Vision processing mode for enhanced document understanding
-	DiagramDescription   bool                 `json:"diagram_description,omitempty"`    // Enable diagram and chart description using vision models
-	ChartDataExtraction  bool                 `json:"chart_data_extraction,omitempty"`  // Enable data extraction from charts and graphs
-	EnableRemoteServices bool                 `json:"enable_remote_services,omitempty"` // Allow communication with external vision model services
-	ExtractImages        bool                 `json:"extract_images,omitempty"`         // Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts
+	Source                   string               `json:"source"`                                // File path, URL, or base64 content
+	ProcessingMode           ProcessingMode       `json:"processing_mode,omitempty"`             // Processing mode (default: basic)
+	OutputFormat             OutputFormat         `json:"output_format,omitempty"`               // Output format (default: markdown)
+	EnableOCR                bool                 `json:"enable_ocr,omitempty"`                  // Enable OCR processing
+	OCRLanguages             []string             `json:"ocr_languages,omitempty"`               // OCR language codes
+	PreserveImages           bool                 `json:"preserve_images,omitempty"`             // Extract and preserve images
+	CacheEnabled             *bool                `json:"cache_enabled,omitempty"`               // Override global cache setting
+	Timeout                  *int                 `json:"timeout,omitempty"`                     // Processing timeout in seconds
+	MaxFileSize              *int                 `json:"max_file_size,omitempty"`               // Maximum file size in MB
+	ExportFile               string               `json:"export_file,omitempty"`                 // Optional fully qualified path to save the converted content
+	ClearFileCache           bool                 `json:"clear_file_cache,omitempty"`            // Force clear all cache entries for this source file before processing
+	TableFormerMode          TableFormerMode      `json:"table_former_mode,omitempty"`           // TableFormer processing mode for table structure recognition
+	CellMatching             *bool                `json:"cell_matching,omitempty"`               // Control table cell matching (true: use PDF cells, false: use predicted cells)
+	VisionMode               VisionProcessingMode `json:"vision_mode,omitempty"`                 // Vision processing mode for enhanced document understanding
+	DiagramDescription       bool                 `json:"diagram_description,omitempty"`         // Enable diagram and chart description using vision models
+	ChartDataExtraction      bool                 `json:"chart_data_extraction,omitempty"`       // Enable data extraction from charts and graphs
+	EnableRemoteServices     bool                 `json:"enable_remote_services,omitempty"`      // Allow communication with external vision model services
+	ConvertDiagramsToMermaid bool                 `json:"convert_diagrams_to_mermaid,omitempty"` // Convert detected diagrams to Mermaid syntax using AI vision models
+	ExtractImages            bool                 `json:"extract_images,omitempty"`              // Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts
 }
 
 // DocumentProcessingResponse represents the output from document processing
@@ -138,6 +139,7 @@ type ExtractedDiagram struct {
 	Caption     string                 `json:"caption,omitempty"`      // Diagram caption if available
 	Description string                 `json:"description,omitempty"`  // Generated description of the diagram
 	DiagramType string                 `json:"diagram_type,omitempty"` // Classified diagram type (flowchart, chart, etc.)
+	MermaidCode string                 `json:"mermaid_code,omitempty"` // Generated Mermaid syntax for the diagram
 	Elements    []DiagramElement       `json:"elements,omitempty"`     // Text elements within the diagram
 	PageNumber  int                    `json:"page_number,omitempty"`  // Page number where diagram appears
 	BoundingBox *BoundingBox           `json:"bounding_box,omitempty"` // Position on page

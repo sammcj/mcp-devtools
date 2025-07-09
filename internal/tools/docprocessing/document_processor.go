@@ -95,11 +95,11 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 		mcp.WithBoolean("enable_remote_services",
 			mcp.Description("Allow communication with external vision model services (required for advanced vision processing)"),
 		),
+		mcp.WithBoolean("convert_diagrams_to_mermaid",
+			mcp.Description("Convert detected diagrams to Mermaid syntax using AI vision models (requires diagram_description and enable_remote_services)"),
+		),
 		mcp.WithBoolean("clear_file_cache",
 			mcp.Description("Force clear all cache entries the source file before processing"),
-		),
-		mcp.WithBoolean("extract_images",
-			mcp.Description("Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts"),
 		),
 	)
 }
@@ -285,14 +285,14 @@ func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*Docu
 		req.EnableRemoteServices = remoteServices
 	}
 
+	// Optional: convert_diagrams_to_mermaid
+	if convertMermaid, ok := args["convert_diagrams_to_mermaid"].(bool); ok {
+		req.ConvertDiagramsToMermaid = convertMermaid
+	}
+
 	// Optional: clear_file_cache
 	if clearCache, ok := args["clear_file_cache"].(bool); ok {
 		req.ClearFileCache = clearCache
-	}
-
-	// Optional: extract_images
-	if extractImages, ok := args["extract_images"].(bool); ok {
-		req.ExtractImages = extractImages
 	}
 
 	return req, nil
@@ -370,7 +370,12 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 		args = append(args, "--enable-remote-services")
 	}
 
-	if req.ExtractImages {
+	if req.ConvertDiagramsToMermaid {
+		args = append(args, "--convert-diagrams-to-mermaid")
+	}
+
+	// Auto-enable image extraction when export file is provided
+	if req.ExportFile != "" {
 		args = append(args, "--extract-images")
 	}
 
@@ -536,6 +541,9 @@ func (t *DocumentProcessorTool) parseDiagrams(data []interface{}) []ExtractedDia
 			}
 			if diagType, ok := diagramData["diagram_type"].(string); ok {
 				diagram.DiagramType = diagType
+			}
+			if mermaidCode, ok := diagramData["mermaid_code"].(string); ok {
+				diagram.MermaidCode = mermaidCode
 			}
 			if pageNum, ok := diagramData["page_number"].(float64); ok {
 				diagram.PageNumber = int(pageNum)

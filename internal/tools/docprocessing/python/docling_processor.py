@@ -16,8 +16,16 @@ import logging
 import time
 
 # Import our modular components
-from image_processing import extract_images, replace_image_placeholders_with_links
-from table_processing import extract_tables
+try:
+    from .image_processing import extract_images, replace_image_placeholders_with_links
+    from .table_processing import extract_tables
+except ImportError:
+    # Fallback for when script is run directly
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from image_processing import extract_images, replace_image_placeholders_with_links
+    from table_processing import extract_tables
 
 # Configure logging to stderr to avoid interfering with JSON output
 logging.basicConfig(
@@ -172,6 +180,35 @@ def resolve_feature_dependencies(args):
         logger.info(f"Auto-enabled features: {', '.join(auto_enabled)}")
 
     return resolved_args
+
+def clean_markdown_formatting(content: str) -> str:
+    """Clean up markdown formatting issues like HTML entities and bullet points."""
+    try:
+        # Fix HTML entities
+        content = content.replace('&amp;', '&')
+        content = content.replace('&lt;', '<')
+        content = content.replace('&gt;', '>')
+        content = content.replace('&quot;', '"')
+        content = content.replace('&#x27;', "'")
+        content = content.replace('&nbsp;', ' ')
+
+        # Fix bullet points - replace ● with - and clean up "- ●" patterns
+        import re
+
+        # Replace standalone ● with -
+        content = re.sub(r'^(\s*)●(\s+)', r'\1-\2', content, flags=re.MULTILINE)
+
+        # Clean up "- ●" patterns by removing the ●
+        content = re.sub(r'^(\s*)-\s*●(\s+)', r'\1-\2', content, flags=re.MULTILINE)
+
+        # Also handle cases where there might be multiple spaces
+        content = re.sub(r'^(\s*)-\s+●(\s+)', r'\1-\2', content, flags=re.MULTILINE)
+
+        return content
+
+    except Exception as e:
+        logger.warning(f"Failed to clean markdown formatting: {e}")
+        return content
 
 def get_processing_method_description(args) -> str:
     """Generate a concise description of the processing method used."""
@@ -329,6 +366,8 @@ def process_document(args) -> Dict[str, Any]:
         if args.output_format in ['markdown', 'both']:
             # Export to markdown
             content_output = result.document.export_to_markdown()
+            # Clean up markdown formatting
+            content_output = clean_markdown_formatting(content_output)
 
         if args.output_format in ['json', 'both']:
             # Export structured JSON
@@ -337,11 +376,15 @@ def process_document(args) -> Dict[str, Any]:
         # Extract metadata
         metadata = extract_metadata(result.document)
 
-        # Extract images if requested
+        # Extract images if requested or if we have an export file (auto-extract)
         images = []
-        if args.preserve_images:
-            images = extract_images(result.document)
-        elif getattr(args, 'extract_images', False):
+        should_extract_images = (
+            args.preserve_images or
+            getattr(args, 'extract_images', False) or
+            hasattr(args, 'export_file') and args.export_file  # Auto-extract when exporting to file
+        )
+
+        if should_extract_images:
             images = extract_images(result.document, args)
 
             # If we extracted images and we're outputting markdown, replace image placeholders
@@ -357,6 +400,10 @@ def process_document(args) -> Dict[str, Any]:
         diagrams = []
         if getattr(args, 'diagram_description', False):
             diagrams = extract_diagram_descriptions(result.document, args)
+
+        # Convert diagrams to Mermaid if requested
+        if getattr(args, 'convert_diagrams_to_mermaid', False) and diagrams:
+            diagrams = convert_diagrams_to_mermaid(diagrams, args)
 
         # Clean up memory
         cleanup_memory()
@@ -375,7 +422,7 @@ def process_document(args) -> Dict[str, Any]:
                 "hardware_acceleration": str(hardware_acceleration) if hardware_acceleration else "unknown",
                 "ocr_enabled": args.enable_ocr,
                 "ocr_languages": args.ocr_languages or [],
-                "processing_time": processing_time,
+                "processing_time": round(processing_time),
                 "timestamp": time.time()
             }
         }
@@ -394,14 +441,14 @@ def process_document(args) -> Dict[str, Any]:
         return {
             "success": False,
             "error": f"Docling not available: {str(e)}",
-            "processing_time": time.time() - start_time
+            "processing_time": round(time.time() - start_time)
         }
     except Exception as e:
         logger.exception(f"Error processing document: {args.source}")
         return {
             "success": False,
             "error": f"Processing failed: {str(e)}",
-            "processing_time": time.time() - start_time
+            "processing_time": round(time.time() - start_time)
         }
 
 def extract_metadata(document) -> Dict[str, Any]:
@@ -1523,9 +1570,24 @@ def replace_image_placeholders_with_links(content: str, images: List[Dict[str, A
             # Create the markdown image link
             image_link = f"![{alt_text}]({relative_path})"
 
-            # Add caption if it exists and is different from alt text
+            # Add caption and description in collapsible details if available
+            description = image.get('description', '')
+            recreation_prompt = image.get('recreation_prompt', '')
+
             if caption and caption != alt_text:
                 image_link += f"\n\n*{caption}*"
+
+            # Add collapsible details for image descriptions
+            if description or recreation_prompt:
+                image_link += "\n\n<details>\n<summary>Image Details</summary>\n\n"
+
+                if description:
+                    image_link += f"**Description:** {description}\n\n"
+
+                if recreation_prompt:
+                    image_link += f"**AI Recreation Prompt:**\n{recreation_prompt}\n\n"
+
+                image_link += "</details>"
 
             # Replace the first occurrence of <!-- image -->
             updated_content = updated_content.replace("<!-- image -->", image_link, 1)
@@ -1714,6 +1776,425 @@ Include all visible text, shapes, connections, and relationships. Choose the for
         logger.warning(f"Failed to generate AI recreation prompt: {e}")
         return "Please recreate this image in an appropriate text format.", "text"
 
+def convert_diagrams_to_mermaid(diagrams: List[Dict[str, Any]], args) -> List[Dict[str, Any]]:
+    """Convert diagrams to Mermaid syntax using AI vision models."""
+    try:
+        converted_diagrams = []
+
+        for diagram in diagrams:
+            # Create a copy of the diagram to avoid modifying the original
+            converted_diagram = diagram.copy()
+
+            # Only convert diagrams that meet the confidence threshold
+            confidence = diagram.get('confidence', 0.0)
+            if confidence < 0.8:
+                logger.info(f"Skipping diagram {diagram.get('id', 'unknown')} - confidence {confidence} below threshold 0.8")
+                converted_diagrams.append(converted_diagram)
+                continue
+
+            # Classify if this is a diagram vs screenshot
+            is_diagram, classification_confidence = classify_diagram_vs_screenshot(diagram)
+            if not is_diagram or classification_confidence < 0.8:
+                logger.info(f"Skipping {diagram.get('id', 'unknown')} - classified as screenshot (confidence: {classification_confidence})")
+                converted_diagrams.append(converted_diagram)
+                continue
+
+            # Generate Mermaid code
+            mermaid_result = generate_mermaid_code(diagram, args)
+            if mermaid_result and mermaid_result.get('success', False):
+                # Validate the generated Mermaid code
+                mermaid_code = mermaid_result.get('mermaid_code', '')
+                if validate_mermaid_syntax(mermaid_code):
+                    converted_diagram['mermaid_code'] = mermaid_code
+                    logger.info(f"Successfully converted diagram {diagram.get('id', 'unknown')} to Mermaid")
+                else:
+                    logger.warning(f"Generated Mermaid code for {diagram.get('id', 'unknown')} failed validation")
+            else:
+                logger.warning(f"Failed to generate Mermaid code for diagram {diagram.get('id', 'unknown')}")
+
+            converted_diagrams.append(converted_diagram)
+
+        return converted_diagrams
+
+    except Exception as e:
+        logger.warning(f"Failed to convert diagrams to Mermaid: {e}")
+        return diagrams
+
+def classify_diagram_vs_screenshot(diagram: Dict[str, Any]) -> tuple[bool, float]:
+    """Classify whether this is a diagram (should be converted) or screenshot (should remain as image)."""
+    try:
+        # Extract relevant information for classification
+        diagram_type = diagram.get('diagram_type', '').lower()
+        description = diagram.get('description', '').lower()
+        caption = diagram.get('caption', '').lower()
+        elements = diagram.get('elements', [])
+
+        # Combine text content for analysis
+        text_content = f"{diagram_type} {description} {caption}".lower()
+
+        # Extract text from elements
+        element_text = []
+        for element in elements:
+            if isinstance(element, dict) and 'content' in element:
+                element_text.append(element['content'].lower())
+        text_content += " " + " ".join(element_text)
+
+        # Diagram indicators (should be converted to Mermaid)
+        diagram_keywords = [
+            'architecture', 'overview', 'flow', 'diagram', 'pipeline', 'infrastructure',
+            'flowchart', 'process', 'workflow', 'system', 'component', 'service',
+            'database', 'api', 'network', 'sequence', 'relationship', 'structure'
+        ]
+
+        # Screenshot indicators (should remain as images)
+        screenshot_keywords = [
+            'screenshot', 'terminal', 'console', 'ui', 'interface', 'browser',
+            'window', 'desktop', 'menu', 'button', 'form', 'dialog', 'popup',
+            'configuration', 'settings', 'dashboard', 'output', 'result'
+        ]
+
+        # Count keyword matches
+        diagram_score = sum(1 for keyword in diagram_keywords if keyword in text_content)
+        screenshot_score = sum(1 for keyword in screenshot_keywords if keyword in text_content)
+
+        # Base classification on keyword analysis
+        if diagram_score > screenshot_score:
+            confidence = min(0.9, 0.7 + (diagram_score - screenshot_score) * 0.1)
+            return True, confidence
+        elif screenshot_score > diagram_score:
+            confidence = min(0.9, 0.7 + (screenshot_score - diagram_score) * 0.1)
+            return False, confidence
+        else:
+            # Fallback to diagram type analysis
+            if diagram_type in ['flowchart', 'architecture', 'diagram', 'chart']:
+                return True, 0.7
+            elif diagram_type in ['screenshot', 'interface', 'ui']:
+                return False, 0.7
+            else:
+                # Default to uncertain - lean towards diagram
+                return True, 0.6
+
+    except Exception as e:
+        logger.warning(f"Failed to classify diagram vs screenshot: {e}")
+        return True, 0.5  # Default to diagram with low confidence
+
+def generate_mermaid_code(diagram: Dict[str, Any], args) -> Dict[str, Any]:
+    """Generate Mermaid code for a diagram using AI vision models."""
+    try:
+        diagram_type = diagram.get('diagram_type', 'unknown')
+        description = diagram.get('description', '')
+        elements = diagram.get('elements', [])
+
+        # Extract text elements for context
+        text_elements = []
+        for element in elements:
+            if isinstance(element, dict) and 'content' in element:
+                text_elements.append(element['content'])
+
+        # Generate appropriate Mermaid code based on diagram type
+        if diagram_type == 'flowchart':
+            mermaid_code = generate_flowchart_mermaid(description, text_elements)
+        elif diagram_type == 'architecture':
+            mermaid_code = generate_architecture_mermaid(description, text_elements)
+        elif diagram_type == 'chart':
+            mermaid_code = generate_chart_mermaid(description, text_elements)
+        else:
+            # Generic diagram - try to infer type from content
+            mermaid_code = generate_generic_mermaid(description, text_elements, diagram_type)
+
+        if mermaid_code:
+            return {
+                'success': True,
+                'mermaid_code': mermaid_code,
+                'diagram_type': diagram_type
+            }
+        else:
+            return {
+                'success': False,
+                'error': 'Could not generate Mermaid code for this diagram type'
+            }
+
+    except Exception as e:
+        logger.warning(f"Failed to generate Mermaid code: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+def generate_flowchart_mermaid(description: str, text_elements: List[str]) -> str:
+    """Generate Mermaid flowchart syntax."""
+    try:
+        # Basic flowchart template
+        mermaid_lines = ['flowchart TD']
+
+        # Extract process steps and decisions from text elements
+        steps = []
+        decisions = []
+
+        for text in text_elements:
+            if '?' in text or any(keyword in text.lower() for keyword in ['if', 'decision', 'choose']):
+                decisions.append(text)
+            else:
+                steps.append(text)
+
+        # Generate nodes
+        node_id = 1
+        node_map = {}
+
+        # Add start node
+        if steps:
+            start_text = steps[0] if steps else 'Start'
+            mermaid_lines.append(f'    A[{clean_mermaid_text(start_text)}]')
+            node_map['start'] = 'A'
+            node_id += 1
+
+        # Add process nodes
+        for i, step in enumerate(steps[1:], 1):
+            node_letter = chr(ord('A') + i)
+            mermaid_lines.append(f'    {node_letter}[{clean_mermaid_text(step)}]')
+            node_map[f'step_{i}'] = node_letter
+
+        # Add decision nodes
+        for i, decision in enumerate(decisions):
+            node_letter = chr(ord('A') + len(steps) + i)
+            mermaid_lines.append(f'    {node_letter}{{{{{clean_mermaid_text(decision)}}}}}')
+            node_map[f'decision_{i}'] = node_letter
+
+        # Add basic connections
+        if len(steps) > 1:
+            for i in range(len(steps) - 1):
+                from_node = chr(ord('A') + i)
+                to_node = chr(ord('A') + i + 1)
+                mermaid_lines.append(f'    {from_node} --> {to_node}')
+
+        # Add decision connections if any
+        if decisions and steps:
+            last_step = chr(ord('A') + len(steps) - 1)
+            first_decision = chr(ord('A') + len(steps))
+            mermaid_lines.append(f'    {last_step} --> {first_decision}')
+
+        return '\n'.join(mermaid_lines)
+
+    except Exception as e:
+        logger.warning(f"Failed to generate flowchart Mermaid: {e}")
+        return ""
+
+def generate_architecture_mermaid(description: str, text_elements: List[str]) -> str:
+    """Generate Mermaid architecture diagram syntax."""
+    try:
+        # Architecture diagram template
+        mermaid_lines = ['graph TD']
+
+        # Extract components and services
+        components = []
+        services = []
+        databases = []
+
+        for text in text_elements:
+            text_lower = text.lower()
+            if any(keyword in text_lower for keyword in ['database', 'db', 'storage']):
+                databases.append(text)
+            elif any(keyword in text_lower for keyword in ['service', 'api', 'server']):
+                services.append(text)
+            else:
+                components.append(text)
+
+        # Generate nodes with appropriate shapes
+        node_id = 1
+
+        # Add components (rectangles)
+        for i, component in enumerate(components):
+            node_letter = chr(ord('A') + i)
+            mermaid_lines.append(f'    {node_letter}[{clean_mermaid_text(component)}]')
+
+        # Add services (rounded rectangles)
+        service_start = len(components)
+        for i, service in enumerate(services):
+            node_letter = chr(ord('A') + service_start + i)
+            mermaid_lines.append(f'    {node_letter}({clean_mermaid_text(service)})')
+
+        # Add databases (cylinders)
+        db_start = len(components) + len(services)
+        for i, database in enumerate(databases):
+            node_letter = chr(ord('A') + db_start + i)
+            mermaid_lines.append(f'    {node_letter}[({clean_mermaid_text(database)})]')
+
+        # Add basic connections (simple linear flow)
+        total_nodes = len(components) + len(services) + len(databases)
+        for i in range(total_nodes - 1):
+            from_node = chr(ord('A') + i)
+            to_node = chr(ord('A') + i + 1)
+            mermaid_lines.append(f'    {from_node} --> {to_node}')
+
+        # Add AWS-style colours
+        mermaid_lines.extend([
+            '',
+            '    classDef compute fill:#FF9900,color:#fff',
+            '    classDef storage fill:#569A31,color:#fff',
+            '    classDef database fill:#205081,color:#fff',
+            '    classDef networking fill:#8C4FFF,color:#fff'
+        ])
+
+        return '\n'.join(mermaid_lines)
+
+    except Exception as e:
+        logger.warning(f"Failed to generate architecture Mermaid: {e}")
+        return ""
+
+def generate_chart_mermaid(description: str, text_elements: List[str]) -> str:
+    """Generate Mermaid chart syntax (or fallback to description)."""
+    try:
+        # For charts, Mermaid has limited support, so we'll create a simple representation
+        # or fall back to a structured description
+
+        # Extract numerical data
+        import re
+        numbers = []
+        labels = []
+
+        for text in text_elements:
+            # Extract numbers
+            found_numbers = re.findall(r'\d+\.?\d*', text)
+            numbers.extend([float(n) for n in found_numbers])
+
+            # Extract labels (non-numeric text)
+            non_numeric = re.sub(r'\d+\.?\d*', '', text).strip()
+            if non_numeric and len(non_numeric) > 1:
+                labels.append(non_numeric)
+
+        if numbers and labels:
+            # Create a simple graph representation
+            mermaid_lines = ['graph LR']
+
+            # Create nodes for data points
+            for i, (label, value) in enumerate(zip(labels[:5], numbers[:5])):
+                node_letter = chr(ord('A') + i)
+                mermaid_lines.append(f'    {node_letter}["{clean_mermaid_text(label)}: {value}"]')
+
+            # Connect nodes in sequence
+            for i in range(min(len(labels), len(numbers)) - 1):
+                from_node = chr(ord('A') + i)
+                to_node = chr(ord('A') + i + 1)
+                mermaid_lines.append(f'    {from_node} --> {to_node}')
+
+            return '\n'.join(mermaid_lines)
+        else:
+            # Fallback to simple description
+            return f'graph TD\n    A["{clean_mermaid_text(description)}"]'
+
+    except Exception as e:
+        logger.warning(f"Failed to generate chart Mermaid: {e}")
+        return ""
+
+def generate_generic_mermaid(description: str, text_elements: List[str], diagram_type: str) -> str:
+    """Generate generic Mermaid diagram based on available information."""
+    try:
+        # Analyze content to determine best diagram type
+        text_content = f"{description} {' '.join(text_elements)}".lower()
+
+        if any(keyword in text_content for keyword in ['flow', 'process', 'step', 'sequence']):
+            return generate_flowchart_mermaid(description, text_elements)
+        elif any(keyword in text_content for keyword in ['system', 'architecture', 'component', 'service']):
+            return generate_architecture_mermaid(description, text_elements)
+        else:
+            # Simple graph representation
+            mermaid_lines = ['graph TD']
+
+            if text_elements:
+                # Create nodes for each text element
+                for i, text in enumerate(text_elements[:6]):  # Limit to 6 nodes
+                    node_letter = chr(ord('A') + i)
+                    mermaid_lines.append(f'    {node_letter}[{clean_mermaid_text(text)}]')
+
+                # Connect nodes in a simple flow
+                for i in range(len(text_elements[:6]) - 1):
+                    from_node = chr(ord('A') + i)
+                    to_node = chr(ord('A') + i + 1)
+                    mermaid_lines.append(f'    {from_node} --> {to_node}')
+            else:
+                # Fallback to description
+                mermaid_lines.append(f'    A[{clean_mermaid_text(description)}]')
+
+            return '\n'.join(mermaid_lines)
+
+    except Exception as e:
+        logger.warning(f"Failed to generate generic Mermaid: {e}")
+        return ""
+
+def clean_mermaid_text(text: str) -> str:
+    """Clean text for use in Mermaid diagrams."""
+    try:
+        if not text:
+            return "Unknown"
+
+        # Remove or replace problematic characters
+        cleaned = text.strip()
+
+        # Replace problematic characters
+        cleaned = cleaned.replace('"', "'")
+        cleaned = cleaned.replace('[', '(')
+        cleaned = cleaned.replace(']', ')')
+        cleaned = cleaned.replace('{', '(')
+        cleaned = cleaned.replace('}', ')')
+        cleaned = cleaned.replace('|', '-')
+        cleaned = cleaned.replace('\n', ' ')
+        cleaned = cleaned.replace('\r', ' ')
+
+        # Limit length
+        if len(cleaned) > 50:
+            cleaned = cleaned[:47] + "..."
+
+        # Ensure it's not empty
+        if not cleaned.strip():
+            return "Unknown"
+
+        return cleaned.strip()
+
+    except Exception as e:
+        logger.warning(f"Failed to clean Mermaid text: {e}")
+        return "Unknown"
+
+def validate_mermaid_syntax(mermaid_code: str) -> bool:
+    """Basic validation of Mermaid syntax."""
+    try:
+        if not mermaid_code or not mermaid_code.strip():
+            return False
+
+        lines = mermaid_code.strip().split('\n')
+        if not lines:
+            return False
+
+        # Check for valid diagram type declaration
+        first_line = lines[0].strip().lower()
+        valid_types = ['graph', 'flowchart', 'sequencediagram', 'classDiagram', 'stateDiagram', 'erDiagram']
+
+        if not any(first_line.startswith(diagram_type.lower()) for diagram_type in valid_types):
+            return False
+
+        # Check for balanced brackets and parentheses
+        bracket_count = mermaid_code.count('[') - mermaid_code.count(']')
+        paren_count = mermaid_code.count('(') - mermaid_code.count(')')
+        brace_count = mermaid_code.count('{') - mermaid_code.count('}')
+
+        if bracket_count != 0 or paren_count != 0 or brace_count != 0:
+            return False
+
+        # Check for at least one node definition
+        has_node = False
+        for line in lines[1:]:  # Skip first line (diagram type)
+            line = line.strip()
+            if line and not line.startswith('classDef') and not line.startswith('class '):
+                # Look for node definitions (contains letters/numbers followed by brackets or connections)
+                if any(char in line for char in ['[', '(', '{', '-->', '---']):
+                    has_node = True
+                    break
+
+        return has_node
+
+    except Exception as e:
+        logger.warning(f"Failed to validate Mermaid syntax: {e}")
+        return False
+
 def get_system_info() -> Dict[str, Any]:
     """Get system information for diagnostics."""
     import platform
@@ -1797,6 +2278,8 @@ def main():
                                help='Enable data extraction from charts and graphs')
     process_parser.add_argument('--enable-remote-services', action='store_true',
                                help='Allow communication with external vision model services')
+    process_parser.add_argument('--convert-diagrams-to-mermaid', action='store_true',
+                               help='Convert detected diagrams to Mermaid syntax using AI vision models')
     process_parser.add_argument('--extract-images', action='store_true',
                                help='Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts')
 
