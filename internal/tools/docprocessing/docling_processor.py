@@ -314,6 +314,11 @@ def process_document(args) -> Dict[str, Any]:
         if args.processing_mode in ['tables', 'advanced']:
             tables = extract_tables(result.document)
 
+        # Extract diagram descriptions if requested
+        diagrams = []
+        if getattr(args, 'diagram_description', False):
+            diagrams = extract_diagram_descriptions(result.document, args)
+
         # Clean up memory
         cleanup_memory()
 
@@ -335,6 +340,10 @@ def process_document(args) -> Dict[str, Any]:
                 "timestamp": time.time()
             }
         }
+
+        # Add diagrams if extracted
+        if diagrams:
+            response["diagrams"] = diagrams
 
         # Add structured JSON if requested
         if structured_json:
@@ -852,6 +861,160 @@ def extract_bounding_box(element) -> Dict[str, float]:
     except Exception as e:
         logger.warning(f"Failed to extract bounding box: {e}")
         return {"x": 0.0, "y": 0.0, "width": 0.0, "height": 0.0}
+
+def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
+    """Extract diagram descriptions using vision models."""
+    diagrams = []
+
+    try:
+        # Extract figures/images that might be diagrams
+        figures = []
+
+        # Try to find figures from document elements
+        if hasattr(document, 'elements'):
+            for element in document.elements:
+                if hasattr(element, 'type') and element.type in ['figure', 'image', 'picture']:
+                    figures.append(element)
+
+        # Alternative: Try to find figures from pages
+        if not figures and hasattr(document, 'pages'):
+            for page in document.pages:
+                if hasattr(page, 'elements'):
+                    for element in page.elements:
+                        if hasattr(element, 'type') and element.type in ['figure', 'image', 'picture']:
+                            figures.append(element)
+
+        # Process each figure for diagram description
+        for i, figure in enumerate(figures):
+            diagram_data = {
+                "id": f"diagram_{i+1}",
+                "type": "diagram",
+                "page_number": getattr(figure, 'page_number', None),
+                "caption": getattr(figure, 'caption', ''),
+                "description": "",
+                "diagram_type": "unknown",
+                "elements": [],
+                "bounding_box": extract_bounding_box(figure),
+                "confidence": 0.0
+            }
+
+            # Extract basic information
+            if hasattr(figure, 'alt_text') and figure.alt_text:
+                diagram_data["description"] = figure.alt_text
+            elif hasattr(figure, 'caption') and figure.caption:
+                diagram_data["description"] = figure.caption
+
+            # Attempt to classify diagram type based on content or metadata
+            diagram_type = classify_diagram_type(figure)
+            diagram_data["diagram_type"] = diagram_type
+
+            # Generate description using vision model (if available and enabled)
+            if getattr(args, 'enable_remote_services', False):
+                vision_description = generate_vision_description(figure, args)
+                if vision_description:
+                    diagram_data["description"] = vision_description.get("description", diagram_data["description"])
+                    diagram_data["diagram_type"] = vision_description.get("type", diagram_data["diagram_type"])
+                    diagram_data["elements"] = vision_description.get("elements", [])
+                    diagram_data["confidence"] = vision_description.get("confidence", 0.0)
+
+            # Extract text elements if available
+            if hasattr(figure, 'text_elements') or hasattr(figure, 'text'):
+                text_elements = extract_diagram_text_elements(figure)
+                if text_elements:
+                    diagram_data["elements"].extend(text_elements)
+
+            diagrams.append(diagram_data)
+
+    except Exception as e:
+        logger.warning(f"Failed to extract diagram descriptions: {e}")
+
+    return diagrams
+
+def classify_diagram_type(figure) -> str:
+    """Classify the type of diagram based on available metadata."""
+    try:
+        # Check caption or alt text for keywords
+        text_content = ""
+        if hasattr(figure, 'caption') and figure.caption:
+            text_content += figure.caption.lower()
+        if hasattr(figure, 'alt_text') and figure.alt_text:
+            text_content += " " + figure.alt_text.lower()
+
+        # Simple keyword-based classification
+        if any(keyword in text_content for keyword in ['flowchart', 'flow chart', 'process', 'workflow']):
+            return "flowchart"
+        elif any(keyword in text_content for keyword in ['chart', 'graph', 'plot']):
+            return "chart"
+        elif any(keyword in text_content for keyword in ['diagram', 'schematic', 'architecture']):
+            return "diagram"
+        elif any(keyword in text_content for keyword in ['table', 'matrix']):
+            return "table"
+        elif any(keyword in text_content for keyword in ['map', 'layout', 'plan']):
+            return "map"
+        else:
+            return "unknown"
+
+    except Exception as e:
+        logger.warning(f"Failed to classify diagram type: {e}")
+        return "unknown"
+
+def generate_vision_description(figure, args) -> Optional[Dict[str, Any]]:
+    """Generate description using vision models (placeholder for future implementation)."""
+    try:
+        # This is a placeholder for future vision model integration
+        # In a full implementation, this would:
+        # 1. Extract the image data from the figure
+        # 2. Send it to a vision model API (OpenAI Vision, Google Vision, etc.)
+        # 3. Parse the response for diagram description and elements
+
+        # For now, return a basic structure
+        vision_result = {
+            "description": "Vision model description not yet implemented",
+            "type": "unknown",
+            "elements": [],
+            "confidence": 0.0
+        }
+
+        # Future implementation would include:
+        # - Image extraction from figure
+        # - API call to vision service
+        # - Response parsing and structuring
+        # - Error handling for API failures
+
+        return vision_result
+
+    except Exception as e:
+        logger.warning(f"Failed to generate vision description: {e}")
+        return None
+
+def extract_diagram_text_elements(figure) -> List[Dict[str, Any]]:
+    """Extract text elements from a diagram figure."""
+    text_elements = []
+
+    try:
+        # Extract text if available
+        if hasattr(figure, 'text') and figure.text:
+            text_elements.append({
+                "type": "text",
+                "content": figure.text,
+                "position": "unknown"
+            })
+
+        # Extract text elements if available
+        if hasattr(figure, 'text_elements'):
+            for i, text_elem in enumerate(figure.text_elements):
+                element_data = {
+                    "type": "text",
+                    "content": getattr(text_elem, 'text', str(text_elem)),
+                    "position": f"element_{i+1}",
+                    "bounding_box": extract_bounding_box(text_elem) if hasattr(text_elem, 'bbox') else None
+                }
+                text_elements.append(element_data)
+
+    except Exception as e:
+        logger.warning(f"Failed to extract diagram text elements: {e}")
+
+    return text_elements
 
 def get_system_info() -> Dict[str, Any]:
     """Get system information for diagnostics."""

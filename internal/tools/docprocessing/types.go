@@ -74,14 +74,15 @@ type DocumentProcessingRequest struct {
 
 // DocumentProcessingResponse represents the output from document processing
 type DocumentProcessingResponse struct {
-	Source         string            `json:"source"`             // Original source
-	Content        string            `json:"content"`            // Processed content (markdown)
-	Metadata       *DocumentMetadata `json:"metadata,omitempty"` // Document metadata
-	Images         []ExtractedImage  `json:"images,omitempty"`   // Extracted images
-	Tables         []ExtractedTable  `json:"tables,omitempty"`   // Extracted tables
-	ProcessingInfo ProcessingInfo    `json:"processing_info"`    // Processing information
-	CacheHit       bool              `json:"cache_hit"`          // Whether result came from cache
-	Error          string            `json:"error,omitempty"`    // Error message if processing failed
+	Source         string             `json:"source"`             // Original source
+	Content        string             `json:"content"`            // Processed content (markdown)
+	Metadata       *DocumentMetadata  `json:"metadata,omitempty"` // Document metadata
+	Images         []ExtractedImage   `json:"images,omitempty"`   // Extracted images
+	Tables         []ExtractedTable   `json:"tables,omitempty"`   // Extracted tables
+	Diagrams       []ExtractedDiagram `json:"diagrams,omitempty"` // Extracted diagrams
+	ProcessingInfo ProcessingInfo     `json:"processing_info"`    // Processing information
+	CacheHit       bool               `json:"cache_hit"`          // Whether result came from cache
+	Error          string             `json:"error,omitempty"`    // Error message if processing failed
 }
 
 // DocumentMetadata contains metadata about the processed document
@@ -125,6 +126,28 @@ type ExtractedTable struct {
 	BoundingBox *BoundingBox `json:"bounding_box,omitempty"` // Position on page
 	Markdown    string       `json:"markdown,omitempty"`     // Markdown representation
 	CSV         string       `json:"csv,omitempty"`          // CSV representation
+}
+
+// ExtractedDiagram represents a diagram extracted from the document
+type ExtractedDiagram struct {
+	ID          string                 `json:"id"`                     // Unique diagram identifier
+	Type        string                 `json:"type"`                   // Type of diagram (flowchart, chart, diagram, etc.)
+	Caption     string                 `json:"caption,omitempty"`      // Diagram caption if available
+	Description string                 `json:"description,omitempty"`  // Generated description of the diagram
+	DiagramType string                 `json:"diagram_type,omitempty"` // Classified diagram type (flowchart, chart, etc.)
+	Elements    []DiagramElement       `json:"elements,omitempty"`     // Text elements within the diagram
+	PageNumber  int                    `json:"page_number,omitempty"`  // Page number where diagram appears
+	BoundingBox *BoundingBox           `json:"bounding_box,omitempty"` // Position on page
+	Confidence  float64                `json:"confidence,omitempty"`   // Confidence score for diagram analysis
+	Properties  map[string]interface{} `json:"properties,omitempty"`   // Additional diagram-specific properties
+}
+
+// DiagramElement represents a text or structural element within a diagram
+type DiagramElement struct {
+	Type        string       `json:"type"`                   // Element type (text, shape, connector, etc.)
+	Content     string       `json:"content,omitempty"`      // Text content of the element
+	Position    string       `json:"position,omitempty"`     // Position description within diagram
+	BoundingBox *BoundingBox `json:"bounding_box,omitempty"` // Position within the diagram
 }
 
 // BoundingBox represents the position and size of an element on a page

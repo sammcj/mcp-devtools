@@ -436,6 +436,11 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 		response.ProcessingInfo = t.parseProcessingInfo(procInfo)
 	}
 
+	// Extract diagrams if available
+	if diagramsData, ok := pythonResult["diagrams"].([]interface{}); ok {
+		response.Diagrams = t.parseDiagrams(diagramsData)
+	}
+
 	return response, nil
 }
 
@@ -495,6 +500,104 @@ func (t *DocumentProcessorTool) parseProcessingInfo(data map[string]interface{})
 	return info
 }
 
+// parseDiagrams converts the Python diagrams data to Go structs
+func (t *DocumentProcessorTool) parseDiagrams(data []interface{}) []ExtractedDiagram {
+	var diagrams []ExtractedDiagram
+
+	for _, item := range data {
+		if diagramData, ok := item.(map[string]interface{}); ok {
+			diagram := ExtractedDiagram{}
+
+			if id, ok := diagramData["id"].(string); ok {
+				diagram.ID = id
+			}
+			if diagramType, ok := diagramData["type"].(string); ok {
+				diagram.Type = diagramType
+			}
+			if caption, ok := diagramData["caption"].(string); ok {
+				diagram.Caption = caption
+			}
+			if description, ok := diagramData["description"].(string); ok {
+				diagram.Description = description
+			}
+			if diagType, ok := diagramData["diagram_type"].(string); ok {
+				diagram.DiagramType = diagType
+			}
+			if pageNum, ok := diagramData["page_number"].(float64); ok {
+				diagram.PageNumber = int(pageNum)
+			}
+			if confidence, ok := diagramData["confidence"].(float64); ok {
+				diagram.Confidence = confidence
+			}
+
+			// Parse bounding box
+			if bboxData, ok := diagramData["bounding_box"].(map[string]interface{}); ok {
+				bbox := &BoundingBox{}
+				if x, ok := bboxData["x"].(float64); ok {
+					bbox.X = x
+				}
+				if y, ok := bboxData["y"].(float64); ok {
+					bbox.Y = y
+				}
+				if width, ok := bboxData["width"].(float64); ok {
+					bbox.Width = width
+				}
+				if height, ok := bboxData["height"].(float64); ok {
+					bbox.Height = height
+				}
+				diagram.BoundingBox = bbox
+			}
+
+			// Parse elements
+			if elementsData, ok := diagramData["elements"].([]interface{}); ok {
+				for _, elemItem := range elementsData {
+					if elemData, ok := elemItem.(map[string]interface{}); ok {
+						element := DiagramElement{}
+						if elemType, ok := elemData["type"].(string); ok {
+							element.Type = elemType
+						}
+						if content, ok := elemData["content"].(string); ok {
+							element.Content = content
+						}
+						if position, ok := elemData["position"].(string); ok {
+							element.Position = position
+						}
+
+						// Parse element bounding box
+						if elemBboxData, ok := elemData["bounding_box"].(map[string]interface{}); ok {
+							elemBbox := &BoundingBox{}
+							if x, ok := elemBboxData["x"].(float64); ok {
+								elemBbox.X = x
+							}
+							if y, ok := elemBboxData["y"].(float64); ok {
+								elemBbox.Y = y
+							}
+							if width, ok := elemBboxData["width"].(float64); ok {
+								elemBbox.Width = width
+							}
+							if height, ok := elemBboxData["height"].(float64); ok {
+								elemBbox.Height = height
+							}
+							element.BoundingBox = elemBbox
+						}
+
+						diagram.Elements = append(diagram.Elements, element)
+					}
+				}
+			}
+
+			// Parse properties
+			if props, ok := diagramData["properties"].(map[string]interface{}); ok {
+				diagram.Properties = props
+			}
+
+			diagrams = append(diagrams, diagram)
+		}
+	}
+
+	return diagrams
+}
+
 // formatResponse formats the response for MCP output
 func (t *DocumentProcessorTool) formatResponse(response *DocumentProcessingResponse) map[string]interface{} {
 	result := map[string]interface{}{
@@ -518,6 +621,10 @@ func (t *DocumentProcessorTool) formatResponse(response *DocumentProcessingRespo
 
 	if len(response.Tables) > 0 {
 		result["tables"] = response.Tables
+	}
+
+	if len(response.Diagrams) > 0 {
+		result["diagrams"] = response.Diagrams
 	}
 
 	return result
