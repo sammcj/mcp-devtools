@@ -51,7 +51,7 @@ RUN apk --no-cache add \
 COPY --from=builder /app/mcp-devtools .
 
 # Copy the Python scripts
-COPY internal/tools/docprocessing/docling_processor.py ./internal/tools/docprocessing/
+COPY internal/tools/docprocessing/python/docling_processor.py ./internal/tools/python/docprocessing/
 
 # Create cache directory
 RUN mkdir -p /app/.mcp-devtools/docling-cache
