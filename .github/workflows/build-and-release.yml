@@ -35,8 +35,8 @@ jobs:
           tag_prefix: v
           create_annotated_tag: true
 
-  build-linux-amd64:
-    name: Build Linux AMD64
+  build:
+    name: Build and Test
     runs-on: ubuntu-latest
     needs: [bump-version]
     if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped')
@@ -61,9 +61,9 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-amd64-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-amd64-go-
+            ${{ runner.os }}-go-
 
       - name: Get dependencies
         run: go mod download
@@ -74,9 +74,6 @@ jobs:
           pip install docling
 
       - name: Build
-        env:
-          GOOS: linux
-          GOARCH: amd64
         run: |
           # Get version from tag, bump-version job, or use SHA for non-tag builds
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
@@ -91,7 +88,7 @@ jobs:
             VERSION="sha-$(git rev-parse --short HEAD)"
           fi
 
-          echo "Building version: $VERSION for linux/amd64"
+          echo "Building version: $VERSION"
 
           # Get commit hash
           COMMIT=$(git rev-parse --short HEAD)
@@ -99,11 +96,9 @@ jobs:
           # Get build date
           BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          # Create output directory
-          mkdir -p bin
-
           # Build with ldflags to inject version info
-          go build -v -o "bin/mcp-devtools" \
+          mkdir -p bin
+          go build -v -o bin/mcp-devtools \
             -ldflags "-X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
             .
 
@@ -113,174 +108,13 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: mcp-devtools-linux-amd64
-          path: bin/mcp-devtools*
-          retention-days: 7
-
-  build-linux-arm64:
-    name: Build Linux ARM64
-    runs-on: ubuntu-latest
-    needs: [bump-version]
-    if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') && github.event_name != 'pull_request'
-    steps:
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24'
-          check-latest: true
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Set up Go cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-arm64-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-arm64-go-
-
-      - name: Get dependencies
-        run: go mod download
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install docling
-
-      - name: Build
-        env:
-          GOOS: linux
-          GOARCH: arm64
-        run: |
-          # Get version from tag, bump-version job, or use SHA for non-tag builds
-          if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            # If this is a tag build, use the tag version
-            VERSION=${GITHUB_REF#refs/tags/v}
-          elif [[ "${{ github.ref }}" == "refs/heads/main" && "${{ needs.bump-version.outputs.new_tag }}" != "" ]]; then
-            # If this is a main branch build with a new tag from bump-version job
-            VERSION="${{ needs.bump-version.outputs.new_tag }}"
-            VERSION=${VERSION#v}  # Remove the 'v' prefix
-          else
-            # For PR builds, use the commit SHA
-            VERSION="sha-$(git rev-parse --short HEAD)"
-          fi
-
-          echo "Building version: $VERSION for linux/arm64"
-
-          # Get commit hash
-          COMMIT=$(git rev-parse --short HEAD)
-
-          # Get build date
-          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          # Create output directory
-          mkdir -p bin
-
-          # Build with ldflags to inject version info
-          go build -v -o "bin/mcp-devtools" \
-            -ldflags "-X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
-            .
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: mcp-devtools-linux-arm64
-          path: bin/mcp-devtools*
-          retention-days: 7
-
-  build-darwin-arm64:
-    name: Build macOS ARM64
-    runs-on: macos-latest
-    needs: [bump-version]
-    if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') && github.event_name != 'pull_request'
-    steps:
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24'
-          check-latest: true
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Set up Go cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-arm64-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-arm64-go-
-
-      - name: Get dependencies
-        run: go mod download
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install docling
-
-      - name: Build
-        env:
-          GOOS: darwin
-          GOARCH: arm64
-        run: |
-          # Get version from tag, bump-version job, or use SHA for non-tag builds
-          if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            # If this is a tag build, use the tag version
-            VERSION=${GITHUB_REF#refs/tags/v}
-          elif [[ "${{ github.ref }}" == "refs/heads/main" && "${{ needs.bump-version.outputs.new_tag }}" != "" ]]; then
-            # If this is a main branch build with a new tag from bump-version job
-            VERSION="${{ needs.bump-version.outputs.new_tag }}"
-            VERSION=${VERSION#v}  # Remove the 'v' prefix
-          else
-            # For PR builds, use the commit SHA
-            VERSION="sha-$(git rev-parse --short HEAD)"
-          fi
-
-          echo "Building version: $VERSION for darwin/arm64"
-
-          # Get commit hash
-          COMMIT=$(git rev-parse --short HEAD)
-
-          # Get build date
-          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          # Create output directory
-          mkdir -p bin
-
-          # Build with ldflags to inject version info
-          go build -v -o "bin/mcp-devtools" \
-            -ldflags "-X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
-            .
-
-      - name: Test
-        run: make test
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: mcp-devtools-darwin-arm64
-          path: bin/mcp-devtools*
+          name: mcp-devtools
+          path: bin/mcp-devtools
           retention-days: 7
 
   release:
     name: Create Release
-    needs: [build-linux-amd64, build-linux-arm64, build-darwin-arm64, bump-version]
+    needs: [build, bump-version]
     if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && needs.bump-version.outputs.new_tag != '')
     runs-on: ubuntu-latest
     permissions:
@@ -297,25 +131,14 @@ jobs:
           go-version: '1.24'
           check-latest: true
 
-      - name: Download all build artifacts
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts/
+          name: mcp-devtools
+          path: bin/
 
-      - name: Prepare release binaries
-        run: |
-          mkdir -p release/
-
-          # Copy and rename binaries for release
-          cp artifacts/mcp-devtools-linux-amd64/mcp-devtools release/mcp-devtools-linux-amd64
-          cp artifacts/mcp-devtools-linux-arm64/mcp-devtools release/mcp-devtools-linux-arm64
-          cp artifacts/mcp-devtools-darwin-arm64/mcp-devtools release/mcp-devtools-darwin-arm64
-
-          # Make all binaries executable
-          chmod +x release/*
-
-          # List what we have
-          ls -la release/
+      - name: Make binary executable
+        run: chmod +x bin/mcp-devtools
 
       - name: Get version
         id: get_version
@@ -371,24 +194,16 @@ jobs:
 
             ## Installation
 
-            Download the binary for your platform:
-
-            - **Linux AMD64**: `mcp-devtools-linux-amd64`
-            - **Linux ARM64**: `mcp-devtools-linux-arm64`
-            - **macOS Apple Silicon**: `mcp-devtools-darwin-arm64`
-
-            Make the binary executable with `chmod +x <binary-name>` and run it.
+            Download the binary for your platform and run it.
           files: |
-            release/mcp-devtools-linux-amd64
-            release/mcp-devtools-linux-arm64
-            release/mcp-devtools-darwin-arm64
+            bin/mcp-devtools
           draft: false
           prerelease: false
           tag_name: ${{ github.ref == 'refs/heads/main' && needs.bump-version.outputs.new_tag || github.ref }}
 
   docker:
     name: Build and Push Docker Image
-    needs: [build-linux-amd64, build-linux-arm64, bump-version]
+    needs: [build, bump-version]
     # Only run for main branch and tag builds, not for PRs
     if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
