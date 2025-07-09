@@ -210,20 +210,20 @@ func TestLLMClient_NoConfiguration(t *testing.T) {
 	originalAPIKey := os.Getenv("DOCLING_LLM_OPENAI_API_KEY")
 
 	// Clear LLM environment variables
-	os.Unsetenv("DOCLING_LLM_OPENAI_API_BASE")
-	os.Unsetenv("DOCLING_LLM_MODEL_NAME")
-	os.Unsetenv("DOCLING_LLM_OPENAI_API_KEY")
+	_ = os.Unsetenv("DOCLING_LLM_OPENAI_API_BASE")
+	_ = os.Unsetenv("DOCLING_LLM_MODEL_NAME")
+	_ = os.Unsetenv("DOCLING_LLM_OPENAI_API_KEY")
 
 	// Restore environment variables after test
 	defer func() {
 		if originalAPIBase != "" {
-			os.Setenv("DOCLING_LLM_OPENAI_API_BASE", originalAPIBase)
+			_ = os.Setenv("DOCLING_LLM_OPENAI_API_BASE", originalAPIBase)
 		}
 		if originalModel != "" {
-			os.Setenv("DOCLING_LLM_MODEL_NAME", originalModel)
+			_ = os.Setenv("DOCLING_LLM_MODEL_NAME", originalModel)
 		}
 		if originalAPIKey != "" {
-			os.Setenv("DOCLING_LLM_OPENAI_API_KEY", originalAPIKey)
+			_ = os.Setenv("DOCLING_LLM_OPENAI_API_KEY", originalAPIKey)
 		}
 	}()
 

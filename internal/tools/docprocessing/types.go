@@ -51,9 +51,21 @@ const (
 	HardwareAccelerationCPU  HardwareAcceleration = "cpu"  // CPU-only processing
 )
 
+// ProcessingProfile defines preset configurations for common document processing scenarios
+type ProcessingProfile string
+
+const (
+	ProfileBasic          ProcessingProfile = "basic"           // Text extraction only (fast processing)
+	ProfileTextAndImage   ProcessingProfile = "text-and-image"  // Text and image extraction with tables
+	ProfileScanned        ProcessingProfile = "scanned"         // OCR-focused processing for scanned documents
+	ProfileLLMSmolDocling ProcessingProfile = "llm-smoldocling" // Text and image extraction enhanced with SmolDocling vision model
+	ProfileLLMExternal    ProcessingProfile = "llm-external"    // Text and image extraction enhanced with external vision LLM for diagram conversion to Mermaid
+)
+
 // DocumentProcessingRequest represents the input parameters for document processing
 type DocumentProcessingRequest struct {
 	Source                   string               `json:"source"`                                // File path, URL, or base64 content
+	Profile                  ProcessingProfile    `json:"profile,omitempty"`                     // Processing profile (replaces multiple parameters)
 	ProcessingMode           ProcessingMode       `json:"processing_mode,omitempty"`             // Processing mode (default: basic)
 	OutputFormat             OutputFormat         `json:"output_format,omitempty"`               // Output format (default: markdown)
 	EnableOCR                bool                 `json:"enable_ocr,omitempty"`                  // Enable OCR processing
@@ -62,7 +74,8 @@ type DocumentProcessingRequest struct {
 	CacheEnabled             *bool                `json:"cache_enabled,omitempty"`               // Override global cache setting
 	Timeout                  *int                 `json:"timeout,omitempty"`                     // Processing timeout in seconds
 	MaxFileSize              *int                 `json:"max_file_size,omitempty"`               // Maximum file size in MB
-	ExportFile               string               `json:"export_file,omitempty"`                 // Optional fully qualified path to save the converted content
+	Inline                   *bool                `json:"inline,omitempty"`                      // Return content inline (default: true). Set to false to save to file specified in save_to
+	SaveTo                   string               `json:"save_to,omitempty"`                     // File path to save content when inline=false
 	ClearFileCache           bool                 `json:"clear_file_cache,omitempty"`            // Force clear all cache entries for this source file before processing
 	TableFormerMode          TableFormerMode      `json:"table_former_mode,omitempty"`           // TableFormer processing mode for table structure recognition
 	CellMatching             *bool                `json:"cell_matching,omitempty"`               // Control table cell matching (true: use PDF cells, false: use predicted cells)
@@ -73,6 +86,7 @@ type DocumentProcessingRequest struct {
 	ConvertDiagramsToMermaid bool                 `json:"convert_diagrams_to_mermaid,omitempty"` // Convert detected diagrams to Mermaid syntax using AI vision models
 	GenerateDiagrams         bool                 `json:"generate_diagrams,omitempty"`           // Generate enhanced diagram analysis using external LLM (requires DOCLING_LLM_OPENAI_API_BASE, DOCLING_LLM_MODEL_NAME, DOCLING_LLM_OPENAI_API_KEY environment variables)
 	ExtractImages            bool                 `json:"extract_images,omitempty"`              // Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts
+	Debug                    bool                 `json:"debug,omitempty"`                       // Return debug information including environment variables (secrets masked)
 }
 
 // DocumentProcessingResponse represents the output from document processing
