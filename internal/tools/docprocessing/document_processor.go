@@ -44,7 +44,7 @@ func init() {
 func (t *DocumentProcessorTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"process_document",
-		mcp.WithDescription("Process documents (PDF, DOCX, XLSX, PPTX) and convert them to structured Markdown with optional OCR, image extraction, and table processing. Supports hardware acceleration and intelligent caching."),
+		mcp.WithDescription("Process documents (PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG) and convert them to structured Markdown with optional OCR, image extraction, and table processing. Supports hardware acceleration and intelligent caching."),
 		mcp.WithString("source",
 			mcp.Required(),
 			mcp.Description("Document source: MUST be a fully qualified absolute file path (e.g., /Users/user/documents/file.pdf), complete URL (e.g., https://example.com/doc.pdf), or base64-encoded content. Relative paths are NOT supported - always provide the complete absolute path to the file."),
@@ -54,7 +54,7 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 			mcp.DefaultString("basic"),
 		),
 		mcp.WithString("output_format",
-			mcp.Description("Output format: markdown, json (metadata only), or both"),
+			mcp.Description("Output format: markdown (default), json (metadata only), or both"),
 			mcp.DefaultString("markdown"),
 		),
 		mcp.WithBoolean("enable_ocr",
@@ -97,6 +97,9 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 		),
 		mcp.WithBoolean("clear_file_cache",
 			mcp.Description("Force clear all cache entries the source file before processing"),
+		),
+		mcp.WithBoolean("extract_images",
+			mcp.Description("Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts"),
 		),
 	)
 }
@@ -164,12 +167,8 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 
 	// Cache result if successful
 	if cacheEnabled && response.Error == "" {
-		if err := t.cacheManager.Set(cacheKey, response); err != nil {
-			// Log cache error but don't fail the request
-			response.ProcessingInfo.CacheKey = fmt.Sprintf("cache_error: %s", err.Error())
-		} else {
-			response.ProcessingInfo.CacheKey = cacheKey
-		}
+		// Cache the result but don't include cache key in response
+		_ = t.cacheManager.Set(cacheKey, response)
 	}
 
 	// Handle export file if specified
@@ -291,6 +290,11 @@ func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*Docu
 		req.ClearFileCache = clearCache
 	}
 
+	// Optional: extract_images
+	if extractImages, ok := args["extract_images"].(bool); ok {
+		req.ExtractImages = extractImages
+	}
+
 	return req, nil
 }
 
@@ -364,6 +368,10 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 
 	if req.EnableRemoteServices {
 		args = append(args, "--enable-remote-services")
+	}
+
+	if req.ExtractImages {
+		args = append(args, "--extract-images")
 	}
 
 	// Determine timeout
@@ -441,6 +449,11 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 		response.Diagrams = t.parseDiagrams(diagramsData)
 	}
 
+	// Extract images if available
+	if imagesData, ok := pythonResult["images"].([]interface{}); ok {
+		response.Images = t.parseImages(imagesData)
+	}
+
 	return response, nil
 }
 
@@ -491,7 +504,8 @@ func (t *DocumentProcessorTool) parseProcessingInfo(data map[string]interface{})
 		}
 	}
 	if procTime, ok := data["processing_time"].(float64); ok {
-		info.ProcessingTime = time.Duration(procTime * float64(time.Second))
+		// Processing time is already in seconds from Python
+		info.ProcessingTime = procTime
 	}
 	if timestamp, ok := data["timestamp"].(float64); ok {
 		info.Timestamp = time.Unix(int64(timestamp), 0)
@@ -596,6 +610,79 @@ func (t *DocumentProcessorTool) parseDiagrams(data []interface{}) []ExtractedDia
 	}
 
 	return diagrams
+}
+
+// parseImages converts the Python images data to Go structs
+func (t *DocumentProcessorTool) parseImages(data []interface{}) []ExtractedImage {
+	var images []ExtractedImage
+
+	for _, item := range data {
+		if imageData, ok := item.(map[string]interface{}); ok {
+			image := ExtractedImage{}
+
+			if id, ok := imageData["id"].(string); ok {
+				image.ID = id
+			}
+			if imageType, ok := imageData["type"].(string); ok {
+				image.Type = imageType
+			}
+			if caption, ok := imageData["caption"].(string); ok {
+				image.Caption = caption
+			}
+			if altText, ok := imageData["alt_text"].(string); ok {
+				image.AltText = altText
+			}
+			if format, ok := imageData["format"].(string); ok {
+				image.Format = format
+			}
+			if width, ok := imageData["width"].(float64); ok {
+				image.Width = int(width)
+			}
+			if height, ok := imageData["height"].(float64); ok {
+				image.Height = int(height)
+			}
+			if size, ok := imageData["size"].(float64); ok {
+				image.Size = int64(size)
+			}
+			if filePath, ok := imageData["file_path"].(string); ok {
+				image.FilePath = filePath
+			}
+			if pageNum, ok := imageData["page_number"].(float64); ok {
+				image.PageNumber = int(pageNum)
+			}
+
+			// Parse bounding box
+			if bboxData, ok := imageData["bounding_box"].(map[string]interface{}); ok {
+				bbox := &BoundingBox{}
+				if x, ok := bboxData["x"].(float64); ok {
+					bbox.X = x
+				}
+				if y, ok := bboxData["y"].(float64); ok {
+					bbox.Y = y
+				}
+				if width, ok := bboxData["width"].(float64); ok {
+					bbox.Width = width
+				}
+				if height, ok := bboxData["height"].(float64); ok {
+					bbox.Height = height
+				}
+				image.BoundingBox = bbox
+			}
+
+			// Parse extracted text
+			if extractedTextData, ok := imageData["extracted_text"].([]interface{}); ok {
+				for _, textItem := range extractedTextData {
+					if textStr, ok := textItem.(string); ok {
+						image.ExtractedText = append(image.ExtractedText, textStr)
+					}
+				}
+			}
+
+			images = append(images, image)
+		}
+	}
+
+	return images
 }
 
 // formatResponse formats the response for MCP output

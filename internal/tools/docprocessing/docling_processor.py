@@ -15,6 +15,10 @@ from typing import Optional, List, Dict, Any
 import logging
 import time
 
+# Import our modular components
+from image_processing import extract_images, replace_image_placeholders_with_links
+from table_processing import extract_tables
+
 # Configure logging to stderr to avoid interfering with JSON output
 logging.basicConfig(
     level=logging.WARNING,
@@ -245,8 +249,8 @@ def process_document(args) -> Dict[str, Any]:
             elif args.cell_matching:
                 pipeline_options.table_structure_options.do_cell_matching = True
 
-        # Configure Docling enrichments for better diagram/chart processing
-        if getattr(args, 'diagram_description', False) or getattr(args, 'chart_data_extraction', False):
+        # Configure Docling enrichments for better diagram/chart processing or image extraction
+        if getattr(args, 'diagram_description', False) or getattr(args, 'chart_data_extraction', False) or getattr(args, 'extract_images', False):
             # Enable picture processing and scaling for better quality
             pipeline_options.generate_picture_images = True
             pipeline_options.images_scale = 2  # Higher resolution for better analysis
@@ -337,6 +341,12 @@ def process_document(args) -> Dict[str, Any]:
         images = []
         if args.preserve_images:
             images = extract_images(result.document)
+        elif getattr(args, 'extract_images', False):
+            images = extract_images(result.document, args)
+
+            # If we extracted images and we're outputting markdown, replace image placeholders
+            if images and args.output_format in ['markdown', 'both']:
+                content_output = replace_image_placeholders_with_links(content_output, images)
 
         # Extract tables if requested
         tables = []
@@ -424,18 +434,6 @@ def extract_metadata(document) -> Dict[str, Any]:
 
     return metadata
 
-def extract_images(document) -> List[Dict[str, Any]]:
-    """Extract images from the document."""
-    images = []
-
-    try:
-        # This is a placeholder - actual implementation would depend on
-        # Docling's API for image extraction
-        pass  # Image extraction not yet implemented
-    except Exception as e:
-        logger.warning(f"Failed to extract images: {e}")
-
-    return images
 
 def extract_tables(document) -> List[Dict[str, Any]]:
     """Extract tables from the document with multiple export formats."""
@@ -1213,7 +1211,7 @@ def analyze_with_context_data(figure, args) -> Dict[str, Any]:
         analysis_result = {
             "description": description,
             "type": chart_type,
-            "elements": [{"type": "text", "content": elem, "position": "context_extracted"} for elem in text_elements[:10]],
+            "elements": [{"type": "text", "content": elem} for elem in text_elements[:10]],
             "confidence": 0.8,
             "mermaid_code": "",
             "text_representation": context_text[:200] + "..." if len(context_text) > 200 else context_text
@@ -1483,6 +1481,239 @@ def extract_diagram_text_elements(figure) -> List[Dict[str, Any]]:
 
     return text_elements
 
+def replace_image_placeholders_with_links(content: str, images: List[Dict[str, Any]]) -> str:
+    """Replace <!-- image --> placeholders with proper markdown image links."""
+    try:
+        import os
+
+        # Count how many image placeholders we have
+        placeholder_count = content.count("<!-- image -->")
+
+        if placeholder_count == 0 or len(images) == 0:
+            return content
+
+        # Replace placeholders with actual image links
+        updated_content = content
+        image_index = 0
+
+        while "<!-- image -->" in updated_content and image_index < len(images):
+            image = images[image_index]
+
+            # Create relative path from markdown file to image
+            image_path = image.get('file_path', '')
+            if image_path:
+                # Get just the filename and subdirectory for relative path
+                # e.g., if image is at /path/to/doc/extracted_images/picture_1.png
+                # and markdown might be at /path/to/doc/output.md
+                # we want: extracted_images/picture_1.png
+                try:
+                    image_filename = os.path.basename(image_path)
+                    image_dir = os.path.basename(os.path.dirname(image_path))
+                    relative_path = f"{image_dir}/{image_filename}"
+                except:
+                    # Fallback to just the filename
+                    relative_path = os.path.basename(image_path)
+            else:
+                relative_path = f"image_{image_index + 1}.png"
+
+            # Create markdown image link
+            caption = image.get('caption', f"Image {image_index + 1}")
+            alt_text = image.get('alt_text', caption) or caption
+
+            # Create the markdown image link
+            image_link = f"![{alt_text}]({relative_path})"
+
+            # Add caption if it exists and is different from alt text
+            if caption and caption != alt_text:
+                image_link += f"\n\n*{caption}*"
+
+            # Replace the first occurrence of <!-- image -->
+            updated_content = updated_content.replace("<!-- image -->", image_link, 1)
+            image_index += 1
+
+        return updated_content
+
+    except Exception as e:
+        logger.warning(f"Failed to replace image placeholders: {e}")
+        return content
+
+def save_image_to_file(image_data: str, filename: str, args=None) -> str:
+    """Save base64 image data to a file and return the file path."""
+    try:
+        import base64
+        import os
+
+        # Determine the output directory
+        # Default to same directory as source file if no export path provided
+        output_dir = None
+
+        if args and hasattr(args, 'source'):
+            source_path = args.source
+            # Check if source is a file path (not URL)
+            if not source_path.startswith(('http://', 'https://')):
+                # Use the directory of the source file
+                output_dir = os.path.dirname(os.path.abspath(source_path))
+            else:
+                # For URLs, use current working directory
+                output_dir = os.getcwd()
+        else:
+            # Fallback to current working directory
+            output_dir = os.getcwd()
+
+        # Create images subdirectory
+        images_dir = os.path.join(output_dir, 'extracted_images')
+        os.makedirs(images_dir, exist_ok=True)
+
+        # Create full file path
+        file_path = os.path.join(images_dir, filename)
+
+        # Decode base64 data and save to file
+        image_bytes = base64.b64decode(image_data)
+        with open(file_path, 'wb') as f:
+            f.write(image_bytes)
+
+        return file_path
+
+    except Exception as e:
+        logger.warning(f"Failed to save image to file: {e}")
+        # Return a placeholder path if saving fails
+        return f"failed_to_save_{filename}"
+
+def extract_text_from_image(pil_image) -> List[str]:
+    """Extract text from a PIL image using OCR."""
+    try:
+        from docling.models.ocr import EasyOCRModel
+        ocr_model = EasyOCRModel()
+
+        # Extract text using OCR
+        ocr_results = ocr_model.extract_text(pil_image)
+
+        # Extract just the text content
+        text_elements = []
+        for result in ocr_results:
+            if isinstance(result, dict) and 'text' in result:
+                text = result['text'].strip()
+                if text:
+                    text_elements.append(text)
+            elif isinstance(result, str):
+                text = result.strip()
+                if text:
+                    text_elements.append(text)
+
+        return text_elements
+
+    except ImportError:
+        logger.info("OCR not available for text extraction from images")
+        return []
+    except Exception as e:
+        logger.warning(f"Failed to extract text from image: {e}")
+        return []
+
+def generate_ai_recreation_prompt(image_type: str, caption: str, extracted_text: List[str]) -> tuple:
+    """Generate AI recreation prompt and suggested format for an image."""
+    try:
+        # Determine the most appropriate format based on image type and content
+        suggested_format = "mermaid"
+
+        # Analyze extracted text to better understand the content
+        text_content = " ".join(extracted_text).lower() if extracted_text else ""
+
+        # Determine image category and appropriate format
+        if image_type == "table":
+            suggested_format = "markdown"
+            prompt = f"""This is an image of a table. You must now carefully and accurately reproduce it in markdown table format.
+
+Caption: {caption if caption else 'Table'}
+Extracted text elements: {', '.join(extracted_text) if extracted_text else 'None detected'}
+
+Please recreate this table using proper markdown table syntax with:
+1. Clear column headers
+2. Proper alignment
+3. All data accurately represented
+4. Consistent formatting
+
+If the extracted text contains tabular data, organize it into appropriate rows and columns."""
+
+        elif any(keyword in text_content for keyword in ['flowchart', 'process', 'flow', 'step', 'decision']):
+            suggested_format = "mermaid"
+            prompt = f"""This is an image of a flowchart or process diagram. You must now carefully and accurately reproduce it in Mermaid flowchart syntax.
+
+Caption: {caption if caption else 'Flowchart'}
+Extracted text elements: {', '.join(extracted_text) if extracted_text else 'None detected'}
+
+Please recreate this flowchart using Mermaid syntax with:
+1. Proper node shapes (rectangles for processes, diamonds for decisions)
+2. Clear connections and flow direction
+3. All text labels accurately represented
+4. Logical flow structure
+
+Use Mermaid flowchart syntax like:
+```
+flowchart TD
+    A[Start] --> B{{Decision?}}
+    B -->|Yes| C[Process]
+    B -->|No| D[End]
+```"""
+
+        elif any(keyword in text_content for keyword in ['chart', 'graph', 'data', 'plot', 'axis']):
+            suggested_format = "mermaid"
+            prompt = f"""This is an image of a chart or graph. You must now carefully and accurately reproduce it in an appropriate text format.
+
+Caption: {caption if caption else 'Chart'}
+Extracted text elements: {', '.join(extracted_text) if extracted_text else 'None detected'}
+
+Please recreate this chart using one of these formats:
+1. Mermaid chart syntax (for simple charts)
+2. ASCII table format (for data tables)
+3. Structured data description
+
+Choose the most appropriate format based on the chart type. Include:
+1. All data points and labels
+2. Axis information if applicable
+3. Legend or key information
+4. Proper scaling and relationships"""
+
+        elif any(keyword in text_content for keyword in ['architecture', 'system', 'component', 'service', 'database']):
+            suggested_format = "mermaid"
+            prompt = f"""This is an image of a system architecture or component diagram. You must now carefully and accurately reproduce it in Mermaid diagram syntax.
+
+Caption: {caption if caption else 'Architecture Diagram'}
+Extracted text elements: {', '.join(extracted_text) if extracted_text else 'None detected'}
+
+Please recreate this architecture diagram using Mermaid syntax with:
+1. Proper component representation
+2. Clear relationships and connections
+3. All labels and annotations
+4. Appropriate diagram type (graph, C4, etc.)
+
+Use Mermaid syntax like:
+```mermaid
+graph TD
+    A[Component A] --> B[Component B]
+    B --> C[(Database)]
+```"""
+
+        else:
+            # Generic diagram
+            suggested_format = "mermaid"
+            prompt = f"""This is an image of a diagram. You must now carefully and accurately reproduce it in a plaintext format such as Mermaid, ASCII art, or structured text.
+
+Caption: {caption if caption else 'Diagram'}
+Extracted text elements: {', '.join(extracted_text) if extracted_text else 'None detected'}
+
+Please analyse the image and recreate it using the most appropriate format:
+1. Mermaid syntax for structured diagrams
+2. ASCII art for simple layouts
+3. Structured text description for complex diagrams
+
+Include all visible text, shapes, connections, and relationships. Choose the format that best represents the original structure and content."""
+
+        return prompt, suggested_format
+
+    except Exception as e:
+        logger.warning(f"Failed to generate AI recreation prompt: {e}")
+        return "Please recreate this image in an appropriate text format.", "text"
+
 def get_system_info() -> Dict[str, Any]:
     """Get system information for diagnostics."""
     import platform
@@ -1566,6 +1797,8 @@ def main():
                                help='Enable data extraction from charts and graphs')
     process_parser.add_argument('--enable-remote-services', action='store_true',
                                help='Allow communication with external vision model services')
+    process_parser.add_argument('--extract-images', action='store_true',
+                               help='Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts')
 
     # System info command
     info_parser = subparsers.add_parser('info', help='Get system information')

@@ -70,6 +70,7 @@ type DocumentProcessingRequest struct {
 	DiagramDescription   bool                 `json:"diagram_description,omitempty"`    // Enable diagram and chart description using vision models
 	ChartDataExtraction  bool                 `json:"chart_data_extraction,omitempty"`  // Enable data extraction from charts and graphs
 	EnableRemoteServices bool                 `json:"enable_remote_services,omitempty"` // Allow communication with external vision model services
+	ExtractImages        bool                 `json:"extract_images,omitempty"`         // Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts
 }
 
 // DocumentProcessingResponse represents the output from document processing
@@ -104,16 +105,18 @@ type DocumentMetadata struct {
 
 // ExtractedImage represents an image extracted from the document
 type ExtractedImage struct {
-	ID          string       `json:"id"`                     // Unique image identifier
-	Caption     string       `json:"caption,omitempty"`      // Image caption if available
-	AltText     string       `json:"alt_text,omitempty"`     // Alternative text
-	Format      string       `json:"format"`                 // Image format (PNG, JPEG, etc.)
-	Width       int          `json:"width,omitempty"`        // Image width in pixels
-	Height      int          `json:"height,omitempty"`       // Image height in pixels
-	Size        int64        `json:"size,omitempty"`         // Image size in bytes
-	Base64Data  string       `json:"base64_data,omitempty"`  // Base64-encoded image data
-	PageNumber  int          `json:"page_number,omitempty"`  // Page number where image appears
-	BoundingBox *BoundingBox `json:"bounding_box,omitempty"` // Position on page
+	ID            string       `json:"id"`                       // Unique image identifier
+	Type          string       `json:"type"`                     // Type of image (picture, table, chart, diagram)
+	Caption       string       `json:"caption,omitempty"`        // Image caption if available
+	AltText       string       `json:"alt_text,omitempty"`       // Alternative text
+	Format        string       `json:"format"`                   // Image format (PNG, JPEG, etc.)
+	Width         int          `json:"width,omitempty"`          // Image width in pixels
+	Height        int          `json:"height,omitempty"`         // Image height in pixels
+	Size          int64        `json:"size,omitempty"`           // Image size in bytes
+	FilePath      string       `json:"file_path,omitempty"`      // Path to saved image file
+	PageNumber    int          `json:"page_number,omitempty"`    // Page number where image appears
+	BoundingBox   *BoundingBox `json:"bounding_box,omitempty"`   // Position on page
+	ExtractedText []string     `json:"extracted_text,omitempty"` // Text elements extracted from the image
 }
 
 // ExtractedTable represents a table extracted from the document
@@ -166,7 +169,7 @@ type ProcessingInfo struct {
 	VisionModel          string               `json:"vision_model,omitempty"`    // Vision model used (if any)
 	OCREnabled           bool                 `json:"ocr_enabled"`               // Whether OCR was enabled
 	OCRLanguages         []string             `json:"ocr_languages,omitempty"`   // OCR languages used
-	ProcessingTime       time.Duration        `json:"processing_time"`           // Time taken to process
+	ProcessingTime       float64              `json:"processing_time"`           // Time taken to process in seconds
 	PythonVersion        string               `json:"python_version,omitempty"`  // Python version used
 	DoclingVersion       string               `json:"docling_version,omitempty"` // Docling version used
 	CacheKey             string               `json:"cache_key,omitempty"`       // Cache key used
