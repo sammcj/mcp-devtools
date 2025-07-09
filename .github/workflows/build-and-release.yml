@@ -8,6 +8,11 @@ on:
   pull_request:
     branches: [ main ]
 
+# cancel in progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   bump-version:
     name: Bump Version
