@@ -4,6 +4,16 @@ import (
 	"time"
 )
 
+// Environment variable constants for VLM Pipeline integration
+const (
+	// VLM Pipeline Configuration
+	EnvVLMAPIURL        = "DOCLING_VLM_API_URL"        // User-provided API endpoint URL (e.g., "http://localhost:1234/v1")
+	EnvVLMModel         = "DOCLING_VLM_MODEL"          // Model name/ID (e.g., "gpt-4-vision-preview", "SmolVLM-Instruct")
+	EnvVLMAPIKey        = "DOCLING_VLM_API_KEY"        // Authentication key for external APIs
+	EnvVLMTimeout       = "DOCLING_VLM_TIMEOUT"        // Request timeout in seconds (default: 240)
+	EnvVLMFallbackLocal = "DOCLING_VLM_FALLBACK_LOCAL" // Enable local model fallback (default: true)
+)
+
 // ProcessingMode defines the type of document processing to perform
 type ProcessingMode string
 

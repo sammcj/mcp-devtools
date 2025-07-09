@@ -937,7 +937,7 @@ def extract_bounding_box(element) -> Dict[str, float]:
         return {"x": 0.0, "y": 0.0, "width": 0.0, "height": 0.0}
 
 def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
-    """Extract diagram descriptions using vision models."""
+    """Extract diagram descriptions using Docling VLM Pipeline."""
     diagrams = []
 
     try:
@@ -1013,7 +1013,7 @@ def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
                         })()
                         figures.append(synthetic_figure)
 
-        # Process each figure for diagram description
+        # Process each figure for diagram description using VLM Pipeline
         for i, figure in enumerate(figures):
             diagram_data = {
                 "id": f"diagram_{i+1}",
@@ -1027,7 +1027,7 @@ def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
                 "confidence": 0.0
             }
 
-            # Extract base64 image data for LLM vision processing
+            # Extract base64 image data for VLM Pipeline processing
             base64_data = extract_base64_image_data(figure)
             if base64_data:
                 diagram_data["base64_data"] = base64_data
@@ -1042,12 +1042,12 @@ def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
             diagram_type = classify_diagram_type(figure)
             diagram_data["diagram_type"] = diagram_type
 
-            # Generate description using vision model (if available and enabled) OR context analysis
+            # Generate description using VLM Pipeline
             vision_description = None
-            if getattr(args, 'enable_remote_services', False):
-                vision_description = generate_vision_description(figure, args)
+            if getattr(args, 'enable_remote_services', False) or getattr(args, 'vision_mode', 'standard') != 'standard':
+                vision_description = generate_vlm_description(figure, args)
 
-            # If no vision description, try context-based analysis for synthetic figures
+            # If no VLM description, try context-based analysis for synthetic figures
             if not vision_description and hasattr(figure, 'surrounding_text'):
                 vision_description = analyze_with_context_data(figure, args)
 
@@ -1102,6 +1102,41 @@ def classify_diagram_type(figure) -> str:
     except Exception as e:
         logger.warning(f"Failed to classify diagram type: {e}")
         return "unknown"
+
+def generate_vlm_description(figure, args) -> Optional[Dict[str, Any]]:
+    """Generate description using Docling's VLM Pipeline."""
+    try:
+        vision_result = {
+            "description": "",
+            "type": "unknown",
+            "elements": [],
+            "confidence": 0.0,
+            "mermaid_code": "",
+            "text_representation": ""
+        }
+
+        # Try to extract actual image data from the figure
+        image_data = extract_image_data_from_figure(figure)
+        if not image_data:
+            logger.warning("Could not extract image data from figure")
+            return None
+
+        # Use VLM Pipeline based on configuration
+        vision_mode = getattr(args, 'vision_mode', 'standard')
+
+        if vision_mode == 'smoldocling':
+            vision_result = analyze_with_vlm_pipeline(image_data, figure, 'smoldocling')
+        elif vision_mode == 'advanced' and getattr(args, 'enable_remote_services', False):
+            vision_result = analyze_with_vlm_pipeline(image_data, figure, 'external')
+        else:
+            # Fallback to basic analysis using available Docling features
+            vision_result = analyze_with_basic_vision(image_data, figure)
+
+        return vision_result
+
+    except Exception as e:
+        logger.warning(f"Failed to generate VLM description: {e}")
+        return None
 
 def generate_vision_description(figure, args) -> Optional[Dict[str, Any]]:
     """Generate description using Docling's vision capabilities and SmolDocling."""
@@ -1226,6 +1261,171 @@ def extract_image_data_from_figure(figure) -> Optional[bytes]:
     except Exception as e:
         logger.warning(f"Failed to extract image data: {e}")
         return None
+
+def analyze_with_vlm_pipeline(image_data: bytes, figure, pipeline_type: str) -> Dict[str, Any]:
+    """Analyze image using Docling's VLM Pipeline with configurable endpoints."""
+    try:
+        import os
+
+        # Get VLM Pipeline configuration from environment variables
+        vlm_api_url = os.getenv('DOCLING_VLM_API_URL')
+        vlm_model = os.getenv('DOCLING_VLM_MODEL', 'gpt-4-vision-preview')
+        vlm_api_key = os.getenv('DOCLING_VLM_API_KEY')
+        vlm_timeout = int(os.getenv('DOCLING_VLM_TIMEOUT', '240'))
+        vlm_fallback_local = os.getenv('DOCLING_VLM_FALLBACK_LOCAL', 'true').lower() == 'true'
+
+        # Try to use Docling's VLM Pipeline
+        try:
+            from docling.models.vision import VlmPipeline
+            from docling.datamodel.pipeline_options import VlmPipelineOptions
+
+            # Configure VLM Pipeline based on environment variables and pipeline type
+            vlm_config = VlmPipelineOptions()
+
+            if pipeline_type == 'external' and vlm_api_url and vlm_api_key:
+                # External API configuration (OpenAI-compatible)
+                vlm_config.api_url = vlm_api_url
+                vlm_config.model = vlm_model
+                vlm_config.api_key = vlm_api_key
+                vlm_config.timeout = vlm_timeout
+                logger.info(f"Using external VLM API: {vlm_model} at {vlm_api_url}")
+
+            elif pipeline_type == 'smoldocling' or (not vlm_api_url and vlm_fallback_local):
+                # Local model auto-detection
+                vlm_config.model = auto_detect_optimal_vlm_model()
+                logger.info(f"Using local VLM model: {vlm_config.model}")
+
+            else:
+                # Fallback to basic analysis if no configuration available
+                logger.warning("No VLM configuration available, falling back to basic analysis")
+                return analyze_with_basic_vision(image_data, figure)
+
+            # Initialize VLM Pipeline
+            pipeline = VlmPipeline(vlm_config)
+
+            # Prepare image for VLM Pipeline
+            import base64
+            base64_image = base64.b64encode(image_data).decode('utf-8')
+
+            # Create analysis prompt based on figure type
+            prompt = create_vlm_analysis_prompt(figure)
+
+            # Analyze the image using VLM Pipeline
+            result = pipeline.analyze_image(
+                image_data=base64_image,
+                prompt=prompt,
+                task="describe_diagram"
+            )
+
+            return {
+                "description": result.get("description", "VLM Pipeline analysis completed"),
+                "type": result.get("diagram_type", "diagram"),
+                "elements": result.get("elements", []),
+                "confidence": result.get("confidence", 0.8),
+                "mermaid_code": result.get("mermaid_code", ""),
+                "text_representation": result.get("text_representation", "")
+            }
+
+        except ImportError:
+            logger.warning("Docling VLM Pipeline not available, falling back to SmolDocling")
+            return analyze_with_smoldocling(image_data, figure)
+
+    except Exception as e:
+        logger.warning(f"VLM Pipeline analysis failed: {e}")
+        return analyze_with_basic_vision(image_data, figure)
+
+def auto_detect_optimal_vlm_model() -> str:
+    """Auto-detect the optimal local VLM model based on hardware."""
+    try:
+        import platform
+
+        # Check for Apple Silicon and MLX availability
+        if platform.system() == 'Darwin' and platform.machine() == 'arm64':
+            try:
+                import mlx
+                # Prefer MLX models on Apple Silicon for 16x performance improvement
+                return "mlx-community/SmolVLM-Instruct-4bit"
+            except ImportError:
+                pass
+
+        # Check for CUDA availability
+        try:
+            import torch
+            if torch.cuda.is_available():
+                return "HuggingFace/SmolVLM-Instruct"
+        except ImportError:
+            pass
+
+        # Fallback to CPU-optimized model
+        return "HuggingFace/SmolVLM-Instruct-CPU"
+
+    except Exception as e:
+        logger.warning(f"Failed to auto-detect VLM model: {e}")
+        return "HuggingFace/SmolVLM-Instruct"
+
+def create_vlm_analysis_prompt(figure) -> str:
+    """Create a VLM analysis prompt based on figure characteristics."""
+    try:
+        # Get figure information
+        caption = getattr(figure, 'caption', '')
+        figure_type = getattr(figure, 'type', 'unknown')
+
+        # Base prompt for diagram analysis
+        prompt = """You are an expert at analysing diagrams and converting them to structured formats.
+Analyse this image and provide a detailed response in JSON format.
+
+Please identify:
+1. The type of diagram (flowchart, architecture, chart, table, etc.)
+2. Key components and their relationships
+3. Text elements visible in the image
+4. If possible, generate Mermaid syntax for the diagram
+
+"""
+
+        # Add context-specific instructions
+        if caption:
+            prompt += f"Image caption: {caption}\n"
+
+        if 'chart' in figure_type.lower() or 'graph' in figure_type.lower():
+            prompt += """This appears to be a chart or graph. Focus on:
+- Data points and values
+- Axis labels and scales
+- Chart type (bar, line, pie, etc.)
+- Legend information
+"""
+        elif 'flow' in figure_type.lower() or 'process' in figure_type.lower():
+            prompt += """This appears to be a flowchart or process diagram. Focus on:
+- Process steps and decision points
+- Flow direction and connections
+- Start and end points
+- Decision branches
+"""
+        elif 'architecture' in figure_type.lower() or 'system' in figure_type.lower():
+            prompt += """This appears to be an architecture or system diagram. Focus on:
+- System components and services
+- Data flow and connections
+- External dependencies
+- Component types (databases, APIs, etc.)
+"""
+
+        prompt += """
+Respond in JSON format with:
+{
+  "description": "Detailed description of the diagram",
+  "diagram_type": "flowchart|architecture|chart|table|other",
+  "elements": [{"type": "text|shape", "content": "element content"}],
+  "confidence": 0.95,
+  "mermaid_code": "Valid Mermaid syntax if applicable",
+  "text_representation": "All visible text in the image"
+}
+
+Always use British English spelling in your response."""
+
+        return prompt
+
+    except Exception as e:
+        logger.warning(f"Failed to create VLM analysis prompt: {e}")
+        return "Analyse this diagram and describe its contents in detail."
 
 def analyze_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
     """Analyze image using SmolDocling vision-language model."""
