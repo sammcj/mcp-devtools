@@ -15,12 +15,12 @@ import (
 
 // Environment variable constants for LLM integration
 const (
-	EnvOpenAIAPIBase  = "DOCLING_LLM_OPENAI_API_BASE" // e.g., "https://api.openai.com/v1"
-	EnvOpenAIModel    = "DOCLING_LLM_MODEL_NAME"      // e.g., "gpt-4-vision-preview"
-	EnvOpenAIAPIKey   = "DOCLING_LLM_OPENAI_API_KEY"  // API key for the provider
-	EnvLLMMaxTokens   = "DOCLING_LLM_MAX_TOKENS"      // Maximum tokens for LLM response (default: 16384)
-	EnvLLMTemperature = "DOCLING_LLM_TEMPERATURE"     // Temperature for LLM inference (default: 0.1)
-	EnvLLMTimeout     = "DOCLING_LLM_TIMEOUT"         // Timeout for LLM requests in seconds (default: 240)
+	EnvOpenAIAPIBase  = "DOCLING_VLM_API_URL"        // e.g., "https://api.openai.com/v1"
+	EnvOpenAIModel    = "DOCLING_VLM_MODEL"          // e.g., "gpt-4-vision-preview"
+	EnvOpenAIAPIKey   = "DOCLING_LLM_OPENAI_API_KEY" // API key for the provider
+	EnvLLMMaxTokens   = "DOCLING_LLM_MAX_TOKENS"     // Maximum tokens for LLM response (default: 16384)
+	EnvLLMTemperature = "DOCLING_LLM_TEMPERATURE"    // Temperature for LLM inference (default: 0.1)
+	EnvLLMTimeout     = "DOCLING_LLM_TIMEOUT"        // Timeout for LLM requests in seconds (default: 240)
 
 	// Prompt configuration environment variables
 	EnvPromptBase         = "DOCLING_LLM_PROMPT_BASE"         // Base prompt for diagram analysis

@@ -96,6 +96,13 @@ func (cm *CacheManager) Get(cacheKey string) (*DocumentProcessingResponse, bool)
 		return nil, false
 	}
 
+	// Validate that referenced files still exist
+	if !cm.validateReferencedFiles(&cachedResponse.Response) {
+		// Referenced files are missing, invalidate cache
+		_ = os.Remove(filePath)
+		return nil, false
+	}
+
 	// Mark as cache hit
 	cachedResponse.Response.CacheHit = true
 	return &cachedResponse.Response, true
@@ -348,6 +355,29 @@ func (cm *CacheManager) isCacheExpired(cached *CachedResponse) bool {
 func (cm *CacheManager) getDefaultTTL() time.Duration {
 	// Default to 24 hours
 	return 24 * time.Hour
+}
+
+// validateReferencedFiles checks if all files referenced in the cached response still exist
+func (cm *CacheManager) validateReferencedFiles(response *DocumentProcessingResponse) bool {
+	// Check if any images are referenced and validate they exist
+	for _, image := range response.Images {
+		if image.FilePath != "" {
+			if _, err := os.Stat(image.FilePath); os.IsNotExist(err) {
+				return false // Image file is missing
+			}
+		}
+	}
+
+	// Note: We don't validate markdown files here because:
+	// 1. Inline responses don't generate markdown files
+	// 2. The cache validation should focus on generated assets (images) that are referenced
+	// 3. The markdown content is stored in the cache itself, not as separate files
+	// 4. Users might legitimately delete markdown files while keeping images
+	//
+	// The main concern is ensuring that image files referenced in the response still exist,
+	// as these are external dependencies that could be deleted independently.
+
+	return true // All referenced files exist
 }
 
 // CachedResponse represents a cached document processing response

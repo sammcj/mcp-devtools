@@ -30,6 +30,9 @@ func init() {
 
 	// Only register the tool if docling is available
 	if config.PythonPath != "" && config.isDoclingAvailable() {
+		// Rotate debug logs on startup (keeps logs from past 48 hours)
+		rotateDebugLogs()
+
 		cacheManager := NewCacheManager(config)
 		registry.Register(&DocumentProcessorTool{
 			config:       config,
@@ -38,6 +41,57 @@ func init() {
 	}
 	// Note: We don't log here as this runs during init and could interfere with MCP protocol
 	// The tool will simply not be available if docling is not found
+}
+
+// rotateDebugLogs manages debug log rotation, keeping logs from the past 48 hours
+func rotateDebugLogs() {
+	debugLogDir := filepath.Join(os.Getenv("HOME"), ".mcp-devtools")
+	debugLogPath := filepath.Join(debugLogDir, "debug.log")
+
+	// Create directory if it doesn't exist
+	if err := os.MkdirAll(debugLogDir, 0755); err != nil {
+		return // Silently fail to avoid MCP protocol interference
+	}
+
+	// Check if current log file exists and is older than 24 hours
+	if info, err := os.Stat(debugLogPath); err == nil {
+		// If the current log is older than 24 hours, rotate it
+		if time.Since(info.ModTime()) > 24*time.Hour {
+			// Create timestamped backup filename
+			timestamp := info.ModTime().Format("2006-01-02_15-04-05")
+			backupPath := filepath.Join(debugLogDir, fmt.Sprintf("debug_%s.log", timestamp))
+
+			// Move current log to backup
+			_ = os.Rename(debugLogPath, backupPath)
+		}
+	}
+
+	// Clean up old log files (older than 48 hours)
+	cleanupOldLogs(debugLogDir, 48*time.Hour)
+}
+
+// cleanupOldLogs removes log files older than the specified duration
+func cleanupOldLogs(logDir string, maxAge time.Duration) {
+	entries, err := os.ReadDir(logDir)
+	if err != nil {
+		return // Silently fail
+	}
+
+	cutoffTime := time.Now().Add(-maxAge)
+
+	for _, entry := range entries {
+		// Only process debug log files
+		if entry.IsDir() || !strings.HasPrefix(entry.Name(), "debug_") || !strings.HasSuffix(entry.Name(), ".log") {
+			continue
+		}
+
+		filePath := filepath.Join(logDir, entry.Name())
+		if info, err := os.Stat(filePath); err == nil {
+			if info.ModTime().Before(cutoffTime) {
+				_ = os.Remove(filePath) // Silently remove old files
+			}
+		}
+	}
 }
 
 // Definition returns the MCP tool definition
@@ -61,7 +115,7 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 			mcp.Description(profileDesc),
 		),
 		mcp.WithBoolean("inline",
-			mcp.Description("Return content inline in response instead of to files (default: false)."),
+			mcp.Description("Return content inline in response instead of saving to files (default: false - saves markdown and images to same directory as source file)."),
 		),
 		mcp.WithString("save_to",
 			mcp.Description("Override the file path for saved content (default: same directory as source file). MUST be a fully qualified absolute path"),
@@ -305,9 +359,42 @@ func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*Docu
 		req.Debug = debug
 	}
 
-	// Apply profile settings if specified
+	// Apply profile settings first, then allow individual arguments to override
 	if req.Profile != "" {
 		t.applyProfile(req)
+	}
+
+	// Re-apply individual arguments to override profile settings
+	// This ensures explicit arguments take precedence over profile defaults
+
+	// Re-apply vision_mode if explicitly provided
+	if visionMode, ok := args["vision_mode"].(string); ok {
+		req.VisionMode = VisionProcessingMode(visionMode)
+	}
+
+	// Re-apply diagram_description if explicitly provided
+	if diagramDesc, ok := args["diagram_description"].(bool); ok {
+		req.DiagramDescription = diagramDesc
+	}
+
+	// Re-apply chart_data_extraction if explicitly provided
+	if chartExtraction, ok := args["chart_data_extraction"].(bool); ok {
+		req.ChartDataExtraction = chartExtraction
+	}
+
+	// Re-apply enable_remote_services if explicitly provided
+	if remoteServices, ok := args["enable_remote_services"].(bool); ok {
+		req.EnableRemoteServices = remoteServices
+	}
+
+	// Re-apply convert_diagrams_to_mermaid if explicitly provided
+	if convertMermaid, ok := args["convert_diagrams_to_mermaid"].(bool); ok {
+		req.ConvertDiagramsToMermaid = convertMermaid
+	}
+
+	// Re-apply generate_diagrams if explicitly provided
+	if generateDiagrams, ok := args["generate_diagrams"].(bool); ok {
+		req.GenerateDiagrams = generateDiagrams
 	}
 
 	return req, nil
@@ -477,23 +564,63 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 		cmd.Dir = cwd
 	}
 
-	// Set up environment with certificate configuration
+	// Set up environment with certificate configuration and VLM variables
 	cmd.Env = os.Environ() // Start with current environment
 	certEnv := t.config.GetCertificateEnvironment()
 	cmd.Env = append(cmd.Env, certEnv...)
 
-	// Only capture stdout to avoid mixing with stderr logs
-	output, err := cmd.Output()
+	// Add VLM Pipeline environment variables
+	vlmEnv := t.getVLMEnvironmentVariables()
+	cmd.Env = append(cmd.Env, vlmEnv...)
+
+	// Capture both stdout and stderr for better debugging
+	var stdout, stderr strings.Builder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// Log the command being executed for debugging
+	cmdStr := fmt.Sprintf("%s %s", t.config.PythonPath, strings.Join(args, " "))
+
+	// Execute the command
+	err = cmd.Run()
+
+	// Get the outputs
+	stdoutStr := stdout.String()
+	stderrStr := stderr.String()
+
+	// Log outputs for debugging (but not to stdout/stderr to avoid MCP protocol issues)
+	// Write to a debug log file instead
+	if debugFile, debugErr := os.OpenFile(filepath.Join(os.Getenv("HOME"), ".mcp-devtools", "debug.log"),
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); debugErr == nil {
+		defer func() { _ = debugFile.Close() }()
+		_, _ = fmt.Fprintf(debugFile, "[%s] Command: %s\n", time.Now().Format("2006-01-02 15:04:05"), cmdStr)
+		_, _ = fmt.Fprintf(debugFile, "[%s] Exit Code: %v\n", time.Now().Format("2006-01-02 15:04:05"), err)
+		_, _ = fmt.Fprintf(debugFile, "[%s] Stdout Length: %d\n", time.Now().Format("2006-01-02 15:04:05"), len(stdoutStr))
+		_, _ = fmt.Fprintf(debugFile, "[%s] Stderr Length: %d\n", time.Now().Format("2006-01-02 15:04:05"), len(stderrStr))
+		if len(stdoutStr) > 0 {
+			_, _ = fmt.Fprintf(debugFile, "[%s] Stdout: %s\n", time.Now().Format("2006-01-02 15:04:05"), stdoutStr)
+		}
+		if len(stderrStr) > 0 {
+			_, _ = fmt.Fprintf(debugFile, "[%s] Stderr: %s\n", time.Now().Format("2006-01-02 15:04:05"), stderrStr)
+		}
+		_, _ = fmt.Fprintf(debugFile, "[%s] Environment Variables:\n", time.Now().Format("2006-01-02 15:04:05"))
+		for _, env := range cmd.Env {
+			if strings.HasPrefix(env, "DOCLING_") {
+				_, _ = fmt.Fprintf(debugFile, "  %s\n", env)
+			}
+		}
+		_, _ = fmt.Fprintf(debugFile, "---\n")
+	}
+
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return nil, fmt.Errorf("processing timeout after %d seconds", timeout)
 		}
-		// Get stderr for better error reporting
-		if exitError, ok := err.(*exec.ExitError); ok {
-			return nil, fmt.Errorf("python script failed: %w, stderr: %s", err, string(exitError.Stderr))
-		}
-		return nil, fmt.Errorf("python script failed: %w", err)
+		return nil, fmt.Errorf("python script failed: %w, stderr: %s", err, stderrStr)
 	}
+
+	// Use stdout as the output
+	output := []byte(stdoutStr)
 
 	// Parse Python script output
 	var pythonResult map[string]interface{}
@@ -944,12 +1071,12 @@ func (t *DocumentProcessorTool) getDebugInfo() map[string]interface{} {
 	// Environment variables related to document processing
 	envVars := map[string]interface{}{
 		// LLM Configuration
-		"DOCLING_LLM_OPENAI_API_BASE": maskSecret(os.Getenv("DOCLING_LLM_OPENAI_API_BASE")),
-		"DOCLING_LLM_MODEL_NAME":      os.Getenv("DOCLING_LLM_MODEL_NAME"),
-		"DOCLING_LLM_OPENAI_API_KEY":  maskSecret(os.Getenv("DOCLING_LLM_OPENAI_API_KEY")),
-		"DOCLING_LLM_MAX_TOKENS":      os.Getenv("DOCLING_LLM_MAX_TOKENS"),
-		"DOCLING_LLM_TEMPERATURE":     os.Getenv("DOCLING_LLM_TEMPERATURE"),
-		"DOCLING_LLM_TIMEOUT":         os.Getenv("DOCLING_LLM_TIMEOUT"),
+		"DOCLING_VLM_API_URL":        maskSecret(os.Getenv("DOCLING_VLM_API_URL")),
+		"DOCLING_VLM_MODEL":          os.Getenv("DOCLING_VLM_MODEL"),
+		"DOCLING_LLM_OPENAI_API_KEY": maskSecret(os.Getenv("DOCLING_LLM_OPENAI_API_KEY")),
+		"DOCLING_LLM_MAX_TOKENS":     os.Getenv("DOCLING_LLM_MAX_TOKENS"),
+		"DOCLING_LLM_TEMPERATURE":    os.Getenv("DOCLING_LLM_TEMPERATURE"),
+		"DOCLING_LLM_TIMEOUT":        os.Getenv("DOCLING_LLM_TIMEOUT"),
 
 		// Cache Configuration
 		"DOCLING_CACHE_MAX_AGE_HOURS": os.Getenv("DOCLING_CACHE_MAX_AGE_HOURS"),
@@ -969,8 +1096,8 @@ func (t *DocumentProcessorTool) getDebugInfo() map[string]interface{} {
 	// LLM Configuration Status
 	llmStatus := map[string]interface{}{
 		"configured":   IsLLMConfigured(),
-		"api_base_set": os.Getenv("DOCLING_LLM_OPENAI_API_BASE") != "",
-		"model_set":    os.Getenv("DOCLING_LLM_MODEL_NAME") != "",
+		"api_base_set": os.Getenv("DOCLING_VLM_API_URL") != "",
+		"model_set":    os.Getenv("DOCLING_VLM_MODEL") != "",
 		"api_key_set":  os.Getenv("DOCLING_LLM_OPENAI_API_KEY") != "",
 	}
 
@@ -1173,6 +1300,38 @@ func (t *DocumentProcessorTool) generateSavePath(source string) (string, error) 
 	savePath := filepath.Join(sourceDir, nameWithoutExt+".md")
 
 	return savePath, nil
+}
+
+// getVLMEnvironmentVariables returns VLM Pipeline environment variables for the subprocess
+func (t *DocumentProcessorTool) getVLMEnvironmentVariables() []string {
+	var envVars []string
+
+	// VLM Pipeline configuration variables
+	if apiURL := os.Getenv("DOCLING_VLM_API_URL"); apiURL != "" {
+		envVars = append(envVars, fmt.Sprintf("DOCLING_VLM_API_URL=%s", apiURL))
+	}
+
+	if model := os.Getenv("DOCLING_VLM_MODEL"); model != "" {
+		envVars = append(envVars, fmt.Sprintf("DOCLING_VLM_MODEL=%s", model))
+	}
+
+	if apiKey := os.Getenv("DOCLING_VLM_API_KEY"); apiKey != "" {
+		envVars = append(envVars, fmt.Sprintf("DOCLING_VLM_API_KEY=%s", apiKey))
+	}
+
+	if timeout := os.Getenv("DOCLING_VLM_TIMEOUT"); timeout != "" {
+		envVars = append(envVars, fmt.Sprintf("DOCLING_VLM_TIMEOUT=%s", timeout))
+	}
+
+	if fallbackLocal := os.Getenv("DOCLING_VLM_FALLBACK_LOCAL"); fallbackLocal != "" {
+		envVars = append(envVars, fmt.Sprintf("DOCLING_VLM_FALLBACK_LOCAL=%s", fallbackLocal))
+	}
+
+	if imageScale := os.Getenv("DOCLING_IMAGE_SCALE"); imageScale != "" {
+		envVars = append(envVars, fmt.Sprintf("DOCLING_IMAGE_SCALE=%s", imageScale))
+	}
+
+	return envVars
 }
 
 // maskSecret masks sensitive information in environment variables

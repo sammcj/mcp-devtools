@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Environment variable constants for VLM Pipeline integration
+// Environment variable constants for VLM Pipeline integration and image processing
 const (
 	// VLM Pipeline Configuration
 	EnvVLMAPIURL        = "DOCLING_VLM_API_URL"        // User-provided API endpoint URL (e.g., "http://localhost:1234/v1")
@@ -12,6 +12,9 @@ const (
 	EnvVLMAPIKey        = "DOCLING_VLM_API_KEY"        // Authentication key for external APIs
 	EnvVLMTimeout       = "DOCLING_VLM_TIMEOUT"        // Request timeout in seconds (default: 240)
 	EnvVLMFallbackLocal = "DOCLING_VLM_FALLBACK_LOCAL" // Enable local model fallback (default: true)
+
+	// Image Processing Configuration
+	EnvImageScale = "DOCLING_IMAGE_SCALE" // Image resolution scale factor (default: 2.0, range: 1.0-4.0)
 )
 
 // ProcessingMode defines the type of document processing to perform
@@ -94,7 +97,7 @@ type DocumentProcessingRequest struct {
 	ChartDataExtraction      bool                 `json:"chart_data_extraction,omitempty"`       // Enable data extraction from charts and graphs
 	EnableRemoteServices     bool                 `json:"enable_remote_services,omitempty"`      // Allow communication with external vision model services
 	ConvertDiagramsToMermaid bool                 `json:"convert_diagrams_to_mermaid,omitempty"` // Convert detected diagrams to Mermaid syntax using AI vision models
-	GenerateDiagrams         bool                 `json:"generate_diagrams,omitempty"`           // Generate enhanced diagram analysis using external LLM (requires DOCLING_LLM_OPENAI_API_BASE, DOCLING_LLM_MODEL_NAME, DOCLING_LLM_OPENAI_API_KEY environment variables)
+	GenerateDiagrams         bool                 `json:"generate_diagrams,omitempty"`           // Generate enhanced diagram analysis using external LLM (requires DOCLING_VLM_API_URL, DOCLING_VLM_MODEL, DOCLING_LLM_OPENAI_API_KEY environment variables)
 	ExtractImages            bool                 `json:"extract_images,omitempty"`              // Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts
 	Debug                    bool                 `json:"debug,omitempty"`                       // Return debug information including environment variables (secrets masked)
 }

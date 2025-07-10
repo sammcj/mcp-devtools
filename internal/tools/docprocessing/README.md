@@ -63,8 +63,8 @@ DOCLING_VISION_MODEL="SmolDocling"
 DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
 
 # LLM Configuration (for advanced diagram processing)
-DOCLING_LLM_OPENAI_API_BASE="http://localhost:11434/v1"
-DOCLING_LLM_MODEL_NAME="mistral-small3.2:24b"
+DOCLING_VLM_API_URL="http://localhost:11434/v1"
+DOCLING_VLM_MODEL="mistral-small3.2:24b"
 DOCLING_LLM_OPENAI_API_KEY="your-api-key-here"
 ```
 
@@ -236,8 +236,8 @@ For diagram-to-Mermaid conversion, first configure external LLM integration:
 
 ```bash
 # Required environment variables
-export DOCLING_LLM_OPENAI_API_BASE="http://localhost:11434/v1"   # Any OpenAI-compatible endpoint
-export DOCLING_LLM_MODEL_NAME="llava:latest"                     # Vision-capable model
+export DOCLING_VLM_API_URL="http://localhost:11434/v1"   # Any OpenAI-compatible endpoint
+export DOCLING_VLM_MODEL="llava:latest"                     # Vision-capable model
 export DOCLING_LLM_OPENAI_API_KEY="your-api-key-here"            # API key
 
 # Optional configuration

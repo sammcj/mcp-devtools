@@ -31,8 +31,8 @@ func TestLLMClient_Connectivity(t *testing.T) {
 	}
 
 	// Get configuration details for logging
-	apiBase := os.Getenv("DOCLING_LLM_OPENAI_API_BASE")
-	modelName := os.Getenv("DOCLING_LLM_MODEL_NAME")
+	apiBase := os.Getenv("DOCLING_VLM_API_URL")
+	modelName := os.Getenv("DOCLING_VLM_MODEL")
 	apiKey := os.Getenv("DOCLING_LLM_OPENAI_API_KEY")
 
 	t.Logf("Testing LLM connectivity with:")
@@ -170,8 +170,8 @@ func TestLLMClient_Configuration(t *testing.T) {
 
 	t.Run("Environment_Variables", func(t *testing.T) {
 		// Check required environment variables
-		apiBase := os.Getenv("DOCLING_LLM_OPENAI_API_BASE")
-		modelName := os.Getenv("DOCLING_LLM_MODEL_NAME")
+		apiBase := os.Getenv("DOCLING_VLM_API_URL")
+		modelName := os.Getenv("DOCLING_VLM_MODEL")
 		apiKey := os.Getenv("DOCLING_LLM_OPENAI_API_KEY")
 
 		t.Logf("LLM Configuration:")
@@ -183,8 +183,8 @@ func TestLLMClient_Configuration(t *testing.T) {
 			t.Skip("LLM environment variables not fully configured")
 		}
 
-		assert.NotEmpty(t, apiBase, "DOCLING_LLM_OPENAI_API_BASE should be set")
-		assert.NotEmpty(t, modelName, "DOCLING_LLM_MODEL_NAME should be set")
+		assert.NotEmpty(t, apiBase, "DOCLING_VLM_API_URL should be set")
+		assert.NotEmpty(t, modelName, "DOCLING_VLM_MODEL should be set")
 		assert.NotEmpty(t, apiKey, "DOCLING_LLM_OPENAI_API_KEY should be set")
 		assert.NotEqual(t, "your-api-key-here", apiKey, "API key should be replaced with actual key")
 	})
@@ -205,22 +205,22 @@ func TestLLMClient_Configuration(t *testing.T) {
 func TestLLMClient_NoConfiguration(t *testing.T) {
 	// Test behaviour when no LLM configuration is available (CI environment)
 	// Save current environment variables
-	originalAPIBase := os.Getenv("DOCLING_LLM_OPENAI_API_BASE")
-	originalModel := os.Getenv("DOCLING_LLM_MODEL_NAME")
+	originalAPIBase := os.Getenv("DOCLING_VLM_API_URL")
+	originalModel := os.Getenv("DOCLING_VLM_MODEL")
 	originalAPIKey := os.Getenv("DOCLING_LLM_OPENAI_API_KEY")
 
 	// Clear LLM environment variables
-	_ = os.Unsetenv("DOCLING_LLM_OPENAI_API_BASE")
-	_ = os.Unsetenv("DOCLING_LLM_MODEL_NAME")
+	_ = os.Unsetenv("DOCLING_VLM_API_URL")
+	_ = os.Unsetenv("DOCLING_VLM_MODEL")
 	_ = os.Unsetenv("DOCLING_LLM_OPENAI_API_KEY")
 
 	// Restore environment variables after test
 	defer func() {
 		if originalAPIBase != "" {
-			_ = os.Setenv("DOCLING_LLM_OPENAI_API_BASE", originalAPIBase)
+			_ = os.Setenv("DOCLING_VLM_API_URL", originalAPIBase)
 		}
 		if originalModel != "" {
-			_ = os.Setenv("DOCLING_LLM_MODEL_NAME", originalModel)
+			_ = os.Setenv("DOCLING_VLM_MODEL", originalModel)
 		}
 		if originalAPIKey != "" {
 			_ = os.Setenv("DOCLING_LLM_OPENAI_API_KEY", originalAPIKey)
