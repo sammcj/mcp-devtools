@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -106,10 +107,15 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 
 	return mcp.NewTool(
 		"process_document",
-		mcp.WithDescription("Process documents (PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG) and convert them to structured Markdown with optional OCR, image extraction, and table processing. Supports hardware acceleration and intelligent caching."),
+		mcp.WithDescription("Process documents (PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG) and convert them to structured Markdown with optional OCR, image extraction, and table processing. Supports hardware acceleration, intelligent caching, and batch processing."),
 		mcp.WithString("source",
-			mcp.Required(),
-			mcp.Description("Document source: MUST be a fully qualified absolute file path (e.g., /Users/user/documents/file.pdf), complete URL (e.g., https://example.com/doc.pdf). Relative paths are NOT supported - always provide the complete absolute path to the file."),
+			mcp.Description("Document source: MUST be a fully qualified absolute file path (e.g., /Users/user/documents/file.pdf), complete URL (e.g., https://example.com/doc.pdf). Relative paths are NOT supported - always provide the complete absolute path to the file. For batch processing, use 'sources' instead."),
+		),
+		mcp.WithArray("sources",
+			mcp.Description("Multiple document sources for batch processing: Array of fully qualified absolute file paths or URLs. When provided, 'source' parameter is ignored."),
+		),
+		mcp.WithNumber("max_concurrency",
+			mcp.Description("Maximum number of documents to process concurrently in batch mode (default: CPU cores - 1, max: 10)"),
 		),
 		mcp.WithString("profile",
 			mcp.Description(profileDesc),
@@ -152,7 +158,12 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 		_ = t.cacheManager.PerformMaintenance(maxAge)
 	}()
 
-	// Parse and validate arguments
+	// Check for batch processing (sources array)
+	if sources, ok := args["sources"].([]interface{}); ok && len(sources) > 0 {
+		return t.executeBatch(ctx, args, sources)
+	}
+
+	// Parse and validate arguments for single document
 	req, err := t.parseRequest(args)
 	if err != nil {
 		return nil, fmt.Errorf("invalid request: %w", err)
@@ -1012,8 +1023,10 @@ func (t *DocumentProcessorTool) enhanceDiagramsWithLLM(diagrams []ExtractedDiagr
 		return diagrams, fmt.Errorf("failed to create LLM client: %w", err)
 	}
 
-	// Process each diagram
+	// Process each diagram and aggregate token usage
 	enhancedDiagrams := make([]ExtractedDiagram, len(diagrams))
+	var totalTokenUsage *TokenUsage
+
 	for i, diagram := range diagrams {
 		// Start with the original diagram
 		enhancedDiagrams[i] = diagram
@@ -1023,6 +1036,16 @@ func (t *DocumentProcessorTool) enhanceDiagramsWithLLM(diagrams []ExtractedDiagr
 		if err != nil {
 			// Return error instead of silently continuing - this was the bug!
 			return diagrams, fmt.Errorf("LLM analysis failed for diagram %s: %w", diagram.ID, err)
+		}
+
+		// Aggregate token usage
+		if analysis.TokenUsage != nil {
+			if totalTokenUsage == nil {
+				totalTokenUsage = &TokenUsage{}
+			}
+			totalTokenUsage.PromptTokens += analysis.TokenUsage.PromptTokens
+			totalTokenUsage.CompletionTokens += analysis.TokenUsage.CompletionTokens
+			totalTokenUsage.TotalTokens += analysis.TokenUsage.TotalTokens
 		}
 
 		// Update diagram with LLM analysis
@@ -1055,6 +1078,11 @@ func (t *DocumentProcessorTool) enhanceDiagramsWithLLM(diagrams []ExtractedDiagr
 		// Add LLM processing metadata
 		enhancedDiagrams[i].Properties["llm_enhanced"] = true
 		enhancedDiagrams[i].Properties["llm_processing_time"] = analysis.ProcessingTime.Seconds()
+
+		// Add token usage to diagram properties if available
+		if analysis.TokenUsage != nil {
+			enhancedDiagrams[i].Properties["llm_token_usage"] = analysis.TokenUsage
+		}
 	}
 
 	return enhancedDiagrams, nil
@@ -1071,12 +1099,12 @@ func (t *DocumentProcessorTool) getDebugInfo() map[string]interface{} {
 	// Environment variables related to document processing
 	envVars := map[string]interface{}{
 		// LLM Configuration
-		"DOCLING_VLM_API_URL":        maskSecret(os.Getenv("DOCLING_VLM_API_URL")),
-		"DOCLING_VLM_MODEL":          os.Getenv("DOCLING_VLM_MODEL"),
-		"DOCLING_LLM_OPENAI_API_KEY": maskSecret(os.Getenv("DOCLING_LLM_OPENAI_API_KEY")),
-		"DOCLING_LLM_MAX_TOKENS":     os.Getenv("DOCLING_LLM_MAX_TOKENS"),
-		"DOCLING_LLM_TEMPERATURE":    os.Getenv("DOCLING_LLM_TEMPERATURE"),
-		"DOCLING_LLM_TIMEOUT":        os.Getenv("DOCLING_LLM_TIMEOUT"),
+		"DOCLING_VLM_API_URL":     maskSecret(os.Getenv("DOCLING_VLM_API_URL")),
+		"DOCLING_VLM_MODEL":       os.Getenv("DOCLING_VLM_MODEL"),
+		"DOCLING_VLM_API_KEY":     maskSecret(os.Getenv("DOCLING_VLM_API_KEY")),
+		"DOCLING_LLM_MAX_TOKENS":  os.Getenv("DOCLING_LLM_MAX_TOKENS"),
+		"DOCLING_LLM_TEMPERATURE": os.Getenv("DOCLING_LLM_TEMPERATURE"),
+		"DOCLING_LLM_TIMEOUT":     os.Getenv("DOCLING_LLM_TIMEOUT"),
 
 		// Cache Configuration
 		"DOCLING_CACHE_MAX_AGE_HOURS": os.Getenv("DOCLING_CACHE_MAX_AGE_HOURS"),
@@ -1098,7 +1126,7 @@ func (t *DocumentProcessorTool) getDebugInfo() map[string]interface{} {
 		"configured":   IsLLMConfigured(),
 		"api_base_set": os.Getenv("DOCLING_VLM_API_URL") != "",
 		"model_set":    os.Getenv("DOCLING_VLM_MODEL") != "",
-		"api_key_set":  os.Getenv("DOCLING_LLM_OPENAI_API_KEY") != "",
+		"api_key_set":  os.Getenv("DOCLING_VLM_API_KEY") != "",
 	}
 
 	if IsLLMConfigured() {
@@ -1344,6 +1372,166 @@ func maskSecret(value string) string {
 	}
 	// Show first 4 and last 4 characters, mask the middle
 	return value[:4] + "..." + value[len(value)-4:]
+}
+
+// executeBatch processes multiple documents concurrently
+func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[string]interface{}, sources []interface{}) (*mcp.CallToolResult, error) {
+	startTime := time.Now()
+
+	// Convert sources to strings
+	var sourceStrings []string
+	for _, source := range sources {
+		if sourceStr, ok := source.(string); ok {
+			sourceStrings = append(sourceStrings, strings.TrimSpace(sourceStr))
+		}
+	}
+
+	if len(sourceStrings) == 0 {
+		return nil, fmt.Errorf("no valid sources provided")
+	}
+
+	// Determine concurrency limit
+	maxConcurrency := t.getMaxConcurrency(args)
+	if maxConcurrency > len(sourceStrings) {
+		maxConcurrency = len(sourceStrings)
+	}
+
+	// Create channels for work distribution
+	sourceChan := make(chan string, len(sourceStrings))
+	resultChan := make(chan *DocumentProcessingResponse, len(sourceStrings))
+
+	// Fill source channel
+	for _, source := range sourceStrings {
+		sourceChan <- source
+	}
+	close(sourceChan)
+
+	// Start worker goroutines
+	var wg sync.WaitGroup
+	for i := 0; i < maxConcurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for source := range sourceChan {
+				// Create individual request for this source
+				individualArgs := make(map[string]interface{})
+				for k, v := range args {
+					if k != "sources" { // Exclude sources array
+						individualArgs[k] = v
+					}
+				}
+				individualArgs["source"] = source
+
+				// Parse request
+				req, err := t.parseRequest(individualArgs)
+				if err != nil {
+					resultChan <- &DocumentProcessingResponse{
+						Source: source,
+						Error:  fmt.Sprintf("failed to parse request: %v", err),
+					}
+					continue
+				}
+
+				// Process document
+				response, err := t.processDocument(req)
+				if err != nil {
+					resultChan <- &DocumentProcessingResponse{
+						Source: source,
+						Error:  err.Error(),
+					}
+					continue
+				}
+
+				// Cache result if successful
+				if t.shouldUseCache(req) && response.Error == "" {
+					cacheKey := t.cacheManager.GenerateCacheKey(req)
+					_ = t.cacheManager.Set(cacheKey, response)
+				}
+
+				resultChan <- response
+			}
+		}()
+	}
+
+	// Wait for all workers to complete
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// Collect results
+	var results []DocumentProcessingResponse
+	for response := range resultChan {
+		results = append(results, *response)
+	}
+
+	// Create batch summary
+	summary := t.createBatchSummary(results)
+
+	// Create batch response
+	batchResponse := BatchProcessingResponse{
+		Results:   results,
+		Summary:   summary,
+		TotalTime: time.Since(startTime),
+		Timestamp: time.Now(),
+	}
+
+	return t.newToolResultJSON(batchResponse)
+}
+
+// getMaxConcurrency determines the maximum concurrency for batch processing
+func (t *DocumentProcessorTool) getMaxConcurrency(args map[string]interface{}) int {
+	// Check if max_concurrency is specified
+	if maxConc, ok := args["max_concurrency"].(float64); ok {
+		requested := int(maxConc)
+		if requested > 0 && requested <= 10 {
+			return requested
+		}
+	}
+
+	// Default: CPU cores - 1, minimum 1, maximum 10
+	cores := runtime.NumCPU()
+	defaultConcurrency := cores - 1
+	if defaultConcurrency < 1 {
+		defaultConcurrency = 1
+	}
+	if defaultConcurrency > 10 {
+		defaultConcurrency = 10
+	}
+
+	return defaultConcurrency
+}
+
+// createBatchSummary creates a summary of batch processing results
+func (t *DocumentProcessorTool) createBatchSummary(results []DocumentProcessingResponse) BatchSummary {
+	summary := BatchSummary{
+		TotalDocuments: len(results),
+	}
+
+	for _, result := range results {
+		if result.Error == "" {
+			summary.SuccessfulCount++
+
+			// Aggregate metadata
+			if result.Metadata != nil {
+				summary.TotalPages += result.Metadata.PageCount
+				summary.TotalWords += result.Metadata.WordCount
+			}
+
+			// Count images and tables
+			summary.TotalImages += len(result.Images)
+			summary.TotalTables += len(result.Tables)
+
+			// Count cache hits
+			if result.CacheHit {
+				summary.CacheHitCount++
+			}
+		} else {
+			summary.FailedCount++
+		}
+	}
+
+	return summary
 }
 
 // newToolResultJSON creates a new tool result with JSON content

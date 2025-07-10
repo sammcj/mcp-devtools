@@ -574,6 +574,13 @@ func (c *Config) GetScriptPath() string {
 		}
 	}
 
+	// Try embedded scripts as fallback
+	if IsEmbeddedScriptsAvailable() {
+		if embeddedPath, err := GetEmbeddedScriptPath(); err == nil {
+			return embeddedPath
+		}
+	}
+
 	// Last resort - return relative path (new location)
 	return "internal/tools/docprocessing/python/docling_processor.py"
 }

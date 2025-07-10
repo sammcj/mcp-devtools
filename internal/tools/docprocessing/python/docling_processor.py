@@ -59,10 +59,27 @@ console_handler.setFormatter(console_formatter)
 logger.addHandler(console_handler)
 
 def configure_accelerator():
-    """Configure the accelerator device for Docling."""
+    """Configure the accelerator device for Docling with configurable process count."""
     try:
-        # Try to use MPS (Metal Performance Shaders) on macOS first
+        import os
         import platform
+
+        # Get configurable accelerator processes (default: CPU cores - 1)
+        accelerator_processes = None
+        if os.getenv('DOCLING_ACCELERATOR_PROCESSES'):
+            try:
+                accelerator_processes = int(os.getenv('DOCLING_ACCELERATOR_PROCESSES'))
+                logger.info(f"Using configured accelerator processes: {accelerator_processes}")
+            except ValueError:
+                logger.warning("Invalid DOCLING_ACCELERATOR_PROCESSES value, using default")
+
+        if accelerator_processes is None:
+            # Default: CPU cores - 1, minimum 1
+            import multiprocessing
+            accelerator_processes = max(1, multiprocessing.cpu_count() - 1)
+            logger.info(f"Using default accelerator processes: {accelerator_processes} (CPU cores - 1)")
+
+        # Try to use MPS (Metal Performance Shaders) on macOS first
         if platform.system() == 'Darwin':
             try:
                 import torch
@@ -73,6 +90,9 @@ def configure_accelerator():
                         from docling.utils.accelerator_utils import AcceleratorDevice
                         if hasattr(settings.perf, 'accelerator_device'):
                             settings.perf.accelerator_device = AcceleratorDevice.MPS
+                        # Set accelerator processes if supported
+                        if hasattr(settings.perf, 'accelerator_processes'):
+                            settings.perf.accelerator_processes = accelerator_processes
                     except ImportError:
                         pass  # Settings not available, but MPS is still detected
                     return "mps"
@@ -89,6 +109,9 @@ def configure_accelerator():
                     from docling.utils.accelerator_utils import AcceleratorDevice
                     if hasattr(settings.perf, 'accelerator_device'):
                         settings.perf.accelerator_device = AcceleratorDevice.CUDA
+                    # Set accelerator processes if supported
+                    if hasattr(settings.perf, 'accelerator_processes'):
+                        settings.perf.accelerator_processes = accelerator_processes
                 except ImportError:
                     pass  # Settings not available, but CUDA is still detected
                 return "cuda"
@@ -101,6 +124,9 @@ def configure_accelerator():
             from docling.utils.accelerator_utils import AcceleratorDevice
             if hasattr(settings.perf, 'accelerator_device'):
                 settings.perf.accelerator_device = AcceleratorDevice.CPU
+            # Set accelerator processes if supported
+            if hasattr(settings.perf, 'accelerator_processes'):
+                settings.perf.accelerator_processes = accelerator_processes
         except ImportError:
             pass  # Settings not available
         return "cpu"
@@ -324,8 +350,8 @@ def process_document(args) -> Dict[str, Any]:
         # Configure image resolution and processing - apply consistently for all modes
         import os
 
-        # Get configurable image scale from environment variable
-        image_scale = float(os.getenv('DOCLING_IMAGE_SCALE', '2.0'))
+        # Get configurable image scale from environment variable (default: 3.0 for better quality)
+        image_scale = float(os.getenv('DOCLING_IMAGE_SCALE', '3.0'))
         image_scale = min(max(image_scale, 1.0), 4.0)  # Clamp between 1.0-4.0
 
         # Always set image scale for consistent quality
@@ -345,11 +371,23 @@ def process_document(args) -> Dict[str, Any]:
 
         # Configure Docling enrichments for better diagram/chart processing or image extraction
         if getattr(args, 'diagram_description', False) or getattr(args, 'chart_data_extraction', False) or getattr(args, 'extract_images', False):
-            # Enable picture classification to identify chart types
-            pipeline_options.do_picture_classification = True
+            # Check environment variables for disabling picture features (performance optimisation)
+            disable_picture_classification = os.getenv('DOCLING_DISABLE_PICTURE_CLASSIFICATION', 'false').lower() == 'true'
+            disable_picture_description = os.getenv('DOCLING_DISABLE_PICTURE_DESCRIPTION', 'false').lower() == 'true'
 
-            # Enable picture description for detailed captions
-            pipeline_options.do_picture_description = True
+            # Enable picture classification to identify chart types (unless disabled)
+            if not disable_picture_classification:
+                pipeline_options.do_picture_classification = True
+                logger.info("Picture classification enabled")
+            else:
+                logger.info("Picture classification disabled via DOCLING_DISABLE_PICTURE_CLASSIFICATION")
+
+            # Enable picture description for detailed captions (unless disabled)
+            if not disable_picture_description:
+                pipeline_options.do_picture_description = True
+                logger.info("Picture description enabled")
+            else:
+                logger.info("Picture description disabled via DOCLING_DISABLE_PICTURE_DESCRIPTION")
 
             # Configure vision model based on vision_mode
             vision_mode = getattr(args, 'vision_mode', 'standard')

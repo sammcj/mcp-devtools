@@ -15,12 +15,12 @@ import (
 
 // Environment variable constants for LLM integration
 const (
-	EnvOpenAIAPIBase  = "DOCLING_VLM_API_URL"        // e.g., "https://api.openai.com/v1"
-	EnvOpenAIModel    = "DOCLING_VLM_MODEL"          // e.g., "gpt-4-vision-preview"
-	EnvOpenAIAPIKey   = "DOCLING_LLM_OPENAI_API_KEY" // API key for the provider
-	EnvLLMMaxTokens   = "DOCLING_LLM_MAX_TOKENS"     // Maximum tokens for LLM response (default: 16384)
-	EnvLLMTemperature = "DOCLING_LLM_TEMPERATURE"    // Temperature for LLM inference (default: 0.1)
-	EnvLLMTimeout     = "DOCLING_LLM_TIMEOUT"        // Timeout for LLM requests in seconds (default: 240)
+	EnvOpenAIAPIBase  = "DOCLING_VLM_API_URL"     // e.g., "https://api.openai.com/v1"
+	EnvOpenAIModel    = "DOCLING_VLM_MODEL"       // e.g., "gpt-4-vision-preview"
+	EnvOpenAIAPIKey   = "DOCLING_VLM_API_KEY"     // API key for the provider (consistent with VLM naming)
+	EnvLLMMaxTokens   = "DOCLING_LLM_MAX_TOKENS"  // Maximum tokens for LLM response (default: 16384)
+	EnvLLMTemperature = "DOCLING_LLM_TEMPERATURE" // Temperature for LLM inference (default: 0.1)
+	EnvLLMTimeout     = "DOCLING_LLM_TIMEOUT"     // Timeout for LLM requests in seconds (default: 240)
 
 	// Prompt configuration environment variables
 	EnvPromptBase         = "DOCLING_LLM_PROMPT_BASE"         // Base prompt for diagram analysis
@@ -125,6 +125,7 @@ type DiagramAnalysis struct {
 	Confidence     float64                `json:"confidence"`
 	Properties     map[string]interface{} `json:"properties"`
 	ProcessingTime time.Duration          `json:"processing_time"`
+	TokenUsage     *TokenUsage            `json:"token_usage,omitempty"` // Token usage from LLM provider (if available)
 }
 
 // NewDiagramLLMClient creates a new LLM client for diagram analysis using OpenAI API
@@ -211,6 +212,15 @@ func (c *DiagramLLMClient) AnalyseDiagram(diagram *ExtractedDiagram) (*DiagramAn
 	analysis, err := c.parseAnalysisResponse(responseText, diagram)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse LLM response: %w", err)
+	}
+
+	// Extract token usage if available
+	if usage := response.Usage; usage.PromptTokens > 0 || usage.CompletionTokens > 0 || usage.TotalTokens > 0 {
+		analysis.TokenUsage = &TokenUsage{
+			PromptTokens:     int(usage.PromptTokens),
+			CompletionTokens: int(usage.CompletionTokens),
+			TotalTokens:      int(usage.TotalTokens),
+		}
 	}
 
 	// Validate generated Mermaid code if present

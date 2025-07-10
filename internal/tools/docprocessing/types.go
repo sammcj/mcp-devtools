@@ -14,7 +14,12 @@ const (
 	EnvVLMFallbackLocal = "DOCLING_VLM_FALLBACK_LOCAL" // Enable local model fallback (default: true)
 
 	// Image Processing Configuration
-	EnvImageScale = "DOCLING_IMAGE_SCALE" // Image resolution scale factor (default: 2.0, range: 1.0-4.0)
+	EnvImageScale = "DOCLING_IMAGE_SCALE" // Image resolution scale factor (default: 3.0, range: 1.0-4.0)
+
+	// Performance Optimisation Configuration
+	EnvDisablePictureClassification = "DOCLING_DISABLE_PICTURE_CLASSIFICATION" // Disable picture classification to speed up processing (default: false)
+	EnvDisablePictureDescription    = "DOCLING_DISABLE_PICTURE_DESCRIPTION"    // Disable picture description to speed up processing (default: false)
+	EnvAcceleratorProcesses         = "DOCLING_ACCELERATOR_PROCESSES"          // Number of accelerator processes (default: CPU cores - 1)
 )
 
 // ProcessingMode defines the type of document processing to perform
@@ -97,7 +102,7 @@ type DocumentProcessingRequest struct {
 	ChartDataExtraction      bool                 `json:"chart_data_extraction,omitempty"`       // Enable data extraction from charts and graphs
 	EnableRemoteServices     bool                 `json:"enable_remote_services,omitempty"`      // Allow communication with external vision model services
 	ConvertDiagramsToMermaid bool                 `json:"convert_diagrams_to_mermaid,omitempty"` // Convert detected diagrams to Mermaid syntax using AI vision models
-	GenerateDiagrams         bool                 `json:"generate_diagrams,omitempty"`           // Generate enhanced diagram analysis using external LLM (requires DOCLING_VLM_API_URL, DOCLING_VLM_MODEL, DOCLING_LLM_OPENAI_API_KEY environment variables)
+	GenerateDiagrams         bool                 `json:"generate_diagrams,omitempty"`           // Generate enhanced diagram analysis using external LLM (requires DOCLING_VLM_API_URL, DOCLING_VLM_MODEL, DOCLING_VLM_API_KEY environment variables)
 	ExtractImages            bool                 `json:"extract_images,omitempty"`              // Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts
 	Debug                    bool                 `json:"debug,omitempty"`                       // Return debug information including environment variables (secrets masked)
 }
@@ -205,6 +210,14 @@ type ProcessingInfo struct {
 	DoclingVersion       string               `json:"docling_version,omitempty"` // Docling version used
 	CacheKey             string               `json:"cache_key,omitempty"`       // Cache key used
 	Timestamp            time.Time            `json:"timestamp"`                 // Processing timestamp
+	TokenUsage           *TokenUsage          `json:"token_usage,omitempty"`     // Token usage from external LLM (if available)
+}
+
+// TokenUsage represents token consumption from external LLM providers
+type TokenUsage struct {
+	PromptTokens     int `json:"prompt_tokens,omitempty"`     // Tokens used in prompts
+	CompletionTokens int `json:"completion_tokens,omitempty"` // Tokens used in completions
+	TotalTokens      int `json:"total_tokens,omitempty"`      // Total tokens used
 }
 
 // BatchProcessingRequest represents a request to process multiple documents

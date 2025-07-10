@@ -65,7 +65,7 @@ DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
 # LLM Configuration (for advanced diagram processing)
 DOCLING_VLM_API_URL="http://localhost:11434/v1"
 DOCLING_VLM_MODEL="mistral-small3.2:24b"
-DOCLING_LLM_OPENAI_API_KEY="your-api-key-here"
+DOCLING_VLM_API_KEY="your-api-key-here"
 ```
 
 ## Usage
@@ -238,7 +238,7 @@ For diagram-to-Mermaid conversion, first configure external LLM integration:
 # Required environment variables
 export DOCLING_VLM_API_URL="http://localhost:11434/v1"   # Any OpenAI-compatible endpoint
 export DOCLING_VLM_MODEL="llava:latest"                     # Vision-capable model
-export DOCLING_LLM_OPENAI_API_KEY="your-api-key-here"            # API key
+export DOCLING_VLM_API_KEY="your-api-key-here"            # API key
 
 # Optional configuration
 export DOCLING_LLM_MAX_TOKENS="16384"        # Maximum tokens for LLM response
@@ -418,11 +418,11 @@ Processing performance varies by hardware:
 
 ### Profile Performance Comparison
 
-- **`basic`**: Fastest, 1-5 seconds for typical documents
-- **`text-and-image`**: Moderate, 5-15 seconds with image extraction
-- **`scanned`**: Slower, 10-30 seconds with OCR processing
-- **`llm-smoldocling`**: Moderate, 10-20 seconds with vision analysis
-- **`llm-external`**: Slowest, 15-60 seconds with full LLM processing
+- **`basic`**: Fastest
+- **`text-and-image`**: Moderate
+- **`scanned`**: Slower
+- **`llm-smoldocling`**: Moderate
+- **`llm-external`**: Slowest
 
 ## Use With Custom MITM Certs
 
@@ -517,7 +517,6 @@ Enable debug mode to see detailed processing information:
 - **Language Detection**: Auto-detect instead of requiring `ocr_languages`
 - **Processing Mode**: Auto-select based on document analysis
 - **Table Processing**: Always use optimal settings
-
 
 ## License
 

@@ -167,7 +167,7 @@ You can override the default provider by specifying the `provider` parameter in 
 - **Mermaid Generation**: Convert diagrams to editable Mermaid syntax using external LLM
 - **Auto-Save**: Automatically saves processed content to files by default
 
-**Note**: The document processor tool requires Python 3.10+ (ideally 3.13+) with the Docling library installed (`pip install docling`), mcp-devtools will attempt to install the package if it's unavailable, if you don't see the tool available in your client check that you have docling installed and Python in your path. See the [Document Processing README](internal/tools/docprocessing/README.md) for detailed installation and configuration instructions.
+**Note**: The document processor tool requires Python 3.10+ (ideally 3.13+) with the Docling library installed (`pip install docling`). If you don't see the tool available in your client, check that you have docling installed and Python in your path. See the [Document Processing README](internal/tools/docprocessing/README.md) for detailed installation and configuration instructions.
 
 ### shadcn ui Components
 

@@ -33,7 +33,7 @@ func TestLLMClient_Connectivity(t *testing.T) {
 	// Get configuration details for logging
 	apiBase := os.Getenv("DOCLING_VLM_API_URL")
 	modelName := os.Getenv("DOCLING_VLM_MODEL")
-	apiKey := os.Getenv("DOCLING_LLM_OPENAI_API_KEY")
+	apiKey := os.Getenv("DOCLING_VLM_API_KEY")
 
 	t.Logf("Testing LLM connectivity with:")
 	t.Logf("  API Base: %s", apiBase)
@@ -172,7 +172,7 @@ func TestLLMClient_Configuration(t *testing.T) {
 		// Check required environment variables
 		apiBase := os.Getenv("DOCLING_VLM_API_URL")
 		modelName := os.Getenv("DOCLING_VLM_MODEL")
-		apiKey := os.Getenv("DOCLING_LLM_OPENAI_API_KEY")
+		apiKey := os.Getenv("DOCLING_VLM_API_KEY")
 
 		t.Logf("LLM Configuration:")
 		t.Logf("  API Base: %s", apiBase)
@@ -185,7 +185,7 @@ func TestLLMClient_Configuration(t *testing.T) {
 
 		assert.NotEmpty(t, apiBase, "DOCLING_VLM_API_URL should be set")
 		assert.NotEmpty(t, modelName, "DOCLING_VLM_MODEL should be set")
-		assert.NotEmpty(t, apiKey, "DOCLING_LLM_OPENAI_API_KEY should be set")
+		assert.NotEmpty(t, apiKey, "DOCLING_VLM_API_KEY should be set")
 		assert.NotEqual(t, "your-api-key-here", apiKey, "API key should be replaced with actual key")
 	})
 
@@ -207,12 +207,12 @@ func TestLLMClient_NoConfiguration(t *testing.T) {
 	// Save current environment variables
 	originalAPIBase := os.Getenv("DOCLING_VLM_API_URL")
 	originalModel := os.Getenv("DOCLING_VLM_MODEL")
-	originalAPIKey := os.Getenv("DOCLING_LLM_OPENAI_API_KEY")
+	originalAPIKey := os.Getenv("DOCLING_VLM_API_KEY")
 
 	// Clear LLM environment variables
 	_ = os.Unsetenv("DOCLING_VLM_API_URL")
 	_ = os.Unsetenv("DOCLING_VLM_MODEL")
-	_ = os.Unsetenv("DOCLING_LLM_OPENAI_API_KEY")
+	_ = os.Unsetenv("DOCLING_VLM_API_KEY")
 
 	// Restore environment variables after test
 	defer func() {
@@ -223,7 +223,7 @@ func TestLLMClient_NoConfiguration(t *testing.T) {
 			_ = os.Setenv("DOCLING_VLM_MODEL", originalModel)
 		}
 		if originalAPIKey != "" {
-			_ = os.Setenv("DOCLING_LLM_OPENAI_API_KEY", originalAPIKey)
+			_ = os.Setenv("DOCLING_VLM_API_KEY", originalAPIKey)
 		}
 	}()
 
