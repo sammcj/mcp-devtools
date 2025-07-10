@@ -455,10 +455,10 @@ func (t *DocumentProcessorTool) applyProfile(req *DocumentProcessingRequest) {
 
 	case ProfileLLMExternal:
 		// Text and image extraction enhanced with external vision LLM for diagram conversion to Mermaid
-		// Only available when DOCLING_LLM_* environment variables are configured
+		// Only available when DOCLING_VLM_* environment variables are configured
 		if IsLLMConfigured() {
 			req.ProcessingMode = ProcessingModeAdvanced
-			req.VisionMode = VisionModeSmolDocling
+			req.VisionMode = VisionModeAdvanced // Use advanced mode to trigger external API
 			req.PreserveImages = true
 			req.DiagramDescription = true
 			req.ChartDataExtraction = true

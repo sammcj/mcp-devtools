@@ -454,7 +454,7 @@ def process_document(args) -> Dict[str, Any]:
                         headers={
                             'Authorization': f'Bearer {vlm_api_key}',
                         },
-                        prompt="Convert this page to markdown with detailed descriptions of any diagrams, charts, or images.",
+                        prompt="Analyse this document page and convert any diagrams, charts, or flowcharts to Mermaid syntax. For each diagram found, generate valid Mermaid code and embed it in the markdown using ```mermaid code blocks. Describe the diagram type (flowchart, architecture, chart, etc.) and provide detailed Mermaid syntax that accurately represents the structure, components, and relationships shown in the image.",
                         timeout=vlm_timeout,
                         scale=1.0,
                         response_format=ResponseFormat.MARKDOWN,
