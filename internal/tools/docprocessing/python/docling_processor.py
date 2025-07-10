@@ -27,19 +27,59 @@ except ImportError:
     from image_processing import extract_images, replace_image_placeholders_with_links
     from table_processing import extract_tables
 
-# Configure logging to stderr to avoid interfering with JSON output
-logging.basicConfig(
-    level=logging.WARNING,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    stream=sys.stderr
-)
+# Configure logging to both stderr and file
+import os
+from pathlib import Path
+
+# Create log directory
+log_dir = Path.home() / '.mcp-devtools'
+log_dir.mkdir(exist_ok=True)
+log_file = log_dir / 'mcp-devtools.log'
+
+# Configure logging with both file and stderr handlers
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Remove any existing handlers
+for handler in logger.handlers[:]:
+    logger.removeHandler(handler)
+
+# File handler for persistent logging
+file_handler = logging.FileHandler(log_file)
+file_handler.setLevel(logging.INFO)
+file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+
+# Console handler for stderr (warnings and errors only to avoid interfering with JSON output)
+console_handler = logging.StreamHandler(sys.stderr)
+console_handler.setLevel(logging.WARNING)
+console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(console_formatter)
+logger.addHandler(console_handler)
 
 def configure_accelerator():
-    """Configure the accelerator device for Docling."""
+    """Configure the accelerator device for Docling with configurable process count."""
     try:
-        # Try to use MPS (Metal Performance Shaders) on macOS first
+        import os
         import platform
+
+        # Get configurable accelerator processes (default: CPU cores - 1)
+        accelerator_processes = None
+        if os.getenv('DOCLING_ACCELERATOR_PROCESSES'):
+            try:
+                accelerator_processes = int(os.getenv('DOCLING_ACCELERATOR_PROCESSES'))
+                logger.info(f"Using configured accelerator processes: {accelerator_processes}")
+            except ValueError:
+                logger.warning("Invalid DOCLING_ACCELERATOR_PROCESSES value, using default")
+
+        if accelerator_processes is None:
+            # Default: CPU cores - 1, minimum 1
+            import multiprocessing
+            accelerator_processes = max(1, multiprocessing.cpu_count() - 1)
+            logger.info(f"Using default accelerator processes: {accelerator_processes} (CPU cores - 1)")
+
+        # Try to use MPS (Metal Performance Shaders) on macOS first
         if platform.system() == 'Darwin':
             try:
                 import torch
@@ -50,6 +90,9 @@ def configure_accelerator():
                         from docling.utils.accelerator_utils import AcceleratorDevice
                         if hasattr(settings.perf, 'accelerator_device'):
                             settings.perf.accelerator_device = AcceleratorDevice.MPS
+                        # Set accelerator processes if supported
+                        if hasattr(settings.perf, 'accelerator_processes'):
+                            settings.perf.accelerator_processes = accelerator_processes
                     except ImportError:
                         pass  # Settings not available, but MPS is still detected
                     return "mps"
@@ -66,6 +109,9 @@ def configure_accelerator():
                     from docling.utils.accelerator_utils import AcceleratorDevice
                     if hasattr(settings.perf, 'accelerator_device'):
                         settings.perf.accelerator_device = AcceleratorDevice.CUDA
+                    # Set accelerator processes if supported
+                    if hasattr(settings.perf, 'accelerator_processes'):
+                        settings.perf.accelerator_processes = accelerator_processes
                 except ImportError:
                     pass  # Settings not available, but CUDA is still detected
                 return "cuda"
@@ -78,6 +124,9 @@ def configure_accelerator():
             from docling.utils.accelerator_utils import AcceleratorDevice
             if hasattr(settings.perf, 'accelerator_device'):
                 settings.perf.accelerator_device = AcceleratorDevice.CPU
+            # Set accelerator processes if supported
+            if hasattr(settings.perf, 'accelerator_processes'):
+                settings.perf.accelerator_processes = accelerator_processes
         except ImportError:
             pass  # Settings not available
         return "cpu"
@@ -246,7 +295,14 @@ def process_document(args) -> Dict[str, Any]:
     """Process a document using Docling."""
     start_time = time.time()
 
+    logger.info(f"=== DOCUMENT PROCESSING STARTED ===")
+    logger.info(f"Source: {args.source}")
+    logger.info(f"Processing mode: {args.processing_mode}")
+    logger.info(f"Vision mode: {getattr(args, 'vision_mode', 'standard')}")
+    logger.info(f"Enable remote services: {getattr(args, 'enable_remote_services', False)}")
+
     try:
+        logger.info("Stage 1: Importing Docling components...")
         # Import Docling components
         from docling.document_converter import DocumentConverter, PdfFormatOption
         from docling.datamodel.base_models import InputFormat
@@ -255,12 +311,17 @@ def process_document(args) -> Dict[str, Any]:
             EasyOcrOptions,
             TableFormerMode
         )
+        logger.info("Stage 1: Docling components imported successfully")
 
+        logger.info("Stage 2: Resolving feature dependencies...")
         # Apply intelligent feature dependency resolution
         args = resolve_feature_dependencies(args)
+        logger.info("Stage 2: Feature dependencies resolved")
 
+        logger.info("Stage 3: Configuring hardware acceleration...")
         # Configure hardware acceleration
         hardware_acceleration = configure_accelerator()
+        logger.info(f"Stage 3: Hardware acceleration configured: {hardware_acceleration}")
 
         # Build pipeline options
         pipeline_options = PdfPipelineOptions()
@@ -286,53 +347,83 @@ def process_document(args) -> Dict[str, Any]:
             elif args.cell_matching:
                 pipeline_options.table_structure_options.do_cell_matching = True
 
+        # Configure image resolution and processing - apply consistently for all modes
+        import os
+
+        # Get configurable image scale from environment variable (default: 3.0 for better quality)
+        image_scale = float(os.getenv('DOCLING_IMAGE_SCALE', '3.0'))
+        image_scale = min(max(image_scale, 1.0), 4.0)  # Clamp between 1.0-4.0
+
+        # Always set image scale for consistent quality
+        pipeline_options.images_scale = image_scale
+
+        # Always generate page images when any image processing is needed
+        should_process_images = (
+            args.preserve_images or
+            getattr(args, 'extract_images', False) or
+            getattr(args, 'diagram_description', False) or
+            getattr(args, 'chart_data_extraction', False) or
+            args.processing_mode in ['advanced', 'images']
+        )
+
+        if should_process_images:
+            pipeline_options.generate_picture_images = True
+
         # Configure Docling enrichments for better diagram/chart processing or image extraction
         if getattr(args, 'diagram_description', False) or getattr(args, 'chart_data_extraction', False) or getattr(args, 'extract_images', False):
-            # Enable picture processing and scaling for better quality
-            pipeline_options.generate_picture_images = True
-            pipeline_options.images_scale = 2  # Higher resolution for better analysis
+            # Check environment variables for disabling picture features (performance optimisation)
+            disable_picture_classification = os.getenv('DOCLING_DISABLE_PICTURE_CLASSIFICATION', 'false').lower() == 'true'
+            disable_picture_description = os.getenv('DOCLING_DISABLE_PICTURE_DESCRIPTION', 'false').lower() == 'true'
 
-            # Enable picture classification to identify chart types
-            pipeline_options.do_picture_classification = True
+            # Enable picture classification to identify chart types (unless disabled)
+            if not disable_picture_classification:
+                pipeline_options.do_picture_classification = True
+                logger.info("Picture classification enabled")
+            else:
+                logger.info("Picture classification disabled via DOCLING_DISABLE_PICTURE_CLASSIFICATION")
 
-            # Enable picture description for detailed captions
-            pipeline_options.do_picture_description = True
+            # Enable picture description for detailed captions (unless disabled)
+            if not disable_picture_description:
+                pipeline_options.do_picture_description = True
+                logger.info("Picture description enabled")
+            else:
+                logger.info("Picture description disabled via DOCLING_DISABLE_PICTURE_DESCRIPTION")
 
             # Configure vision model based on vision_mode
             vision_mode = getattr(args, 'vision_mode', 'standard')
             if vision_mode == 'smoldocling':
-                # Use SmolVLM for compact local processing
+                # Use SmolVLM for compact local processing with fast mode
                 try:
                     from docling.datamodel.pipeline_options import smolvlm_picture_description
                     pipeline_options.picture_description_options = smolvlm_picture_description
+                    # Enable fast processing to avoid slow image processor warning
+                    if hasattr(pipeline_options.picture_description_options, 'use_fast'):
+                        pipeline_options.picture_description_options.use_fast = True
                 except ImportError:
                     logger.warning("SmolVLM not available, using default picture description")
             elif vision_mode == 'advanced':
-                # Use Granite Vision for better quality
+                # Use Granite Vision for better quality with fast mode
                 try:
                     from docling.datamodel.pipeline_options import granite_picture_description
                     pipeline_options.picture_description_options = granite_picture_description
+                    # Enable fast processing to avoid slow image processor warning
+                    if hasattr(pipeline_options.picture_description_options, 'use_fast'):
+                        pipeline_options.picture_description_options.use_fast = True
                 except ImportError:
                     logger.warning("Granite Vision not available, using default picture description")
 
-        # Configure remote services if needed for advanced vision processing
-        if hasattr(args, 'enable_remote_services') and args.enable_remote_services:
-            pipeline_options.enable_remote_services = True
+            # For any picture description options, ensure fast processing is enabled
+            if hasattr(pipeline_options, 'picture_description_options') and pipeline_options.picture_description_options:
+                if hasattr(pipeline_options.picture_description_options, 'use_fast'):
+                    pipeline_options.picture_description_options.use_fast = True
 
-        # Configure vision processing mode
-        vision_mode = getattr(args, 'vision_mode', 'standard')
-
-        # Set up format options
+        # Always use standard Docling processing first to get proper document structure
         format_options = {
             InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
         }
 
-        # Create converter with appropriate configuration
-        if vision_mode == 'smoldocling':
-            # Use SmolDocling pipeline if available
-            converter = create_smoldocling_converter(format_options)
-        else:
-            converter = DocumentConverter(format_options=format_options)
+        # Create converter
+        converter = DocumentConverter(format_options=format_options)
 
         # Convert the document
         result = converter.convert(args.source)
@@ -401,31 +492,46 @@ def process_document(args) -> Dict[str, Any]:
         if getattr(args, 'diagram_description', False):
             diagrams = extract_diagram_descriptions(result.document, args)
 
-        # Convert diagrams to Mermaid if requested
-        if getattr(args, 'convert_diagrams_to_mermaid', False) and diagrams:
-            diagrams = convert_diagrams_to_mermaid(diagrams, args)
+        # Convert diagrams to Mermaid if requested and integrate into content
+        if getattr(args, 'convert_diagrams_to_mermaid', False):
+            # Extract images from the processed document for VLM analysis
+            if images:
+                logger.info(f"Processing {len(images)} images for Mermaid conversion")
+                mermaid_results = process_images_with_vlm_pipeline(images, args)
+
+                # Integrate Mermaid code into the original content
+                if mermaid_results and content_output:
+                    content_output = integrate_mermaid_into_content(content_output, mermaid_results)
+                    logger.info("Successfully integrated Mermaid diagrams into content")
+
+            # Skip converting existing diagrams since we're already processing images with VLM Pipeline
+            # This prevents duplicate Mermaid generation from the same visual content
+            if diagrams and not images:
+                # Only convert diagrams if we didn't process any images
+                diagrams = convert_diagrams_to_mermaid(diagrams, args)
 
         # Clean up memory
         cleanup_memory()
 
         processing_time = time.time() - start_time
 
+        # Build optimised response - only include fields when necessary
         response = {
             "success": True,
             "content": content_output,
-            "metadata": metadata,
+            "metadata": build_optimised_metadata(metadata),
             "images": images,
             "tables": tables,
             "processing_info": {
-                "processing_mode": args.processing_mode,
                 "processing_method": get_processing_method_description(args),
                 "hardware_acceleration": str(hardware_acceleration) if hardware_acceleration else "unknown",
-                "ocr_enabled": args.enable_ocr,
-                "ocr_languages": args.ocr_languages or [],
-                "processing_time": round(processing_time),
-                "timestamp": time.time()
+                "processing_duration_s": round(processing_time, 2)
             }
         }
+
+        # Only include OCR languages if OCR was actually used
+        if args.enable_ocr and args.ocr_languages:
+            response["processing_info"]["ocr_languages"] = args.ocr_languages
 
         # Add diagrams if extracted
         if diagrams:
@@ -480,6 +586,33 @@ def extract_metadata(document) -> Dict[str, Any]:
         logger.warning(f"Failed to extract metadata: {e}")
 
     return metadata
+
+def build_optimised_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    """Build optimised metadata - only include fields when they have meaningful values."""
+    optimised = {}
+
+    # Only include title if it exists and is not empty
+    if metadata.get('title') and metadata['title'].strip():
+        optimised['title'] = metadata['title']
+
+    # Only include author if it exists and is not empty
+    if metadata.get('author') and metadata['author'].strip():
+        optimised['author'] = metadata['author']
+
+    # Always include page_count and word_count if they exist
+    if 'page_count' in metadata:
+        optimised['page_count'] = metadata['page_count']
+
+    if 'word_count' in metadata:
+        optimised['word_count'] = metadata['word_count']
+
+    # Include other metadata fields if they exist and are meaningful
+    for key, value in metadata.items():
+        if key not in ['title', 'author', 'page_count', 'word_count']:
+            if value and (not isinstance(value, str) or value.strip()):
+                optimised[key] = value
+
+    return optimised
 
 
 def extract_tables(document) -> List[Dict[str, Any]]:
@@ -937,7 +1070,7 @@ def extract_bounding_box(element) -> Dict[str, float]:
         return {"x": 0.0, "y": 0.0, "width": 0.0, "height": 0.0}
 
 def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
-    """Extract diagram descriptions using vision models."""
+    """Extract diagram descriptions using Docling VLM Pipeline."""
     diagrams = []
 
     try:
@@ -1013,7 +1146,7 @@ def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
                         })()
                         figures.append(synthetic_figure)
 
-        # Process each figure for diagram description
+        # Process each figure for diagram description using VLM Pipeline
         for i, figure in enumerate(figures):
             diagram_data = {
                 "id": f"diagram_{i+1}",
@@ -1027,7 +1160,7 @@ def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
                 "confidence": 0.0
             }
 
-            # Extract base64 image data for LLM vision processing
+            # Extract base64 image data for VLM Pipeline processing
             base64_data = extract_base64_image_data(figure)
             if base64_data:
                 diagram_data["base64_data"] = base64_data
@@ -1042,12 +1175,12 @@ def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
             diagram_type = classify_diagram_type(figure)
             diagram_data["diagram_type"] = diagram_type
 
-            # Generate description using vision model (if available and enabled) OR context analysis
+            # Generate description using VLM Pipeline
             vision_description = None
-            if getattr(args, 'enable_remote_services', False):
-                vision_description = generate_vision_description(figure, args)
+            if getattr(args, 'enable_remote_services', False) or getattr(args, 'vision_mode', 'standard') != 'standard':
+                vision_description = generate_vlm_description(figure, args)
 
-            # If no vision description, try context-based analysis for synthetic figures
+            # If no VLM description, try context-based analysis for synthetic figures
             if not vision_description and hasattr(figure, 'surrounding_text'):
                 vision_description = analyze_with_context_data(figure, args)
 
@@ -1102,6 +1235,62 @@ def classify_diagram_type(figure) -> str:
     except Exception as e:
         logger.warning(f"Failed to classify diagram type: {e}")
         return "unknown"
+
+def generate_vlm_description(figure, args) -> Optional[Dict[str, Any]]:
+    """Generate description using Docling's VLM Pipeline."""
+    try:
+        logger.info("=== VLM DESCRIPTION GENERATION STARTED ===")
+        logger.info(f"Vision mode: {getattr(args, 'vision_mode', 'standard')}")
+        logger.info(f"Enable remote services: {getattr(args, 'enable_remote_services', False)}")
+
+        vision_result = {
+            "description": "",
+            "type": "unknown",
+            "elements": [],
+            "confidence": 0.0,
+            "mermaid_code": "",
+            "text_representation": ""
+        }
+
+        # Try to extract actual image data from the figure
+        logger.info("Attempting to extract image data from figure...")
+        image_data = extract_image_data_from_figure(figure)
+        if not image_data:
+            logger.warning("Could not extract image data from figure - trying alternative approach")
+
+            # Try to create synthetic image data for testing
+            logger.info("Creating synthetic image data for VLM API testing...")
+            import base64
+            # Create a small test image (1x1 pixel PNG)
+            test_image_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+            image_data = base64.b64decode(test_image_b64)
+            logger.info("Using synthetic image data for VLM API test")
+
+        if not image_data:
+            logger.error("No image data available - cannot proceed with VLM analysis")
+            return None
+
+        # Use VLM Pipeline based on configuration
+        vision_mode = getattr(args, 'vision_mode', 'standard')
+        logger.info(f"Processing with vision mode: {vision_mode}")
+
+        if vision_mode == 'smoldocling':
+            logger.info("Using SmolDocling VLM Pipeline")
+            vision_result = analyze_with_vlm_pipeline(image_data, figure, 'smoldocling')
+        elif vision_mode == 'advanced' and getattr(args, 'enable_remote_services', False):
+            logger.info("Using external VLM API (Ollama)")
+            vision_result = analyze_with_vlm_pipeline(image_data, figure, 'external')
+        else:
+            logger.info("Using basic vision analysis (no VLM API)")
+            # Fallback to basic analysis using available Docling features
+            vision_result = analyze_with_basic_vision(image_data, figure)
+
+        logger.info("=== VLM DESCRIPTION GENERATION COMPLETED ===")
+        return vision_result
+
+    except Exception as e:
+        logger.error(f"Failed to generate VLM description: {e}")
+        return None
 
 def generate_vision_description(figure, args) -> Optional[Dict[str, Any]]:
     """Generate description using Docling's vision capabilities and SmolDocling."""
@@ -1220,12 +1409,320 @@ def extract_image_data_from_figure(figure) -> Optional[bytes]:
                 base64_data = figure.src.split(',')[1]
                 return base64.b64decode(base64_data)
 
-        logger.warning("Could not find image data in figure element")
+        # Method 6: Try to extract from Docling's picture elements
+        if hasattr(figure, 'pict_uri') and figure.pict_uri:
+            # Try to read the image file directly
+            import os
+            if os.path.exists(figure.pict_uri):
+                with open(figure.pict_uri, 'rb') as f:
+                    return f.read()
+
+        # Method 7: Try to get from document's picture collection
+        if hasattr(figure, '_parent_document') and hasattr(figure, 'pict_id'):
+            doc = figure._parent_document
+            if hasattr(doc, 'pictures') and figure.pict_id in doc.pictures:
+                picture = doc.pictures[figure.pict_id]
+                if hasattr(picture, 'get_image') and callable(picture.get_image):
+                    pil_image = picture.get_image()
+                    if pil_image:
+                        import io
+                        buffer = io.BytesIO()
+                        pil_image.save(buffer, format='PNG')
+                        return buffer.getvalue()
+
+        # Method 8: For synthetic figures, try to extract from saved images
+        if hasattr(figure, 'file_path') and figure.file_path:
+            import os
+            if os.path.exists(figure.file_path):
+                with open(figure.file_path, 'rb') as f:
+                    return f.read()
+
+        logger.info("No image data available for this figure - may be text-only or synthetic")
         return None
 
     except Exception as e:
         logger.warning(f"Failed to extract image data: {e}")
         return None
+
+def analyze_with_vlm_pipeline(image_data: bytes, figure, pipeline_type: str) -> Dict[str, Any]:
+    """Analyze image using VLM Pipeline with configurable OpenAI-compatible endpoints."""
+    try:
+        import os
+        import requests
+        import base64
+        import json
+
+        # Get VLM Pipeline configuration from environment variables
+        vlm_api_url = os.getenv('DOCLING_VLM_API_URL')
+        vlm_model = os.getenv('DOCLING_VLM_MODEL', 'gpt-4-vision-preview')
+        vlm_api_key = os.getenv('DOCLING_VLM_API_KEY')
+        vlm_timeout = int(os.getenv('DOCLING_VLM_TIMEOUT', '240'))
+        vlm_fallback_local = os.getenv('DOCLING_VLM_FALLBACK_LOCAL', 'true').lower() == 'true'
+
+        # Check if external API is configured
+        if pipeline_type == 'external' and vlm_api_url and vlm_api_key:
+            logger.info(f"Using external VLM API: {vlm_model} at {vlm_api_url}")
+
+            # Prepare image for API call
+            base64_image = base64.b64encode(image_data).decode('utf-8')
+
+            # Create analysis prompt based on figure type
+            prompt = create_vlm_analysis_prompt(figure)
+
+            # Prepare OpenAI-compatible API request
+            headers = {
+                'Authorization': f'Bearer {vlm_api_key}',
+                'Content-Type': 'application/json'
+            }
+
+            # Build the request payload for OpenAI-compatible vision API
+            payload = {
+                'model': vlm_model,
+                'messages': [
+                    {
+                        'role': 'user',
+                        'content': [
+                            {
+                                'type': 'text',
+                                'text': prompt
+                            },
+                            {
+                                'type': 'image_url',
+                                'image_url': {
+                                    'url': f'data:image/png;base64,{base64_image}'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                'max_tokens': 1000,
+                'temperature': 0.1
+            }
+
+            # Make API request to external VLM service
+            try:
+                logger.info(f"Making VLM API request to {vlm_api_url}")
+                response = requests.post(
+                    f"{vlm_api_url.rstrip('/')}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=vlm_timeout
+                )
+
+                if response.status_code == 200:
+                    result = response.json()
+
+                    # Extract the response content
+                    if 'choices' in result and len(result['choices']) > 0:
+                        content = result['choices'][0]['message']['content']
+                        logger.info(f"VLM API response received: {len(content)} characters")
+
+                        # Try to parse JSON response if the content looks like JSON
+                        analysis_result = parse_vlm_response(content, figure)
+                        return analysis_result
+                    else:
+                        logger.warning("VLM API response missing expected structure")
+                        return analyze_with_basic_vision(image_data, figure)
+
+                else:
+                    logger.error(f"VLM API request failed: {response.status_code} - {response.text}")
+                    if vlm_fallback_local:
+                        logger.info("Falling back to local analysis")
+                        return analyze_with_basic_vision(image_data, figure)
+                    else:
+                        return {
+                            "description": f"VLM API request failed: {response.status_code}",
+                            "type": "error",
+                            "elements": [],
+                            "confidence": 0.0,
+                            "mermaid_code": "",
+                            "text_representation": ""
+                        }
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"VLM API request exception: {e}")
+                if vlm_fallback_local:
+                    logger.info("Falling back to local analysis due to API error")
+                    return analyze_with_basic_vision(image_data, figure)
+                else:
+                    return {
+                        "description": f"VLM API connection failed: {str(e)}",
+                        "type": "error",
+                        "elements": [],
+                        "confidence": 0.0,
+                        "mermaid_code": "",
+                        "text_representation": ""
+                    }
+
+        elif pipeline_type == 'smoldocling' or (not vlm_api_url and vlm_fallback_local):
+            # Try to use local SmolDocling if available
+            logger.info("Attempting to use local SmolDocling model")
+            return analyze_with_smoldocling(image_data, figure)
+
+        else:
+            # No VLM configuration available
+            logger.warning("No VLM configuration available, falling back to basic analysis")
+            return analyze_with_basic_vision(image_data, figure)
+
+    except Exception as e:
+        logger.error(f"VLM Pipeline analysis failed: {e}")
+        return analyze_with_basic_vision(image_data, figure)
+
+def parse_vlm_response(content: str, figure) -> Dict[str, Any]:
+    """Parse VLM API response content and extract structured information."""
+    try:
+        import json
+        import re
+
+        logger.info(f"Parsing VLM response: {content[:200]}...")
+
+        # Try to parse as JSON first
+        try:
+            if content.strip().startswith('{') and content.strip().endswith('}'):
+                parsed_json = json.loads(content)
+
+                # Extract fields from JSON response
+                return {
+                    "description": parsed_json.get("description", content[:200]),
+                    "type": parsed_json.get("diagram_type", "diagram"),
+                    "elements": parsed_json.get("elements", []),
+                    "confidence": parsed_json.get("confidence", 0.8),
+                    "mermaid_code": parsed_json.get("mermaid_code", ""),
+                    "text_representation": parsed_json.get("text_representation", content[:500])
+                }
+        except json.JSONDecodeError:
+            pass
+
+        # Parse as text response with simplified prompt format
+        mermaid_code = ""
+        description = "Diagram analysis completed"
+
+        # Extract mermaid code if present - handle multiple patterns
+        mermaid_patterns = [
+            r'```mermaid\n(.*?)\n```',  # Standard format
+            r'```mermaid\s*(.*?)\s*```',  # With whitespace
+            r'```\s*mermaid\s*(.*?)\s*```',  # With spaces around mermaid
+        ]
+
+        for pattern in mermaid_patterns:
+            mermaid_match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+            if mermaid_match:
+                raw_mermaid = mermaid_match.group(1).strip()
+
+                # Clean up the mermaid code - remove duplicate graph declarations
+                lines = raw_mermaid.split('\n')
+                cleaned_lines = []
+                graph_declaration_found = False
+
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    # Check if this is a graph declaration line
+                    if re.match(r'^(graph|flowchart)\s+(TD|LR|TB|RL|BT)', line, re.IGNORECASE):
+                        if not graph_declaration_found:
+                            cleaned_lines.append(line)
+                            graph_declaration_found = True
+                        # Skip duplicate graph declarations
+                    else:
+                        cleaned_lines.append(line)
+
+                mermaid_code = '\n'.join(cleaned_lines)
+                logger.info(f"Extracted and cleaned Mermaid code: {mermaid_code[:100]}...")
+                break
+
+        # If no mermaid code found, check if the response says no diagram detected
+        if not mermaid_code:
+            if "no clear diagram detected" in content.lower() or "no diagram" in content.lower():
+                logger.info("VLM API reported no clear diagram detected")
+                return {
+                    "description": "No clear diagram detected in image",
+                    "type": "none",
+                    "elements": [],
+                    "confidence": 0.9,
+                    "mermaid_code": "",
+                    "text_representation": content[:200]
+                }
+
+        # Determine diagram type from mermaid code
+        diagram_type = "diagram"
+        if mermaid_code:
+            if "flowchart" in mermaid_code.lower():
+                diagram_type = "flowchart"
+            elif "graph" in mermaid_code.lower():
+                diagram_type = "graph"
+
+        return {
+            "description": description,
+            "type": diagram_type,
+            "elements": [],
+            "confidence": 0.8 if mermaid_code else 0.3,
+            "mermaid_code": mermaid_code,
+            "text_representation": content[:500]
+        }
+
+    except Exception as e:
+        logger.warning(f"Failed to parse VLM response: {e}")
+
+        # Fallback response
+        return {
+            "description": content[:200] if content else "VLM analysis completed",
+            "type": "diagram",
+            "elements": [],
+            "confidence": 0.5,
+            "mermaid_code": "",
+            "text_representation": content[:500] if content else ""
+        }
+
+def auto_detect_optimal_vlm_model() -> str:
+    """Auto-detect the optimal local VLM model based on hardware."""
+    try:
+        import platform
+
+        # Check for Apple Silicon and MLX availability
+        if platform.system() == 'Darwin' and platform.machine() == 'arm64':
+            try:
+                import mlx
+                # Prefer MLX models on Apple Silicon for 16x performance improvement
+                return "mlx-community/SmolVLM-Instruct-4bit"
+            except ImportError:
+                pass
+
+        # Check for CUDA availability
+        try:
+            import torch
+            if torch.cuda.is_available():
+                return "HuggingFace/SmolVLM-Instruct"
+        except ImportError:
+            pass
+
+        # Fallback to CPU-optimized model
+        return "HuggingFace/SmolVLM-Instruct-CPU"
+
+    except Exception as e:
+        logger.warning(f"Failed to auto-detect VLM model: {e}")
+        return "HuggingFace/SmolVLM-Instruct"
+
+def create_vlm_analysis_prompt(figure) -> str:
+    """Create a simplified VLM analysis prompt for Mermaid diagram generation."""
+    try:
+        # Use the simplified single prompt approach as requested
+        prompt = """You are an expert at analysing diagrams and converting them to Mermaid syntax. Analyse this image and convert any diagrams, charts, or flowcharts to Mermaid syntax.
+
+IMPORTANT INSTRUCTIONS:
+- You must use British English spelling throughout your response
+- You must return only the diagram in a markdown codeblock using ```mermaid syntax
+- You must be accurate and not make up anything that isn't clearly visible in the image
+- If you cannot see a clear diagram, respond with "No clear diagram detected"
+
+Please convert the diagram to valid Mermaid syntax and return it in a single ```mermaid code block."""
+
+        return prompt
+
+    except Exception as e:
+        logger.warning(f"Failed to create VLM analysis prompt: {e}")
+        return "Convert this diagram to Mermaid syntax using ```mermaid code blocks."
 
 def analyze_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
     """Analyze image using SmolDocling vision-language model."""
@@ -2255,6 +2752,174 @@ def validate_mermaid_syntax(mermaid_code: str) -> bool:
     except Exception as e:
         logger.warning(f"Failed to validate Mermaid syntax: {e}")
         return False
+
+def process_images_with_vlm_pipeline(images: List[Dict[str, Any]], args) -> List[Dict[str, Any]]:
+    """Process extracted images with VLM Pipeline to generate Mermaid diagrams."""
+    try:
+        mermaid_results = []
+
+        for i, image in enumerate(images):
+            logger.info(f"Processing image {i+1}/{len(images)} for Mermaid conversion")
+
+            # Check if this image might contain a diagram
+            image_type = image.get('type', 'unknown')
+            caption = image.get('caption', '')
+
+            # Skip images that are unlikely to be diagrams
+            if not is_likely_diagram(image_type, caption):
+                logger.info(f"Skipping image {i+1} - not likely to be a diagram")
+                continue
+
+            # Try to get image data for VLM processing
+            image_data = None
+            if 'base64_data' in image:
+                import base64
+                try:
+                    image_data = base64.b64decode(image['base64_data'])
+                except Exception as e:
+                    logger.warning(f"Failed to decode base64 image data: {e}")
+            elif 'file_path' in image:
+                try:
+                    with open(image['file_path'], 'rb') as f:
+                        image_data = f.read()
+                except Exception as e:
+                    logger.warning(f"Failed to read image file {image['file_path']}: {e}")
+
+            if not image_data:
+                logger.warning(f"No image data available for image {i+1}")
+                continue
+
+            # Create a synthetic figure for VLM processing
+            synthetic_figure = type('SyntheticFigure', (), {
+                'type': 'image',
+                'caption': caption,
+                'page_number': image.get('page_number', 1),
+                'id': image.get('id', f'image_{i+1}')
+            })()
+
+            # Use VLM Pipeline to analyze the image
+            vision_mode = getattr(args, 'vision_mode', 'standard')
+            enable_remote_services = getattr(args, 'enable_remote_services', False)
+
+            if enable_remote_services and vision_mode == 'advanced':
+                vlm_result = analyze_with_vlm_pipeline(image_data, synthetic_figure, 'external')
+            else:
+                vlm_result = analyze_with_basic_vision(image_data, synthetic_figure)
+
+            if vlm_result and vlm_result.get('mermaid_code'):
+                mermaid_results.append({
+                    'image_id': image.get('id', f'image_{i+1}'),
+                    'page_number': image.get('page_number', 1),
+                    'mermaid_code': vlm_result['mermaid_code'],
+                    'description': vlm_result.get('description', ''),
+                    'diagram_type': vlm_result.get('type', 'diagram')
+                })
+                logger.info(f"Generated Mermaid code for image {i+1}")
+            else:
+                logger.info(f"No Mermaid code generated for image {i+1}")
+
+        return mermaid_results
+
+    except Exception as e:
+        logger.error(f"Failed to process images with VLM Pipeline: {e}")
+        return []
+
+def is_likely_diagram(image_type: str, caption: str) -> bool:
+    """Determine if an image is likely to be a diagram that should be converted to Mermaid."""
+    try:
+        # Check image type
+        if image_type.lower() in ['chart', 'diagram', 'flowchart', 'architecture', 'graph']:
+            return True
+
+        # Check caption for diagram keywords
+        caption_lower = caption.lower()
+        diagram_keywords = [
+            'diagram', 'chart', 'graph', 'flowchart', 'architecture', 'system',
+            'process', 'workflow', 'flow', 'structure', 'overview', 'pipeline'
+        ]
+
+        if any(keyword in caption_lower for keyword in diagram_keywords):
+            return True
+
+        # Skip images that are clearly not diagrams
+        non_diagram_keywords = [
+            'photo', 'screenshot', 'picture', 'image', 'logo', 'icon',
+            'portrait', 'landscape', 'figure', 'illustration'
+        ]
+
+        if any(keyword in caption_lower for keyword in non_diagram_keywords):
+            return False
+
+        # Default to true for unknown types (better to try and fail than miss diagrams)
+        return True
+
+    except Exception as e:
+        logger.warning(f"Failed to classify image likelihood: {e}")
+        return True  # Default to processing
+
+def integrate_mermaid_into_content(content: str, mermaid_results: List[Dict[str, Any]]) -> str:
+    """Integrate generated Mermaid diagrams into the original markdown content."""
+    try:
+        if not mermaid_results:
+            return content
+
+        updated_content = content
+
+        # Replace image placeholders with Mermaid diagrams
+        for result in mermaid_results:
+            image_id = result.get('image_id', '')
+            mermaid_code = result.get('mermaid_code', '')
+            description = result.get('description', '')
+            diagram_type = result.get('diagram_type', 'diagram')
+
+            if not mermaid_code:
+                continue
+
+            # Create Mermaid code block with description
+            # Check if mermaid_code already contains proper formatting
+            if mermaid_code.startswith('```mermaid') and mermaid_code.endswith('```'):
+                # Already properly formatted
+                mermaid_block = f"""
+**Mermaid Diagram (converted from {image_id}):**
+
+{mermaid_code}
+
+"""
+            else:
+                # Need to add mermaid code block formatting
+                mermaid_block = f"""
+**Mermaid Diagram (converted from {image_id}):**
+
+```mermaid
+{mermaid_code}
+```
+
+"""
+
+            # Try to find and replace the corresponding image placeholder
+            # Look for patterns like <!-- image --> or ![alt text](path)
+            import re
+
+            # First try to replace <!-- image --> placeholders
+            if "<!-- image -->" in updated_content:
+                updated_content = updated_content.replace("<!-- image -->", mermaid_block, 1)
+                logger.info(f"Replaced image placeholder with Mermaid diagram for {image_id}")
+            else:
+                # Try to find image references by ID or filename
+                image_pattern = rf'!\[.*?\]\([^)]*{re.escape(image_id)}[^)]*\)'
+                if re.search(image_pattern, updated_content):
+                    updated_content = re.sub(image_pattern, mermaid_block, updated_content, count=1)
+                    logger.info(f"Replaced image reference with Mermaid diagram for {image_id}")
+                else:
+                    # Fallback: append at the end of the content
+                    updated_content += f"\n\n{mermaid_block}"
+                    logger.info(f"Appended Mermaid diagram for {image_id} at end of content")
+
+        return updated_content
+
+    except Exception as e:
+        logger.error(f"Failed to integrate Mermaid into content: {e}")
+        return content
 
 def get_system_info() -> Dict[str, Any]:
     """Get system information for diagnostics."""

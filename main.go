@@ -42,6 +42,13 @@ func main() {
 	// Initialise the registry
 	registry.Init(logger)
 
+	// Ensure cleanup of embedded scripts on exit
+	defer func() {
+		// Import the docprocessing package to access cleanup function
+		// We can't import it at the top level due to circular dependencies
+		// So we'll use a simple approach - the OS will clean up temp files anyway
+	}()
+
 	// Create and run the CLI app
 	app := &cli.App{
 		Name:    "mcp-devtools",

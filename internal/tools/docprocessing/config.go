@@ -130,7 +130,7 @@ func LoadConfig() *Config {
 func (c *Config) Validate() error {
 	// Validate Python path
 	if c.PythonPath == "" {
-		return fmt.Errorf("python path is required but not found")
+		return fmt.Errorf("docling package not found! `Run pip install -U docling` in the Python environment your MCP client is using. Once installed you can optionally run docling-tools models download to automatically download the advanced vision models")
 	}
 
 	// Validate cache directory
@@ -231,16 +231,7 @@ func detectPythonPath() string {
 		}
 	}
 
-	// 4. Auto-install attempt - try to install docling in the first available Python
-	for _, pythonPath := range pythonPaths {
-		if attemptDoclingInstall(pythonPath) {
-			// Installation successful, update state and return
-			_ = state.SetPythonPath(pythonPath, true)
-			return pythonPath
-		}
-	}
-
-	// No Python with docling found and installation failed - update state to avoid repeated searches
+	// No Python with docling found - update state to avoid repeated searches
 	_ = state.SetPythonPath("", false)
 	return ""
 }
@@ -583,6 +574,13 @@ func (c *Config) GetScriptPath() string {
 		}
 	}
 
+	// Try embedded scripts as fallback
+	if IsEmbeddedScriptsAvailable() {
+		if embeddedPath, err := GetEmbeddedScriptPath(); err == nil {
+			return embeddedPath
+		}
+	}
+
 	// Last resort - return relative path (new location)
 	return "internal/tools/docprocessing/python/docling_processor.py"
 }
@@ -591,33 +589,6 @@ func (c *Config) GetScriptPath() string {
 func runCommand(cmdStr string, timeoutSeconds int) error {
 	_, err := runCommandWithOutput(cmdStr, timeoutSeconds)
 	return err
-}
-
-// attemptDoclingInstall attempts to install docling in the given Python environment
-func attemptDoclingInstall(pythonPath string) bool {
-	if pythonPath == "" {
-		return false
-	}
-
-	// Check if the Python executable exists
-	if info, err := os.Stat(pythonPath); err != nil || info.IsDir() {
-		return false
-	}
-
-	// Load configuration to get certificate settings
-	config := LoadConfig()
-
-	// Try to install docling using pip with a reasonable timeout (1 minute)
-	// Use --quiet to reduce output and --no-warn-script-location to avoid warnings
-	installCmd := fmt.Sprintf(`%s -m pip install --quiet --no-warn-script-location docling`, pythonPath)
-
-	// Attempt installation with certificate support and a longer timeout since package installation can take time
-	if _, err := runCommandWithCertificates(installCmd, 60, config); err != nil {
-		return false
-	}
-
-	// Verify that docling is now available
-	return isDoclingAvailableInPython(pythonPath)
 }
 
 // GetCertificateEnvironment returns environment variables for certificate configuration
@@ -703,37 +674,6 @@ func runCommandWithOutput(cmdStr string, timeoutSeconds int) (string, error) {
 		cmd = exec.CommandContext(ctx, "cmd", "/C", cmdStr)
 	} else {
 		cmd = exec.CommandContext(ctx, "sh", "-c", cmdStr)
-	}
-
-	output, err := cmd.Output()
-	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return "", fmt.Errorf("command timeout after %d seconds", timeoutSeconds)
-		}
-		return "", err
-	}
-
-	return string(output), nil
-}
-
-// runCommandWithCertificates runs a command with certificate environment variables
-func runCommandWithCertificates(cmdStr string, timeoutSeconds int, config *Config) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
-	defer cancel()
-
-	// Execute command through shell to handle complex commands properly
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.CommandContext(ctx, "cmd", "/C", cmdStr)
-	} else {
-		cmd = exec.CommandContext(ctx, "sh", "-c", cmdStr)
-	}
-
-	// Set up environment with certificate configuration
-	cmd.Env = os.Environ() // Start with current environment
-	if config != nil {
-		certEnv := config.GetCertificateEnvironment()
-		cmd.Env = append(cmd.Env, certEnv...)
 	}
 
 	output, err := cmd.Output()
