@@ -417,77 +417,10 @@ def process_document(args) -> Dict[str, Any]:
                 if hasattr(pipeline_options.picture_description_options, 'use_fast'):
                     pipeline_options.picture_description_options.use_fast = True
 
-        # Configure VLM Pipeline for external API integration
-        vision_mode = getattr(args, 'vision_mode', 'standard')
-        enable_remote_services = getattr(args, 'enable_remote_services', False)
-
-        # Set up format options and pipeline class
-        pipeline_cls = None
-
-        if enable_remote_services and vision_mode == 'advanced':
-            # Configure VLM Pipeline with external API
-            try:
-                from docling.datamodel.pipeline_options import VlmPipelineOptions
-                from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
-                from docling.pipeline.vlm_pipeline import VlmPipeline
-
-                # Create VLM Pipeline options
-                vlm_pipeline_options = VlmPipelineOptions(
-                    enable_remote_services=True
-                )
-
-                # Configure external API options
-                vlm_api_url = os.getenv('DOCLING_VLM_API_URL')
-                vlm_model = os.getenv('DOCLING_VLM_MODEL', 'gpt-4-vision-preview')
-                vlm_api_key = os.getenv('DOCLING_VLM_API_KEY')
-                vlm_timeout = int(os.getenv('DOCLING_VLM_TIMEOUT', '240'))
-
-                if vlm_api_url and vlm_api_key:
-                    logger.info(f"Configuring VLM Pipeline with external API: {vlm_model} at {vlm_api_url}")
-
-                    # Create API VLM options for your Ollama server
-                    vlm_options = ApiVlmOptions(
-                        url=f"{vlm_api_url.rstrip('/')}/chat/completions",
-                        params=dict(
-                            model=vlm_model,
-                        ),
-                        headers={
-                            'Authorization': f'Bearer {vlm_api_key}',
-                        },
-                        prompt="Analyse this document page and convert any diagrams, charts, or flowcharts to Mermaid syntax. For each diagram found, generate valid Mermaid code and embed it in the markdown using ```mermaid code blocks. Describe the diagram type (flowchart, architecture, chart, etc.) and provide detailed Mermaid syntax that accurately represents the structure, components, and relationships shown in the image.",
-                        timeout=vlm_timeout,
-                        scale=1.0,
-                        response_format=ResponseFormat.MARKDOWN,
-                    )
-
-                    vlm_pipeline_options.vlm_options = vlm_options
-                    pipeline_cls = VlmPipeline
-
-                    # Use VLM pipeline options instead of regular pipeline options
-                    format_options = {
-                        InputFormat.PDF: PdfFormatOption(
-                            pipeline_options=vlm_pipeline_options,
-                            pipeline_cls=pipeline_cls
-                        )
-                    }
-
-                    logger.info("VLM Pipeline configured successfully")
-                else:
-                    logger.warning("VLM API configuration incomplete, falling back to standard processing")
-                    format_options = {
-                        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-                    }
-
-            except ImportError as e:
-                logger.warning(f"VLM Pipeline not available: {e}, falling back to standard processing")
-                format_options = {
-                    InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-                }
-        else:
-            # Standard processing without VLM Pipeline
-            format_options = {
-                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-            }
+        # Always use standard Docling processing first to get proper document structure
+        format_options = {
+            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+        }
 
         # Create converter
         converter = DocumentConverter(format_options=format_options)
@@ -559,9 +492,23 @@ def process_document(args) -> Dict[str, Any]:
         if getattr(args, 'diagram_description', False):
             diagrams = extract_diagram_descriptions(result.document, args)
 
-        # Convert diagrams to Mermaid if requested
-        if getattr(args, 'convert_diagrams_to_mermaid', False) and diagrams:
-            diagrams = convert_diagrams_to_mermaid(diagrams, args)
+        # Convert diagrams to Mermaid if requested and integrate into content
+        if getattr(args, 'convert_diagrams_to_mermaid', False):
+            # Extract images from the processed document for VLM analysis
+            if images:
+                logger.info(f"Processing {len(images)} images for Mermaid conversion")
+                mermaid_results = process_images_with_vlm_pipeline(images, args)
+
+                # Integrate Mermaid code into the original content
+                if mermaid_results and content_output:
+                    content_output = integrate_mermaid_into_content(content_output, mermaid_results)
+                    logger.info("Successfully integrated Mermaid diagrams into content")
+
+            # Skip converting existing diagrams since we're already processing images with VLM Pipeline
+            # This prevents duplicate Mermaid generation from the same visual content
+            if diagrams and not images:
+                # Only convert diagrams if we didn't process any images
+                diagrams = convert_diagrams_to_mermaid(diagrams, args)
 
         # Clean up memory
         cleanup_memory()
@@ -1627,6 +1574,8 @@ def parse_vlm_response(content: str, figure) -> Dict[str, Any]:
         import json
         import re
 
+        logger.info(f"Parsing VLM response: {content[:200]}...")
+
         # Try to parse as JSON first
         try:
             if content.strip().startswith('{') and content.strip().endswith('}'):
@@ -1644,49 +1593,73 @@ def parse_vlm_response(content: str, figure) -> Dict[str, Any]:
         except json.JSONDecodeError:
             pass
 
-        # If not JSON, parse as structured text response
-        lines = content.split('\n')
-
-        # Extract key information using regex patterns
-        description = content[:300]  # Use first 300 chars as description
-        diagram_type = "diagram"
-        elements = []
+        # Parse as text response with simplified prompt format
         mermaid_code = ""
-        text_representation = content
+        description = "Diagram analysis completed"
 
-        # Look for diagram type indicators
-        content_lower = content.lower()
-        if any(keyword in content_lower for keyword in ['flowchart', 'flow chart', 'process']):
-            diagram_type = "flowchart"
-        elif any(keyword in content_lower for keyword in ['architecture', 'system', 'component']):
-            diagram_type = "architecture"
-        elif any(keyword in content_lower for keyword in ['chart', 'graph', 'data']):
-            diagram_type = "chart"
+        # Extract mermaid code if present - handle multiple patterns
+        mermaid_patterns = [
+            r'```mermaid\n(.*?)\n```',  # Standard format
+            r'```mermaid\s*(.*?)\s*```',  # With whitespace
+            r'```\s*mermaid\s*(.*?)\s*```',  # With spaces around mermaid
+        ]
 
-        # Extract mermaid code if present
-        mermaid_match = re.search(r'```mermaid\n(.*?)\n```', content, re.DOTALL)
-        if mermaid_match:
-            mermaid_code = mermaid_match.group(1).strip()
+        for pattern in mermaid_patterns:
+            mermaid_match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+            if mermaid_match:
+                raw_mermaid = mermaid_match.group(1).strip()
 
-        # Extract text elements (simple approach - split by common delimiters)
-        text_elements = []
-        for line in lines:
-            line = line.strip()
-            if line and not line.startswith('#') and len(line) > 3:
-                # Skip lines that look like markdown headers or very short lines
-                if not line.startswith('```') and not line.startswith('*'):
-                    text_elements.append({
-                        "type": "text",
-                        "content": line[:100]  # Limit length
-                    })
+                # Clean up the mermaid code - remove duplicate graph declarations
+                lines = raw_mermaid.split('\n')
+                cleaned_lines = []
+                graph_declaration_found = False
+
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    # Check if this is a graph declaration line
+                    if re.match(r'^(graph|flowchart)\s+(TD|LR|TB|RL|BT)', line, re.IGNORECASE):
+                        if not graph_declaration_found:
+                            cleaned_lines.append(line)
+                            graph_declaration_found = True
+                        # Skip duplicate graph declarations
+                    else:
+                        cleaned_lines.append(line)
+
+                mermaid_code = '\n'.join(cleaned_lines)
+                logger.info(f"Extracted and cleaned Mermaid code: {mermaid_code[:100]}...")
+                break
+
+        # If no mermaid code found, check if the response says no diagram detected
+        if not mermaid_code:
+            if "no clear diagram detected" in content.lower() or "no diagram" in content.lower():
+                logger.info("VLM API reported no clear diagram detected")
+                return {
+                    "description": "No clear diagram detected in image",
+                    "type": "none",
+                    "elements": [],
+                    "confidence": 0.9,
+                    "mermaid_code": "",
+                    "text_representation": content[:200]
+                }
+
+        # Determine diagram type from mermaid code
+        diagram_type = "diagram"
+        if mermaid_code:
+            if "flowchart" in mermaid_code.lower():
+                diagram_type = "flowchart"
+            elif "graph" in mermaid_code.lower():
+                diagram_type = "graph"
 
         return {
             "description": description,
             "type": diagram_type,
-            "elements": text_elements[:10],  # Limit to 10 elements
-            "confidence": 0.7,  # Medium confidence for text parsing
+            "elements": [],
+            "confidence": 0.8 if mermaid_code else 0.3,
             "mermaid_code": mermaid_code,
-            "text_representation": text_representation[:1000]  # Limit length
+            "text_representation": content[:500]
         }
 
     except Exception as e:
@@ -1732,68 +1705,24 @@ def auto_detect_optimal_vlm_model() -> str:
         return "HuggingFace/SmolVLM-Instruct"
 
 def create_vlm_analysis_prompt(figure) -> str:
-    """Create a VLM analysis prompt based on figure characteristics."""
+    """Create a simplified VLM analysis prompt for Mermaid diagram generation."""
     try:
-        # Get figure information
-        caption = getattr(figure, 'caption', '')
-        figure_type = getattr(figure, 'type', 'unknown')
+        # Use the simplified single prompt approach as requested
+        prompt = """You are an expert at analysing diagrams and converting them to Mermaid syntax. Analyse this image and convert any diagrams, charts, or flowcharts to Mermaid syntax.
 
-        # Base prompt for diagram analysis
-        prompt = """You are an expert at analysing diagrams and converting them to structured formats.
-Analyse this image and provide a detailed response in JSON format.
+IMPORTANT INSTRUCTIONS:
+- You must use British English spelling throughout your response
+- You must return only the diagram in a markdown codeblock using ```mermaid syntax
+- You must be accurate and not make up anything that isn't clearly visible in the image
+- If you cannot see a clear diagram, respond with "No clear diagram detected"
 
-Please identify:
-1. The type of diagram (flowchart, architecture, chart, table, etc.)
-2. Key components and their relationships
-3. Text elements visible in the image
-4. If possible, generate Mermaid syntax for the diagram
-
-"""
-
-        # Add context-specific instructions
-        if caption:
-            prompt += f"Image caption: {caption}\n"
-
-        if 'chart' in figure_type.lower() or 'graph' in figure_type.lower():
-            prompt += """This appears to be a chart or graph. Focus on:
-- Data points and values
-- Axis labels and scales
-- Chart type (bar, line, pie, etc.)
-- Legend information
-"""
-        elif 'flow' in figure_type.lower() or 'process' in figure_type.lower():
-            prompt += """This appears to be a flowchart or process diagram. Focus on:
-- Process steps and decision points
-- Flow direction and connections
-- Start and end points
-- Decision branches
-"""
-        elif 'architecture' in figure_type.lower() or 'system' in figure_type.lower():
-            prompt += """This appears to be an architecture or system diagram. Focus on:
-- System components and services
-- Data flow and connections
-- External dependencies
-- Component types (databases, APIs, etc.)
-"""
-
-        prompt += """
-Respond in JSON format with:
-{
-  "description": "Detailed description of the diagram",
-  "diagram_type": "flowchart|architecture|chart|table|other",
-  "elements": [{"type": "text|shape", "content": "element content"}],
-  "confidence": 0.95,
-  "mermaid_code": "Valid Mermaid syntax if applicable",
-  "text_representation": "All visible text in the image"
-}
-
-Always use British English spelling in your response."""
+Please convert the diagram to valid Mermaid syntax and return it in a single ```mermaid code block."""
 
         return prompt
 
     except Exception as e:
         logger.warning(f"Failed to create VLM analysis prompt: {e}")
-        return "Analyse this diagram and describe its contents in detail."
+        return "Convert this diagram to Mermaid syntax using ```mermaid code blocks."
 
 def analyze_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
     """Analyze image using SmolDocling vision-language model."""
@@ -2823,6 +2752,174 @@ def validate_mermaid_syntax(mermaid_code: str) -> bool:
     except Exception as e:
         logger.warning(f"Failed to validate Mermaid syntax: {e}")
         return False
+
+def process_images_with_vlm_pipeline(images: List[Dict[str, Any]], args) -> List[Dict[str, Any]]:
+    """Process extracted images with VLM Pipeline to generate Mermaid diagrams."""
+    try:
+        mermaid_results = []
+
+        for i, image in enumerate(images):
+            logger.info(f"Processing image {i+1}/{len(images)} for Mermaid conversion")
+
+            # Check if this image might contain a diagram
+            image_type = image.get('type', 'unknown')
+            caption = image.get('caption', '')
+
+            # Skip images that are unlikely to be diagrams
+            if not is_likely_diagram(image_type, caption):
+                logger.info(f"Skipping image {i+1} - not likely to be a diagram")
+                continue
+
+            # Try to get image data for VLM processing
+            image_data = None
+            if 'base64_data' in image:
+                import base64
+                try:
+                    image_data = base64.b64decode(image['base64_data'])
+                except Exception as e:
+                    logger.warning(f"Failed to decode base64 image data: {e}")
+            elif 'file_path' in image:
+                try:
+                    with open(image['file_path'], 'rb') as f:
+                        image_data = f.read()
+                except Exception as e:
+                    logger.warning(f"Failed to read image file {image['file_path']}: {e}")
+
+            if not image_data:
+                logger.warning(f"No image data available for image {i+1}")
+                continue
+
+            # Create a synthetic figure for VLM processing
+            synthetic_figure = type('SyntheticFigure', (), {
+                'type': 'image',
+                'caption': caption,
+                'page_number': image.get('page_number', 1),
+                'id': image.get('id', f'image_{i+1}')
+            })()
+
+            # Use VLM Pipeline to analyze the image
+            vision_mode = getattr(args, 'vision_mode', 'standard')
+            enable_remote_services = getattr(args, 'enable_remote_services', False)
+
+            if enable_remote_services and vision_mode == 'advanced':
+                vlm_result = analyze_with_vlm_pipeline(image_data, synthetic_figure, 'external')
+            else:
+                vlm_result = analyze_with_basic_vision(image_data, synthetic_figure)
+
+            if vlm_result and vlm_result.get('mermaid_code'):
+                mermaid_results.append({
+                    'image_id': image.get('id', f'image_{i+1}'),
+                    'page_number': image.get('page_number', 1),
+                    'mermaid_code': vlm_result['mermaid_code'],
+                    'description': vlm_result.get('description', ''),
+                    'diagram_type': vlm_result.get('type', 'diagram')
+                })
+                logger.info(f"Generated Mermaid code for image {i+1}")
+            else:
+                logger.info(f"No Mermaid code generated for image {i+1}")
+
+        return mermaid_results
+
+    except Exception as e:
+        logger.error(f"Failed to process images with VLM Pipeline: {e}")
+        return []
+
+def is_likely_diagram(image_type: str, caption: str) -> bool:
+    """Determine if an image is likely to be a diagram that should be converted to Mermaid."""
+    try:
+        # Check image type
+        if image_type.lower() in ['chart', 'diagram', 'flowchart', 'architecture', 'graph']:
+            return True
+
+        # Check caption for diagram keywords
+        caption_lower = caption.lower()
+        diagram_keywords = [
+            'diagram', 'chart', 'graph', 'flowchart', 'architecture', 'system',
+            'process', 'workflow', 'flow', 'structure', 'overview', 'pipeline'
+        ]
+
+        if any(keyword in caption_lower for keyword in diagram_keywords):
+            return True
+
+        # Skip images that are clearly not diagrams
+        non_diagram_keywords = [
+            'photo', 'screenshot', 'picture', 'image', 'logo', 'icon',
+            'portrait', 'landscape', 'figure', 'illustration'
+        ]
+
+        if any(keyword in caption_lower for keyword in non_diagram_keywords):
+            return False
+
+        # Default to true for unknown types (better to try and fail than miss diagrams)
+        return True
+
+    except Exception as e:
+        logger.warning(f"Failed to classify image likelihood: {e}")
+        return True  # Default to processing
+
+def integrate_mermaid_into_content(content: str, mermaid_results: List[Dict[str, Any]]) -> str:
+    """Integrate generated Mermaid diagrams into the original markdown content."""
+    try:
+        if not mermaid_results:
+            return content
+
+        updated_content = content
+
+        # Replace image placeholders with Mermaid diagrams
+        for result in mermaid_results:
+            image_id = result.get('image_id', '')
+            mermaid_code = result.get('mermaid_code', '')
+            description = result.get('description', '')
+            diagram_type = result.get('diagram_type', 'diagram')
+
+            if not mermaid_code:
+                continue
+
+            # Create Mermaid code block with description
+            # Check if mermaid_code already contains proper formatting
+            if mermaid_code.startswith('```mermaid') and mermaid_code.endswith('```'):
+                # Already properly formatted
+                mermaid_block = f"""
+**Mermaid Diagram (converted from {image_id}):**
+
+{mermaid_code}
+
+"""
+            else:
+                # Need to add mermaid code block formatting
+                mermaid_block = f"""
+**Mermaid Diagram (converted from {image_id}):**
+
+```mermaid
+{mermaid_code}
+```
+
+"""
+
+            # Try to find and replace the corresponding image placeholder
+            # Look for patterns like <!-- image --> or ![alt text](path)
+            import re
+
+            # First try to replace <!-- image --> placeholders
+            if "<!-- image -->" in updated_content:
+                updated_content = updated_content.replace("<!-- image -->", mermaid_block, 1)
+                logger.info(f"Replaced image placeholder with Mermaid diagram for {image_id}")
+            else:
+                # Try to find image references by ID or filename
+                image_pattern = rf'!\[.*?\]\([^)]*{re.escape(image_id)}[^)]*\)'
+                if re.search(image_pattern, updated_content):
+                    updated_content = re.sub(image_pattern, mermaid_block, updated_content, count=1)
+                    logger.info(f"Replaced image reference with Mermaid diagram for {image_id}")
+                else:
+                    # Fallback: append at the end of the content
+                    updated_content += f"\n\n{mermaid_block}"
+                    logger.info(f"Appended Mermaid diagram for {image_id} at end of content")
+
+        return updated_content
+
+    except Exception as e:
+        logger.error(f"Failed to integrate Mermaid into content: {e}")
+        return content
 
 def get_system_info() -> Dict[str, Any]:
     """Get system information for diagnostics."""

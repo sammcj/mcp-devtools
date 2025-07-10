@@ -39,64 +39,15 @@ const (
 
 // Default prompts
 const (
-	DefaultBasePrompt = "You are an expert at analysing diagrams and converting them to Mermaid syntax. " +
-		"Analyse the following diagram and provide a detailed response.\n\n"
+	DefaultDiagramPrompt = `You are an expert at analysing diagrams and converting them to Mermaid syntax that returns mermaid diagrams as part of a larger system.
 
-	DefaultFlowchartPrompt = `This appears to be a flowchart. Please:
-1. Identify the start and end points
-2. Identify decision points (diamond shapes) and process steps (rectangles)
-3. Trace the flow connections between elements
-4. Create Mermaid flowchart syntax using:
-   - flowchart TD (top-down) or LR (left-right)
-   - Rectangle nodes: A[Process Step]
-   - Diamond nodes: B{Decision?}
-   - Connections: A --> B
-   - Labels on connections: B -->|Yes| C
+Your task is to carefully and accurately create a mermaid diagram that best represents the image provided.
 
-Always use British English spelling.
-Focus on accuracy of the data, logical flow and clear node relationships.`
+It's critical that it's accurate and that you do not make up anything that is not in the diagram.
 
-	DefaultArchitecturePrompt = `This appears to be an architecture diagram. Please:
-1. Identify system components, services, and databases
-2. Identify data flow and connections between components
-3. Classify components by type (compute, storage, networking, etc.)
-4. Create Mermaid graph syntax using:
-   - graph TD for top-down layout
-   - Rectangle nodes: A[Component]
-   - Rounded rectangles: B(Service)
-   - Cylinders: C[(Database)]
-   - Connections: A --> B
-
-Always use British English spelling.
-Include AWS-style colour coding:
-- classDef compute fill:#FF9900,color:#fff
-- classDef storage fill:#569A31,color:#fff
-- classDef database fill:#205081,color:#fff
-- classDef networking fill:#8C4FFF,color:#fff`
-
-	DefaultChartPrompt = `This appears to be a chart or graph. Please:
-1. Identify the chart type (bar, line, pie, scatter, etc.)
-2. Extract data points, labels, and values if visible
-3. Identify axes labels and scales
-4. Create a simple Mermaid representation or describe the data structure
-5. If the chart is too complex for Mermaid, provide a structured description
-
-Always use British English spelling.
-For simple charts, use Mermaid graph syntax to represent data relationships.
-For complex charts, focus on describing the data structure and trends.`
-
-	DefaultGenericPrompt = `Analyse this diagram and:
-1. Determine the most likely diagram type
-2. Identify key components and their relationships
-3. Create appropriate Mermaid syntax based on the diagram structure
-4. If uncertain about the type, provide the best possible representation
-5. Always use British English spelling.
-
-Choose the most suitable Mermaid diagram type:
-- flowchart: for process flows
-- graph: for system architectures
-- sequenceDiagram: for interactions
-- classDiagram: for object relationships`
+You MUST always use British English spelling.
+You MUST never respond with anything other than the diagram inside a markdown codeblock.
+You MUST always follow these rules.`
 )
 
 // DiagramLLMClient handles LLM-based diagram analysis using OpenAI API
@@ -238,87 +189,10 @@ func (c *DiagramLLMClient) AnalyseDiagram(diagram *ExtractedDiagram) (*DiagramAn
 	return analysis, nil
 }
 
-// buildDiagramPrompt creates a prompt for diagram analysis based on diagram type
+// buildDiagramPrompt creates a prompt for diagram analysis using the simplified approach
 func (c *DiagramLLMClient) buildDiagramPrompt(diagram *ExtractedDiagram) string {
-	var prompt strings.Builder
-
-	// Base prompt (configurable)
-	basePrompt := getEnvString(EnvPromptBase, DefaultBasePrompt)
-	prompt.WriteString(basePrompt)
-
-	// Add diagram information
-	prompt.WriteString(fmt.Sprintf("Diagram ID: %s\n", diagram.ID))
-	prompt.WriteString(fmt.Sprintf("Detected Type: %s\n", diagram.DiagramType))
-
-	if diagram.Caption != "" {
-		prompt.WriteString(fmt.Sprintf("Caption: %s\n", diagram.Caption))
-	}
-
-	if diagram.Description != "" {
-		prompt.WriteString(fmt.Sprintf("Initial Description: %s\n", diagram.Description))
-	}
-
-	// Add extracted elements
-	if len(diagram.Elements) > 0 {
-		prompt.WriteString("\nExtracted Text Elements:\n")
-		for i, element := range diagram.Elements {
-			prompt.WriteString(fmt.Sprintf("%d. %s (%s)\n", i+1, element.Content, element.Type))
-		}
-	}
-
-	// Add type-specific instructions
-	prompt.WriteString("\n")
-	switch strings.ToLower(diagram.DiagramType) {
-	case "flowchart":
-		prompt.WriteString(c.getFlowchartPrompt())
-	case "architecture":
-		prompt.WriteString(c.getArchitecturePrompt())
-	case "chart":
-		prompt.WriteString(c.getChartPrompt())
-	default:
-		prompt.WriteString(c.getGenericPrompt())
-	}
-
-	// Response format
-	prompt.WriteString("\n\nProvide your response in the following JSON format:\n")
-	prompt.WriteString(`{
-  "description": "Detailed description of the diagram",
-  "diagram_type": "flowchart|architecture|chart|sequence|other",
-  "mermaid_code": "Valid Mermaid syntax for the diagram",
-  "elements": [
-    {
-      "type": "text|shape|connector",
-      "content": "Element content",
-      "position": "Position description"
-    }
-  ],
-  "confidence": 0.95,
-  "properties": {
-    "additional_metadata": "value"
-  }
-}`)
-
-	return prompt.String()
-}
-
-// getFlowchartPrompt returns specific instructions for flowchart analysis
-func (c *DiagramLLMClient) getFlowchartPrompt() string {
-	return getEnvString(EnvPromptFlowchart, DefaultFlowchartPrompt)
-}
-
-// getArchitecturePrompt returns specific instructions for architecture diagram analysis
-func (c *DiagramLLMClient) getArchitecturePrompt() string {
-	return getEnvString(EnvPromptArchitecture, DefaultArchitecturePrompt)
-}
-
-// getChartPrompt returns specific instructions for chart analysis
-func (c *DiagramLLMClient) getChartPrompt() string {
-	return getEnvString(EnvPromptChart, DefaultChartPrompt)
-}
-
-// getGenericPrompt returns instructions for unknown diagram types
-func (c *DiagramLLMClient) getGenericPrompt() string {
-	return getEnvString(EnvPromptGeneric, DefaultGenericPrompt)
+	// Use the single, focused prompt
+	return DefaultDiagramPrompt
 }
 
 // parseAnalysisResponse parses the LLM response and extracts diagram analysis
@@ -486,14 +360,6 @@ func getEnvFloat(envVar string, defaultValue float64) float64 {
 		if floatValue, err := strconv.ParseFloat(value, 64); err == nil {
 			return floatValue
 		}
-	}
-	return defaultValue
-}
-
-// getEnvString gets a string environment variable with a default value
-func getEnvString(envVar string, defaultValue string) string {
-	if value := os.Getenv(envVar); value != "" {
-		return value
 	}
 	return defaultValue
 }
