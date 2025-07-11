@@ -254,38 +254,89 @@ func extractMermaidFromText(text string) string {
 	lines := strings.Split(text, "\n")
 	var mermaidLines []string
 	inCodeBlock := false
+	foundMermaidBlock := false
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 
-		// Start of code block
+		// Start/end of code block
 		if strings.HasPrefix(trimmed, "```") {
-			if strings.Contains(trimmed, "mermaid") || inCodeBlock {
+			if strings.Contains(trimmed, "mermaid") {
 				inCodeBlock = !inCodeBlock
+				foundMermaidBlock = true
 				continue
+			} else if inCodeBlock {
+				// End of mermaid code block
+				break
 			}
 		}
 
-		// Inside code block
-		if inCodeBlock {
+		// Inside a proper ```mermaid code block
+		if inCodeBlock && foundMermaidBlock {
 			mermaidLines = append(mermaidLines, line)
+			continue
 		}
 
-		// Look for Mermaid diagram types at start of lines
-		if strings.HasPrefix(trimmed, "flowchart") ||
-			strings.HasPrefix(trimmed, "graph") ||
-			strings.HasPrefix(trimmed, "sequenceDiagram") ||
-			strings.HasPrefix(trimmed, "classDiagram") {
-			mermaidLines = append(mermaidLines, line)
-			inCodeBlock = true
+		// Only look for standalone diagram types if we haven't found a proper code block
+		if !foundMermaidBlock && !inCodeBlock {
+			if strings.HasPrefix(trimmed, "flowchart") ||
+				strings.HasPrefix(trimmed, "graph") ||
+				strings.HasPrefix(trimmed, "sequenceDiagram") ||
+				strings.HasPrefix(trimmed, "classDiagram") {
+				mermaidLines = append(mermaidLines, line)
+				inCodeBlock = true
+			} else if inCodeBlock {
+				// Continue collecting lines for standalone diagram
+				mermaidLines = append(mermaidLines, line)
+			}
 		}
 	}
 
 	if len(mermaidLines) > 0 {
-		return strings.Join(mermaidLines, "\n")
+		result := strings.Join(mermaidLines, "\n")
+		// Clean up any duplicate diagram type declarations
+		result = cleanupDuplicateGraphDeclarations(result)
+		return result
 	}
 
 	return ""
+}
+
+// cleanupDuplicateGraphDeclarations removes duplicate graph type declarations
+func cleanupDuplicateGraphDeclarations(mermaidCode string) string {
+	lines := strings.Split(mermaidCode, "\n")
+	if len(lines) <= 1 {
+		return mermaidCode
+	}
+
+	var cleanedLines []string
+	var foundGraphDeclaration bool
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Check if this line is a graph type declaration
+		isGraphDeclaration := strings.HasPrefix(trimmed, "graph ") ||
+			strings.HasPrefix(trimmed, "flowchart ") ||
+			strings.HasPrefix(trimmed, "sequenceDiagram") ||
+			strings.HasPrefix(trimmed, "classDiagram") ||
+			strings.HasPrefix(trimmed, "stateDiagram") ||
+			strings.HasPrefix(trimmed, "erDiagram")
+
+		if isGraphDeclaration {
+			if !foundGraphDeclaration {
+				// Keep the first graph declaration
+				cleanedLines = append(cleanedLines, line)
+				foundGraphDeclaration = true
+			}
+			// Skip subsequent duplicate declarations
+		} else {
+			// Keep all non-declaration lines
+			cleanedLines = append(cleanedLines, line)
+		}
+	}
+
+	return strings.Join(cleanedLines, "\n")
 }
 
 // validateMermaidSyntax performs basic validation of Mermaid syntax

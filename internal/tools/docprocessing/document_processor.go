@@ -114,20 +114,14 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 		mcp.WithArray("sources",
 			mcp.Description("Multiple document sources for batch processing: Array of fully qualified absolute file paths or URLs. When provided, 'source' parameter is ignored."),
 		),
-		mcp.WithNumber("max_concurrency",
-			mcp.Description("Maximum number of documents to process concurrently in batch mode (default: CPU cores - 1, max: 10)"),
-		),
 		mcp.WithString("profile",
 			mcp.Description(profileDesc),
 		),
-		mcp.WithBoolean("inline",
-			mcp.Description("Return content inline in response instead of saving to files (default: false - saves markdown and images to same directory as source file)."),
+		mcp.WithBoolean("return_inline_only",
+			mcp.Description("Optionally return content inline only. When false (default), the tool will save the processed content to a file in the same directory as the source file which is usually desired."),
 		),
 		mcp.WithString("save_to",
 			mcp.Description("Override the file path for saved content (default: same directory as source file). MUST be a fully qualified absolute path"),
-		),
-		mcp.WithBoolean("cache_enabled",
-			mcp.Description("Override global cache setting for this request (default: true)"),
 		),
 		mcp.WithNumber("timeout",
 			mcp.Description("Processing timeout in seconds (overrides default)"),
@@ -277,11 +271,6 @@ func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*Docu
 		req.PreserveImages = images
 	}
 
-	// Optional: cache_enabled
-	if cache, ok := args["cache_enabled"].(bool); ok {
-		req.CacheEnabled = &cache
-	}
-
 	// Optional: timeout
 	if timeout, ok := args["timeout"].(float64); ok {
 		timeoutInt := int(timeout)
@@ -294,9 +283,9 @@ func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*Docu
 		req.MaxFileSize = &maxSizeInt
 	}
 
-	// Optional: inline (default: false)
-	if inline, ok := args["inline"].(bool); ok {
-		req.Inline = &inline
+	// Optional: return_inline_only (default: false)
+	if returnInline, ok := args["return_inline_only"].(bool); ok {
+		req.ReturnInlineOnly = &returnInline
 	}
 
 	// Optional: save_to
@@ -479,9 +468,7 @@ func (t *DocumentProcessorTool) applyProfile(req *DocumentProcessingRequest) {
 
 // shouldUseCache determines if caching should be used for this request
 func (t *DocumentProcessorTool) shouldUseCache(req *DocumentProcessingRequest) bool {
-	if req.CacheEnabled != nil {
-		return *req.CacheEnabled
-	}
+	// Always use cache since we removed the cache_enabled parameter
 	return t.config.CacheEnabled
 }
 
@@ -1167,8 +1154,16 @@ func (t *DocumentProcessorTool) insertMermaidDiagramsIntoMarkdown(content string
 		}
 
 		// Create the Mermaid code block with reference to original image
-		mermaidBlock := fmt.Sprintf("\n\n**Mermaid Diagram (converted from %s):**\n\n```mermaid\n%s\n```\n\n*%s*\n",
-			diagram.ID, diagram.MermaidCode, diagram.Description)
+		// Only include the description if it's meaningful and different from a generic placeholder
+		descriptionText := ""
+		if diagram.Description != "" &&
+			diagram.Description != "Diagram analysis completed" &&
+			!strings.Contains(diagram.Description, "graph TD") {
+			descriptionText = fmt.Sprintf("\n\n*%s*", diagram.Description)
+		}
+
+		mermaidBlock := fmt.Sprintf("\n\n**Mermaid Diagram (converted from %s):**\n\n```mermaid\n%s\n```%s\n",
+			diagram.ID, diagram.MermaidCode, descriptionText)
 
 		// Try to find the original image reference to insert the Mermaid diagram nearby
 		imagePattern := fmt.Sprintf("![%s]", diagram.ID)
@@ -1201,7 +1196,7 @@ func (t *DocumentProcessorTool) insertMermaidDiagramsIntoMarkdown(content string
 			insertionPoint := ""
 			if diagram.Caption != "" {
 				insertionPoint = diagram.Caption
-			} else if diagram.Description != "" {
+			} else if diagram.Description != "" && diagram.Description != "Diagram analysis completed" {
 				// Use first few words of description
 				words := strings.Fields(diagram.Description)
 				if len(words) > 3 {
@@ -1227,11 +1222,11 @@ func (t *DocumentProcessorTool) insertMermaidDiagramsIntoMarkdown(content string
 
 // shouldSaveToFile determines if content should be saved to a file
 func (t *DocumentProcessorTool) shouldSaveToFile(req *DocumentProcessingRequest) bool {
-	// If inline is explicitly set to true, return content inline
-	if req.Inline != nil && *req.Inline {
+	// If return_inline_only is explicitly set to true, do not save to file
+	if req.ReturnInlineOnly != nil && *req.ReturnInlineOnly {
 		return false
 	}
-	// Default behaviour: save to file (inline=false by default)
+	// Default behaviour: save to file (return_inline_only=false by default)
 	return true
 }
 

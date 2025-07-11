@@ -1609,7 +1609,7 @@ def parse_vlm_response(content: str, figure) -> Dict[str, Any]:
             if mermaid_match:
                 raw_mermaid = mermaid_match.group(1).strip()
 
-                # Clean up the mermaid code - remove duplicate graph declarations
+                # Clean up the mermaid code - remove duplicate graph declarations and empty lines
                 lines = raw_mermaid.split('\n')
                 cleaned_lines = []
                 graph_declaration_found = False
@@ -1620,16 +1620,51 @@ def parse_vlm_response(content: str, figure) -> Dict[str, Any]:
                         continue
 
                     # Check if this is a graph declaration line
-                    if re.match(r'^(graph|flowchart)\s+(TD|LR|TB|RL|BT)', line, re.IGNORECASE):
+                    if re.match(r'^(graph|flowchart)\s+(TD|LR|TB|RL|BT|UD)', line, re.IGNORECASE):
                         if not graph_declaration_found:
                             cleaned_lines.append(line)
                             graph_declaration_found = True
-                        # Skip duplicate graph declarations
+                        else:
+                            # Skip duplicate graph declarations
+                            logger.info(f"Skipping duplicate graph declaration: {line}")
+                        continue
                     else:
                         cleaned_lines.append(line)
 
-                mermaid_code = '\n'.join(cleaned_lines)
-                logger.info(f"Extracted and cleaned Mermaid code: {mermaid_code[:100]}...")
+                # Only return mermaid code if we have actual content beyond the declaration
+                if len(cleaned_lines) > 1:  # More than just the graph declaration
+                    mermaid_code = '\n'.join(cleaned_lines)
+                    logger.info(f"Extracted and cleaned Mermaid code: {mermaid_code[:100]}...")
+
+                    # Additional aggressive cleanup - remove any remaining duplicate graph declarations
+                    # This handles cases where the LLM generates malformed content
+                    final_lines = []
+                    declaration_added = False
+
+                    for line in mermaid_code.split('\n'):
+                        line = line.strip()
+                        if not line:
+                            continue
+
+                        # Check for graph declaration
+                        if re.match(r'^(graph|flowchart)\s+(TD|LR|TB|RL|BT|UD)', line, re.IGNORECASE):
+                            if not declaration_added:
+                                final_lines.append(line)
+                                declaration_added = True
+                            # Always skip additional declarations
+                        else:
+                            final_lines.append(line)
+
+                    # Rebuild the mermaid code
+                    if len(final_lines) > 1:  # Must have declaration + content
+                        mermaid_code = '\n'.join(final_lines)
+                        logger.info(f"Final cleaned Mermaid code: {mermaid_code[:100]}...")
+                    else:
+                        logger.info("Mermaid code contains only declaration after cleanup, skipping")
+                        mermaid_code = ""
+                else:
+                    logger.info("Mermaid code contains only declaration, skipping")
+                    mermaid_code = ""
                 break
 
         # If no mermaid code found, check if the response says no diagram detected
@@ -1711,10 +1746,10 @@ def create_vlm_analysis_prompt(figure) -> str:
         prompt = """You are an expert at analysing diagrams and converting them to Mermaid syntax. Analyse this image and convert any diagrams, charts, or flowcharts to Mermaid syntax.
 
 IMPORTANT INSTRUCTIONS:
-- You must use British English spelling throughout your response
-- You must return only the diagram in a markdown codeblock using ```mermaid syntax
-- You must be accurate and not make up anything that isn't clearly visible in the image
-- If you cannot see a clear diagram, respond with "No clear diagram detected"
+- You MUST use British English spelling throughout your response
+- You MUST return only the diagram in a markdown codeblock using ```mermaid syntax
+- You MUST be accurate and not make up anything that isn't clearly visible in the image
+- If you cannot see a clear diagram, respond with "<!-- No clear diagram detected  -->"
 
 Please convert the diagram to valid Mermaid syntax and return it in a single ```mermaid code block."""
 
@@ -1725,7 +1760,7 @@ Please convert the diagram to valid Mermaid syntax and return it in a single ```
         return "Convert this diagram to Mermaid syntax using ```mermaid code blocks."
 
 def analyze_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
-    """Analyze image using SmolDocling vision-language model."""
+    """Analyse image using SmolDocling vision-language model."""
     try:
         # Import SmolDocling components if available
         from docling.models.vision import SmolDoclingVisionModel
@@ -3006,6 +3041,8 @@ def main():
                                help='Allow communication with external vision model services')
     process_parser.add_argument('--convert-diagrams-to-mermaid', action='store_true',
                                help='Convert detected diagrams to Mermaid syntax using AI vision models')
+    process_parser.add_argument('--return-inline-only', action='store_true',
+                               help='Return content inline in the response only (do not save to file)')
     process_parser.add_argument('--extract-images', action='store_true',
                                help='Extract individual images, charts, and diagrams as base64-encoded data with AI recreation prompts')
 
