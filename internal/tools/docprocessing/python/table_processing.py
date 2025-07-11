@@ -7,6 +7,7 @@ This module handles table extraction and formatting.
 
 from typing import List, Dict, Any
 import logging
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -30,43 +31,63 @@ def extract_tables(document) -> List[Dict[str, Any]]:
                     "html": ""
                 }
 
-                # Extract table structure
-                if hasattr(table, 'data') and table.data:
-                    # Convert table data to structured format
-                    table_rows = []
-                    headers = []
+                try:
+                    # Use docling's built-in pandas export for better accuracy
+                    df = table.export_to_dataframe()
 
-                    # Handle different table data formats
-                    if isinstance(table.data, list):
-                        # List of rows format
-                        for row_idx, row in enumerate(table.data):
-                            if isinstance(row, list):
-                                # List of cells
-                                row_data = [str(cell) if cell is not None else "" for cell in row]
-                            elif hasattr(row, 'cells'):
-                                # Row object with cells
-                                row_data = [str(cell.text) if hasattr(cell, 'text') else str(cell) for cell in row.cells]
-                            else:
-                                # Fallback: convert to string
-                                row_data = [str(row)]
+                    if not df.empty:
+                        headers = df.columns.tolist()
+                        rows = df.values.tolist()
 
-                            if row_idx == 0 and not headers:
-                                # First row might be headers
-                                headers = row_data
-                            else:
-                                table_rows.append(row_data)
+                        table_data["headers"] = headers
+                        table_data["rows"] = rows
 
-                    # If no headers were detected, create generic ones
-                    if not headers and table_rows:
-                        headers = [f"Column {i+1}" for i in range(len(table_rows[0]))]
+                        # Generate export formats from the dataframe
+                        table_data["markdown"] = df.to_markdown(index=False)
+                        table_data["csv"] = df.to_csv(index=False)
+                        # Pass caption to to_html if it exists
+                        caption = table_data.get("caption")
+                        table_data["html"] = df.to_html(index=False, caption=caption if caption else None)
 
-                    table_data["headers"] = headers
-                    table_data["rows"] = table_rows
+                except Exception as e:
+                    logger.warning(f"Could not export table {i+1} to dataframe, falling back to manual extraction. Error: {e}")
+                    # Fallback to original logic if export_to_dataframe fails
+                    if hasattr(table, 'data') and table.data:
+                        # Convert table data to structured format
+                        table_rows = []
+                        headers = []
 
-                    # Generate export formats
-                    table_data["markdown"] = generate_table_markdown(headers, table_rows)
-                    table_data["csv"] = generate_table_csv(headers, table_rows)
-                    table_data["html"] = generate_table_html(headers, table_rows, table_data["caption"])
+                        # Handle different table data formats
+                        if isinstance(table.data, list):
+                            # List of rows format
+                            for row_idx, row in enumerate(table.data):
+                                if isinstance(row, list):
+                                    # List of cells
+                                    row_data = [str(cell) if cell is not None else "" for cell in row]
+                                elif hasattr(row, 'cells'):
+                                    # Row object with cells
+                                    row_data = [str(cell.text) if hasattr(cell, 'text') else str(cell) for cell in row.cells]
+                                else:
+                                    # Fallback: convert to string
+                                    row_data = [str(row)]
+
+                                if row_idx == 0 and not headers:
+                                    # First row might be headers
+                                    headers = row_data
+                                else:
+                                    table_rows.append(row_data)
+
+                        # If no headers were detected, create generic ones
+                        if not headers and table_rows:
+                            headers = [f"Column {i+1}" for i in range(len(table_rows[0]))]
+
+                        table_data["headers"] = headers
+                        table_data["rows"] = table_rows
+
+                        # Generate export formats
+                        table_data["markdown"] = generate_table_markdown(headers, table_rows)
+                        table_data["csv"] = generate_table_csv(headers, table_rows)
+                        table_data["html"] = generate_table_html(headers, table_rows, table_data["caption"])
 
                 # Add bounding box if available
                 if hasattr(table, 'bbox') or hasattr(table, 'bounding_box'):

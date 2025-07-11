@@ -93,3 +93,8 @@ func IsEmbeddedScriptsAvailable() bool {
 	_, err := embeddedPythonFiles.ReadFile("python/docling_processor.py")
 	return err == nil
 }
+
+// ReadEmbeddedFile reads an embedded file and returns its content
+func ReadEmbeddedFile(path string) ([]byte, error) {
+	return embeddedPythonFiles.ReadFile(path)
+}

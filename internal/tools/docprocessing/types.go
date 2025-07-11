@@ -89,11 +89,10 @@ type DocumentProcessingRequest struct {
 	EnableOCR                bool                 `json:"enable_ocr,omitempty"`                  // Enable OCR processing
 	OCRLanguages             []string             `json:"ocr_languages,omitempty"`               // OCR language codes
 	PreserveImages           bool                 `json:"preserve_images,omitempty"`             // Extract and preserve images
-	CacheEnabled             *bool                `json:"cache_enabled,omitempty"`               // Override global cache setting
 	Timeout                  *int                 `json:"timeout,omitempty"`                     // Processing timeout in seconds
 	MaxFileSize              *int                 `json:"max_file_size,omitempty"`               // Maximum file size in MB
-	Inline                   *bool                `json:"inline,omitempty"`                      // Return content inline (default: true). Set to false to save to file specified in save_to
-	SaveTo                   string               `json:"save_to,omitempty"`                     // File path to save content when inline=false
+	ReturnInlineOnly         *bool                `json:"return_inline_only,omitempty"`          // Return content inline in the response only. When false (default), the tool will save the processed content to a file in the same directory as the source file, and also return the content inline.
+	SaveTo                   string               `json:"save_to,omitempty"`                     // File path to save content when return_inline_only=false
 	ClearFileCache           bool                 `json:"clear_file_cache,omitempty"`            // Force clear all cache entries for this source file before processing
 	TableFormerMode          TableFormerMode      `json:"table_former_mode,omitempty"`           // TableFormer processing mode for table structure recognition
 	CellMatching             *bool                `json:"cell_matching,omitempty"`               // Control table cell matching (true: use PDF cells, false: use predicted cells)
