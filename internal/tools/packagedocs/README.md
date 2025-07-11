@@ -13,7 +13,7 @@ This tool set enables AI agents and developers to access up-to-date documentatio
 
 ## Tools
 
-### 1. `resolve-library-id`
+### 1. `resolve_library_id`
 
 Resolves a library name to a Context7-compatible library ID.
 
@@ -25,7 +25,7 @@ Resolves a library name to a Context7-compatible library ID.
 **Example Usage**:
 ```json
 {
-  "name": "resolve-library-id",
+  "name": "resolve_library_id",
   "arguments": {
     "libraryName": "react"
   }
@@ -38,21 +38,21 @@ Resolves a library name to a Context7-compatible library ID.
 - Documentation coverage (number of code snippets and tokens)
 - GitHub stars and community adoption
 
-### 2. `get-library-docs`
+### 2. `get_library_docs`
 
 Fetches comprehensive documentation for a specific library using its Context7-compatible ID.
 
 **Purpose**: Retrieves up-to-date documentation content optimised for AI consumption.
 
 **Parameters**:
-- `context7CompatibleLibraryID` (required): The exact library ID from `resolve-library-id` (e.g., "/facebook/react", "/vercel/next.js")
+- `context7CompatibleLibraryID` (required): The exact library ID from `resolve_library_id` (e.g., "/facebook/react", "/vercel/next.js")
 - `topic` (optional): Focus on specific documentation topics (e.g., "hooks", "routing", "authentication")
 - `tokens` (optional): Maximum tokens to retrieve (default: 10,000, max: 100,000)
 
 **Example Usage**:
 ```json
 {
-  "name": "get-library-docs",
+  "name": "get_library_docs",
   "arguments": {
     "context7CompatibleLibraryID": "/facebook/react",
     "topic": "hooks",
@@ -67,14 +67,14 @@ Fetches comprehensive documentation for a specific library using its Context7-co
 
 The typical workflow for using these tools is:
 
-1. **Resolve Library ID**: Use `resolve-library-id` to find the correct library identifier
-2. **Fetch Documentation**: Use `get-library-docs` with the resolved ID to get the documentation
+1. **Resolve Library ID**: Use `resolve_library_id` to find the correct library identifier
+2. **Fetch Documentation**: Use `get_library_docs` with the resolved ID to get the documentation
 
 ```mermaid
 graph LR
-    A[Library Name] --> B[resolve-library-id]
+    A[Library Name] --> B[resolve_library_id]
     B --> C[Library ID]
-    C --> D[get-library-docs]
+    C --> D[get_library_docs]
     D --> E[Documentation]
 ```
 

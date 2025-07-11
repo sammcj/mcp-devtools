@@ -16,7 +16,7 @@ type ResolveLibraryIDTool struct {
 	client *Client
 }
 
-// init registers the resolve-library-id tool
+// init registers the resolve_library_id tool
 func init() {
 	registry.Register(&ResolveLibraryIDTool{})
 }
@@ -24,10 +24,10 @@ func init() {
 // Definition returns the tool's definition for MCP registration
 func (t *ResolveLibraryIDTool) Definition() mcp.Tool {
 	return mcp.NewTool(
-		"resolve-library-id",
+		"resolve_library_id",
 		mcp.WithDescription(`Resolves a package/product name to a Context7-compatible library ID and returns a list of matching libraries.
 
-You MUST call this function before 'get-library-docs' to obtain a valid Context7-compatible library ID UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.
+You MUST call this function before 'get_library_docs' to obtain a valid Context7-compatible library ID UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.
 
 Selection Process:
 1. Analyse the query to understand what library/package the user is looking for
@@ -51,14 +51,14 @@ For ambiguous queries, request clarification before proceeding with a best-guess
 	)
 }
 
-// Execute executes the resolve-library-id tool
+// Execute executes the resolve_library_id tool
 func (t *ResolveLibraryIDTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
 	// Lazy initialise client
 	if t.client == nil {
 		t.client = NewClient(logger)
 	}
 
-	logger.Info("Executing resolve-library-id tool")
+	logger.Info("Executing resolve_library_id tool")
 
 	// Parse library name
 	libraryName, ok := args["libraryName"].(string)

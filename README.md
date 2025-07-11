@@ -198,8 +198,8 @@ You can override the default provider by specifying the `provider` parameter in 
 - **AI-Optimised Content**: Documentation formatted specifically for AI consumption
 
 The tool provides two main functions:
-1. `resolve-library-id` - Find the correct library identifier from a name
-2. `get-library-docs` - Retrieve documentation using the resolved ID
+1. `resolve_library_id` - Find the correct library identifier from a name
+2. `get_library_docs` - Retrieve documentation using the resolved ID
 
 See the [Package Documentation README](internal/tools/packagedocs/README.md) for detailed usage instructions.
 
@@ -380,13 +380,13 @@ The `think` tool provides a structured thinking space for AI agents during compl
 
 The package documentation tools provide access to comprehensive library documentation through the Context7 API:
 
-#### `resolve-library-id`
+#### `resolve_library_id`
 
 Resolves a library name to a Context7-compatible library ID:
 
 ```json
 {
-  "name": "resolve-library-id",
+  "name": "resolve_library_id",
   "arguments": {
     "libraryName": "react"
   }
@@ -398,13 +398,13 @@ Resolves a library name to a Context7-compatible library ID:
 
 **Response:** Returns the best matching library ID with alternatives and selection rationale based on name similarity, trust scores, and documentation coverage.
 
-#### `get-library-docs`
+#### `get_library_docs`
 
 Fetches comprehensive documentation for a specific library:
 
 ```json
 {
-  "name": "get-library-docs",
+  "name": "get_library_docs",
   "arguments": {
     "context7CompatibleLibraryID": "/facebook/react",
     "topic": "hooks",
@@ -414,15 +414,15 @@ Fetches comprehensive documentation for a specific library:
 ```
 
 **Parameters:**
-- `context7CompatibleLibraryID` (required): Exact library ID from `resolve-library-id`
+- `context7CompatibleLibraryID` (required): Exact library ID from `resolve_library_id`
 - `topic` (optional): Focus on specific topics (e.g., "hooks", "routing", "authentication")
 - `tokens` (optional): Maximum tokens to retrieve (default: 10,000, max: 100,000)
 
 **Response:** Returns formatted documentation with metadata including topic focus, token limits, and content length.
 
 **Workflow:**
-1. Use `resolve-library-id` to find the correct library identifier
-2. Use `get-library-docs` with the resolved ID to fetch documentation
+1. Use `resolve_library_id` to find the correct library identifier
+2. Use `get_library_docs` with the resolved ID to fetch documentation
 
 See the [Package Documentation README](internal/tools/packagedocs/README.md) for detailed information.
 

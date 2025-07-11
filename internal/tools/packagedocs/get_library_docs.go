@@ -16,7 +16,7 @@ type GetLibraryDocsTool struct {
 	client *Client
 }
 
-// init registers the get-library-docs tool
+// init registers the get_library_docs tool
 func init() {
 	registry.Register(&GetLibraryDocsTool{})
 }
@@ -24,11 +24,11 @@ func init() {
 // Definition returns the tool's definition for MCP registration
 func (t *GetLibraryDocsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
-		"get-library-docs",
-		mcp.WithDescription(`Fetches up-to-date documentation for a library / package. You must call 'resolve-library-id' first to obtain the exact Context7-compatible library ID required to use this tool, UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.`),
+		"get_library_docs",
+		mcp.WithDescription(`Fetches up-to-date documentation for a library / package. You must call 'resolve_library_id' first to obtain the exact Context7-compatible library ID required to use this tool, UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.`),
 		mcp.WithString("context7CompatibleLibraryID",
 			mcp.Required(),
-			mcp.Description("Exact Context7-compatible library ID (e.g., '/mongodb/docs', '/vercel/next.js', '/supabase/supabase', '/vercel/next.js/v14.3.0-canary.87') retrieved from 'resolve-library-id' or directly from user query in the format '/org/project' or '/org/project/version'."),
+			mcp.Description("Exact Context7-compatible library ID (e.g., '/mongodb/docs', '/vercel/next.js', '/supabase/supabase', '/vercel/next.js/v14.3.0-canary.87') retrieved from 'resolve_library_id' or directly from user query in the format '/org/project' or '/org/project/version'."),
 		),
 		mcp.WithString("topic",
 			mcp.Description("Topic to focus documentation on (e.g., 'hooks', 'routing')."),
@@ -40,14 +40,14 @@ func (t *GetLibraryDocsTool) Definition() mcp.Tool {
 	)
 }
 
-// Execute executes the get-library-docs tool
+// Execute executes the get_library_docs tool
 func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
 	// Lazy initialise client
 	if t.client == nil {
 		t.client = NewClient(logger)
 	}
 
-	logger.Info("Executing get-library-docs tool")
+	logger.Info("Executing get_library_docs tool")
 
 	// Parse required parameters
 	libraryID, ok := args["context7CompatibleLibraryID"].(string)
