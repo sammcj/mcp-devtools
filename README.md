@@ -14,6 +14,7 @@ graph TD
     A --> G[Memory]
     A --> H[Document Processing]
     A --> I[Package Documentation]
+    A --> J[American to British English]
 
     C --> C1[Brave]
     C --> C2[SearXNG]
@@ -49,6 +50,7 @@ graph TD
     - [Internet Search](#internet-search)
     - [Think Tool](#think-tool)
     - [Memory Tool](#memory-tool)
+    - [American to British English Converter](#american-to-british-english-converter)
     - [Document Processing](#document-processing)
     - [Package Documentation](#package-documentation)
     - [shadcn ui Components](#shadcn-ui-components)
@@ -153,6 +155,16 @@ You can override the default provider by specifying the `provider` parameter in 
 - **Fuzzy Search**: Enhanced search capabilities with relevance scoring
 - **Concurrent Access**: Safe file operations with locking mechanisms
 - **Configurable Storage**: Environment variable configuration for storage location
+
+### American to British English Converter
+
+**'murican-to-english Tool**: Converts American English text to standard International / British English spelling using the [m2e](https://github.com/sammcj/m2e) library.
+
+- **Comprehensive Dictionary**: Extensive mapping of American to British spellings
+- **Format Preservation**: Maintains capitalisation, punctuation, and text structure
+- **Code-Aware Processing**: Avoids converting programming terms and code blocks
+- **Smart Quote Normalisation**: Optional conversion of smart quotes and em-dashes
+- **User-Defined Dictionaries**: Supports custom spelling overrides
 
 ### Document Processing
 
