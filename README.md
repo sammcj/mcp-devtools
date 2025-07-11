@@ -14,7 +14,7 @@ graph TD
     A --> G[Memory]
     A --> H[Document Processing]
     A --> I[Package Documentation]
-    A --> J[American to British English]
+    A --> J[American to Intl. English]
 
     C --> C1[Brave]
     C --> C2[SearXNG]
@@ -33,7 +33,7 @@ graph TD
     classDef docTool fill:#F0E6FF,stroke:#9C27B0,color:#7B1FA2
     classDef packageTool fill:#FFF0E6,stroke:#FF6B35,color:#D84315
 
-    class B,C,D,E,F,H,I toolCategory
+    class B,C,D,E,F,H,I,J toolCategory
     class B1,B2,E1,F1 tool
     class B1,C1,C2,C3 searchTool
     class G memoryTool
@@ -50,7 +50,7 @@ graph TD
     - [Internet Search](#internet-search)
     - [Think Tool](#think-tool)
     - [Memory Tool](#memory-tool)
-    - [American to British English Converter](#american-to-british-english-converter)
+    - [American to English Converter](#american-to-english-converter)
     - [Document Processing](#document-processing)
     - [Package Documentation](#package-documentation)
     - [shadcn ui Components](#shadcn-ui-components)
@@ -156,11 +156,11 @@ You can override the default provider by specifying the `provider` parameter in 
 - **Concurrent Access**: Safe file operations with locking mechanisms
 - **Configurable Storage**: Environment variable configuration for storage location
 
-### American to British English Converter
+### American to English Converter
 
 **'murican-to-english Tool**: Converts American English text to standard International / British English spelling using the [m2e](https://github.com/sammcj/m2e) library.
 
-- **Comprehensive Dictionary**: Extensive mapping of American to British spellings
+- **Comprehensive Dictionary**: Extensive mapping of American to English spellings
 - **Format Preservation**: Maintains capitalisation, punctuation, and text structure
 - **Code-Aware Processing**: Avoids converting programming terms and code blocks
 - **Smart Quote Normalisation**: Optional conversion of smart quotes and em-dashes
