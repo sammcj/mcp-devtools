@@ -15,6 +15,7 @@ graph TD
     A --> H[Document Processing]
     A --> I[Package Documentation]
     A --> J[American to Intl. English]
+    A --> K[PDF Processing]
 
     C --> C1[Brave]
     C --> C2[SearXNG]
@@ -24,6 +25,10 @@ graph TD
 
     H --> H5[OCR]
     H --> H6[vLLM]
+    
+    K --> K1[Text Extraction]
+    K --> K2[Image Extraction]
+    K --> K3[Markdown Output]
 
     classDef toolCategory fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef tool fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
@@ -32,14 +37,16 @@ graph TD
     classDef webTool fill:#E6F7FF,stroke:#2196F3,color:#1976D2
     classDef docTool fill:#F0E6FF,stroke:#9C27B0,color:#7B1FA2
     classDef packageTool fill:#FFF0E6,stroke:#FF6B35,color:#D84315
+    classDef pdfTool fill:#FFE6E6,stroke:#E91E63,color:#C2185B
 
-    class B,C,D,E,F,H,I,J toolCategory
+    class B,C,D,E,F,H,I,J,K toolCategory
     class B1,B2,E1,F1 tool
     class B1,C1,C2,C3 searchTool
     class G memoryTool
     class D1 webTool
     class H1,H2,H3,H4,H5,H6 docTool
     class I1,I2 packageTool
+    class K1,K2,K3 pdfTool
 ```
 
 ---
@@ -53,6 +60,7 @@ graph TD
     - [American to English Converter](#american-to-english-converter)
     - [Document Processing](#document-processing)
     - [Package Documentation](#package-documentation)
+    - [PDF Processing](#pdf-processing)
     - [shadcn ui Components](#shadcn-ui-components)
   - [Screenshots](#screenshots)
   - [Installation](#installation)
@@ -202,6 +210,21 @@ The tool provides two main functions:
 2. `get_library_docs` - Retrieve documentation using the resolved ID
 
 See the [Package Documentation README](internal/tools/packagedocs/README.md) for detailed usage instructions.
+
+### PDF Processing
+
+**PDF Text and Image Extraction Tool**: Extract text and images from PDF files using the [pdfcpu](https://github.com/pdfcpu/pdfcpu) library, converting them to well-formatted markdown with embedded image references.
+
+- **Text Extraction**: Extracts readable text content from PDF pages while attempting to preserve layout
+- **Image Extraction**: Extracts embedded images with proper naming and organisation 
+- **Markdown Output**: Generates structured markdown files with page-by-page content
+- **Multi-page Support**: Process all pages or specific page ranges (e.g., "1-5", "1,3,5")
+- **Automatic Linking**: Links extracted images in the correct locations within the markdown
+- **Flexible Output**: Choose output directory or use the same directory as the source PDF
+
+**Note**: The PDF processor tool uses pdfcpu for content extraction. Text extraction quality depends on the PDF structure and may not be perfect for complex layouts or scanned documents.
+
+See the [PDF Processing README](internal/tools/pdf/README.md) for detailed usage instructions.
 
 ### shadcn ui Components
 
@@ -425,6 +448,51 @@ Fetches comprehensive documentation for a specific library:
 2. Use `get_library_docs` with the resolved ID to fetch documentation
 
 See the [Package Documentation README](internal/tools/packagedocs/README.md) for detailed information.
+
+### PDF Processing
+
+The `pdf` tool extracts text and images from PDF files, creating markdown output with embedded image references:
+
+#### Basic Usage
+
+```json
+{
+  "name": "pdf",
+  "arguments": {
+    "file_path": "/absolute/path/to/document.pdf"
+  }
+}
+```
+
+#### Advanced Usage
+
+```json
+{
+  "name": "pdf",
+  "arguments": {
+    "file_path": "/absolute/path/to/document.pdf",
+    "output_dir": "/absolute/path/to/output",
+    "extract_images": true,
+    "pages": "1-5"
+  }
+}
+```
+
+**Parameters:**
+- `file_path` (required): Absolute file path to the PDF document to process
+- `output_dir` (optional): Output directory for markdown and images (defaults to same directory as PDF)
+- `extract_images` (optional): Whether to extract images from the PDF (default: true)
+- `pages` (optional): Page range to process. Options:
+  - `"all"` - Process all pages (default)
+  - `"1-5"` - Process pages 1 through 5
+  - `"1,3,5"` - Process pages 1, 3, and 5
+  - `"1-3,7,10-12"` - Process pages 1-3, 7, and 10-12
+
+**Response:** Returns paths to generated markdown file, extracted images, and processing statistics.
+
+**Output:** Creates a markdown file with page-by-page content and an images directory with extracted images properly linked in the markdown.
+
+See the [PDF Processing README](internal/tools/pdf/README.md) for detailed information.
 
 ### Unified Package Search
 
