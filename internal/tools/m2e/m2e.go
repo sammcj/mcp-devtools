@@ -33,7 +33,7 @@ func (m *M2ETool) Definition() mcp.Tool {
 			mcp.Description("Fully qualified absolute path to the file to update in place"),
 		),
 		mcp.WithString("text",
-			mcp.Description("Text to convert and return inline (alternative to file_path)"),
+			mcp.Description("Text to convert and return inline (if not using file_path)"),
 		),
 		mcp.WithBoolean("keep_smart_quotes",
 			mcp.Description("Whether to keep smart quotes and em-dashes as-is (default: false, as we usually want to normalise them)"),
