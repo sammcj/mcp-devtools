@@ -13,6 +13,7 @@ graph TD
     A --> F[ShadCN UI Components]
     A --> G[Memory]
     A --> H[Document Processing]
+    A --> I[Package Documentation]
 
     C --> C1[Brave]
     C --> C2[SearXNG]
@@ -20,8 +21,8 @@ graph TD
 
     D --> D1[Fetch URL as Markdown]
 
-    H --> H5[OCR Support]
-    H --> H6[vLLM Support]
+    H --> H5[OCR]
+    H --> H6[vLLM]
 
     classDef toolCategory fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef tool fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
@@ -29,13 +30,15 @@ graph TD
     classDef memoryTool fill:#FFF3E6,stroke:#FF9800,color:#F57C00
     classDef webTool fill:#E6F7FF,stroke:#2196F3,color:#1976D2
     classDef docTool fill:#F0E6FF,stroke:#9C27B0,color:#7B1FA2
+    classDef packageTool fill:#FFF0E6,stroke:#FF6B35,color:#D84315
 
-    class B,C,D,E,F,H toolCategory
+    class B,C,D,E,F,H,I toolCategory
     class B1,B2,E1,F1 tool
     class B1,C1,C2,C3 searchTool
     class G memoryTool
     class D1 webTool
     class H1,H2,H3,H4,H5,H6 docTool
+    class I1,I2 packageTool
 ```
 
 ---
@@ -47,6 +50,7 @@ graph TD
     - [Think Tool](#think-tool)
     - [Memory Tool](#memory-tool)
     - [Document Processing](#document-processing)
+    - [Package Documentation](#package-documentation)
     - [shadcn ui Components](#shadcn-ui-components)
   - [Screenshots](#screenshots)
   - [Installation](#installation)
@@ -56,6 +60,7 @@ graph TD
     - [Configuration](#configuration)
   - [Tools](#tools)
     - [Think Tool](#think-tool-1)
+    - [Package Documentation](#package-documentation-1)
     - [Unified Package Search](#unified-package-search)
     - [shadcn ui Components](#shadcn-ui-components-1)
     - [Document Processing](#document-processing-1)
@@ -168,6 +173,23 @@ You can override the default provider by specifying the `provider` parameter in 
 - **Auto-Save**: Automatically saves processed content to files by default
 
 **Note**: The document processor tool requires Python 3.10+ (ideally 3.13+) with the Docling library installed (`pip install docling`). If you don't see the tool available in your client, check that you have docling installed and Python in your path. See the [Document Processing README](internal/tools/docprocessing/README.md) for detailed installation and configuration instructions.
+
+### Package Documentation
+
+**Library Documentation Retrieval**: Access comprehensive, up-to-date documentation for any library or framework through the Context7 API.
+
+- **Library Resolution**: Intelligent matching of library names to Context7-compatible IDs
+- **Documentation Retrieval**: Fetch comprehensive docs with configurable token limits (1K-100K)
+- **Topic Filtering**: Focus on specific areas like "hooks", "routing", or "authentication"
+- **Quality Metrics**: Trust scores, GitHub stars, and documentation coverage statistics
+- **Alternative Suggestions**: Multiple library options with detailed selection rationale
+- **AI-Optimised Content**: Documentation formatted specifically for AI consumption
+
+The tool provides two main functions:
+1. `resolve-library-id` - Find the correct library identifier from a name
+2. `get-library-docs` - Retrieve documentation using the resolved ID
+
+See the [Package Documentation README](internal/tools/packagedocs/README.md) for detailed usage instructions.
 
 ### shadcn ui Components
 
@@ -341,6 +363,56 @@ The `think` tool provides a structured thinking space for AI agents during compl
 - 54% relative improvement in complex airline domain scenarios
 - Better consistency across multiple trials
 - Enhanced handling of edge cases and unusual scenarios
+
+### Package Documentation
+
+The package documentation tools provide access to comprehensive library documentation through the Context7 API:
+
+#### `resolve-library-id`
+
+Resolves a library name to a Context7-compatible library ID:
+
+```json
+{
+  "name": "resolve-library-id",
+  "arguments": {
+    "libraryName": "react"
+  }
+}
+```
+
+**Parameters:**
+- `libraryName` (required): Library name to search for (e.g., "react", "tensorflow", "express")
+
+**Response:** Returns the best matching library ID with alternatives and selection rationale based on name similarity, trust scores, and documentation coverage.
+
+#### `get-library-docs`
+
+Fetches comprehensive documentation for a specific library:
+
+```json
+{
+  "name": "get-library-docs",
+  "arguments": {
+    "context7CompatibleLibraryID": "/facebook/react",
+    "topic": "hooks",
+    "tokens": 15000
+  }
+}
+```
+
+**Parameters:**
+- `context7CompatibleLibraryID` (required): Exact library ID from `resolve-library-id`
+- `topic` (optional): Focus on specific topics (e.g., "hooks", "routing", "authentication")
+- `tokens` (optional): Maximum tokens to retrieve (default: 10,000, max: 100,000)
+
+**Response:** Returns formatted documentation with metadata including topic focus, token limits, and content length.
+
+**Workflow:**
+1. Use `resolve-library-id` to find the correct library identifier
+2. Use `get-library-docs` with the resolved ID to fetch documentation
+
+See the [Package Documentation README](internal/tools/packagedocs/README.md) for detailed information.
 
 ### Unified Package Search
 

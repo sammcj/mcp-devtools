@@ -99,3 +99,13 @@ All tools follow this pattern:
 3. Implement `Definition()` for MCP tool schema
 4. Implement `Execute()` for tool logic
 5. Use shared logger and cache for consistency
+
+## General Guidelines
+
+- Any tools we create must work on both macOS and Linux unless the user states otherwise (we don't need to bother with MS Windows).
+- When testing the docprocessing tool, unless otherwise instructed always call it with "clear_file_cache": true and do not enable return_inline_only
+- When adding new tools ensure they are registered in the list of available tools in the server, ensure they have a README.md and they're mentioned in the main README.md.
+- Ensure that when running in stdio mode that we NEVER log to stdout or stderr, as this will break the MCP protocol.
+- When creating new MCP tools make sure descriptions are clear and concise as they are what is used as hints to the AI coding agent using the tool, you should also make good use of MCP's annotations.
+- You can debug the tool by running it in debug mode interactively, e.g. `rm -f debug.log; pkill -f "mcp-devtools.*" ; echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "fetch_url", "arguments": {"url": "https://go.dev", "max_length": 500, "raw": false}}}' | ./bin/mcp-devtools stdio`, or `BRAVE_API_KEY="ask the user if you need this" ./bin/mcp-devtools stdio <<< '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "brave_search", "arguments": {"type": "web", "query": "cat facts", "count": 1}}}'`
+- Always use `make lint && make clean && make build` to build the project rather than gofmt, go build or test directly.
