@@ -16,6 +16,7 @@ graph TD
     A --> I[Package Documentation]
     A --> J[American to Intl. English]
     A --> K[PDF Processing]
+    A --> L[OAuth 2.0/2.1 Authorisation]
 
     C --> C1[Brave]
     C --> C2[SearXNG]
