@@ -1,16 +1,16 @@
 # OAuth 2.0/2.1 Implementation for MCP DevTools
 
-This package implements OAuth 2.0/2.1 authorization for MCP DevTools according to the MCP 2025-06-18 specification. It provides optional OAuth support for HTTP-based transports only.
+This package implements OAuth 2.0/2.1 authorisation for MCP DevTools according to the MCP 2025-06-18 specification. It provides optional OAuth support for HTTP-based transports only.
 
 ## Overview
 
 The implementation includes:
 
 - **OAuth 2.1 Resource Server**: Validates JWT access tokens with audience checking
-- **OAuth 2.0 Authorization Server Metadata** (RFC8414): Provides server metadata
+- **OAuth 2.0 Authorisation Server Metadata** (RFC8414): Provides server metadata
 - **OAuth 2.0 Protected Resource Metadata** (RFC9728): Advertises OAuth configuration
 - **Dynamic Client Registration** (RFC7591): Optional client registration endpoint
-- **PKCE Support**: Code challenge/verifier validation for authorization code flow
+- **PKCE Support**: Code challenge/verifier validation for authorisation code flow
 - **JWT Token Validation**: With JWKS support and audience validation
 - **Resource Indicators** (RFC8707): Proper token audience binding
 
@@ -37,36 +37,36 @@ All OAuth parameters can be set using environment variables:
 
 ```bash
 # Basic OAuth configuration via environment variables
-export OAUTH_ENABLED=true
-export OAUTH_ISSUER="https://auth.example.com"
-export OAUTH_AUDIENCE="https://mcp.example.com"
-export OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
+OAUTH_ENABLED=true
+OAUTH_ISSUER="https://auth.example.com"
+OAUTH_AUDIENCE="https://mcp.example.com"
+OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
 
 ./mcp-devtools --transport=http
 
 # With dynamic client registration
-export OAUTH_DYNAMIC_REGISTRATION=true
+OAUTH_DYNAMIC_REGISTRATION=true
 ./mcp-devtools --transport=http
 
 # Development mode (allows HTTP)
-export OAUTH_REQUIRE_HTTPS=false
-export OAUTH_ISSUER="http://localhost:8080"
-export OAUTH_AUDIENCE="http://localhost:18080"
-export OAUTH_JWKS_URL="http://localhost:8080/.well-known/jwks.json"
+OAUTH_REQUIRE_HTTPS=false
+OAUTH_ISSUER="http://localhost:8080"
+OAUTH_AUDIENCE="http://localhost:18080"
+OAUTH_JWKS_URL="http://localhost:8080/.well-known/jwks.json"
 ./mcp-devtools --transport=http
 ```
 
 #### Environment Variable Reference
 
-| Environment Variable | Alternative | CLI Flag | Description |
-|---------------------|-------------|----------|-------------|
-| `OAUTH_ENABLED` | `MCP_OAUTH_ENABLED` | `--oauth-enabled` | Enable OAuth 2.0/2.1 authorization |
-| `OAUTH_ISSUER` | `MCP_OAUTH_ISSUER` | `--oauth-issuer` | OAuth issuer URL (required if enabled) |
-| `OAUTH_AUDIENCE` | `MCP_OAUTH_AUDIENCE` | `--oauth-audience` | OAuth audience for this resource server |
-| `OAUTH_JWKS_URL` | `MCP_OAUTH_JWKS_URL` | `--oauth-jwks-url` | JWKS URL for token validation |
-| `OAUTH_DYNAMIC_REGISTRATION` | `MCP_OAUTH_DYNAMIC_REGISTRATION` | `--oauth-dynamic-registration` | Enable dynamic client registration |
-| `OAUTH_AUTHORIZATION_SERVER` | `MCP_OAUTH_AUTHORIZATION_SERVER` | `--oauth-authorization-server` | Authorization server URL (if different) |
-| `OAUTH_REQUIRE_HTTPS` | `MCP_OAUTH_REQUIRE_HTTPS` | `--oauth-require-https` | Require HTTPS (default: true) |
+| Environment Variable         | Alternative                      | CLI Flag                       | Description                             |
+|------------------------------|----------------------------------|--------------------------------|-----------------------------------------|
+| `OAUTH_ENABLED`              | `MCP_OAUTH_ENABLED`              | `--oauth-enabled`              | Enable OAuth 2.0/2.1 authorisation      |
+| `OAUTH_ISSUER`               | `MCP_OAUTH_ISSUER`               | `--oauth-issuer`               | OAuth issuer URL (required if enabled)  |
+| `OAUTH_AUDIENCE`             | `MCP_OAUTH_AUDIENCE`             | `--oauth-audience`             | OAuth audience for this resource server |
+| `OAUTH_JWKS_URL`             | `MCP_OAUTH_JWKS_URL`             | `--oauth-jwks-url`             | JWKS URL for token validation           |
+| `OAUTH_DYNAMIC_REGISTRATION` | `MCP_OAUTH_DYNAMIC_REGISTRATION` | `--oauth-dynamic-registration` | Enable dynamic client registration      |
+| `OAUTH_AUTHORIZATION_SERVER` | `MCP_OAUTH_AUTHORIZATION_SERVER` | `--oauth-authorization-server` | Authorisation server URL (if different) |
+| `OAUTH_REQUIRE_HTTPS`        | `MCP_OAUTH_REQUIRE_HTTPS`        | `--oauth-require-https`        | Require HTTPS (default: true)           |
 
 #### CLI Configuration
 
@@ -103,13 +103,13 @@ OAuth can also be configured with command-line flags:
 
 When OAuth is enabled, the following endpoints are available:
 
-- `/.well-known/oauth-authorization-server` - Authorization server metadata (RFC8414)
+- `/.well-known/oauth-authorization-server` - Authorisation server metadata (RFC8414)
 - `/.well-known/oauth-protected-resource` - Protected resource metadata (RFC9728)
 - `/oauth/register` - Dynamic client registration (RFC7591) _(if enabled)_
 
 ### Client Authentication
 
-Clients must include a valid Bearer token in the Authorization header:
+Clients must include a valid Bearer token in the Authorisation header:
 
 ```http
 GET /http HTTP/1.1
@@ -130,11 +130,11 @@ Access tokens must:
 
 ### MCP Specification Compliance
 
-- ✅ **Authorization is Optional**: Can be disabled (default)
+- ✅ **Authorisation is Optional**: Can be disabled (default)
 - ✅ **HTTP Transport Only**: STDIO transport uses environment credentials
 - ✅ **HTTPS Enforcement**: Required for all OAuth endpoints (configurable for development)
 - ✅ **Token Audience Validation**: Prevents token reuse across services
-- ✅ **PKCE Support**: Protects against authorization code interception
+- ✅ **PKCE Support**: Protects against authorisation code interception
 - ✅ **WWW-Authenticate Headers**: Proper 401 responses with metadata URLs
 - ✅ **Resource Parameter**: RFC8707 resource indicators for token binding
 
@@ -144,7 +144,7 @@ Access tokens must:
 2. **No Token Passthrough**: Tokens are never forwarded to upstream services
 3. **HTTPS Enforcement**: All OAuth endpoints require HTTPS (except localhost)
 4. **Secure Token Storage**: Implementations should follow OAuth 2.1 security guidelines
-5. **Short-lived Tokens**: Authorization servers should issue short-lived access tokens
+5. **Short-lived Tokens**: Authorisation servers should issue short-lived access tokens
 
 ## Error Handling
 
@@ -161,13 +161,13 @@ Error responses include:
 
 ## Example Configuration
 
-### Authorization Server Metadata Response
+### Authorisation Server Metadata Response
 
 ```json
 {
   "issuer": "https://auth.example.com",
   "authorization_endpoint": "https://mcp.example.com/oauth/authorize",
-  "token_endpoint": "https://mcp.example.com/oauth/token", 
+  "token_endpoint": "https://mcp.example.com/oauth/token",
   "jwks_uri": "https://mcp.example.com/.well-known/jwks.json",
   "registration_endpoint": "https://mcp.example.com/oauth/register",
   "response_types_supported": ["code"],
@@ -228,7 +228,7 @@ clientID := claims.ClientID
 userID := claims.Subject
 ```
 
-### Scope-based Authorization
+### Scope-based Authorisation
 
 ```go
 // Require specific scope for handler
@@ -243,9 +243,9 @@ OAuth is completely optional and disabled by default. Existing deployments using
 
 This implementation follows these RFCs:
 
-- **OAuth 2.1** (draft-ietf-oauth-v2-1-12): Core authorization framework
-- **RFC8414**: OAuth 2.0 Authorization Server Metadata  
+- **OAuth 2.1** (draft-ietf-oauth-v2-1-12): Core authorisation framework
+- **RFC8414**: OAuth 2.0 Authorisation Server Metadata
 - **RFC9728**: OAuth 2.0 Protected Resource Metadata
 - **RFC7591**: OAuth 2.0 Dynamic Client Registration Protocol
 - **RFC8707**: Resource Indicators for OAuth 2.0
-- **MCP 2025-06-18**: Model Context Protocol authorization specification
+- **MCP 2025-06-18**: Model Context Protocol authorisation specification

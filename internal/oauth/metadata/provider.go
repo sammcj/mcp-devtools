@@ -28,7 +28,7 @@ func NewProvider(config *types.OAuth2Config, baseURL string, logger *logrus.Logg
 	}
 }
 
-// GetAuthorizationServerMetadata returns OAuth 2.0 Authorization Server Metadata (RFC8414)
+// GetAuthorizationServerMetadata returns OAuth 2.0 Authorisation Server Metadata (RFC8414)
 func (p *Provider) GetAuthorizationServerMetadata(ctx context.Context) (*types.AuthorizationServerMetadata, error) {
 	metadata := &types.AuthorizationServerMetadata{
 		Issuer:                            p.config.Issuer,
@@ -104,7 +104,7 @@ func (p *Provider) constructJWKSURL(issuer string) (string, error) {
 	return issuerURL.String(), nil
 }
 
-// ServeAuthorizationServerMetadata serves the authorization server metadata endpoint
+// ServeAuthorizationServerMetadata serves the authorisation server metadata endpoint
 func (p *Provider) ServeAuthorizationServerMetadata(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -158,7 +158,7 @@ func (p *Provider) ServeProtectedResourceMetadata(w http.ResponseWriter, r *http
 
 // RegisterHandlers registers the metadata endpoints with an HTTP mux
 func (p *Provider) RegisterHandlers(mux *http.ServeMux) {
-	// Authorization Server Metadata (RFC8414)
+	// Authorisation Server Metadata (RFC8414)
 	mux.HandleFunc("/.well-known/oauth-authorization-server", p.ServeAuthorizationServerMetadata)
 
 	// Protected Resource Metadata (RFC9728)

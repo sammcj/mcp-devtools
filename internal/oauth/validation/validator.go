@@ -239,7 +239,7 @@ func (w *WWWAuthenticateBuilder) Build(realm, error, errorDescription string) st
 	return strings.Join(parts, " ")
 }
 
-// ExtractBearerToken extracts a Bearer token from an Authorization header
+// ExtractBearerToken extracts a Bearer token from an Authorisation header
 func ExtractBearerToken(authHeader string) (string, error) {
 	if authHeader == "" {
 		return "", fmt.Errorf("authorization header is required")

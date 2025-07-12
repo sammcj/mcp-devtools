@@ -76,7 +76,7 @@ func (s *OAuth2Server) AuthenticateRequest(ctx context.Context, r *http.Request)
 		}
 	}
 
-	// Extract Bearer token from Authorization header
+	// Extract Bearer token from Authorisation header
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		s.logger.Debug("Missing Authorization header")
