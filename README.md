@@ -53,6 +53,7 @@ graph TD
 
 - [MCP DevTools](#mcp-devtools)
   - [Features](#features)
+    - [OAuth 2.0/2.1 Authorization](#oauth-2021-authorization)
     - [Package Versions](#package-versions)
     - [Internet Search](#internet-search)
     - [Think Tool](#think-tool)
@@ -93,6 +94,43 @@ graph TD
 ## Features
 
 Currently, the server provides the following tools that should work across both macOS and Linux:
+
+### OAuth 2.0/2.1 Authorization
+
+**Optional OAuth 2.0/2.1 Support**: Enterprise-grade authorization for HTTP-based MCP servers following the MCP 2025-06-18 specification.
+
+#### Key Features:
+- **🔐 JWT Token Validation**: Validates access tokens with JWKS support and audience checking
+- **📋 Standards Compliant**: Implements OAuth 2.1, RFC8414, RFC9728, RFC7591, and RFC8707
+- **🔑 Dynamic Client Registration**: RFC7591 compliant client registration endpoint
+- **🛡️ PKCE Support**: Code challenge/verifier validation for enhanced security
+- **⚙️ Environment Variables**: Configure via CLI flags or environment variables
+- **🚀 Optional**: Completely optional, disabled by default
+
+#### Quick Start:
+```bash
+# Via environment variables
+export OAUTH_ENABLED=true
+export OAUTH_ISSUER="https://auth.example.com"
+export OAUTH_AUDIENCE="https://mcp.example.com"
+export OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
+
+./mcp-devtools --transport=http
+
+# Or via CLI flags
+./mcp-devtools --transport=http \
+    --oauth-enabled \
+    --oauth-issuer="https://auth.example.com" \
+    --oauth-audience="https://mcp.example.com" \
+    --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
+```
+
+When enabled, OAuth metadata endpoints are available:
+- `/.well-known/oauth-authorization-server` - Authorization server metadata
+- `/.well-known/oauth-protected-resource` - Protected resource metadata
+- `/oauth/register` - Dynamic client registration _(if enabled)_
+
+See [OAuth Documentation](internal/oauth/README.md) for complete configuration details.
 
 ### Package Versions
 
@@ -301,8 +339,15 @@ The new Streamable HTTP transport provides a more robust HTTP-based communicatio
 # Basic Streamable HTTP
 mcp-devtools --transport http --port 8080
 
-# With authentication
+# With simple authentication
 mcp-devtools --transport http --port 8080 --auth-token mysecrettoken
+
+# With OAuth 2.0/2.1 authorization
+mcp-devtools --transport http --port 8080 \
+    --oauth-enabled \
+    --oauth-issuer="https://auth.example.com" \
+    --oauth-audience="https://mcp.example.com" \
+    --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
 
 # With custom endpoint path
 mcp-devtools --transport http --port 8080 --endpoint-path /api/mcp
@@ -1038,6 +1083,7 @@ Basic web search using DuckDuckGo (no API key required):
 
 ### Environment Variables
 
+#### Core Tools
 - `BRAVE_API_KEY`: (optional) Required for Brave search tools to be enabled
 - `SEARXNG_BASE_URL`: (optional) Required for SearXNG search tools to be enabled (e.g., `https://your-searxng-instance.com`)
 - `SEARXNG_USERNAME`: (optional) Username for SearXNG authentication
@@ -1045,6 +1091,17 @@ Basic web search using DuckDuckGo (no API key required):
 - `MEMORY_FILE_PATH`: (optional) Base directory or file path for memory storage (default: `~/.mcp-devtools/`)
 - `MEMORY_ENABLE_FUZZY_SEARCH`: (optional) Enable fuzzy search capabilities for memory tool (default: `true`)
 - `DISABLED_FUNCTIONS`: (optional) Comma-separated list of function names to disable, disabled functions will not appear in the tools list presented even if explicitly requested. e.g: `DISABLED_FUNCTIONS="shadcn_get_component_details,shadcn_get_component_examples,brave_local_search,brave_video_search"`
+
+#### OAuth 2.0/2.1 Authorization (Optional)
+- `OAUTH_ENABLED` or `MCP_OAUTH_ENABLED`: Enable OAuth 2.0/2.1 authorization (HTTP transport only)
+- `OAUTH_ISSUER` or `MCP_OAUTH_ISSUER`: OAuth issuer URL (required if OAuth enabled)
+- `OAUTH_AUDIENCE` or `MCP_OAUTH_AUDIENCE`: OAuth audience for this resource server
+- `OAUTH_JWKS_URL` or `MCP_OAUTH_JWKS_URL`: JWKS URL for token validation
+- `OAUTH_DYNAMIC_REGISTRATION` or `MCP_OAUTH_DYNAMIC_REGISTRATION`: Enable RFC7591 dynamic client registration
+- `OAUTH_AUTHORIZATION_SERVER` or `MCP_OAUTH_AUTHORIZATION_SERVER`: Authorization server URL (if different from issuer)
+- `OAUTH_REQUIRE_HTTPS` or `MCP_OAUTH_REQUIRE_HTTPS`: Require HTTPS for OAuth endpoints (default: true)
+
+See [OAuth Documentation](internal/oauth/README.md) for detailed OAuth configuration and usage examples.
 
 ## Architecture
 
