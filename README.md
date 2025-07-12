@@ -25,7 +25,7 @@ graph TD
 
     H --> H5[OCR]
     H --> H6[vLLM]
-    
+
     K --> K1[Text Extraction]
     K --> K2[Image Extraction]
     K --> K3[Markdown Output]
@@ -71,23 +71,17 @@ graph TD
   - [Tools](#tools)
     - [Think Tool](#think-tool-1)
     - [Package Documentation](#package-documentation-1)
+    - [PDF Processing](#pdf-processing-1)
     - [Unified Package Search](#unified-package-search)
     - [shadcn ui Components](#shadcn-ui-components-1)
     - [Document Processing](#document-processing-1)
     - [Internet Search](#internet-search-1)
+    - [OAuth 2.0/2.1 Authorisation](#oauth-2021-authorisation)
   - [Configuration](#configuration-2)
     - [Environment Variables](#environment-variables)
   - [Architecture](#architecture)
-  - [Creating New Tools](#creating-new-tools)
-    - [Tool Interface](#tool-interface)
-    - [Tool Structure](#tool-structure)
-    - [Step-by-Step Guide](#step-by-step-guide)
-    - [Example: Hello World Tool](#example-hello-world-tool)
-    - [Testing Your Tool](#testing-your-tool)
-  - [Testing](#testing)
-  - [Releases and CI/CD](#releases-and-cicd)
-    - [Creating a Release](#creating-a-release)
     - [Docker Images](#docker-images-1)
+  - [Creating New Tools](#creating-new-tools)
   - [License](#license)
 
 ## Features
@@ -216,7 +210,7 @@ See the [Package Documentation README](internal/tools/packagedocs/README.md) for
 **PDF Text and Image Extraction Tool**: Extract text and images from PDF files using the [pdfcpu](https://github.com/pdfcpu/pdfcpu) library, converting them to well-formatted markdown with embedded image references.
 
 - **Text Extraction**: Extracts readable text content from PDF pages while attempting to preserve layout
-- **Image Extraction**: Extracts embedded images with proper naming and organisation 
+- **Image Extraction**: Extracts embedded images with proper naming and organisation
 - **Markdown Output**: Generates structured markdown files with page-by-page content
 - **Multi-page Support**: Process all pages or specific page ranges (e.g., "1-5", "1,3,5")
 - **Automatic Linking**: Links extracted images in the correct locations within the markdown
@@ -301,8 +295,15 @@ The new Streamable HTTP transport provides a more robust HTTP-based communicatio
 # Basic Streamable HTTP
 mcp-devtools --transport http --port 8080
 
-# With authentication
+# With simple authentication
 mcp-devtools --transport http --port 8080 --auth-token mysecrettoken
+
+# With OAuth 2.0/2.1 authorisation
+mcp-devtools --transport http --port 8080 \
+    --oauth-enabled \
+    --oauth-issuer="https://auth.example.com" \
+    --oauth-audience="https://mcp.example.com" \
+    --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
 
 # With custom endpoint path
 mcp-devtools --transport http --port 8080 --endpoint-path /api/mcp
@@ -905,16 +906,16 @@ For detailed installation and configuration instructions, see the [Document Proc
 
 **For Brave Search:**
 ```bash
-export BRAVE_API_KEY="your-brave-api-key-here"
+BRAVE_API_KEY="your-brave-api-key-here"
 ```
 Get your API key from: https://brave.com/search/api/
 
 **For SearXNG:**
 ```bash
-export SEARXNG_BASE_URL="https://your-searxng-instance.com"
+SEARXNG_BASE_URL="https://your-searxng-instance.com"
 # Optional authentication:
-export SEARXNG_USERNAME="your-username"
-export SEARXNG_PASSWORD="your-password"
+SEARXNG_USERNAME="your-username"
+SEARXNG_PASSWORD="your-password"
 ```
 
 The `internet_search` tool provides a unified interface for all internet search operations across different providers. Use the `type` parameter to specify the search type and `provider` to choose between available providers:
@@ -1034,10 +1035,48 @@ Basic web search using DuckDuckGo (no API key required):
 - `py`: Discovered within the last 365 days
 - `YYYY-MM-DDtoYYYY-MM-DD`: Custom date range (e.g., `2022-04-01to2022-07-30`)
 
+### OAuth 2.0/2.1 Authorisation
+
+**Optional OAuth 2.0/2.1 Support**: Enterprise-grade authorisation for HTTP-based MCP servers following the MCP 2025-06-18 specification.
+
+#### Key Features:
+- **🔐 JWT Token Validation**: Validates access tokens with JWKS support and audience checking
+- **📋 Standards Compliant**: Implements OAuth 2.1, RFC8414, RFC9728, RFC7591, and RFC8707
+- **🔑 Dynamic Client Registration**: RFC7591 compliant client registration endpoint
+- **🛡️ PKCE Support**: Code challenge/verifier validation for enhanced security
+- **⚙️ Environment Variables**: Configure via CLI flags or environment variables
+- **🚀 Optional**: Completely optional, disabled by default
+
+#### Quick Start:
+```bash
+# Via environment variables
+OAUTH_ENABLED=true
+OAUTH_ISSUER="https://auth.example.com"
+OAUTH_AUDIENCE="https://mcp.example.com"
+OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
+
+./mcp-devtools --transport=http
+
+# Or via CLI flags
+./mcp-devtools --transport=http \
+    --oauth-enabled \
+    --oauth-issuer="https://auth.example.com" \
+    --oauth-audience="https://mcp.example.com" \
+    --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
+```
+
+When enabled, OAuth metadata endpoints are available:
+- `/.well-known/oauth-authorization-server` - Authorisation server metadata
+- `/.well-known/oauth-protected-resource` - Protected resource metadata
+- `/oauth/register` - Dynamic client registration _(if enabled)_
+
+See [OAuth Documentation](internal/oauth/README.md) for complete configuration details.
+
 ## Configuration
 
 ### Environment Variables
 
+#### Core Tools
 - `BRAVE_API_KEY`: (optional) Required for Brave search tools to be enabled
 - `SEARXNG_BASE_URL`: (optional) Required for SearXNG search tools to be enabled (e.g., `https://your-searxng-instance.com`)
 - `SEARXNG_USERNAME`: (optional) Username for SearXNG authentication
@@ -1046,6 +1085,17 @@ Basic web search using DuckDuckGo (no API key required):
 - `MEMORY_ENABLE_FUZZY_SEARCH`: (optional) Enable fuzzy search capabilities for memory tool (default: `true`)
 - `DISABLED_FUNCTIONS`: (optional) Comma-separated list of function names to disable, disabled functions will not appear in the tools list presented even if explicitly requested. e.g: `DISABLED_FUNCTIONS="shadcn_get_component_details,shadcn_get_component_examples,brave_local_search,brave_video_search"`
 
+#### OAuth 2.0/2.1 Authorisation (Optional)
+- `OAUTH_ENABLED` or `MCP_OAUTH_ENABLED`: Enable OAuth 2.0/2.1 authorisation (HTTP transport only)
+- `OAUTH_ISSUER` or `MCP_OAUTH_ISSUER`: OAuth issuer URL (required if OAuth enabled)
+- `OAUTH_AUDIENCE` or `MCP_OAUTH_AUDIENCE`: OAuth audience for this resource server
+- `OAUTH_JWKS_URL` or `MCP_OAUTH_JWKS_URL`: JWKS URL for token validation
+- `OAUTH_DYNAMIC_REGISTRATION` or `MCP_OAUTH_DYNAMIC_REGISTRATION`: Enable RFC7591 dynamic client registration
+- `OAUTH_AUTHORIZATION_SERVER` or `MCP_OAUTH_AUTHORIZATION_SERVER`: Authorisation server URL (if different from issuer)
+- `OAUTH_REQUIRE_HTTPS` or `MCP_OAUTH_REQUIRE_HTTPS`: Require HTTPS for OAuth endpoints (default: true)
+
+See [OAuth Documentation](internal/oauth/README.md) for detailed OAuth configuration and usage examples.
+
 ## Architecture
 
 The server is built with a modular architecture to make it easy to add new tools in the future. The main components are:
@@ -1053,302 +1103,6 @@ The server is built with a modular architecture to make it easy to add new tools
 - **Core Tool Interface**: Defines the interface that all tools must implement.
 - **Central Tool Registry**: Manages the registration and retrieval of tools.
 - **Tool Modules**: Individual tool implementations organized by category.
-
-## Creating New Tools
-
-The MCP DevTools server is designed to be easily extensible with new tools. This section provides detailed guidance on how to create and integrate new tools into the server.
-
-### Tool Interface
-
-All tools must implement the `tools.Tool` interface defined in `internal/tools/tools.go`:
-
-```go
-type Tool interface {
-    // Definition returns the tool's definition for MCP registration
-    Definition() mcp.Tool
-
-    // Execute executes the tool's logic
-    Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error)
-}
-```
-
-### Tool Structure
-
-A typical tool implementation follows this structure:
-
-1. **Tool Type**: Define a struct that will implement the Tool interface
-2. **Registration**: Register the tool with the registry in an `init()` function
-3. **Definition**: Implement the `Definition()` method to define the tool's name, description, and parameters
-4. **Execution**: Implement the `Execute()` method to perform the tool's logic
-
-### Step-by-Step Guide
-
-#### 1. Create a New Package
-
-Create a new package in the appropriate category under `internal/tools/` or create a new category if needed:
-
-```bash
-mkdir -p internal/tools/your-category/your-tool
-touch internal/tools/your-category/your-tool/your-tool.go
-```
-
-#### 2. Implement the Tool Interface
-
-Here's a template for implementing a new tool:
-
-```go
-package yourtool
-
-import (
-    "context"
-    "fmt"
-    "sync"
-
-    "github.com/mark3labs/mcp-go/mcp"
-    "github.com/sammcj/mcp-devtools/internal/registry"
-    "github.com/sirupsen/logrus"
-)
-
-// YourTool implements the tools.Tool interface
-type YourTool struct {
-    // Add any fields your tool needs here
-}
-
-// init registers the tool with the registry
-func init() {
-    registry.Register(&YourTool{})
-}
-
-// Definition returns the tool's definition for MCP registration
-func (t *YourTool) Definition() mcp.Tool {
-    return mcp.NewTool(
-        "your_tool_name",
-        mcp.WithDescription("Description of your tool"),
-        // Define required parameters
-        mcp.WithString("param1",
-            mcp.Required(),
-            mcp.Description("Description of param1"),
-        ),
-        // Define optional parameters
-        mcp.WithNumber("param2",
-            mcp.Description("Description of param2"),
-            mcp.DefaultNumber(10),
-        ),
-        // Add more parameters as needed
-    )
-}
-
-// Execute executes the tool's logic
-func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
-    // Log the start of execution
-    logger.Info("Executing your tool")
-
-    // Parse parameters
-    param1, ok := args["param1"].(string)
-    if !ok {
-        return nil, fmt.Errorf("missing required parameter: param1")
-    }
-
-    // Parse optional parameters with defaults
-    param2 := float64(10)
-    if param2Raw, ok := args["param2"].(float64); ok {
-        param2 = param2Raw
-    }
-
-    // Implement your tool's logic here
-    result := map[string]interface{}{
-        "message": fmt.Sprintf("Tool executed with param1=%s, param2=%f", param1, param2),
-        // Add more result fields as needed
-    }
-
-    // Return the result
-    return mcp.NewCallToolResult(result), nil
-}
-```
-
-#### 3. Parameter Schema
-
-The MCP framework supports various parameter types:
-
-- **String**: `mcp.WithString("name", ...)`
-- **Number**: `mcp.WithNumber("name", ...)`
-- **Boolean**: `mcp.WithBoolean("name", ...)`
-- **Array**: `mcp.WithArray("name", ...)`
-- **Object**: `mcp.WithObject("name", ...)`
-
-For each parameter, you can specify:
-
-- **Required**: `mcp.Required()` - Mark the parameter as required
-- **Description**: `mcp.Description("...")` - Provide a description
-- **Default Value**: `mcp.DefaultString("...")`, `mcp.DefaultNumber(10)`, `mcp.DefaultBool(false)` - Set a default value
-- **Enum**: `mcp.Enum("value1", "value2", ...)` - Restrict to a set of values
-- **Properties**: `mcp.Properties(map[string]interface{}{...})` - Define properties for object parameters
-
-#### 4. Result Schema
-
-The result of a tool execution should be a `*mcp.CallToolResult` object, which can be created with:
-
-```go
-mcp.NewCallToolResult(result)
-```
-
-Where `result` is a `map[string]interface{}` containing the tool's output data.
-
-For structured results, you can use:
-
-```go
-// Define a result struct
-type Result struct {
-    Message string `json:"message"`
-    Count   int    `json:"count"`
-}
-
-// Create a result
-result := Result{
-    Message: "Tool executed successfully",
-    Count:   42,
-}
-
-// Convert to JSON
-resultJSON, err := json.Marshal(result)
-if err != nil {
-    return nil, fmt.Errorf("failed to marshal result: %w", err)
-}
-
-// Create a CallToolResult
-return mcp.NewCallToolResultJSON(resultJSON)
-```
-
-#### 5. Caching
-
-The `cache` parameter in the `Execute` method is a shared cache that can be used to store and retrieve data across tool executions:
-
-```go
-// Store a value in the cache
-cache.Store("key", value)
-
-// Retrieve a value from the cache
-if cachedValue, ok := cache.Load("key"); ok {
-    // Use cachedValue
-}
-```
-
-#### 6. Import the Tool Package
-
-Finally, import your tool package in `main.go` to ensure it's registered:
-
-```go
-import _ "github.com/sammcj/mcp-devtools/internal/tools/your-category/your-tool"
-```
-
-### Example: Hello World Tool
-
-Here's a simple "Hello World" tool example:
-
-```go
-package hello
-
-import (
-    "context"
-    "fmt"
-    "sync"
-
-    "github.com/mark3labs/mcp-go/mcp"
-    "github.com/sammcj/mcp-devtools/internal/registry"
-    "github.com/sirupsen/logrus"
-)
-
-// HelloTool implements a simple hello world tool
-type HelloTool struct{}
-
-// init registers the tool with the registry
-func init() {
-    registry.Register(&HelloTool{})
-}
-
-// Definition returns the tool's definition for MCP registration
-func (t *HelloTool) Definition() mcp.Tool {
-    return mcp.NewTool(
-        "hello_world",
-        mcp.WithDescription("A simple hello world tool"),
-        mcp.WithString("name",
-            mcp.Description("Name to greet"),
-            mcp.DefaultString("World"),
-        ),
-    )
-}
-
-// Execute executes the tool's logic
-func (t *HelloTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
-    // Parse parameters
-    name := "World"
-    if nameRaw, ok := args["name"].(string); ok && nameRaw != "" {
-        name = nameRaw
-    }
-
-    // Create result
-    result := map[string]interface{}{
-        "message": fmt.Sprintf("Hello, %s!", name),
-    }
-
-    // Return the result
-    return mcp.NewCallToolResult(result), nil
-}
-```
-
-### Testing Your Tool
-
-To test your tool:
-
-1. Build the server: `make build`
-2. Run the server: `make run`
-3. Send a request to the server:
-
-```json
-{
-  "name": "your_tool_name",
-  "arguments": {
-    "param1": "value1",
-    "param2": 42
-  }
-}
-```
-
-## Testing
-
-The project includes unit tests for core functionality. Tests are designed to be lightweight and fast, avoiding external dependencies.
-
-```bash
-# Run all tests
-make test
-
-# Run only fast tests (no external dependencies)
-make test-fast
-```
-
-## Releases and CI/CD
-
-This project uses GitHub Actions for continuous integration and deployment. The workflow automatically:
-
-1. Builds and tests the application on every push to the main branch and pull requests
-2. Creates a release when a tag with the format `v*` (e.g., `v1.0.0`) is pushed
-3. Builds and pushes Docker images to GitHub Container Registry
-
-### Creating a Release
-
-To create a new release:
-
-1. Update the version in your code if necessary
-2. Tag the commit with a semantic version:
-   ```bash
-   git tag -a v1.0.0 -m "Release v1.0.0"
-   git push origin v1.0.0
-   ```
-3. The GitHub Actions workflow will automatically:
-   - Build and test the application
-   - Create a GitHub release with the binary
-   - Generate a changelog based on commits since the last release
-   - Build and push Docker images with appropriate tags
 
 ### Docker Images
 
@@ -1364,6 +1118,11 @@ Or with a specific version:
 docker pull ghcr.io/sammcj/mcp-devtools:v1.0.0
 ```
 
+## Creating New Tools
+
+See [Creating New Tools](docs/creating-new-tools.md) for detailed instructions on how to create new tools for the MCP DevTools server.
+
 ## License
 
-MIT
+- Copyright 2025 Sam McLeod
+- MIT

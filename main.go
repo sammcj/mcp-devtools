@@ -10,6 +10,8 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
+	oauthserver "github.com/sammcj/mcp-devtools/internal/oauth/server"
+	"github.com/sammcj/mcp-devtools/internal/oauth/types"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -94,6 +96,43 @@ func main() {
 				Value:   false,
 				Usage:   "Enable debug logging",
 			},
+			// OAuth 2.0/2.1 flags
+			&cli.BoolFlag{
+				Name:    "oauth-enabled",
+				Usage:   "Enable OAuth 2.0/2.1 authorization (HTTP transport only)",
+				EnvVars: []string{"OAUTH_ENABLED", "MCP_OAUTH_ENABLED"},
+			},
+			&cli.StringFlag{
+				Name:    "oauth-issuer",
+				Usage:   "OAuth issuer URL (required if oauth-enabled)",
+				EnvVars: []string{"OAUTH_ISSUER", "MCP_OAUTH_ISSUER"},
+			},
+			&cli.StringFlag{
+				Name:    "oauth-audience",
+				Usage:   "OAuth audience for this resource server",
+				EnvVars: []string{"OAUTH_AUDIENCE", "MCP_OAUTH_AUDIENCE"},
+			},
+			&cli.StringFlag{
+				Name:    "oauth-jwks-url",
+				Usage:   "JWKS URL for token validation",
+				EnvVars: []string{"OAUTH_JWKS_URL", "MCP_OAUTH_JWKS_URL"},
+			},
+			&cli.BoolFlag{
+				Name:    "oauth-dynamic-registration",
+				Usage:   "Enable RFC7591 dynamic client registration",
+				EnvVars: []string{"OAUTH_DYNAMIC_REGISTRATION", "MCP_OAUTH_DYNAMIC_REGISTRATION"},
+			},
+			&cli.StringFlag{
+				Name:    "oauth-authorization-server",
+				Usage:   "Authorization server URL (if different from issuer)",
+				EnvVars: []string{"OAUTH_AUTHORIZATION_SERVER", "MCP_OAUTH_AUTHORIZATION_SERVER"},
+			},
+			&cli.BoolFlag{
+				Name:    "oauth-require-https",
+				Value:   true,
+				Usage:   "Require HTTPS for OAuth endpoints (disable only for development)",
+				EnvVars: []string{"OAUTH_REQUIRE_HTTPS", "MCP_OAUTH_REQUIRE_HTTPS"},
+			},
 		},
 		Commands: []*cli.Command{
 			{
@@ -133,7 +172,7 @@ func main() {
 			}
 
 			// Create MCP server
-			server := mcpserver.NewMCPServer("mcp-devtools", "MCP DevTools Server")
+			mcpSrv := mcpserver.NewMCPServer("mcp-devtools", "MCP DevTools Server")
 
 			// Register tools - fix race condition by capturing variables properly
 			for toolName, toolImpl := range registry.GetTools() {
@@ -145,7 +184,7 @@ func main() {
 					logger.Infof("Registering tool: %s", name)
 				}
 
-				server.AddTool(tool.Definition(), func(toolCtx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+				mcpSrv.AddTool(tool.Definition(), func(toolCtx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 					// Get fresh reference from registry to ensure consistency
 					currentTool, ok := registry.GetTool(name)
 					if !ok {
@@ -175,12 +214,12 @@ func main() {
 			// Start the server
 			switch transport {
 			case "stdio":
-				return mcpserver.ServeStdio(server)
+				return mcpserver.ServeStdio(mcpSrv)
 			case "sse":
-				sseServer := mcpserver.NewSSEServer(server, mcpserver.WithBaseURL(baseURL+"/sse"))
+				sseServer := mcpserver.NewSSEServer(mcpSrv, mcpserver.WithBaseURL(baseURL+"/sse"))
 				return sseServer.Start(":" + port)
 			case "http":
-				return startStreamableHTTPServer(c, server, logger)
+				return startStreamableHTTPServer(c, mcpSrv, logger)
 			default:
 				return fmt.Errorf("unsupported transport: %s", transport)
 			}
@@ -193,11 +232,12 @@ func main() {
 }
 
 // startStreamableHTTPServer configures and starts the Streamable HTTP server
-func startStreamableHTTPServer(c *cli.Context, server *mcpserver.MCPServer, logger *logrus.Logger) error {
+func startStreamableHTTPServer(c *cli.Context, mcpServer *mcpserver.MCPServer, logger *logrus.Logger) error {
 	port := c.String("port")
 	authToken := c.String("auth-token")
 	endpointPath := c.String("endpoint-path")
 	sessionTimeout := c.Duration("session-timeout")
+	baseURL := c.String("base-url")
 
 	logger.Infof("Starting Streamable HTTP server on port %s with endpoint %s", port, endpointPath)
 
@@ -215,9 +255,61 @@ func startStreamableHTTPServer(c *cli.Context, server *mcpserver.MCPServer, logg
 		}))
 	}
 
-	// Add authentication if token is provided
-	if authToken != "" {
+	// Check if OAuth is enabled
+	oauthEnabled := c.Bool("oauth-enabled")
+	if oauthEnabled {
+		// Configure OAuth 2.1
+		oauthConfig := &types.OAuth2Config{
+			Enabled:             true,
+			Issuer:              c.String("oauth-issuer"),
+			Audience:            c.String("oauth-audience"),
+			JWKSUrl:             c.String("oauth-jwks-url"),
+			DynamicRegistration: c.Bool("oauth-dynamic-registration"),
+			AuthorizationServer: c.String("oauth-authorization-server"),
+			RequireHTTPS:        c.Bool("oauth-require-https"),
+		}
+
+		// Validate OAuth configuration
+		if err := validateOAuthConfig(oauthConfig); err != nil {
+			return fmt.Errorf("invalid OAuth configuration: %w", err)
+		}
+
+		// Create OAuth server
+		fullBaseURL := fmt.Sprintf("%s:%s", baseURL, port)
+		oauthServer, err := oauthserver.NewOAuth2Server(oauthConfig, fullBaseURL, logger)
+		if err != nil {
+			return fmt.Errorf("failed to create OAuth server: %w", err)
+		}
+
+		// Use OAuth middleware
+		opts = append(opts, mcpserver.WithHTTPContextFunc(createOAuthMiddleware(oauthServer, logger)))
+
+		logger.Info("OAuth 2.1 authentication enabled")
+		logger.Infof("OAuth issuer: %s", oauthConfig.Issuer)
+		logger.Infof("OAuth audience: %s", oauthConfig.Audience)
+		logger.Infof("Dynamic client registration: %t", oauthConfig.DynamicRegistration)
+
+		// Register OAuth endpoints
+		httpServer := mcpserver.NewStreamableHTTPServer(mcpServer, opts...)
+
+		// Get the underlying HTTP mux to register OAuth endpoints
+		// Note: This is a simplified approach - in production you might need a more sophisticated setup
+		mux := http.NewServeMux()
+
+		// Register OAuth metadata endpoints
+		oauthServer.RegisterHandlers(mux)
+
+		// Register the main MCP endpoint
+		mux.Handle(endpointPath, httpServer)
+
+		// Start the server with custom mux
+		logger.Infof("OAuth endpoints available at %s/.well-known/", fullBaseURL)
+		return http.ListenAndServe(":"+port, mux)
+
+	} else if authToken != "" {
+		// Use legacy token authentication
 		opts = append(opts, mcpserver.WithHTTPContextFunc(createAuthMiddleware(authToken, logger)))
+		logger.Info("Legacy token authentication enabled")
 	}
 
 	// Add heartbeat interval for keep-alive
@@ -232,7 +324,7 @@ func startStreamableHTTPServer(c *cli.Context, server *mcpserver.MCPServer, logg
 	opts = append(opts, mcpserver.WithLogger(&logrusAdapter{logger: logger}))
 
 	// Create streamable HTTP server
-	httpServer := mcpserver.NewStreamableHTTPServer(server, opts...)
+	httpServer := mcpserver.NewStreamableHTTPServer(mcpServer, opts...)
 
 	logger.Infof("Heartbeat interval: %v", heartbeatInterval)
 	logger.Info("Server supports multiple simultaneous connections")
@@ -377,4 +469,49 @@ func (l *logrusAdapter) Warnf(format string, args ...interface{}) {
 
 func (l *logrusAdapter) Errorf(format string, args ...interface{}) {
 	l.logger.Errorf(format, args...)
+}
+
+// validateOAuthConfig validates OAuth configuration
+func validateOAuthConfig(config *types.OAuth2Config) error {
+	if !config.Enabled {
+		return fmt.Errorf("OAuth is not enabled")
+	}
+
+	if config.Issuer == "" {
+		return fmt.Errorf("oauth-issuer is required when OAuth is enabled")
+	}
+
+	if config.Audience == "" {
+		return fmt.Errorf("oauth-audience is required when OAuth is enabled")
+	}
+
+	if config.JWKSUrl == "" {
+		return fmt.Errorf("oauth-jwks-url is required when OAuth is enabled")
+	}
+
+	return nil
+}
+
+// createOAuthMiddleware creates OAuth 2.1 authentication middleware
+func createOAuthMiddleware(oauthServer *oauthserver.OAuth2Server, logger *logrus.Logger) func(context.Context, *http.Request) context.Context {
+	return func(ctx context.Context, req *http.Request) context.Context {
+		// Skip OAuth for metadata endpoints
+		if strings.HasPrefix(req.URL.Path, "/.well-known/") || req.URL.Path == "/oauth/register" {
+			logger.Debug("Skipping OAuth authentication for metadata endpoint")
+			return ctx
+		}
+
+		// Authenticate the request
+		result := oauthServer.AuthenticateRequest(ctx, req)
+
+		if !result.Authenticated {
+			logger.WithError(result.Error).Debug("OAuth authentication failed")
+			// The authentication result will be handled by the OAuth middleware
+			// We add a marker to the context to indicate authentication failure
+			return context.WithValue(ctx, types.OAuthAuthFailedKey, result)
+		}
+
+		// Add claims to context for downstream handlers
+		return context.WithValue(ctx, types.OAuthClaimsKey, result.Claims)
+	}
 }
