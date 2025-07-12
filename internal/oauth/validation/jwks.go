@@ -95,7 +95,7 @@ func (c *JWKSClient) getJWKS(ctx context.Context) (*JWKS, error) {
 	c.cache.mutex.RUnlock()
 
 	c.logger.Debug("Fetching JWKS from URL")
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", c.jwksURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWKS request: %w", err)
@@ -108,7 +108,7 @@ func (c *JWKSClient) getJWKS(ctx context.Context) (*JWKS, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch JWKS: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("JWKS endpoint returned status %d", resp.StatusCode)
@@ -164,7 +164,7 @@ func (c *JWKSClient) convertJWKToRSAPublicKey(jwk *JWK) (*rsa.PublicKey, error) 
 func (c *JWKSClient) InvalidateCache() {
 	c.cache.mutex.Lock()
 	defer c.cache.mutex.Unlock()
-	
+
 	c.cache.jwks = nil
 	c.cache.expiresAt = time.Time{}
 	c.logger.Debug("JWKS cache invalidated")

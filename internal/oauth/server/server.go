@@ -15,13 +15,13 @@ import (
 
 // OAuth2Server implements an OAuth 2.1 resource server
 type OAuth2Server struct {
-	config             *types.OAuth2Config
-	logger             *logrus.Logger
-	tokenValidator     types.TokenValidator
-	metadataProvider   types.MetadataProvider
-	clientRegistrar    types.ClientRegistrar
-	wwwAuthBuilder     *validation.WWWAuthenticateBuilder
-	baseURL           string
+	config           *types.OAuth2Config
+	logger           *logrus.Logger
+	tokenValidator   types.TokenValidator
+	metadataProvider types.MetadataProvider
+	clientRegistrar  types.ClientRegistrar
+	wwwAuthBuilder   *validation.WWWAuthenticateBuilder
+	baseURL          string
 }
 
 // NewOAuth2Server creates a new OAuth 2.1 server
@@ -70,8 +70,8 @@ func (s *OAuth2Server) AuthenticateRequest(ctx context.Context, r *http.Request)
 	if err := validation.ValidateHTTPSRequest(r, s.config.RequireHTTPS); err != nil {
 		s.logger.WithError(err).Debug("HTTPS validation failed")
 		return &types.AuthenticationResult{
-			Authenticated: false,
-			Error:         err,
+			Authenticated:   false,
+			Error:           err,
 			WWWAuthenticate: s.wwwAuthBuilder.Build(s.baseURL, "invalid_request", "HTTPS is required"),
 		}
 	}
@@ -81,8 +81,8 @@ func (s *OAuth2Server) AuthenticateRequest(ctx context.Context, r *http.Request)
 	if authHeader == "" {
 		s.logger.Debug("Missing Authorization header")
 		return &types.AuthenticationResult{
-			Authenticated: false,
-			Error:         fmt.Errorf("authorization header is required"),
+			Authenticated:   false,
+			Error:           fmt.Errorf("authorization header is required"),
 			WWWAuthenticate: s.wwwAuthBuilder.Build(s.baseURL, "invalid_request", "Authorization header is required"),
 		}
 	}
@@ -91,8 +91,8 @@ func (s *OAuth2Server) AuthenticateRequest(ctx context.Context, r *http.Request)
 	if err != nil {
 		s.logger.WithError(err).Debug("Failed to extract Bearer token")
 		return &types.AuthenticationResult{
-			Authenticated: false,
-			Error:         err,
+			Authenticated:   false,
+			Error:           err,
 			WWWAuthenticate: s.wwwAuthBuilder.Build(s.baseURL, "invalid_request", "Invalid authorization format"),
 		}
 	}
@@ -103,7 +103,7 @@ func (s *OAuth2Server) AuthenticateRequest(ctx context.Context, r *http.Request)
 		s.logger.WithError(err).Debug("Token validation failed")
 		errorCode := "invalid_token"
 		errorDesc := "The access token is invalid"
-		
+
 		// More specific error messages for common cases
 		if strings.Contains(err.Error(), "expired") {
 			errorDesc = "The access token has expired"
@@ -112,10 +112,10 @@ func (s *OAuth2Server) AuthenticateRequest(ctx context.Context, r *http.Request)
 		} else if strings.Contains(err.Error(), "issuer") {
 			errorDesc = "The access token issuer is invalid"
 		}
-		
+
 		return &types.AuthenticationResult{
-			Authenticated: false,
-			Error:         err,
+			Authenticated:   false,
+			Error:           err,
 			WWWAuthenticate: s.wwwAuthBuilder.Build(s.baseURL, errorCode, errorDesc),
 		}
 	}
@@ -145,14 +145,14 @@ func (s *OAuth2Server) CreateMiddleware() func(http.Handler) http.Handler {
 
 			// Authenticate the request
 			result := s.AuthenticateRequest(r.Context(), r)
-			
+
 			if !result.Authenticated {
 				// Set WWW-Authenticate header and return 401
 				if result.WWWAuthenticate != "" {
 					w.Header().Set("WWW-Authenticate", result.WWWAuthenticate)
 				}
 				w.Header().Set("Content-Type", "application/json")
-				
+
 				// Determine appropriate error response
 				oauth2Err := types.ErrInvalidToken
 				if result.Error != nil {
@@ -163,13 +163,13 @@ func (s *OAuth2Server) CreateMiddleware() func(http.Handler) http.Handler {
 						oauth2Err.ErrorDescription = result.Error.Error()
 					}
 				}
-				
+
 				oauth2Err.WriteHTTPResponse(w, http.StatusUnauthorized)
 				return
 			}
 
 			// Add claims to request context for downstream handlers
-			ctx := context.WithValue(r.Context(), "oauth_claims", result.Claims)
+			ctx := context.WithValue(r.Context(), types.OAuthClaimsKey, result.Claims)
 			r = r.WithContext(ctx)
 
 			next.ServeHTTP(w, r)
@@ -184,24 +184,26 @@ func (s *OAuth2Server) isOAuthMetadataEndpoint(path string) bool {
 		"/.well-known/oauth-protected-resource",
 		"/.well-known/jwks.json",
 	}
-	
+
 	if s.config.DynamicRegistration {
 		oauthPaths = append(oauthPaths, "/oauth/register")
 	}
-	
+
 	for _, oauthPath := range oauthPaths {
 		if path == oauthPath {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
 // RegisterHandlers registers OAuth 2.1 endpoints with an HTTP mux
 func (s *OAuth2Server) RegisterHandlers(mux *http.ServeMux) {
 	// Register metadata endpoints
-	s.metadataProvider.RegisterHandlers(mux)
+	if provider, ok := s.metadataProvider.(*metadata.Provider); ok {
+		provider.RegisterHandlers(mux)
+	}
 
 	// Register dynamic client registration endpoint if enabled
 	if s.config.DynamicRegistration && s.clientRegistrar != nil {
@@ -215,7 +217,7 @@ func (s *OAuth2Server) RegisterHandlers(mux *http.ServeMux) {
 
 // GetClaims extracts OAuth claims from a request context
 func GetClaims(ctx context.Context) (*types.TokenClaims, bool) {
-	claims, ok := ctx.Value("oauth_claims").(*types.TokenClaims)
+	claims, ok := ctx.Value(types.OAuthClaimsKey).(*types.TokenClaims)
 	return claims, ok
 }
 
@@ -247,7 +249,7 @@ func RequireScope(scope string) func(http.Handler) http.Handler {
 				oauth2Err.WriteHTTPResponse(w, http.StatusForbidden)
 				return
 			}
-			
+
 			next.ServeHTTP(w, r)
 		})
 	}

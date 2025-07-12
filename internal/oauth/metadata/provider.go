@@ -14,8 +14,8 @@ import (
 
 // Provider implements OAuth 2.0 metadata endpoints
 type Provider struct {
-	config *types.OAuth2Config
-	logger *logrus.Logger
+	config  *types.OAuth2Config
+	logger  *logrus.Logger
 	baseURL string
 }
 
@@ -31,15 +31,15 @@ func NewProvider(config *types.OAuth2Config, baseURL string, logger *logrus.Logg
 // GetAuthorizationServerMetadata returns OAuth 2.0 Authorization Server Metadata (RFC8414)
 func (p *Provider) GetAuthorizationServerMetadata(ctx context.Context) (*types.AuthorizationServerMetadata, error) {
 	metadata := &types.AuthorizationServerMetadata{
-		Issuer:                     p.config.Issuer,
-		AuthorizationEndpoint:      p.baseURL + "/oauth/authorize",
-		TokenEndpoint:              p.baseURL + "/oauth/token",
-		JWKSUri:                   p.baseURL + "/.well-known/jwks.json",
-		ResponseTypesSupported:     []string{"code"},
-		GrantTypesSupported:        []string{"authorization_code", "refresh_token"},
+		Issuer:                            p.config.Issuer,
+		AuthorizationEndpoint:             p.baseURL + "/oauth/authorize",
+		TokenEndpoint:                     p.baseURL + "/oauth/token",
+		JWKSUri:                           p.baseURL + "/.well-known/jwks.json",
+		ResponseTypesSupported:            []string{"code"},
+		GrantTypesSupported:               []string{"authorization_code", "refresh_token"},
 		TokenEndpointAuthMethodsSupported: []string{"client_secret_basic", "client_secret_post", "none"},
-		CodeChallengeMethodsSupported: []string{"S256", "plain"},
-		ScopesSupported:           []string{"openid", "profile", "email"},
+		CodeChallengeMethodsSupported:     []string{"S256", "plain"},
+		ScopesSupported:                   []string{"openid", "profile", "email"},
 	}
 
 	// Add optional endpoints if enabled
@@ -72,10 +72,10 @@ func (p *Provider) GetProtectedResourceMetadata(ctx context.Context) (*types.Pro
 	}
 
 	metadata := &types.ProtectedResourceMetadata{
-		Resource:                         resourceURI,
-		AuthorizationServers:             authServers,
-		BearerMethodsSupported:           []string{"header"},
-		ResourceDocumentation:            p.baseURL + "/docs",
+		Resource:                          resourceURI,
+		AuthorizationServers:              authServers,
+		BearerMethodsSupported:            []string{"header"},
+		ResourceDocumentation:             p.baseURL + "/docs",
 		ResourceSigningAlgValuesSupported: []string{"RS256", "RS384", "RS512"},
 	}
 
@@ -160,7 +160,7 @@ func (p *Provider) ServeProtectedResourceMetadata(w http.ResponseWriter, r *http
 func (p *Provider) RegisterHandlers(mux *http.ServeMux) {
 	// Authorization Server Metadata (RFC8414)
 	mux.HandleFunc("/.well-known/oauth-authorization-server", p.ServeAuthorizationServerMetadata)
-	
-	// Protected Resource Metadata (RFC9728) 
+
+	// Protected Resource Metadata (RFC9728)
 	mux.HandleFunc("/.well-known/oauth-protected-resource", p.ServeProtectedResourceMetadata)
 }

@@ -25,13 +25,13 @@ type InMemoryRegistrar struct {
 
 // RegistrarConfig contains configuration for the client registrar
 type RegistrarConfig struct {
-	AllowedRedirectSchemes []string `json:"allowed_redirect_schemes"`
-	RequireRedirectURIs    bool     `json:"require_redirect_uris"`
-	DefaultGrantTypes      []string `json:"default_grant_types"`
-	DefaultResponseTypes   []string `json:"default_response_types"`
-	DefaultScope           string   `json:"default_scope"`
+	AllowedRedirectSchemes []string      `json:"allowed_redirect_schemes"`
+	RequireRedirectURIs    bool          `json:"require_redirect_uris"`
+	DefaultGrantTypes      []string      `json:"default_grant_types"`
+	DefaultResponseTypes   []string      `json:"default_response_types"`
+	DefaultScope           string        `json:"default_scope"`
 	ClientSecretTTL        time.Duration `json:"client_secret_ttl"`
-	MaxRedirectURIs        int      `json:"max_redirect_uris"`
+	MaxRedirectURIs        int           `json:"max_redirect_uris"`
 }
 
 // NewInMemoryRegistrar creates a new in-memory client registrar
@@ -98,24 +98,24 @@ func (r *InMemoryRegistrar) RegisterClient(ctx context.Context, req *types.Dynam
 
 	// Create client registration response
 	response := &types.DynamicClientRegistrationResponse{
-		ClientID:                    clientID,
-		ClientSecret:                clientSecret,
-		ClientIDIssuedAt:            time.Now().Unix(),
-		ClientSecretExpiresAt:       secretExpiresAt,
-		RedirectURIs:                req.RedirectURIs,
-		TokenEndpointAuthMethod:     authMethod,
-		GrantTypes:                  grantTypes,
-		ResponseTypes:               responseTypes,
-		ClientName:                  req.ClientName,
-		ClientURI:                   req.ClientURI,
-		LogoURI:                     req.LogoURI,
-		Scope:                       scope,
-		Contacts:                    req.Contacts,
-		TosURI:                      req.TosURI,
-		PolicyURI:                   req.PolicyURI,
-		JWKSUri:                     req.JWKSUri,
-		SoftwareID:                  req.SoftwareID,
-		SoftwareVersion:             req.SoftwareVersion,
+		ClientID:                clientID,
+		ClientSecret:            clientSecret,
+		ClientIDIssuedAt:        time.Now().Unix(),
+		ClientSecretExpiresAt:   secretExpiresAt,
+		RedirectURIs:            req.RedirectURIs,
+		TokenEndpointAuthMethod: authMethod,
+		GrantTypes:              grantTypes,
+		ResponseTypes:           responseTypes,
+		ClientName:              req.ClientName,
+		ClientURI:               req.ClientURI,
+		LogoURI:                 req.LogoURI,
+		Scope:                   scope,
+		Contacts:                req.Contacts,
+		TosURI:                  req.TosURI,
+		PolicyURI:               req.PolicyURI,
+		JWKSUri:                 req.JWKSUri,
+		SoftwareID:              req.SoftwareID,
+		SoftwareVersion:         req.SoftwareVersion,
 	}
 
 	// Store the client
@@ -294,7 +294,7 @@ func (r *InMemoryRegistrar) isValidGrantType(grantType string) bool {
 		"authorization_code",
 		"refresh_token",
 	}
-	
+
 	for _, valid := range validGrantTypes {
 		if grantType == valid {
 			return true
@@ -308,7 +308,7 @@ func (r *InMemoryRegistrar) isValidResponseType(responseType string) bool {
 	validResponseTypes := []string{
 		"code",
 	}
-	
+
 	for _, valid := range validResponseTypes {
 		if responseType == valid {
 			return true
@@ -324,7 +324,7 @@ func (r *InMemoryRegistrar) isValidAuthMethod(authMethod string) bool {
 		"client_secret_post",
 		"none", // For public clients
 	}
-	
+
 	for _, valid := range validAuthMethods {
 		if authMethod == valid {
 			return true

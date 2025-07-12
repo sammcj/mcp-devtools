@@ -156,19 +156,19 @@ func (p *PKCEValidator) ValidateChallenge(challenge, method, verifier string) er
 		// SHA256 challenge method (recommended)
 		hash := sha256.Sum256([]byte(verifier))
 		encoded := base64.RawURLEncoding.EncodeToString(hash[:])
-		
+
 		if subtle.ConstantTimeCompare([]byte(challenge), []byte(encoded)) != 1 {
 			p.logger.Debug("PKCE S256 challenge validation failed")
 			return fmt.Errorf("invalid code challenge")
 		}
-		
+
 	case "plain":
 		// Plain text method (not recommended but supported)
 		if subtle.ConstantTimeCompare([]byte(challenge), []byte(verifier)) != 1 {
 			p.logger.Debug("PKCE plain challenge validation failed")
 			return fmt.Errorf("invalid code challenge")
 		}
-		
+
 	default:
 		return fmt.Errorf("unsupported challenge method: %s", method)
 	}
@@ -278,6 +278,6 @@ func isLocalhostRequest(r *http.Request) bool {
 	if strings.Contains(host, ":") {
 		host = strings.Split(host, ":")[0]
 	}
-	
+
 	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }

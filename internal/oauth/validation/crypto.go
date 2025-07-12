@@ -18,7 +18,7 @@ func generateCodeVerifier() (string, error) {
 
 	// Encode using base64url without padding
 	verifier := base64.RawURLEncoding.EncodeToString(bytes)
-	
+
 	// Ensure it meets RFC7636 requirements (43-128 unreserved characters)
 	if len(verifier) < 43 || len(verifier) > 128 {
 		return "", fmt.Errorf("generated verifier length %d is outside valid range", len(verifier))
@@ -36,11 +36,11 @@ func base64URLDecode(s string) ([]byte, error) {
 	case 3:
 		s += "="
 	}
-	
+
 	// Replace URL-safe characters with standard base64 characters
 	s = strings.ReplaceAll(s, "-", "+")
 	s = strings.ReplaceAll(s, "_", "/")
-	
+
 	return base64.StdEncoding.DecodeString(s)
 }
 
@@ -76,25 +76,4 @@ func GenerateClientID() (string, error) {
 // GenerateClientSecret generates a cryptographically secure client secret
 func GenerateClientSecret() (string, error) {
 	return generateClientSecret()
-}
-
-// isValidCodeVerifier validates a PKCE code verifier according to RFC7636
-func isValidCodeVerifier(verifier string) bool {
-	// Check length (43-128 characters)
-	if len(verifier) < 43 || len(verifier) > 128 {
-		return false
-	}
-
-	// Check that it only contains unreserved characters
-	// unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
-	for _, char := range verifier {
-		if !((char >= 'A' && char <= 'Z') || 
-			 (char >= 'a' && char <= 'z') || 
-			 (char >= '0' && char <= '9') || 
-			 char == '-' || char == '.' || char == '_' || char == '~') {
-			return false
-		}
-	}
-
-	return true
 }
