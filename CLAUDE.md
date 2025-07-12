@@ -67,8 +67,18 @@ The server supports three transport modes:
 
 ## Environment Variables
 
+### Core
 - `BRAVE_API_KEY` - Required for Brave Search tools
 - `DISABLED_FUNCTIONS` - Comma-separated list of function names to disable
+
+### OAuth 2.0/2.1 (Optional)
+- `OAUTH_ENABLED` or `MCP_OAUTH_ENABLED` - Enable OAuth 2.0/2.1 authorization (HTTP transport only)
+- `OAUTH_ISSUER` or `MCP_OAUTH_ISSUER` - OAuth issuer URL (required if OAuth enabled)
+- `OAUTH_AUDIENCE` or `MCP_OAUTH_AUDIENCE` - OAuth audience for this resource server
+- `OAUTH_JWKS_URL` or `MCP_OAUTH_JWKS_URL` - JWKS URL for token validation
+- `OAUTH_DYNAMIC_REGISTRATION` or `MCP_OAUTH_DYNAMIC_REGISTRATION` - Enable RFC7591 dynamic client registration
+- `OAUTH_AUTHORIZATION_SERVER` or `MCP_OAUTH_AUTHORIZATION_SERVER` - Authorization server URL (if different from issuer)
+- `OAUTH_REQUIRE_HTTPS` or `MCP_OAUTH_REQUIRE_HTTPS` - Require HTTPS for OAuth endpoints (default: true)
 
 ## Important Files
 

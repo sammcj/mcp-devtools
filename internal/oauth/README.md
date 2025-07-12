@@ -27,9 +27,50 @@ internal/oauth/
 
 ## Usage
 
-### CLI Configuration
+### Configuration
 
-Enable OAuth 2.1 with command-line flags:
+OAuth 2.1 can be configured via command-line flags or environment variables.
+
+#### Environment Variables
+
+All OAuth parameters can be set using environment variables:
+
+```bash
+# Basic OAuth configuration via environment variables
+export OAUTH_ENABLED=true
+export OAUTH_ISSUER="https://auth.example.com"
+export OAUTH_AUDIENCE="https://mcp.example.com"
+export OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
+
+./mcp-devtools --transport=http
+
+# With dynamic client registration
+export OAUTH_DYNAMIC_REGISTRATION=true
+./mcp-devtools --transport=http
+
+# Development mode (allows HTTP)
+export OAUTH_REQUIRE_HTTPS=false
+export OAUTH_ISSUER="http://localhost:8080"
+export OAUTH_AUDIENCE="http://localhost:18080"
+export OAUTH_JWKS_URL="http://localhost:8080/.well-known/jwks.json"
+./mcp-devtools --transport=http
+```
+
+#### Environment Variable Reference
+
+| Environment Variable | Alternative | CLI Flag | Description |
+|---------------------|-------------|----------|-------------|
+| `OAUTH_ENABLED` | `MCP_OAUTH_ENABLED` | `--oauth-enabled` | Enable OAuth 2.0/2.1 authorization |
+| `OAUTH_ISSUER` | `MCP_OAUTH_ISSUER` | `--oauth-issuer` | OAuth issuer URL (required if enabled) |
+| `OAUTH_AUDIENCE` | `MCP_OAUTH_AUDIENCE` | `--oauth-audience` | OAuth audience for this resource server |
+| `OAUTH_JWKS_URL` | `MCP_OAUTH_JWKS_URL` | `--oauth-jwks-url` | JWKS URL for token validation |
+| `OAUTH_DYNAMIC_REGISTRATION` | `MCP_OAUTH_DYNAMIC_REGISTRATION` | `--oauth-dynamic-registration` | Enable dynamic client registration |
+| `OAUTH_AUTHORIZATION_SERVER` | `MCP_OAUTH_AUTHORIZATION_SERVER` | `--oauth-authorization-server` | Authorization server URL (if different) |
+| `OAUTH_REQUIRE_HTTPS` | `MCP_OAUTH_REQUIRE_HTTPS` | `--oauth-require-https` | Require HTTPS (default: true) |
+
+#### CLI Configuration
+
+OAuth can also be configured with command-line flags:
 
 ```bash
 # Basic OAuth configuration
@@ -55,6 +96,8 @@ Enable OAuth 2.1 with command-line flags:
     --oauth-jwks-url="http://localhost:8080/.well-known/jwks.json" \
     --oauth-require-https=false
 ```
+
+**Note**: CLI flags take precedence over environment variables.
 
 ### Available Endpoints
 
