@@ -1126,4 +1126,4 @@ See [Creating New Tools](docs/creating-new-tools.md) for detailed instructions o
 ## License
 
 - Copyright 2025 Sam McLeod
-- MIT
+- Apache Public License 2.0
