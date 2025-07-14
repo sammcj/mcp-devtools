@@ -24,6 +24,12 @@ Convert documents to structured Markdown while preserving formatting, extracting
 
 ## Quick Start
 
+First ensure docling is installed in the environment you'll be running the MCP Server from:
+
+```shell
+pip install -U pip docling
+```
+
 ### Simple Usage (Recommended)
 ```json
 {
@@ -56,7 +62,7 @@ This uses the default `text-and-image` profile and saves to `/path/to/document.m
 ### `text-and-image` - Balanced Processing (Default)
 ```json
 {
-  "name": "process_document", 
+  "name": "process_document",
   "arguments": {
     "source": "/path/to/document.pdf",
     "profile": "text-and-image"
@@ -87,7 +93,7 @@ This uses the default `text-and-image` profile and saves to `/path/to/document.m
 {
   "name": "process_document",
   "arguments": {
-    "source": "/path/to/document.pdf", 
+    "source": "/path/to/document.pdf",
     "profile": "llm-smoldocling"
   }
 }
@@ -276,7 +282,7 @@ export DOCLING_LLM_TIMEOUT="240"
   "metadata": {
     "file_size": 15420,
     "document_title": "Document Title",
-    "document_author": "Author Name", 
+    "document_author": "Author Name",
     "page_count": 10,
     "word_count": 1500
   },
@@ -304,7 +310,7 @@ export DOCLING_LLM_TIMEOUT="240"
   },
   "images": [
     {
-      "id": "image_1", 
+      "id": "image_1",
       "type": "picture",
       "caption": "Figure 1",
       "file_path": "/path/to/extracted/image_1.png"
@@ -313,7 +319,7 @@ export DOCLING_LLM_TIMEOUT="240"
   "diagrams": [
     {
       "id": "diagram_1",
-      "type": "flowchart", 
+      "type": "flowchart",
       "description": "Process flow diagram showing...",
       "mermaid_code": "flowchart TD\n    A[Start] --> B[Process]\n    B --> C[End]",
       "confidence": 0.95
@@ -326,7 +332,7 @@ export DOCLING_LLM_TIMEOUT="240"
 
 ### Profile Performance (Typical Document)
 - **`basic`**: 1-3 seconds
-- **`text-and-image`**: 3-10 seconds  
+- **`text-and-image`**: 3-10 seconds
 - **`scanned`**: 10-30 seconds
 - **`llm-smoldocling`**: 5-15 seconds
 - **`llm-external`**: 15-60 seconds
@@ -358,7 +364,7 @@ Intelligent caching based on:
 ### Scanned Document Digitisation
 ```json
 {
-  "name": "process_document", 
+  "name": "process_document",
   "arguments": {
     "source": "/path/to/scanned-invoice.pdf",
     "profile": "scanned"
@@ -382,7 +388,7 @@ Intelligent caching based on:
 {
   "name": "process_document",
   "arguments": {
-    "source": "/path/to/simple-doc.pdf", 
+    "source": "/path/to/simple-doc.pdf",
     "profile": "basic"
   }
 }

@@ -1,6 +1,6 @@
 # MCP DevTools
 
-A single, high-performance MCP server that replaces multiple Node.js and Python-based MCP servers with one efficient Go binary. Get access to essential developer tools through a unified, modular interface.
+A single, high-performance MCP server that replaces multiple Node.js and Python-based MCP servers with one efficient Go binary, providing access to essential developer tools through a unified, modular interface that can be easily extended with new tools.
 
 ```mermaid
 graph TD
@@ -23,7 +23,7 @@ graph TD
     E --> E2[Memory Graph]
 
     F --> F1[ShadCN UI Components]
-    F --> F2[American→British English]
+    F --> F2[American→English]
 
     classDef server fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef category fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
@@ -34,26 +34,39 @@ graph TD
     class B1,B2,B3,C1,C2,D1,E1,E2,F1,F2 tool
 ```
 
-## Why MCP DevTools?
+## Why I Built MCP DevTools
 
 **🚀 Single Binary Solution**
-- Replace multiple resource-heavy Node.js/Python MCP servers
+- Replace multiple potentially resource-heavy Node.js/Python MCP servers, each spawned for every client tool you use
 - One binary, one configuration, consistent performance
-
-**⚡ High Performance**
 - Built in Go for speed and efficiency
 - Minimal memory footprint compared to multiple separate servers
 - Fast startup and response times
+- Download one binary, configure once - or compile from source
+- Optional dependencies only for specific tools
+- Works out of the box for most tools
 
 **🛠 Comprehensive Tool Suite**
 - 10+ essential developer tools in one package
 - No need to manage multiple MCP server installations
 - Consistent API across all tools
 
-**🔧 Simple Setup**
-- Download one binary, configure once
-- Optional dependencies only for specific tools
-- Works out of the box for most tools
+## Available Tools
+
+| Tool                                                             | Purpose                          | Dependencies             | Quick Example                    |
+| ---------------------------------------------------------------- | -------------------------------- | ------------------------ | -------------------------------- |
+| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search        | Brave API key (optional) | Web, image, news, video search   |
+| **[Document Processing](docs/tools/document-processing.md)**     | Convert documents to Markdown    | Python 3.10+             | PDF, DOCX → Markdown with OCR    |
+| **[Package Search](docs/tools/package-search.md)**               | Check package versions           | None                     | NPM, Python, Go, Java, Docker    |
+| **[Think](docs/tools/think.md)**                                 | Structured reasoning space       | None                     | Complex problem analysis         |
+| **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs      | None                     | Store entities and relationships |
+| **[PDF Processing](docs/tools/pdf-processing.md)**               | Fast PDF text extraction         | None                     | Quick PDF to Markdown            |
+| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown | None                     | Documentation and articles       |
+| **[Package Documentation](docs/tools/package-documentation.md)** | Library documentation lookup     | None                     | React, Django, TensorFlow docs   |
+| **[ShadCN UI](docs/tools/shadcn-ui.md)**                         | Component information            | None                     | Button, Dialog, Form components  |
+| **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling      | None                     | Organise, colour, centre         |
+
+👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
 ## Quick Start
 
@@ -76,19 +89,8 @@ Download the latest binary from [releases](https://github.com/sammcj/mcp-devtool
 
 ### Basic MCP Configuration
 
-**Minimal Setup (Most Tools Work):**
-```json
-{
-  "mcpServers": {
-    "dev-tools": {
-      "type": "stdio",
-      "command": "/path/to/mcp-devtools"
-    }
-  }
-}
-```
+**STDIO**
 
-**Enhanced Setup (All Tools Available):**
 ```json
 {
   "mcpServers": {
@@ -96,39 +98,40 @@ Download the latest binary from [releases](https://github.com/sammcj/mcp-devtool
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "BRAVE_API_KEY": "your-brave-api-key",
-        "SEARXNG_BASE_URL": "https://your-searxng-instance.com"
+        "BRAVE_API_KEY": "Optionally add your free Brave API key here, or remove if not needed",
       }
     }
   }
 }
 ```
 
-Replace `/path/to/mcp-devtools` with your actual binary path (e.g., `/Users/yourname/go/bin/mcp-devtools`).
+Replacing `/path/to/mcp-devtools` with your actual binary path (e.g., `/Users/yourname/go/bin/mcp-devtools`).
 
-## Available Tools
+_Note: The `BRAVE_API_KEY` is optional and only needed if you want to use the Brave Search provider, there are other providers available, see the various tools documentation for more details._
 
-| Tool | Purpose | Dependencies | Quick Example |
-|------|---------|--------------|---------------|
-| **[Internet Search](docs/tools/internet-search.md)** | Multi-provider web search | Brave API key (optional) | Web, image, news, video search |
-| **[Document Processing](docs/tools/document-processing.md)** | Convert documents to Markdown | Python 3.10+ | PDF, DOCX → Markdown with OCR |
-| **[Package Search](docs/tools/package-search.md)** | Check package versions | None | NPM, Python, Go, Java, Docker |
-| **[Think](docs/tools/think.md)** | Structured reasoning space | None | Complex problem analysis |
-| **[Memory](docs/tools/memory.md)** | Persistent knowledge graphs | None | Store entities and relationships |
-| **[PDF Processing](docs/tools/pdf-processing.md)** | Fast PDF text extraction | None | Quick PDF to Markdown |
-| **[Web Fetch](docs/tools/web-fetch.md)** | Retrieve web content as Markdown | None | Documentation and articles |
-| **[Package Documentation](docs/tools/package-documentation.md)** | Library documentation lookup | None | React, Django, TensorFlow docs |
-| **[ShadCN UI](docs/tools/shadcn-ui.md)** | Component information | None | Button, Dialog, Form components |
-| **[American→English](docs/tools/american-to-english.md)** | Convert to British spelling | None | Organise, colour, centre |
+**Streamable HTTP**
 
-👉 **[See detailed tool documentation](docs/tools/overview.md)**
+```shell
+mcp-devtools --transport http --port 8080
+```
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "streamableHttp",
+      "url": "http://localhost:8080/http"
+    }
+  }
+}
+```
 
 ## Transport Options
 
 MCP DevTools supports three transport modes for different use cases:
 
 ### STDIO Transport (Default)
-**Best for**: MCP clients like Claude Desktop, Cline, etc.
+**Best for**: Simple, local use with MCP clients like Claude Desktop, Cline, etc.
 
 ```json
 {
@@ -145,7 +148,7 @@ MCP DevTools supports three transport modes for different use cases:
 ```
 
 ### Streamable HTTP Transport
-**Best for**: Web applications, API integration, production deployments
+**Best for**: Production deployments, shared use, centralised configuration
 
 ```bash
 # Basic HTTP mode
@@ -196,16 +199,18 @@ mcp-devtools --transport sse --port 18080 --base-url http://localhost
 
 ### Environment Variables
 
+All environment variables are optional, but if you want to use specific search providers or document processing features, you may need to provide the the appropriate variables.
+
 **Core Tools:**
-- `BRAVE_API_KEY` - Enable Brave Search provider ([Get API key](https://brave.com/search/api/))
-- `SEARXNG_BASE_URL` - Enable SearXNG search provider
+- `BRAVE_API_KEY` - Enable Brave Search provider by providing a ([free Brave search API key](https://brave.com/search/api/))
+- `SEARXNG_BASE_URL` - Enable SearXNG search provider by providing the base URL (e.g. `https://searxng.example.com`)
 - `MEMORY_FILE_PATH` - Memory storage location (default: `~/.mcp-devtools/`)
-- `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable
+- `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
 **Document Processing:**
-- `DOCLING_PYTHON_PATH` - Python executable path (auto-detected)
-- `DOCLING_CACHE_ENABLED` - Enable processing cache (default: `true`)
-- `DOCLING_HARDWARE_ACCELERATION` - Hardware acceleration (`auto`, `mps`, `cuda`, `cpu`)
+- `DOCLING_PYTHON_PATH` - Python executable path (default: auto-detected)
+- `DOCLING_CACHE_ENABLED` - Enable processed document cache (default: `true`)
+- `DOCLING_HARDWARE_ACCELERATION` - Hardware acceleration (`auto` (default), `mps`, `cuda`, `cpu`)
 
 ### Command-Line Options
 
@@ -226,6 +231,8 @@ MCP DevTools uses a modular architecture:
 
 Each tool is self-contained and registers automatically when the binary starts.
 
+![](./screenshots/mcp-devtools-1.jpeg)
+
 ## Advanced Features
 
 ### OAuth 2.0/2.1 Authentication
@@ -238,11 +245,12 @@ Quick example:
 # Browser-based authentication
 mcp-devtools --transport http --oauth-browser-auth --oauth-client-id="your-client"
 
-# Resource server mode  
+# Resource server mode
 mcp-devtools --transport http --oauth-enabled --oauth-issuer="https://auth.example.com"
 ```
 
 ### Docker Support
+
 ```bash
 # Pull latest image
 docker pull ghcr.io/sammcj/mcp-devtools:latest
@@ -252,36 +260,15 @@ docker run -e BRAVE_API_KEY="your-key" ghcr.io/sammcj/mcp-devtools:latest
 ```
 
 ### Creating New Tools
+
 Want to add your own tools? See the **[Development Guide](docs/development/creating-new-tools.md)**.
-
-## Common Workflows
-
-### Research & Documentation
-```
-Internet Search → Web Fetch → Document Processing → Memory
-```
-
-### Package Management  
-```
-Package Search → Package Documentation → Think → Memory
-```
-
-### Content Analysis
-```
-Document Processing → Think → Memory → American→English
-```
-
-### UI Development
-```
-ShadCN UI → Package Search → Web Fetch → Think
-```
 
 ## Getting Help
 
 - **Tool Documentation**: [docs/tools/overview.md](docs/tools/overview.md)
-- **OAuth Setup**: [docs/oauth/README.md](docs/oauth/README.md)  
+- **OAuth Setup**: [docs/oauth/README.md](docs/oauth/README.md)
 - **Development**: [docs/development/creating-new-tools.md](docs/development/creating-new-tools.md)
-- **Issues**: [GitHub Issues](https://github.com/sammcj/mcp-devtools/issues)
+- **Issues**: [GitHub Issues](https://github.com/sammcj/mcp-devtools/issues), please note that I built this tool for my own use and it is not a commercially supported product, so if you can - please raise a PR instead of an issue.
 
 ## Contributing
 
@@ -296,22 +283,6 @@ make test
 make build
 ```
 
-## Performance Benefits
-
-**Compared to running 5+ separate MCP servers:**
-
-| Metric | Multiple Servers | MCP DevTools |
-|---------|------------------|--------------|
-| **Memory Usage** | ~500MB+ | ~50MB |
-| **Startup Time** | 10-30 seconds | 1-2 seconds |
-| **Configuration** | 5+ separate configs | Single config |
-| **Updates** | 5+ separate updates | One binary update |
-| **Dependencies** | Node.js + Python + packages | One binary |
-
 ## License
 
 Apache Public License 2.0 - Copyright 2025 Sam McLeod
-
----
-
-**⭐ Star this repo if MCP DevTools saves you time and system resources!**
