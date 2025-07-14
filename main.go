@@ -10,6 +10,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
+	oauthclient "github.com/sammcj/mcp-devtools/internal/oauth/client"
 	oauthserver "github.com/sammcj/mcp-devtools/internal/oauth/server"
 	"github.com/sammcj/mcp-devtools/internal/oauth/types"
 	"github.com/sammcj/mcp-devtools/internal/registry"
@@ -133,6 +134,39 @@ func main() {
 				Usage:   "Require HTTPS for OAuth endpoints (disable only for development)",
 				EnvVars: []string{"OAUTH_REQUIRE_HTTPS", "MCP_OAUTH_REQUIRE_HTTPS"},
 			},
+			// OAuth Client Browser Authentication flags
+			&cli.BoolFlag{
+				Name:    "oauth-browser-auth",
+				Usage:   "Enable browser-based OAuth authentication flow at startup",
+				EnvVars: []string{"OAUTH_BROWSER_AUTH", "MCP_OAUTH_BROWSER_AUTH"},
+			},
+			&cli.StringFlag{
+				Name:    "oauth-client-id",
+				Usage:   "OAuth client ID for browser authentication",
+				EnvVars: []string{"OAUTH_CLIENT_ID", "MCP_OAUTH_CLIENT_ID"},
+			},
+			&cli.StringFlag{
+				Name:    "oauth-client-secret",
+				Usage:   "OAuth client secret for browser authentication (optional for public clients)",
+				EnvVars: []string{"OAUTH_CLIENT_SECRET", "MCP_OAUTH_CLIENT_SECRET"},
+			},
+			&cli.StringFlag{
+				Name:    "oauth-scope",
+				Usage:   "OAuth scopes to request during browser authentication",
+				EnvVars: []string{"OAUTH_SCOPE", "MCP_OAUTH_SCOPE"},
+			},
+			&cli.IntFlag{
+				Name:    "oauth-callback-port",
+				Value:   0,
+				Usage:   "Port for OAuth callback server (0 for random port)",
+				EnvVars: []string{"OAUTH_CALLBACK_PORT", "MCP_OAUTH_CALLBACK_PORT"},
+			},
+			&cli.DurationFlag{
+				Name:    "oauth-auth-timeout",
+				Value:   5 * time.Minute,
+				Usage:   "Timeout for browser authentication flow",
+				EnvVars: []string{"OAUTH_AUTH_TIMEOUT", "MCP_OAUTH_AUTH_TIMEOUT"},
+			},
 		},
 		Commands: []*cli.Command{
 			{
@@ -209,6 +243,13 @@ func main() {
 
 					return result, nil
 				})
+			}
+
+			// Handle browser-based OAuth authentication if enabled
+			if c.Bool("oauth-browser-auth") {
+				if err := handleBrowserAuthentication(c, transport, logger); err != nil {
+					return fmt.Errorf("browser authentication failed: %w", err)
+				}
 			}
 
 			// Start the server
@@ -514,4 +555,96 @@ func createOAuthMiddleware(oauthServer *oauthserver.OAuth2Server, logger *logrus
 		// Add claims to context for downstream handlers
 		return context.WithValue(ctx, types.OAuthClaimsKey, result.Claims)
 	}
+}
+
+// handleBrowserAuthentication handles the browser-based OAuth authentication flow
+func handleBrowserAuthentication(c *cli.Context, transport string, logger *logrus.Logger) error {
+	// Browser authentication is not compatible with stdio mode
+	if transport == "stdio" {
+		logger.Debug("Browser authentication disabled for stdio transport")
+		return nil
+	}
+
+	// Validate required configuration
+	clientID := c.String("oauth-client-id")
+	if clientID == "" {
+		return fmt.Errorf("oauth-client-id is required for browser authentication")
+	}
+
+	issuerURL := c.String("oauth-issuer")
+	if issuerURL == "" {
+		return fmt.Errorf("oauth-issuer is required for browser authentication")
+	}
+
+	// Build OAuth client configuration
+	clientConfig := &oauthclient.OAuth2ClientConfig{
+		ClientID:     clientID,
+		ClientSecret: c.String("oauth-client-secret"),
+		IssuerURL:    issuerURL,
+		Scope:        c.String("oauth-scope"),
+		ServerPort:   c.Int("oauth-callback-port"),
+		AuthTimeout:  c.Duration("oauth-auth-timeout"),
+		RequireHTTPS: c.Bool("oauth-require-https"),
+	}
+
+	// Set resource parameter for audience binding (RFC8707)
+	audience := c.String("oauth-audience")
+	if audience != "" {
+		clientConfig.Resource = audience
+	}
+
+	// Create and validate browser authentication flow
+	browserAuth, err := oauthclient.NewBrowserAuthFlow(clientConfig, logger)
+	if err != nil {
+		return fmt.Errorf("failed to create browser authentication flow: %w", err)
+	}
+
+	if err := browserAuth.ValidateConfig(); err != nil {
+		return fmt.Errorf("invalid browser authentication configuration: %w", err)
+	}
+
+	// Log authentication details
+	logger.Info("Browser-based OAuth authentication enabled")
+	logger.Infof("OAuth client ID: %s", clientConfig.ClientID)
+	logger.Infof("OAuth issuer: %s", clientConfig.IssuerURL)
+	if clientConfig.Scope != "" {
+		logger.Infof("OAuth scope: %s", clientConfig.Scope)
+	}
+	if clientConfig.Resource != "" {
+		logger.Infof("OAuth resource: %s", clientConfig.Resource)
+	}
+
+	// Perform the authentication
+	logger.Info("Starting browser authentication flow...")
+	logger.Info("Please complete the authentication in your browser")
+
+	tokenResponse, err := browserAuth.AuthenticateWithTimeout(clientConfig.AuthTimeout)
+	if err != nil {
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+
+	if tokenResponse == nil {
+		// This shouldn't happen, but let's be defensive
+		return fmt.Errorf("authentication completed but no token received")
+	}
+
+	// Log successful authentication (without sensitive token data)
+	logger.Info("Browser authentication completed successfully")
+	logger.Infof("Token type: %s", tokenResponse.TokenType)
+	if tokenResponse.ExpiresIn > 0 {
+		logger.Infof("Token expires in: %d seconds", tokenResponse.ExpiresIn)
+	}
+	if tokenResponse.Scope != "" {
+		logger.Infof("Granted scope: %s", tokenResponse.Scope)
+	}
+
+	// Store the access token for use by the MCP server
+	// For now, we'll store it in an environment variable that the OAuth middleware can use
+	// In a production implementation, you might want to use a more secure storage mechanism
+	if err := os.Setenv("MCP_ACCESS_TOKEN", tokenResponse.AccessToken); err != nil {
+		logger.WithError(err).Warn("Failed to store access token in environment")
+	}
+
+	logger.Info("MCP DevTools is now authenticated and ready to start")
+	return nil
 }
