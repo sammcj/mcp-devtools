@@ -1,0 +1,113 @@
+# Tool Registry Reference
+
+This document provides a complete reference of all tools available in MCP DevTools.
+
+**Total Tools**: {{.TotalTools}}  
+**Generated**: {{.GeneratedAt}}
+
+## Tool Summary
+
+| Function Name | Category | Description | Parameters | Dependencies |
+|---------------|----------|-------------|------------|--------------|
+{{range .Tools}}| `{{.FunctionName}}` | {{.Category}} | {{.ShortDescription}} | {{.ParameterCount}} | {{if .Dependencies}}{{range .Dependencies}}{{.}}{{if not (last .)}}, {{end}}{{end}}{{else}}None{{end}} |
+{{end}}
+
+## Tools by Category
+
+{{range .Categories}}
+### {{.Name}}
+
+{{.Description}}
+
+{{range .Tools}}
+#### {{.ToolName}} (`{{.FunctionName}}`)
+
+{{.Description}}
+
+- **Parameters**: {{.ParameterCount}} ({{.RequiredParameterCount}} required)
+- **Dependencies**: {{if .Dependencies}}{{range .Dependencies}}`{{.}}`{{if not (last .)}}, {{end}}{{end}}{{else}}None{{end}}
+- **Documentation**: [{{.ToolName}} Reference]({{.ReferenceLink}})
+
+{{end}}
+{{end}}
+
+## Parameter Types
+
+### Common Types
+
+{{range .CommonTypes}}
+#### {{.Name}}
+
+**Type**: `{{.Type}}`  
+**Description**: {{.Description}}  
+{{if .Example}}**Example**: `{{.Example}}`{{end}}
+
+{{end}}
+
+### Custom Types
+
+{{range .CustomTypes}}
+#### {{.Name}}
+
+**Type**: `{{.Type}}`  
+**Description**: {{.Description}}  
+{{if .Properties}}**Properties**:
+{{range .Properties}}
+- `{{.Name}}` ({{.Type}}): {{.Description}}
+{{end}}{{end}}
+{{if .Example}}**Example**:
+```json
+{{.Example}}
+```{{end}}
+
+{{end}}
+
+## Environment Variables
+
+Tools may require or use the following environment variables:
+
+{{range .EnvironmentVariables}}
+### {{.Name}}
+
+- **Required for**: {{range .RequiredFor}}`{{.}}`{{if not (last .)}}, {{end}}{{end}}
+- **Optional for**: {{range .OptionalFor}}`{{.}}`{{if not (last .)}}, {{end}}{{end}}
+- **Description**: {{.Description}}
+- **Example**: `{{.Example}}`
+
+{{end}}
+
+## Tool Registration
+
+All tools implement the `tools.Tool` interface and register themselves automatically:
+
+```go
+type Tool interface {
+    Definition() mcp.Tool
+    Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error)
+}
+```
+
+### Registration Pattern
+
+```go
+func init() {
+    registry.Register(&YourTool{})
+}
+```
+
+## Error Handling
+
+Standard error patterns across all tools:
+
+{{range .StandardErrors}}
+### {{.Type}}
+
+**When**: {{.When}}  
+**Format**: {{.Format}}  
+**Example**: `{{.Example}}`
+
+{{end}}
+
+---
+
+*Auto-generated from tool definitions in the MCP DevTools codebase*

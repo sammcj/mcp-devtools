@@ -1,0 +1,209 @@
+# Parameter Types Reference
+
+This document describes all parameter types used across MCP DevTools APIs.
+
+**Generated**: {{.GeneratedAt}}
+
+## Standard JSON Types
+
+### String Parameters
+
+{{range .StringParameters}}
+#### {{.Name}}
+
+**Used in**: {{range .UsedIn}}`{{.}}`{{if not (last .)}}, {{end}}{{end}}  
+**Description**: {{.Description}}  
+{{if .Pattern}}**Pattern**: `{{.Pattern}}`{{end}}
+{{if .MinLength}}**Minimum Length**: {{.MinLength}}{{end}}
+{{if .MaxLength}}**Maximum Length**: {{.MaxLength}}{{end}}
+{{if .EnumValues}}**Allowed Values**: {{range .EnumValues}}`{{.}}`{{if not (last .)}}, {{end}}{{end}}{{end}}
+
+**Example**:
+```json
+"{{.Name}}": "{{.Example}}"
+```
+
+{{end}}
+
+### Number Parameters
+
+{{range .NumberParameters}}
+#### {{.Name}}
+
+**Used in**: {{range .UsedIn}}`{{.}}`{{if not (last .)}}, {{end}}{{end}}  
+**Description**: {{.Description}}  
+{{if .Minimum}}**Minimum**: {{.Minimum}}{{end}}
+{{if .Maximum}}**Maximum**: {{.Maximum}}{{end}}
+{{if .Default}}**Default**: {{.Default}}{{end}}
+
+**Example**:
+```json
+"{{.Name}}": {{.Example}}
+```
+
+{{end}}
+
+### Boolean Parameters
+
+{{range .BooleanParameters}}
+#### {{.Name}}
+
+**Used in**: {{range .UsedIn}}`{{.}}`{{if not (last .)}}, {{end}}{{end}}  
+**Description**: {{.Description}}  
+{{if .Default}}**Default**: {{.Default}}{{end}}
+
+**Example**:
+```json
+"{{.Name}}": {{.Example}}
+```
+
+{{end}}
+
+### Array Parameters
+
+{{range .ArrayParameters}}
+#### {{.Name}}
+
+**Used in**: {{range .UsedIn}}`{{.}}`{{if not (last .)}}, {{end}}{{end}}  
+**Description**: {{.Description}}  
+**Item Type**: {{.ItemType}}
+{{if .MinItems}}**Minimum Items**: {{.MinItems}}{{end}}
+{{if .MaxItems}}**Maximum Items**: {{.MaxItems}}{{end}}
+
+**Example**:
+```json
+"{{.Name}}": {{.Example}}
+```
+
+{{end}}
+
+## Complex Object Types
+
+{{range .ObjectTypes}}
+### {{.Name}}
+
+**Used in**: {{range .UsedIn}}`{{.}}`{{if not (last .)}}, {{end}}{{end}}  
+**Description**: {{.Description}}
+
+#### Properties
+
+{{range .Properties}}
+##### {{.Name}}
+
+- **Type**: {{.Type}}
+- **Required**: {{if .Required}}✅ Yes{{else}}❌ No{{end}}
+- **Description**: {{.Description}}
+{{if .Default}}- **Default**: `{{.Default}}`{{end}}
+
+{{end}}
+
+#### Example
+
+```json
+{{.Example}}
+```
+
+{{end}}
+
+## Tool-Specific Types
+
+{{range .ToolSpecificTypes}}
+### {{.Name}}
+
+**Tool**: `{{.Tool}}`  
+**Description**: {{.Description}}
+
+{{if .Properties}}
+#### Properties
+
+{{range .Properties}}
+- **{{.Name}}** ({{.Type}}): {{.Description}}
+{{end}}
+{{end}}
+
+#### Example
+
+```json
+{{.Example}}
+```
+
+{{end}}
+
+## Validation Rules
+
+### Common Validation Patterns
+
+{{range .ValidationRules}}
+#### {{.Name}}
+
+**Type**: {{.Type}}  
+**Rule**: {{.Rule}}  
+**Error Message**: "{{.ErrorMessage}}"
+
+**Valid Examples**:
+{{range .ValidExamples}}
+- `{{.}}`
+{{end}}
+
+**Invalid Examples**:
+{{range .InvalidExamples}}
+- `{{.}}` - {{.Reason}}
+{{end}}
+
+{{end}}
+
+### File Path Parameters
+
+File paths must be absolute paths and follow these rules:
+
+- Must start with `/` (Unix) or drive letter (Windows)
+- No relative path components (`..`, `.`)
+- Must exist and be readable (for input files)
+- Parent directory must exist and be writable (for output files)
+
+**Valid Examples**:
+```json
+"/Users/john/documents/file.pdf"
+"/home/user/projects/document.docx"
+"C:\\Users\\John\\Documents\\file.pdf"
+```
+
+### URL Parameters
+
+URL parameters must be valid HTTP/HTTPS URLs:
+
+- Must start with `http://` or `https://`
+- Must be publicly accessible
+- No authentication required
+- Must return content (not redirects to auth pages)
+
+**Valid Examples**:
+```json
+"https://example.com/api/docs"
+"http://localhost:8080/documentation"
+```
+
+### Environment Variable Patterns
+
+Environment variables follow these naming conventions:
+
+- Tool-specific: `TOOL_NAME_SETTING` (e.g., `BRAVE_API_KEY`)
+- Global: `MCP_SETTING` (e.g., `MCP_OAUTH_ENABLED`)
+- Cache: `TOOL_CACHE_SETTING` (e.g., `DOCLING_CACHE_ENABLED`)
+
+## Default Values
+
+Parameters with default values are automatically applied when not provided:
+
+{{range .DefaultValues}}
+### {{.ParameterName}}
+
+**Default**: `{{.Value}}`  
+**Tools**: {{range .Tools}}`{{.}}`{{if not (last .)}}, {{end}}{{end}}  
+**Description**: {{.Description}}
+
+{{end}}
+
+---
+
+*Generated from tool parameter definitions*
