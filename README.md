@@ -16,7 +16,7 @@ graph TD
     A --> I[Package Documentation]
     A --> J[American to Intl. English]
     A --> K[PDF Processing]
-    A --> L[OAuth 2.0/2.1 Authentication]
+    A --> L[OAuth 2.0/2.1 Authorisation]
 
     C --> C1[Brave]
     C --> C2[SearXNG]
@@ -31,14 +31,6 @@ graph TD
     K --> K2[Image Extraction]
     K --> K3[Markdown Output]
 
-    L --> L1[🌐 Browser Authentication<br/>OAuth Client]
-    L --> L2[🛡️ Resource Server<br/>Token Validation]
-    L1 --> L3[PKCE + Auth Code Flow]
-    L1 --> L4[Cross-platform Browser Launch]
-    L1 --> L5[Localhost Callback Server]
-    L2 --> L6[JWT Token Validation]
-    L2 --> L7[JWKS + Audience Checking]
-
     classDef toolCategory fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef tool fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
     classDef searchTool fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
@@ -47,7 +39,6 @@ graph TD
     classDef docTool fill:#F0E6FF,stroke:#9C27B0,color:#7B1FA2
     classDef packageTool fill:#FFF0E6,stroke:#FF6B35,color:#D84315
     classDef pdfTool fill:#FFE6E6,stroke:#E91E63,color:#C2185B
-    classDef oauthTool fill:#E8F5E8,stroke:#2E7D32,color:#1B5E20
 
     class B,C,D,E,F,G,H,I,J,K,L toolCategory
     class B1,B2,E1,F1 tool
@@ -57,7 +48,6 @@ graph TD
     class H5,H6 docTool
     class I1,I2 packageTool
     class K1,K2,K3 pdfTool
-    class L1,L2,L3,L4,L5,L6,L7 oauthTool
 ```
 
 ---
