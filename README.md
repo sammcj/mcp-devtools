@@ -53,6 +53,12 @@ graph TD
 ---
 
 - [MCP DevTools](#mcp-devtools)
+  - [Architecture](#architecture)
+  - [Screenshots](#screenshots)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Install](#install)
+    - [Configuration](#configuration)
   - [Features](#features)
     - [Package Versions](#package-versions)
     - [Internet Search](#internet-search)
@@ -62,28 +68,175 @@ graph TD
     - [Document Processing](#document-processing)
     - [Package Documentation](#package-documentation)
     - [PDF Processing](#pdf-processing)
-    - [shadcn ui Components](#shadcn-ui-components)
-  - [Screenshots](#screenshots)
-  - [Installation](#installation)
-    - [Version Information](#version-information)
-  - [Usage](#usage)
-    - [Install](#install)
-    - [Configuration](#configuration)
+    - [ShadCN/UI Components](#shadcnui-components)
   - [Tools](#tools)
     - [Think Tool](#think-tool-1)
     - [Package Documentation](#package-documentation-1)
     - [PDF Processing](#pdf-processing-1)
     - [Unified Package Search](#unified-package-search)
-    - [shadcn ui Components](#shadcn-ui-components-1)
+    - [shadcn ui Components](#shadcn-ui-components)
     - [Document Processing](#document-processing-1)
     - [Internet Search](#internet-search-1)
-    - [OAuth 2.0/2.1 Authorisation](#oauth-2021-authorisation)
   - [Configuration](#configuration-2)
     - [Environment Variables](#environment-variables)
-  - [Architecture](#architecture)
     - [Docker Images](#docker-images-1)
   - [Creating New Tools](#creating-new-tools)
+  - [OAuth 2.0/2.1 Authorisation](#oauth-2021-authorisation)
+    - [Two OAuth Modes](#two-oauth-modes)
+    - [Key Features:](#key-features)
+    - [Browser Authentication Quick Start](#browser-authentication-quick-start)
+    - [Resource Server Quick Start](#resource-server-quick-start)
+    - [OAuth Endpoints (Resource Server Mode)](#oauth-endpoints-resource-server-mode)
+    - [When to Use Which Mode](#when-to-use-which-mode)
   - [License](#license)
+
+## Architecture
+
+The server is built with a modular architecture to make it easy to add new tools in the future. The main components are:
+
+- **Core Tool Interface**: Defines the interface that all tools must implement.
+- **Central Tool Registry**: Manages the registration and retrieval of tools.
+- **Tool Modules**: Individual tool implementations organized by category.
+
+## Screenshots
+
+![](./screenshots/mcp-devtools-1.jpeg)
+
+## Installation
+
+```bash
+go install github.com/sammcj/mcp-devtools@HEAD
+```
+
+Or clone the repository and build it:
+
+```bash
+git clone https://github.com/sammcj/mcp-devtools.git
+cd mcp-devtools
+make
+```
+
+## Usage
+
+### Install
+
+To install mcp-devtools you can either:
+
+- Use go install: `go install github.com/sammcj/mcp-devtools@HEAD`
+- Clone the repo and build it with `make build`
+- Download the latest release binary from the [releases page](https://github.com/sammcj/mcp-devtools/releases) and save it in your PATH (e.g. /usr/local/bin/mcp-devtools)
+
+### Configuration
+
+The server supports three transport modes: stdio (default), SSE (Server-Sent Events), and Streamable HTTP (with optional SSE upgrade).
+
+#### STDIO Transport
+
+To run it in STDIO mode add it to your MCP configuration file:
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "stdio",
+      "command": "/Users/samm/go/bin/mcp-devtools",
+      "env": {
+        "BRAVE_API_KEY": "your-brave-api-key-here-if-you-want-to-use-it"
+      }
+    }
+  }
+}
+```
+
+_Note: replace `/Users/samm/go/bin/mcp-devtools` with the path to your installed binary._
+
+#### Streamable HTTP Transport
+
+The Streamable HTTP transport provides a more robust HTTP-based communication with optional authentication:
+
+```bash
+# Basic Streamable HTTP
+mcp-devtools --transport http --port 8080
+
+# With simple authentication
+mcp-devtools --transport http --port 8080 --auth-token mysecrettoken
+
+# With OAuth 2.0/2.1 authorisation
+# (See the [OAuth Setup Example](docs/oauth-authentik-setup.md) for more information)
+mcp-devtools --transport http --port 8080 \
+    --oauth-enabled \
+    --oauth-issuer="https://auth.example.com" \
+    --oauth-audience="https://mcp.example.com" \
+    --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
+
+
+# With custom endpoint path
+mcp-devtools --transport http --port 8080 --endpoint-path /api/mcp
+```
+
+Configure your MCP client to connect to the Streamable HTTP transport:
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "streamableHttp",
+      "url": "http://localhost:8080/http"
+    }
+  }
+}
+```
+
+Or with authentication:
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "streamableHttp",
+      "url": "http://localhost:8080/http",
+      "headers": {
+        "Authorization": "Bearer mysecrettoken"
+      }
+    }
+  }
+}
+```
+
+#### SSE (Only) Transport
+
+```bash
+mcp-devtools --transport sse --port 18080 --base-url http://localhost
+```
+
+Or if you built it locally:
+
+```bash
+./bin/mcp-devtools --transport sse --port 18080 --base-url http://localhost
+```
+
+And configure your MCP client to connect to the SSE transport:
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "sse",
+      "url": "http://localhost:18080/sse"
+    }
+  }
+}
+```
+
+#### Command-line Options
+
+- `--transport`, `-t`: Transport type (stdio, sse, or http). Default: stdio
+- `--port`: Port to use for HTTP transports (SSE and Streamable HTTP). Default: 18080
+- `--base-url`: Base URL for HTTP transports. Default: http://localhost
+- `--auth-token`: Authentication token for Streamable HTTP transport (optional)
+- `--endpoint-path`: Endpoint path for Streamable HTTP transport. Default: /http
+- `--session-timeout`: Session timeout for Streamable HTTP transport. Default: 30m0s
+- `--debug`, `-d`: Enable debug logging. Default: false
 
 ## Features
 
@@ -221,160 +374,12 @@ See the [Package Documentation README](internal/tools/packagedocs/README.md) for
 
 See the [PDF Processing README](internal/tools/pdf/README.md) for detailed usage instructions.
 
-### shadcn ui Components
+### ShadCN/UI Components
 
-- List all available shadcn ui components
-- Search for shadcn ui components by keyword
+- List all available ShadCN/UI components
+- Search for ShadCN/UI components by keyword
 - Get detailed information (description, installation, usage, props) for a specific component
 - Get usage examples for a specific component
-
-## Screenshots
-
-![](./screenshots/mcp-devtools-1.jpeg)
-
-## Installation
-
-```bash
-go install github.com/sammcj/mcp-devtools@HEAD
-```
-
-Or clone the repository and build it:
-
-```bash
-git clone https://github.com/sammcj/mcp-devtools.git
-cd mcp-devtools
-make
-```
-
-### Version Information
-
-You can check the version of the installed binary:
-
-```bash
-mcp-devtools version
-```
-
-## Usage
-
-### Install
-
-To install mcp-devtools you can either:
-
-- Use go install: `go install github.com/sammcj/mcp-devtools@HEAD`
-- Clone the repo and build it with `make build`
-- Download the latest release binary from the [releases page](https://github.com/sammcj/mcp-devtools/releases) and save it in your PATH (e.g. /usr/local/bin/mcp-devtools)
-
-### Configuration
-
-The server supports three transport modes: stdio (default), SSE (Server-Sent Events), and Streamable HTTP (with optional SSE upgrade).
-
-#### STDIO Transport
-
-To run it in STDIO mode add it to your MCP configuration file:
-
-```json
-{
-  "mcpServers": {
-    "dev-tools": {
-      "type": "stdio",
-      "command": "/Users/samm/go/bin/mcp-devtools",
-      "env": {
-        "BRAVE_API_KEY": "your-brave-api-key-here-if-you-want-to-use-it"
-      }
-    }
-  }
-}
-```
-
-_Note: replace `/Users/samm/go/bin/mcp-devtools` with the path to your installed binary._
-
-#### Streamable HTTP Transport
-
-The new Streamable HTTP transport provides a more robust HTTP-based communication with optional authentication:
-
-```bash
-# Basic Streamable HTTP
-mcp-devtools --transport http --port 8080
-
-# With simple authentication
-mcp-devtools --transport http --port 8080 --auth-token mysecrettoken
-
-# With OAuth 2.0/2.1 authorisation
-# (See the [OAuth Setup Example](docs/oauth-authentik-setup.md) for more information)
-mcp-devtools --transport http --port 8080 \
-    --oauth-enabled \
-    --oauth-issuer="https://auth.example.com" \
-    --oauth-audience="https://mcp.example.com" \
-    --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
-
-
-# With custom endpoint path
-mcp-devtools --transport http --port 8080 --endpoint-path /api/mcp
-```
-
-Configure your MCP client to connect to the Streamable HTTP transport:
-
-```json
-{
-  "mcpServers": {
-    "dev-tools": {
-      "type": "streamableHttp",
-      "url": "http://localhost:8080/http"
-    }
-  }
-}
-```
-
-Or with authentication:
-
-```json
-{
-  "mcpServers": {
-    "dev-tools": {
-      "type": "streamableHttp",
-      "url": "http://localhost:8080/http",
-      "headers": {
-        "Authorization": "Bearer mysecrettoken"
-      }
-    }
-  }
-}
-```
-
-#### SSE (Only) Transport
-
-```bash
-mcp-devtools --transport sse --port 18080 --base-url http://localhost
-```
-
-Or if you built it locally:
-
-```bash
-./bin/mcp-devtools --transport sse --port 18080 --base-url http://localhost
-```
-
-And configure your MCP client to connect to the SSE transport:
-
-```json
-{
-  "mcpServers": {
-    "dev-tools": {
-      "type": "sse",
-      "url": "http://localhost:18080/sse"
-    }
-  }
-}
-```
-
-#### Command-line Options
-
-- `--transport`, `-t`: Transport type (stdio, sse, or http). Default: stdio
-- `--port`: Port to use for HTTP transports (SSE and Streamable HTTP). Default: 18080
-- `--base-url`: Base URL for HTTP transports. Default: http://localhost
-- `--auth-token`: Authentication token for Streamable HTTP transport (optional)
-- `--endpoint-path`: Endpoint path for Streamable HTTP transport. Default: /http
-- `--session-timeout`: Session timeout for Streamable HTTP transport. Default: 30m0s
-- `--debug`, `-d`: Enable debug logging. Default: false
 
 ## Tools
 
@@ -1038,138 +1043,6 @@ Basic web search using DuckDuckGo (no API key required):
 - `py`: Discovered within the last 365 days
 - `YYYY-MM-DDtoYYYY-MM-DD`: Custom date range (e.g., `2022-04-01to2022-07-30`)
 
-### OAuth 2.0/2.1 Authorisation
-
-**Comprehensive OAuth 2.0/2.1 Support**: MCP DevTools provides both resource server and client functionality for OAuth 2.0/2.1 following the MCP 2025-06-18 specification.
-
-```mermaid
-graph TD
-    User[👤 User] --> Browser{Browser Available?}
-    Browser -->|Yes| BrowserAuth[🌐 Browser Authentication]
-    Browser -->|No/Server| ResourceServer[🛡️ Resource Server Mode]
-    
-    BrowserAuth --> |User initiated| AuthFlow[Authorization Code Flow + PKCE]
-    AuthFlow --> CallbackServer[📡 Localhost Callback Server]
-    CallbackServer --> TokenExchange[🔑 Token Exchange]
-    TokenExchange --> ServerReady[✅ MCP Server Ready with Token]
-    
-    ResourceServer --> |Client requests| TokenValidation[🔍 JWT Token Validation]
-    TokenValidation --> |Valid token| ProtectedResources[🔒 Protected MCP Resources]
-    TokenValidation --> |Invalid token| Unauthorized[❌ 401 Unauthorized]
-    
-    subgraph "OAuth Components"
-        direction TB
-        ClientComp[📱 OAuth Client<br/>Browser Authentication]
-        ServerComp[🛡️ OAuth Resource Server<br/>Token Validation]
-        
-        ClientComp --> |Stores token for| ServerComp
-    end
-    
-    subgraph "Use Cases"
-        direction LR
-        UC1[🖥️ Desktop/Development<br/>→ Browser Auth]
-        UC2[🏢 Production Server<br/>→ Resource Server]
-        UC3[🔄 API Integration<br/>→ Both Components]
-    end
-    
-    subgraph "Standards Compliance"
-        direction TB
-        OAuth21[📋 OAuth 2.1]
-        PKCE[🔐 RFC7636 PKCE]
-        Discovery[🔍 RFC8414 Discovery]
-        Resource[🎯 RFC8707 Resource Indicators]
-        Protected[🛡️ RFC9728 Protected Resource]
-        Registration[📝 RFC7591 Dynamic Registration]
-    end
-    
-    classDef browser fill:#e1f5fe,stroke:#0277bd,color:#000
-    classDef server fill:#f3e5f5,stroke:#7b1fa2,color:#000
-    classDef security fill:#e8f5e8,stroke:#2e7d32,color:#000
-    classDef standards fill:#fff3e0,stroke:#ef6c00,color:#000
-    
-    class BrowserAuth,AuthFlow,CallbackServer,TokenExchange browser
-    class ResourceServer,TokenValidation,ProtectedResources server
-    class PKCE,OAuth21,Discovery,Resource security
-    class Standards,Registration,Protected standards
-```
-
-#### Two OAuth Modes
-
-**🌐 Browser Authentication (OAuth Client)**
-- Interactive user authentication via browser
-- Authorization code flow with PKCE
-- Suitable for development and desktop environments
-- Authenticates before MCP server starts
-
-**🛡️ Resource Server (OAuth Token Validation)**  
-- Validates incoming JWT tokens from clients
-- Protects MCP resources with OAuth authorization
-- Suitable for production API servers
-- Validates tokens on each request
-
-#### Key Features:
-- **🔐 JWT Token Validation**: Validates access tokens with JWKS support and audience checking
-- **📋 Standards Compliant**: Implements OAuth 2.1, RFC8414, RFC9728, RFC7591, and RFC8707
-- **🔑 Dynamic Client Registration**: RFC7591 compliant client registration endpoint
-- **🛡️ PKCE Support**: Full PKCE implementation for authorization code flow
-- **🌐 Browser Integration**: Cross-platform browser launching for authentication
-- **⚙️ Environment Variables**: Configure via CLI flags or environment variables
-- **🚀 Optional**: Completely optional, disabled by default
-
-#### Browser Authentication Quick Start:
-```bash
-# Browser-based authentication for development/desktop
-OAUTH_BROWSER_AUTH=true
-OAUTH_CLIENT_ID="mcp-devtools-client"
-OAUTH_ISSUER="https://auth.example.com"
-OAUTH_AUDIENCE="https://mcp.example.com"
-
-./mcp-devtools --transport=http
-
-# With custom scopes and callback port
-./mcp-devtools --transport=http \
-    --oauth-browser-auth \
-    --oauth-client-id="your-client-id" \
-    --oauth-issuer="https://auth.example.com" \
-    --oauth-scope="mcp:tools mcp:resources" \
-    --oauth-callback-port=8888
-```
-
-#### Resource Server Quick Start:
-```bash
-# Resource server mode for production APIs
-OAUTH_ENABLED=true
-OAUTH_ISSUER="https://auth.example.com"
-OAUTH_AUDIENCE="https://mcp.example.com"
-OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
-
-./mcp-devtools --transport=http
-
-# Or via CLI flags
-./mcp-devtools --transport=http \
-    --oauth-enabled \
-    --oauth-issuer="https://auth.example.com" \
-    --oauth-audience="https://mcp.example.com" \
-    --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
-```
-
-#### OAuth Endpoints (Resource Server Mode)
-When resource server mode is enabled, OAuth metadata endpoints are available:
-- `/.well-known/oauth-authorization-server` - Authorisation server metadata
-- `/.well-known/oauth-protected-resource` - Protected resource metadata
-- `/oauth/register` - Dynamic client registration _(if enabled)_
-
-#### When to Use Which Mode
-
-| Scenario | Browser Auth | Resource Server | Both |
-|----------|-------------|----------------|------|
-| **Development/Testing** | ✅ Primary | Optional | Recommended |
-| **Desktop Applications** | ✅ Required | ❌ Not needed | ✅ If serving APIs |
-| **Production API Server** | ❌ Not suitable | ✅ Required | ❌ Choose one |
-| **Microservice** | ❌ Not suitable | ✅ Required | ❌ Resource server only |
-| **CLI Tools** | ✅ Perfect fit | ❌ Not needed | ❌ Browser auth only |
-
-See [OAuth Documentation](internal/oauth/README.md) and [OAuth Client Documentation](internal/oauth/client/README.md) for complete configuration details and [OAuth Setup Example](docs/oauth-authentik-setup.md) for provider configuration.
 
 ## Configuration
 
@@ -1210,13 +1083,7 @@ See [OAuth Documentation](internal/oauth/README.md) and [OAuth Client Documentat
 
 See [OAuth Documentation](internal/oauth/README.md) and [OAuth Client Documentation](internal/oauth/client/README.md) for detailed configuration and usage examples.
 
-## Architecture
-
-The server is built with a modular architecture to make it easy to add new tools in the future. The main components are:
-
-- **Core Tool Interface**: Defines the interface that all tools must implement.
-- **Central Tool Registry**: Manages the registration and retrieval of tools.
-- **Tool Modules**: Individual tool implementations organized by category.
+---
 
 ### Docker Images
 
@@ -1235,6 +1102,143 @@ docker pull ghcr.io/sammcj/mcp-devtools:v1.0.0
 ## Creating New Tools
 
 See [Creating New Tools](docs/creating-new-tools.md) for detailed instructions on how to create new tools for the MCP DevTools server.
+
+---
+
+## OAuth 2.0/2.1 Authorisation
+
+**Comprehensive OAuth 2.0/2.1 Support**: MCP DevTools provides both resource server and client functionality for OAuth 2.0/2.1 following the MCP 2025-06-18 specification.
+
+```mermaid
+graph TD
+    User[👤 User] --> Browser{Browser Available?}
+    Browser -->|Yes| BrowserAuth[🌐 Browser Authentication]
+    Browser -->|No/Server| ResourceServer[🛡️ Resource Server Mode]
+
+    BrowserAuth --> |User initiated| AuthFlow[Authorization Code Flow + PKCE]
+    AuthFlow --> CallbackServer[📡 Localhost Callback Server]
+    CallbackServer --> TokenExchange[🔑 Token Exchange]
+    TokenExchange --> ServerReady[✅ MCP Server Ready with Token]
+
+    ResourceServer --> |Client requests| TokenValidation[🔍 JWT Token Validation]
+    TokenValidation --> |Valid token| ProtectedResources[🔒 Protected MCP Resources]
+    TokenValidation --> |Invalid token| Unauthorized[❌ 401 Unauthorized]
+
+    subgraph "OAuth Components"
+        direction TB
+        ClientComp[📱 OAuth Client<br/>Browser Authentication]
+        ServerComp[🛡️ OAuth Resource Server<br/>Token Validation]
+
+        ClientComp --> |Stores token for| ServerComp
+    end
+
+    subgraph "Use Cases"
+        direction LR
+        UC1[🖥️ Desktop/Development<br/>→ Browser Auth]
+        UC2[🏢 Production Server<br/>→ Resource Server]
+        UC3[🔄 API Integration<br/>→ Both Components]
+    end
+
+    subgraph "Standards Compliance"
+        direction TB
+        OAuth21[📋 OAuth 2.1]
+        PKCE[🔐 RFC7636 PKCE]
+        Discovery[🔍 RFC8414 Discovery]
+        Resource[🎯 RFC8707 Resource Indicators]
+        Protected[🛡️ RFC9728 Protected Resource]
+        Registration[📝 RFC7591 Dynamic Registration]
+    end
+
+    classDef browser fill:#e1f5fe,stroke:#0277bd,color:#000
+    classDef server fill:#f3e5f5,stroke:#7b1fa2,color:#000
+    classDef security fill:#e8f5e8,stroke:#2e7d32,color:#000
+    classDef standards fill:#fff3e0,stroke:#ef6c00,color:#000
+
+    class BrowserAuth,AuthFlow,CallbackServer,TokenExchange browser
+    class ResourceServer,TokenValidation,ProtectedResources server
+    class PKCE,OAuth21,Discovery,Resource security
+    class Standards,Registration,Protected standards
+```
+
+### Two OAuth Modes
+
+**🌐 Browser Authentication (OAuth Client)**
+- Interactive user authentication via browser
+- Authorization code flow with PKCE
+- Suitable for development and desktop environments
+- Authenticates before MCP server starts
+
+**🛡️ Resource Server (OAuth Token Validation)**
+- Validates incoming JWT tokens from clients
+- Protects MCP resources with OAuth authorization
+- Suitable for production API servers
+- Validates tokens on each request
+
+### Key Features:
+- **🔐 JWT Token Validation**: Validates access tokens with JWKS support and audience checking
+- **📋 Standards Compliant**: Implements OAuth 2.1, RFC8414, RFC9728, RFC7591, and RFC8707
+- **🔑 Dynamic Client Registration**: RFC7591 compliant client registration endpoint
+- **🛡️ PKCE Support**: Full PKCE implementation for authorization code flow
+- **🌐 Browser Integration**: Cross-platform browser launching for authentication
+- **⚙️ Environment Variables**: Configure via CLI flags or environment variables
+- **🚀 Optional**: Completely optional, disabled by default
+
+### Browser Authentication Quick Start
+
+```bash
+# Browser-based authentication for development/desktop
+OAUTH_BROWSER_AUTH=true
+OAUTH_CLIENT_ID="mcp-devtools-client"
+OAUTH_ISSUER="https://auth.example.com"
+OAUTH_AUDIENCE="https://mcp.example.com"
+
+./mcp-devtools --transport=http
+
+# With custom scopes and callback port
+./mcp-devtools --transport=http \
+    --oauth-browser-auth \
+    --oauth-client-id="your-client-id" \
+    --oauth-issuer="https://auth.example.com" \
+    --oauth-scope="mcp:tools mcp:resources" \
+    --oauth-callback-port=8888
+```
+
+### Resource Server Quick Start
+
+```bash
+# Resource server mode for production APIs
+OAUTH_ENABLED=true
+OAUTH_ISSUER="https://auth.example.com"
+OAUTH_AUDIENCE="https://mcp.example.com"
+OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
+
+./mcp-devtools --transport=http
+
+# Or via CLI flags
+./mcp-devtools --transport=http \
+    --oauth-enabled \
+    --oauth-issuer="https://auth.example.com" \
+    --oauth-audience="https://mcp.example.com" \
+    --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
+```
+
+### OAuth Endpoints (Resource Server Mode)
+When resource server mode is enabled, OAuth metadata endpoints are available:
+- `/.well-known/oauth-authorization-server` - Authorisation server metadata
+- `/.well-known/oauth-protected-resource` - Protected resource metadata
+- `/oauth/register` - Dynamic client registration _(if enabled)_
+
+### When to Use Which Mode
+
+| Scenario                  | Browser Auth   | Resource Server | Both                   |
+|---------------------------|----------------|-----------------|------------------------|
+| **Development/Testing**   | ✅ Primary      | Optional        | Recommended            |
+| **Desktop Applications**  | ✅ Required     | ❌ Not needed    | ✅ If serving APIs      |
+| **Production API Server** | ❌ Not suitable | ✅ Required      | ❌ Choose one           |
+| **Microservice**          | ❌ Not suitable | ✅ Required      | ❌ Resource server only |
+| **CLI Tools**             | ✅ Perfect fit  | ❌ Not needed    | ❌ Browser auth only    |
+
+See [OAuth Documentation](internal/oauth/README.md) and [OAuth Client Documentation](internal/oauth/client/README.md) for complete configuration details and [OAuth Setup Example](docs/oauth-authentik-setup.md) for provider configuration.
 
 ## License
 
