@@ -16,7 +16,7 @@ graph TD
     A --> I[Package Documentation]
     A --> J[American to Intl. English]
     A --> K[PDF Processing]
-    A --> L[OAuth 2.0/2.1 Authorisation]
+    A --> L[OAuth 2.0/2.1 Authentication]
 
     C --> C1[Brave]
     C --> C2[SearXNG]
@@ -31,6 +31,14 @@ graph TD
     K --> K2[Image Extraction]
     K --> K3[Markdown Output]
 
+    L --> L1[🌐 Browser Authentication<br/>OAuth Client]
+    L --> L2[🛡️ Resource Server<br/>Token Validation]
+    L1 --> L3[PKCE + Auth Code Flow]
+    L1 --> L4[Cross-platform Browser Launch]
+    L1 --> L5[Localhost Callback Server]
+    L2 --> L6[JWT Token Validation]
+    L2 --> L7[JWKS + Audience Checking]
+
     classDef toolCategory fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef tool fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
     classDef searchTool fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
@@ -39,15 +47,17 @@ graph TD
     classDef docTool fill:#F0E6FF,stroke:#9C27B0,color:#7B1FA2
     classDef packageTool fill:#FFF0E6,stroke:#FF6B35,color:#D84315
     classDef pdfTool fill:#FFE6E6,stroke:#E91E63,color:#C2185B
+    classDef oauthTool fill:#E8F5E8,stroke:#2E7D32,color:#1B5E20
 
-    class B,C,D,E,F,H,I,J,K toolCategory
+    class B,C,D,E,F,G,H,I,J,K,L toolCategory
     class B1,B2,E1,F1 tool
-    class B1,C1,C2,C3 searchTool
+    class C1,C2,C3 searchTool
     class G memoryTool
     class D1 webTool
-    class H1,H2,H3,H4,H5,H6 docTool
+    class H5,H6 docTool
     class I1,I2 packageTool
     class K1,K2,K3 pdfTool
+    class L1,L2,L3,L4,L5,L6,L7 oauthTool
 ```
 
 ---
@@ -1040,21 +1050,104 @@ Basic web search using DuckDuckGo (no API key required):
 
 ### OAuth 2.0/2.1 Authorisation
 
-**Optional OAuth 2.0/2.1 Support**: Athorisation for HTTP-based MCP servers following the MCP 2025-06-18 specification.
+**Comprehensive OAuth 2.0/2.1 Support**: MCP DevTools provides both resource server and client functionality for OAuth 2.0/2.1 following the MCP 2025-06-18 specification.
 
-See the [OAuth Setup Example](docs/oauth-authentik-setup.md) for more information
+```mermaid
+graph TD
+    User[👤 User] --> Browser{Browser Available?}
+    Browser -->|Yes| BrowserAuth[🌐 Browser Authentication]
+    Browser -->|No/Server| ResourceServer[🛡️ Resource Server Mode]
+    
+    BrowserAuth --> |User initiated| AuthFlow[Authorization Code Flow + PKCE]
+    AuthFlow --> CallbackServer[📡 Localhost Callback Server]
+    CallbackServer --> TokenExchange[🔑 Token Exchange]
+    TokenExchange --> ServerReady[✅ MCP Server Ready with Token]
+    
+    ResourceServer --> |Client requests| TokenValidation[🔍 JWT Token Validation]
+    TokenValidation --> |Valid token| ProtectedResources[🔒 Protected MCP Resources]
+    TokenValidation --> |Invalid token| Unauthorized[❌ 401 Unauthorized]
+    
+    subgraph "OAuth Components"
+        direction TB
+        ClientComp[📱 OAuth Client<br/>Browser Authentication]
+        ServerComp[🛡️ OAuth Resource Server<br/>Token Validation]
+        
+        ClientComp --> |Stores token for| ServerComp
+    end
+    
+    subgraph "Use Cases"
+        direction LR
+        UC1[🖥️ Desktop/Development<br/>→ Browser Auth]
+        UC2[🏢 Production Server<br/>→ Resource Server]
+        UC3[🔄 API Integration<br/>→ Both Components]
+    end
+    
+    subgraph "Standards Compliance"
+        direction TB
+        OAuth21[📋 OAuth 2.1]
+        PKCE[🔐 RFC7636 PKCE]
+        Discovery[🔍 RFC8414 Discovery]
+        Resource[🎯 RFC8707 Resource Indicators]
+        Protected[🛡️ RFC9728 Protected Resource]
+        Registration[📝 RFC7591 Dynamic Registration]
+    end
+    
+    classDef browser fill:#e1f5fe,stroke:#0277bd,color:#000
+    classDef server fill:#f3e5f5,stroke:#7b1fa2,color:#000
+    classDef security fill:#e8f5e8,stroke:#2e7d32,color:#000
+    classDef standards fill:#fff3e0,stroke:#ef6c00,color:#000
+    
+    class BrowserAuth,AuthFlow,CallbackServer,TokenExchange browser
+    class ResourceServer,TokenValidation,ProtectedResources server
+    class PKCE,OAuth21,Discovery,Resource security
+    class Standards,Registration,Protected standards
+```
+
+#### Two OAuth Modes
+
+**🌐 Browser Authentication (OAuth Client)**
+- Interactive user authentication via browser
+- Authorization code flow with PKCE
+- Suitable for development and desktop environments
+- Authenticates before MCP server starts
+
+**🛡️ Resource Server (OAuth Token Validation)**  
+- Validates incoming JWT tokens from clients
+- Protects MCP resources with OAuth authorization
+- Suitable for production API servers
+- Validates tokens on each request
 
 #### Key Features:
 - **🔐 JWT Token Validation**: Validates access tokens with JWKS support and audience checking
 - **📋 Standards Compliant**: Implements OAuth 2.1, RFC8414, RFC9728, RFC7591, and RFC8707
 - **🔑 Dynamic Client Registration**: RFC7591 compliant client registration endpoint
-- **🛡️ PKCE Support**: Code challenge/verifier validation for enhanced security
+- **🛡️ PKCE Support**: Full PKCE implementation for authorization code flow
+- **🌐 Browser Integration**: Cross-platform browser launching for authentication
 - **⚙️ Environment Variables**: Configure via CLI flags or environment variables
 - **🚀 Optional**: Completely optional, disabled by default
 
-#### Quick Start:
+#### Browser Authentication Quick Start:
 ```bash
-# Via environment variables
+# Browser-based authentication for development/desktop
+OAUTH_BROWSER_AUTH=true
+OAUTH_CLIENT_ID="mcp-devtools-client"
+OAUTH_ISSUER="https://auth.example.com"
+OAUTH_AUDIENCE="https://mcp.example.com"
+
+./mcp-devtools --transport=http
+
+# With custom scopes and callback port
+./mcp-devtools --transport=http \
+    --oauth-browser-auth \
+    --oauth-client-id="your-client-id" \
+    --oauth-issuer="https://auth.example.com" \
+    --oauth-scope="mcp:tools mcp:resources" \
+    --oauth-callback-port=8888
+```
+
+#### Resource Server Quick Start:
+```bash
+# Resource server mode for production APIs
 OAUTH_ENABLED=true
 OAUTH_ISSUER="https://auth.example.com"
 OAUTH_AUDIENCE="https://mcp.example.com"
@@ -1070,12 +1163,23 @@ OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
     --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
 ```
 
-When enabled, OAuth metadata endpoints are available:
+#### OAuth Endpoints (Resource Server Mode)
+When resource server mode is enabled, OAuth metadata endpoints are available:
 - `/.well-known/oauth-authorization-server` - Authorisation server metadata
 - `/.well-known/oauth-protected-resource` - Protected resource metadata
 - `/oauth/register` - Dynamic client registration _(if enabled)_
 
-See [OAuth Documentation](internal/oauth/README.md) for complete configuration details.
+#### When to Use Which Mode
+
+| Scenario | Browser Auth | Resource Server | Both |
+|----------|-------------|----------------|------|
+| **Development/Testing** | ✅ Primary | Optional | Recommended |
+| **Desktop Applications** | ✅ Required | ❌ Not needed | ✅ If serving APIs |
+| **Production API Server** | ❌ Not suitable | ✅ Required | ❌ Choose one |
+| **Microservice** | ❌ Not suitable | ✅ Required | ❌ Resource server only |
+| **CLI Tools** | ✅ Perfect fit | ❌ Not needed | ❌ Browser auth only |
+
+See [OAuth Documentation](internal/oauth/README.md) and [OAuth Client Documentation](internal/oauth/client/README.md) for complete configuration details and [OAuth Setup Example](docs/oauth-authentik-setup.md) for provider configuration.
 
 ## Configuration
 
@@ -1091,6 +1195,8 @@ See [OAuth Documentation](internal/oauth/README.md) for complete configuration d
 - `DISABLED_FUNCTIONS`: (optional) Comma-separated list of function names to disable, disabled functions will not appear in the tools list presented even if explicitly requested. e.g: `DISABLED_FUNCTIONS="shadcn_get_component_details,shadcn_get_component_examples,brave_local_search,brave_video_search"`
 
 #### OAuth 2.0/2.1 Authorisation (Optional)
+
+**Resource Server Mode** (validates incoming tokens):
 - `OAUTH_ENABLED` or `MCP_OAUTH_ENABLED`: Enable OAuth 2.0/2.1 authorisation (HTTP transport only)
 - `OAUTH_ISSUER` or `MCP_OAUTH_ISSUER`: OAuth issuer URL (required if OAuth enabled)
 - `OAUTH_AUDIENCE` or `MCP_OAUTH_AUDIENCE`: OAuth audience for this resource server
@@ -1099,7 +1205,20 @@ See [OAuth Documentation](internal/oauth/README.md) for complete configuration d
 - `OAUTH_AUTHORIZATION_SERVER` or `MCP_OAUTH_AUTHORIZATION_SERVER`: Authorisation server URL (if different from issuer)
 - `OAUTH_REQUIRE_HTTPS` or `MCP_OAUTH_REQUIRE_HTTPS`: Require HTTPS for OAuth endpoints (default: true)
 
-See [OAuth Documentation](internal/oauth/README.md) for detailed OAuth configuration and usage examples.
+**Browser Authentication Mode** (interactive user authentication):
+- `OAUTH_BROWSER_AUTH` or `MCP_OAUTH_BROWSER_AUTH`: Enable browser-based OAuth authentication flow at startup
+- `OAUTH_CLIENT_ID` or `MCP_OAUTH_CLIENT_ID`: OAuth client ID for browser authentication (required if browser auth enabled)
+- `OAUTH_CLIENT_SECRET` or `MCP_OAUTH_CLIENT_SECRET`: OAuth client secret for browser authentication (optional for public clients)
+- `OAUTH_SCOPE` or `MCP_OAUTH_SCOPE`: OAuth scopes to request during browser authentication (e.g., "mcp:tools mcp:resources")
+- `OAUTH_CALLBACK_PORT` or `MCP_OAUTH_CALLBACK_PORT`: Port for OAuth callback server (default: 0 for random port)
+- `OAUTH_AUTH_TIMEOUT` or `MCP_OAUTH_AUTH_TIMEOUT`: Timeout for browser authentication flow (default: 5m)
+
+**Shared Configuration** (used by both modes):
+- `OAUTH_ISSUER` or `MCP_OAUTH_ISSUER`: OAuth issuer URL for endpoint discovery
+- `OAUTH_AUDIENCE` or `MCP_OAUTH_AUDIENCE`: OAuth audience for resource parameter (RFC8707)
+- `OAUTH_REQUIRE_HTTPS` or `MCP_OAUTH_REQUIRE_HTTPS`: Require HTTPS for OAuth endpoints (default: true)
+
+See [OAuth Documentation](internal/oauth/README.md) and [OAuth Client Documentation](internal/oauth/client/README.md) for detailed configuration and usage examples.
 
 ## Architecture
 
