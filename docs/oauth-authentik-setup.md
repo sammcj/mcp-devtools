@@ -607,8 +607,7 @@ Add custom claims to JWT tokens in Authentik:
        "mcp_permissions": ["tools", "admin"] if request.user.is_superuser else ["tools"],
        "organisation": request.user.attributes.get("organisation", "default")
    }
-
-```
+   ```
 
 2. **Assign to Provider**: Add the property mapping to your OAuth provider
 
