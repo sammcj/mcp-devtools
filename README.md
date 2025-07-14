@@ -40,12 +40,12 @@ graph TD
     classDef packageTool fill:#FFF0E6,stroke:#FF6B35,color:#D84315
     classDef pdfTool fill:#FFE6E6,stroke:#E91E63,color:#C2185B
 
-    class B,C,D,E,F,H,I,J,K toolCategory
+    class B,C,D,E,F,G,H,I,J,K,L toolCategory
     class B1,B2,E1,F1 tool
-    class B1,C1,C2,C3 searchTool
+    class C1,C2,C3 searchTool
     class G memoryTool
     class D1 webTool
-    class H1,H2,H3,H4,H5,H6 docTool
+    class H5,H6 docTool
     class I1,I2 packageTool
     class K1,K2,K3 pdfTool
 ```
@@ -53,180 +53,40 @@ graph TD
 ---
 
 - [MCP DevTools](#mcp-devtools)
-  - [Features](#features)
-    - [Package Versions](#package-versions)
-    - [Internet Search](#internet-search)
-    - [Think Tool](#think-tool)
-    - [Memory Tool](#memory-tool)
-    - [American to English Converter](#american-to-english-converter)
-    - [Document Processing](#document-processing)
-    - [Package Documentation](#package-documentation)
-    - [PDF Processing](#pdf-processing)
-    - [shadcn ui Components](#shadcn-ui-components)
+  - [Architecture](#architecture)
   - [Screenshots](#screenshots)
   - [Installation](#installation)
-    - [Version Information](#version-information)
   - [Usage](#usage)
     - [Install](#install)
     - [Configuration](#configuration)
-  - [Tools](#tools)
-    - [Think Tool](#think-tool-1)
-    - [Package Documentation](#package-documentation-1)
-    - [PDF Processing](#pdf-processing-1)
+  - [Tools \& Features](#tools--features)
+    - [Think Tool](#think-tool)
+    - [Package Documentation](#package-documentation)
+    - [PDF Processing](#pdf-processing)
     - [Unified Package Search](#unified-package-search)
-    - [shadcn ui Components](#shadcn-ui-components-1)
-    - [Document Processing](#document-processing-1)
-    - [Internet Search](#internet-search-1)
-    - [OAuth 2.0/2.1 Authorisation](#oauth-2021-authorisation)
+    - [shadcn ui Components](#shadcn-ui-components)
+    - [Document Processing](#document-processing)
+    - [Internet Search](#internet-search)
   - [Configuration](#configuration-2)
     - [Environment Variables](#environment-variables)
-  - [Architecture](#architecture)
     - [Docker Images](#docker-images-1)
   - [Creating New Tools](#creating-new-tools)
+  - [OAuth 2.0/2.1 Authorisation](#oauth-2021-authorisation)
+    - [Two OAuth Modes](#two-oauth-modes)
+    - [Key Features](#key-features)
+    - [Browser Authentication Quick Start](#browser-authentication-quick-start)
+    - [Resource Server Quick Start](#resource-server-quick-start)
+    - [OAuth Endpoints (Resource Server Mode)](#oauth-endpoints-resource-server-mode)
+    - [When to Use Which Mode](#when-to-use-which-mode)
   - [License](#license)
 
-## Features
+## Architecture
 
-Currently, the server provides the following tools that should work across both macOS and Linux:
+The server is built with a modular architecture to make it easy to add new tools in the future. The main components are:
 
-### Package Versions
-
-**Unified Package Search Tool**: A single tool that handles package version checking across all supported ecosystems:
-
-- **NPM packages** - Node.js dependencies from package.json
-- **Python packages** - PyPI packages from requirements.txt and pyproject.toml
-- **Java packages** - Maven and Gradle dependencies
-- **Go modules** - Dependencies from go.mod
-- **Swift packages** - Swift Package Manager dependencies
-- **Docker images** - Container image tags from Docker Hub, GHCR, and custom registries
-- **AWS Bedrock models** - Search and list available foundation models
-- **GitHub Actions** - Latest versions of GitHub Actions
-
-All package ecosystems are now accessible through the single `search_packages` tool with a consistent interface.
-
-### Internet Search
-
-The server provides unified internet search capabilities through multiple providers:
-
-#### Brave Search
-
-**Note**: These tools require a `BRAVE_API_KEY` environment variable to be enabled.
-
-- **Web Search**: General web search using Brave Search API
-- **Image Search**: Search for images with metadata
-- **News Search**: Search for news articles and recent events
-- **Local Search**: Search for local businesses and points of interest (requires Pro API plan)
-- **Video Search**: Search for videos with metadata
-
-#### SearXNG
-
-**Note**: These tools require a `SEARXNG_BASE_URL` environment variable to be enabled. Optional authentication can be configured with `SEARXNG_USERNAME` and `SEARXNG_PASSWORD`.
-
-- **Web Search**: General web search using SearXNG instance
-- **Image Search**: Search for images through SearXNG
-- **News Search**: Search for news articles and recent events
-- **Video Search**: Search for videos through SearXNG
-
-#### DuckDuckGo
-
-**Note**: DuckDuckGo is always available as it doesn't require an API key or configuration. However, it provides lower quality results compared to Brave Search or SearXNG and only supports web search.
-
-- **Web Search**: General web search using DuckDuckGo HTML interface
-
-**Provider Selection**: The internet search tool automatically detects available providers and prioritises them as follows:
-1. **Brave** (if API key is configured) - Highest quality results
-2. **SearXNG** (if base URL is configured) - Privacy-focused with good quality
-3. **DuckDuckGo** (always available) - Basic web search, no API key required
-
-You can override the default provider by specifying the `provider` parameter in your search request.
-
-### Think Tool
-
-**Structured Reasoning Tool**: A simple tool that provides a dedicated thinking space for AI agents during complex workflows. Based on [Anthropic's research](https://www.anthropic.com/engineering/claude-think-tool) showing significant performance improvements in complex, multi-step scenarios.
-
-- **Purpose**: Enable structured reasoning and analysis during complex workflows
-- **Use Cases**: Analysing tool outputs, breaking down multi-step problems, planning sequential actions
-- **Benefits**: Up to 54% improvement in complex scenarios, better consistency, enhanced decision-making
-
-### Memory Tool
-
-**Persistent Knowledge Graph Storage**: A tool that provides persistent memory capabilities for AI agents using a structured knowledge graph approach.
-
-- **Entities**: Named nodes with types and observations (facts)
-- **Relations**: Directed connections between entities
-- **Namespaces**: Separate memory spaces for different projects/contexts
-- **Fuzzy Search**: Enhanced search capabilities with relevance scoring
-- **Concurrent Access**: Safe file operations with locking mechanisms
-- **Configurable Storage**: Environment variable configuration for storage location
-
-### American to English Converter
-
-**'murican-to-english Tool**: Converts American English text to standard International / British English spelling using the [m2e](https://github.com/sammcj/m2e) library.
-
-- **Comprehensive Dictionary**: Extensive mapping of American to English spellings
-- **Format Preservation**: Maintains capitalisation, punctuation, and text structure
-- **Code-Aware Processing**: Avoids converting programming terms and code blocks
-- **Smart Quote Normalisation**: Optional conversion of smart quotes and em-dashes
-- **User-Defined Dictionaries**: Supports custom spelling overrides
-
-### Document Processing
-
-**Experimental!** This tool is in active development and has more than a few rough edges.
-
-**Intelligent Document Conversion Tool**: A powerful tool that converts PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, and JPG documents to structured Markdown using the [Docling](https://docling-project.github.io/docling/) library.
-
-- **Multi-format Support**: PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG document processing
-- **Processing Profiles**: Simplified interface with preset configurations for common use cases
-- **Intelligent Conversion**: Preserves document structure and formatting
-- **OCR Support**: Extract text from scanned documents
-- **Hardware Acceleration**: Supports MPS (macOS), CUDA, and CPU processing
-- **Caching System**: Intelligent caching to avoid reprocessing identical documents
-- **Metadata Extraction**: Extracts document metadata (title, author, page count, etc.)
-- **Table & Image Extraction**: Preserves tables and images in markdown format
-- **Diagram Analysis**: Advanced diagram detection and description using vision models
-- **Mermaid Generation**: Convert diagrams to editable Mermaid syntax using external LLM
-- **Auto-Save**: Automatically saves processed content to files by default
-
-**Note**: The document processor tool requires Python 3.10+ (ideally 3.13+) with the Docling library installed (`pip install docling`). If you don't see the tool available in your client, check that you have docling installed and Python in your path. See the [Document Processing README](internal/tools/docprocessing/README.md) for detailed installation and configuration instructions.
-
-### Package Documentation
-
-**Library Documentation Retrieval**: Access comprehensive, up-to-date documentation for any library or framework through the Context7 API.
-
-- **Library Resolution**: Intelligent matching of library names to Context7-compatible IDs
-- **Documentation Retrieval**: Fetch comprehensive docs with configurable token limits (1K-100K)
-- **Topic Filtering**: Focus on specific areas like "hooks", "routing", or "authentication"
-- **Quality Metrics**: Trust scores, GitHub stars, and documentation coverage statistics
-- **Alternative Suggestions**: Multiple library options with detailed selection rationale
-- **AI-Optimised Content**: Documentation formatted specifically for AI consumption
-
-The tool provides two main functions:
-1. `resolve_library_id` - Find the correct library identifier from a name
-2. `get_library_docs` - Retrieve documentation using the resolved ID
-
-See the [Package Documentation README](internal/tools/packagedocs/README.md) for detailed usage instructions.
-
-### PDF Processing
-
-**PDF Text and Image Extraction Tool**: Extract text and images from PDF files using the [pdfcpu](https://github.com/pdfcpu/pdfcpu) library, converting them to well-formatted markdown with embedded image references.
-
-- **Text Extraction**: Extracts readable text content from PDF pages while attempting to preserve layout
-- **Image Extraction**: Extracts embedded images with proper naming and organisation
-- **Markdown Output**: Generates structured markdown files with page-by-page content
-- **Multi-page Support**: Process all pages or specific page ranges (e.g., "1-5", "1,3,5")
-- **Automatic Linking**: Links extracted images in the correct locations within the markdown
-- **Flexible Output**: Choose output directory or use the same directory as the source PDF
-
-**Note**: The PDF processor tool uses pdfcpu for content extraction. Text extraction quality depends on the PDF structure and may not be perfect for complex layouts or scanned documents.
-
-See the [PDF Processing README](internal/tools/pdf/README.md) for detailed usage instructions.
-
-### shadcn ui Components
-
-- List all available shadcn ui components
-- Search for shadcn ui components by keyword
-- Get detailed information (description, installation, usage, props) for a specific component
-- Get usage examples for a specific component
+- **Core Tool Interface**: Defines the interface that all tools must implement.
+- **Central Tool Registry**: Manages the registration and retrieval of tools.
+- **Tool Modules**: Individual tool implementations organised by category.
 
 ## Screenshots
 
@@ -244,14 +104,6 @@ Or clone the repository and build it:
 git clone https://github.com/sammcj/mcp-devtools.git
 cd mcp-devtools
 make
-```
-
-### Version Information
-
-You can check the version of the installed binary:
-
-```bash
-mcp-devtools version
 ```
 
 ## Usage
@@ -290,7 +142,7 @@ _Note: replace `/Users/samm/go/bin/mcp-devtools` with the path to your installed
 
 #### Streamable HTTP Transport
 
-The new Streamable HTTP transport provides a more robust HTTP-based communication with optional authentication:
+The Streamable HTTP transport provides a more robust HTTP-based communication with optional authentication:
 
 ```bash
 # Basic Streamable HTTP
@@ -376,7 +228,9 @@ And configure your MCP client to connect to the SSE transport:
 - `--session-timeout`: Session timeout for Streamable HTTP transport. Default: 30m0s
 - `--debug`, `-d`: Enable debug logging. Default: false
 
-## Tools
+## Tools & Features
+
+Currently, the server provides the following tools that should work across both macOS and Linux:
 
 ### Think Tool
 
@@ -1038,44 +892,6 @@ Basic web search using DuckDuckGo (no API key required):
 - `py`: Discovered within the last 365 days
 - `YYYY-MM-DDtoYYYY-MM-DD`: Custom date range (e.g., `2022-04-01to2022-07-30`)
 
-### OAuth 2.0/2.1 Authorisation
-
-**Optional OAuth 2.0/2.1 Support**: Athorisation for HTTP-based MCP servers following the MCP 2025-06-18 specification.
-
-See the [OAuth Setup Example](docs/oauth-authentik-setup.md) for more information
-
-#### Key Features:
-- **🔐 JWT Token Validation**: Validates access tokens with JWKS support and audience checking
-- **📋 Standards Compliant**: Implements OAuth 2.1, RFC8414, RFC9728, RFC7591, and RFC8707
-- **🔑 Dynamic Client Registration**: RFC7591 compliant client registration endpoint
-- **🛡️ PKCE Support**: Code challenge/verifier validation for enhanced security
-- **⚙️ Environment Variables**: Configure via CLI flags or environment variables
-- **🚀 Optional**: Completely optional, disabled by default
-
-#### Quick Start:
-```bash
-# Via environment variables
-OAUTH_ENABLED=true
-OAUTH_ISSUER="https://auth.example.com"
-OAUTH_AUDIENCE="https://mcp.example.com"
-OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
-
-./mcp-devtools --transport=http
-
-# Or via CLI flags
-./mcp-devtools --transport=http \
-    --oauth-enabled \
-    --oauth-issuer="https://auth.example.com" \
-    --oauth-audience="https://mcp.example.com" \
-    --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
-```
-
-When enabled, OAuth metadata endpoints are available:
-- `/.well-known/oauth-authorization-server` - Authorisation server metadata
-- `/.well-known/oauth-protected-resource` - Protected resource metadata
-- `/oauth/register` - Dynamic client registration _(if enabled)_
-
-See [OAuth Documentation](internal/oauth/README.md) for complete configuration details.
 
 ## Configuration
 
@@ -1091,6 +907,8 @@ See [OAuth Documentation](internal/oauth/README.md) for complete configuration d
 - `DISABLED_FUNCTIONS`: (optional) Comma-separated list of function names to disable, disabled functions will not appear in the tools list presented even if explicitly requested. e.g: `DISABLED_FUNCTIONS="shadcn_get_component_details,shadcn_get_component_examples,brave_local_search,brave_video_search"`
 
 #### OAuth 2.0/2.1 Authorisation (Optional)
+
+**Resource Server Mode** (validates incoming tokens):
 - `OAUTH_ENABLED` or `MCP_OAUTH_ENABLED`: Enable OAuth 2.0/2.1 authorisation (HTTP transport only)
 - `OAUTH_ISSUER` or `MCP_OAUTH_ISSUER`: OAuth issuer URL (required if OAuth enabled)
 - `OAUTH_AUDIENCE` or `MCP_OAUTH_AUDIENCE`: OAuth audience for this resource server
@@ -1099,15 +917,22 @@ See [OAuth Documentation](internal/oauth/README.md) for complete configuration d
 - `OAUTH_AUTHORIZATION_SERVER` or `MCP_OAUTH_AUTHORIZATION_SERVER`: Authorisation server URL (if different from issuer)
 - `OAUTH_REQUIRE_HTTPS` or `MCP_OAUTH_REQUIRE_HTTPS`: Require HTTPS for OAuth endpoints (default: true)
 
-See [OAuth Documentation](internal/oauth/README.md) for detailed OAuth configuration and usage examples.
+**Browser Authentication Mode** (interactive user authentication):
+- `OAUTH_BROWSER_AUTH` or `MCP_OAUTH_BROWSER_AUTH`: Enable browser-based OAuth authentication flow at startup
+- `OAUTH_CLIENT_ID` or `MCP_OAUTH_CLIENT_ID`: OAuth client ID for browser authentication (required if browser auth enabled)
+- `OAUTH_CLIENT_SECRET` or `MCP_OAUTH_CLIENT_SECRET`: OAuth client secret for browser authentication (optional for public clients)
+- `OAUTH_SCOPE` or `MCP_OAUTH_SCOPE`: OAuth scopes to request during browser authentication (e.g., "mcp:tools mcp:resources")
+- `OAUTH_CALLBACK_PORT` or `MCP_OAUTH_CALLBACK_PORT`: Port for OAuth callback server (default: 0 for random port)
+- `OAUTH_AUTH_TIMEOUT` or `MCP_OAUTH_AUTH_TIMEOUT`: Timeout for browser authentication flow (default: 5m)
 
-## Architecture
+**Shared Configuration** (used by both modes):
+- `OAUTH_ISSUER` or `MCP_OAUTH_ISSUER`: OAuth issuer URL for endpoint discovery
+- `OAUTH_AUDIENCE` or `MCP_OAUTH_AUDIENCE`: OAuth audience for resource parameter (RFC8707)
+- `OAUTH_REQUIRE_HTTPS` or `MCP_OAUTH_REQUIRE_HTTPS`: Require HTTPS for OAuth endpoints (default: true)
 
-The server is built with a modular architecture to make it easy to add new tools in the future. The main components are:
+See [OAuth Documentation](internal/oauth/README.md) and [OAuth Client Documentation](internal/oauth/client/README.md) for detailed configuration and usage examples.
 
-- **Core Tool Interface**: Defines the interface that all tools must implement.
-- **Central Tool Registry**: Manages the registration and retrieval of tools.
-- **Tool Modules**: Individual tool implementations organized by category.
+---
 
 ### Docker Images
 
@@ -1126,6 +951,144 @@ docker pull ghcr.io/sammcj/mcp-devtools:v1.0.0
 ## Creating New Tools
 
 See [Creating New Tools](docs/creating-new-tools.md) for detailed instructions on how to create new tools for the MCP DevTools server.
+
+---
+
+## OAuth 2.0/2.1 Authorisation
+
+**Comprehensive OAuth 2.0/2.1 Support**: MCP DevTools provides both resource server and client functionality for OAuth 2.0/2.1 following the MCP 2025-06-18 specification.
+
+```mermaid
+graph TD
+    User[👤 User] --> Browser{Browser Available?}
+    Browser -->|Yes| BrowserAuth[🌐 Browser Authentication]
+    Browser -->|No/Server| ResourceServer[🛡️ Resource Server Mode]
+
+    BrowserAuth --> |User initiated| AuthFlow[Authorisation Code Flow + PKCE]
+    AuthFlow --> CallbackServer[📡 Localhost Callback Server]
+    CallbackServer --> TokenExchange[🔑 Token Exchange]
+    TokenExchange --> ServerReady[✅ MCP Server Ready with Token]
+
+    ResourceServer --> |Client requests| TokenValidation[🔍 JWT Token Validation]
+    TokenValidation --> |Valid token| ProtectedResources[🔒 Protected MCP Resources]
+    TokenValidation --> |Invalid token| Unauthorized[❌ 401 Unauthorised]
+
+    subgraph "OAuth Components"
+        direction TB
+        ClientComp[📱 OAuth Client<br/>Browser Authentication]
+        ServerComp[🛡️ OAuth Resource Server<br/>Token Validation]
+
+        ClientComp --> |Stores token for| ServerComp
+    end
+
+    subgraph "Use Cases"
+        direction LR
+        UC1[🖥️ Desktop/Development<br/>→ Browser Auth]
+        UC2[🏢 Production Server<br/>→ Resource Server]
+        UC3[🔄 API Integration<br/>→ Both Components]
+    end
+
+    subgraph "Standards Compliance"
+        direction TB
+        OAuth21[📋 OAuth 2.1]
+        PKCE[🔐 RFC7636 PKCE]
+        Discovery[🔍 RFC8414 Discovery]
+        Resource[🎯 RFC8707 Resource Indicators]
+        Protected[🛡️ RFC9728 Protected Resource]
+        Registration[📝 RFC7591 Dynamic Registration]
+    end
+
+    classDef browser fill:#e1f5fe,stroke:#0277bd,color:#000
+    classDef server fill:#f3e5f5,stroke:#7b1fa2,color:#000
+    classDef security fill:#e8f5e8,stroke:#2e7d32,color:#000
+    classDef standards fill:#fff3e0,stroke:#ef6c00,color:#000
+
+    class BrowserAuth,AuthFlow,CallbackServer,TokenExchange browser
+    class ResourceServer,TokenValidation,ProtectedResources server
+    class PKCE,OAuth21,Discovery,Resource security
+    class Standards,Registration,Protected standards
+```
+
+### Two OAuth Modes
+
+**🌐 Browser Authentication (OAuth Client)**
+- Interactive user authentication via browser
+- Authorisation code flow with PKCE
+- Suitable for development and desktop environments
+- Authenticates before MCP server starts
+
+**🛡️ Resource Server (OAuth Token Validation)**
+- Validates incoming JWT tokens from clients
+- Protects MCP resources with OAuth authorisation
+- Suitable for production API servers
+- Validates tokens on each request
+
+### Key Features
+
+- **🔐 JWT Token Validation**: Validates access tokens with JWKS support and audience checking
+- **📋 Standards Compliant**: Implements OAuth 2.1, RFC8414, RFC9728, RFC7591, and RFC8707
+- **🔑 Dynamic Client Registration**: RFC7591 compliant client registration endpoint
+- **🛡️ PKCE Support**: Full PKCE implementation for authorisation code flow
+- **🌐 Browser Integration**: Cross-platform browser launching for authentication
+- **⚙️ Environment Variables**: Configure via CLI flags or environment variables
+- **🚀 Optional**: Completely optional, disabled by default
+
+### Browser Authentication Quick Start
+
+```bash
+# Browser-based authentication for development/desktop
+OAUTH_BROWSER_AUTH=true
+OAUTH_CLIENT_ID="mcp-devtools-client"
+OAUTH_ISSUER="https://auth.example.com"
+OAUTH_AUDIENCE="https://mcp.example.com"
+
+./mcp-devtools --transport=http
+
+# With custom scopes and callback port
+./mcp-devtools --transport=http \
+    --oauth-browser-auth \
+    --oauth-client-id="your-client-id" \
+    --oauth-issuer="https://auth.example.com" \
+    --oauth-scope="mcp:tools mcp:resources" \
+    --oauth-callback-port=8888
+```
+
+### Resource Server Quick Start
+
+```bash
+# Resource server mode for production APIs
+OAUTH_ENABLED=true
+OAUTH_ISSUER="https://auth.example.com"
+OAUTH_AUDIENCE="https://mcp.example.com"
+OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
+
+./mcp-devtools --transport=http
+
+# Or via CLI flags
+./mcp-devtools --transport=http \
+    --oauth-enabled \
+    --oauth-issuer="https://auth.example.com" \
+    --oauth-audience="https://mcp.example.com" \
+    --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
+```
+
+### OAuth Endpoints (Resource Server Mode)
+When resource server mode is enabled, OAuth metadata endpoints are available:
+- `/.well-known/oauth-authorization-server` - Authorisation server metadata
+- `/.well-known/oauth-protected-resource` - Protected resource metadata
+- `/oauth/register` - Dynamic client registration _(if enabled)_
+
+### When to Use Which Mode
+
+| Scenario                  | Browser Auth   | Resource Server | Both                   |
+|---------------------------|----------------|-----------------|------------------------|
+| **Development/Testing**   | ✅ Primary      | Optional        | Recommended            |
+| **Desktop Applications**  | ✅ Required     | ❌ Not needed    | ✅ If serving APIs      |
+| **Production API Server** | ❌ Not suitable | ✅ Required      | ❌ Choose one           |
+| **Microservice**          | ❌ Not suitable | ✅ Required      | ❌ Resource server only |
+| **CLI Tools**             | ✅ Perfect fit  | ❌ Not needed    | ❌ Browser auth only    |
+
+See [OAuth Documentation](internal/oauth/README.md) and [OAuth Client Documentation](internal/oauth/client/README.md) for complete configuration details and [OAuth Setup Example](docs/oauth-authentik-setup.md) for provider configuration.
 
 ## License
 
