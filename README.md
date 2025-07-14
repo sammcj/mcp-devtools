@@ -300,11 +300,13 @@ mcp-devtools --transport http --port 8080
 mcp-devtools --transport http --port 8080 --auth-token mysecrettoken
 
 # With OAuth 2.0/2.1 authorisation
+# (See the [OAuth Setup Example](docs/oauth-authentik-setup.md) for more information)
 mcp-devtools --transport http --port 8080 \
     --oauth-enabled \
     --oauth-issuer="https://auth.example.com" \
     --oauth-audience="https://mcp.example.com" \
     --oauth-jwks-url="https://auth.example.com/.well-known/jwks.json"
+
 
 # With custom endpoint path
 mcp-devtools --transport http --port 8080 --endpoint-path /api/mcp
@@ -1038,7 +1040,9 @@ Basic web search using DuckDuckGo (no API key required):
 
 ### OAuth 2.0/2.1 Authorisation
 
-**Optional OAuth 2.0/2.1 Support**: Enterprise-grade authorisation for HTTP-based MCP servers following the MCP 2025-06-18 specification.
+**Optional OAuth 2.0/2.1 Support**: Athorisation for HTTP-based MCP servers following the MCP 2025-06-18 specification.
+
+See the [OAuth Setup Example](docs/oauth-authentik-setup.md) for more information
 
 #### Key Features:
 - **🔐 JWT Token Validation**: Validates access tokens with JWKS support and audience checking
