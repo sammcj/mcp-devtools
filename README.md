@@ -86,7 +86,7 @@ The server is built with a modular architecture to make it easy to add new tools
 
 - **Core Tool Interface**: Defines the interface that all tools must implement.
 - **Central Tool Registry**: Manages the registration and retrieval of tools.
-- **Tool Modules**: Individual tool implementations organized by category.
+- **Tool Modules**: Individual tool implementations organised by category.
 
 ## Screenshots
 
@@ -964,14 +964,14 @@ graph TD
     Browser -->|Yes| BrowserAuth[🌐 Browser Authentication]
     Browser -->|No/Server| ResourceServer[🛡️ Resource Server Mode]
 
-    BrowserAuth --> |User initiated| AuthFlow[Authorization Code Flow + PKCE]
+    BrowserAuth --> |User initiated| AuthFlow[Authorisation Code Flow + PKCE]
     AuthFlow --> CallbackServer[📡 Localhost Callback Server]
     CallbackServer --> TokenExchange[🔑 Token Exchange]
     TokenExchange --> ServerReady[✅ MCP Server Ready with Token]
 
     ResourceServer --> |Client requests| TokenValidation[🔍 JWT Token Validation]
     TokenValidation --> |Valid token| ProtectedResources[🔒 Protected MCP Resources]
-    TokenValidation --> |Invalid token| Unauthorized[❌ 401 Unauthorized]
+    TokenValidation --> |Invalid token| Unauthorized[❌ 401 Unauthorised]
 
     subgraph "OAuth Components"
         direction TB
@@ -1013,13 +1013,13 @@ graph TD
 
 **🌐 Browser Authentication (OAuth Client)**
 - Interactive user authentication via browser
-- Authorization code flow with PKCE
+- Authorisation code flow with PKCE
 - Suitable for development and desktop environments
 - Authenticates before MCP server starts
 
 **🛡️ Resource Server (OAuth Token Validation)**
 - Validates incoming JWT tokens from clients
-- Protects MCP resources with OAuth authorization
+- Protects MCP resources with OAuth authorisation
 - Suitable for production API servers
 - Validates tokens on each request
 
@@ -1028,7 +1028,7 @@ graph TD
 - **🔐 JWT Token Validation**: Validates access tokens with JWKS support and audience checking
 - **📋 Standards Compliant**: Implements OAuth 2.1, RFC8414, RFC9728, RFC7591, and RFC8707
 - **🔑 Dynamic Client Registration**: RFC7591 compliant client registration endpoint
-- **🛡️ PKCE Support**: Full PKCE implementation for authorization code flow
+- **🛡️ PKCE Support**: Full PKCE implementation for authorisation code flow
 - **🌐 Browser Integration**: Cross-platform browser launching for authentication
 - **⚙️ Environment Variables**: Configure via CLI flags or environment variables
 - **🚀 Optional**: Completely optional, disabled by default
