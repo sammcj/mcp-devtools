@@ -908,6 +908,8 @@ Basic web search using DuckDuckGo (no API key required):
 
 #### OAuth 2.0/2.1 Authorisation (Optional)
 
+Note: OAuth support is new and my first attempt at implementing it with MCP, please report any issues you encounter along with your configuration.
+
 **Resource Server Mode** (validates incoming tokens):
 - `OAUTH_ENABLED` or `MCP_OAUTH_ENABLED`: Enable OAuth 2.0/2.1 authorisation (HTTP transport only)
 - `OAUTH_ISSUER` or `MCP_OAUTH_ISSUER`: OAuth issuer URL (required if OAuth enabled)
@@ -956,7 +958,9 @@ See [Creating New Tools](docs/creating-new-tools.md) for detailed instructions o
 
 ## OAuth 2.0/2.1 Authorisation
 
-**Comprehensive OAuth 2.0/2.1 Support**: MCP DevTools provides both resource server and client functionality for OAuth 2.0/2.1 following the MCP 2025-06-18 specification.
+Note: OAuth support is new and my first attempt at implementing it with MCP, please report any issues you encounter along with your configuration.
+
+MCP DevTools provides both resource server and client functionality for OAuth 2.0/2.1 following the MCP 2025-06-18 specification.
 
 ```mermaid
 graph TD

@@ -2,12 +2,14 @@
 
 This guide demonstrates how to configure [Authentik](https://goauthentik.io/) as an OAuth 2.0/2.1 provider for the MCP DevTools server, following the MCP 2025-03-26 specification.
 
+Note: OAuth support is new and my first attempt at implementing it with MCP, please report any issues you encounter along with your configuration.
+
 ## Overview
 
 The MCP DevTools server implements optional OAuth 2.0/2.1 authorisation for HTTP-based transports only. When configured with Authentik, it provides:
 
 - **JWT token validation** with JWKS support
-- **OAuth 2.1 compliance** with PKCE support  
+- **OAuth 2.1 compliance** with PKCE support
 - **Dynamic client registration** (RFC7591)
 - **Standards-compliant metadata** endpoints (RFC8414, RFC9728)
 - **Audience validation** for token security
@@ -25,25 +27,25 @@ sequenceDiagram
     participant Client as MCP Client
     participant Server as MCP DevTools Server
     participant Authentik as Authentik (OAuth Provider)
-    
+
     Note over Client, Authentik: Initial Request Without Token
     Client->>Server: HTTP Request to /http
     Server-->>Client: 401 Unauthorized + WWW-Authenticate header
-    
+
     Note over Client, Authentik: OAuth 2.1 Authorization Flow
     Client->>Authentik: GET /.well-known/oauth-authorization-server
     Authentik-->>Client: OAuth metadata (endpoints, capabilities)
-    
+
     Client->>Authentik: Dynamic Client Registration (optional)
     Authentik-->>Client: client_id, client_secret
-    
+
     Client->>Authentik: Authorization Request + PKCE challenge
     Note right of Authentik: User authentication & consent
     Authentik-->>Client: Authorization Code
-    
+
     Client->>Authentik: Token Exchange + PKCE verifier
     Authentik-->>Client: Access Token (JWT)
-    
+
     Note over Client, Authentik: Authenticated MCP Requests
     Client->>Server: HTTP Request + Bearer Token
     Server->>Authentik: Validate JWT (JWKS)
@@ -70,7 +72,7 @@ sequenceDiagram
    Client type: Confidential (or Public for development)
    Client ID: (auto-generated or custom)
    Client Secret: (auto-generated - save this)
-   Redirect URIs: 
+   Redirect URIs:
      - https://your-mcp-client.example.com/oauth/callback
      - http://localhost:3000/oauth/callback  (for development)
    Signing Key: (select a certificate for JWT signing)
@@ -227,7 +229,7 @@ Test that the MCP server exposes OAuth metadata:
 # Check authorization server metadata
 curl https://your-mcp-server.example.com/.well-known/oauth-authorization-server
 
-# Check protected resource metadata  
+# Check protected resource metadata
 curl https://your-mcp-server.example.com/.well-known/oauth-protected-resource
 ```
 
