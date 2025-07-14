@@ -8,13 +8,13 @@ OAuth authentication in MCP DevTools operates in two distinct modes:
 
 **🌐 Browser Authentication Mode (OAuth Client)**
 - Interactive user authentication via browser
-- Authorization code flow with PKCE
+- Authorisation code flow with PKCE
 - Perfect for development and desktop environments
 - Authenticates before MCP server starts
 
 **🛡️ Resource Server Mode (OAuth Token Validation)**
 - Validates incoming JWT tokens from clients
-- Protects MCP resources with OAuth authorization
+- Protects MCP resources with OAuth authorisation
 - Suitable for production API servers
 - Validates tokens on each request
 
