@@ -34,6 +34,8 @@ A lightweight, fast alternative to the full Document Processing tool specificall
 
 ## Usage Examples
 
+While intended to be activated via a prompt to an agent, below are some example JSON tool calls.
+
 ### Basic Usage
 ```json
 {
@@ -61,7 +63,7 @@ A lightweight, fast alternative to the full Document Processing tool specificall
 {
   "name": "pdf",
   "arguments": {
-    "file_path": "/path/to/large-document.pdf", 
+    "file_path": "/path/to/large-document.pdf",
     "pages": "1-5",
     "extract_images": true
   }
@@ -100,7 +102,7 @@ A lightweight, fast alternative to the full Document Processing tool specificall
 ### Page Range Formats
 - **All pages**: `"all"` (default)
 - **Range**: `"1-5"` (pages 1 through 5)
-- **Specific pages**: `"1,3,5"` (pages 1, 3, and 5)  
+- **Specific pages**: `"1,3,5"` (pages 1, 3, and 5)
 - **Mixed**: `"1-3,7,10-12"` (pages 1-3, 7, and 10-12)
 
 ## Output Structure
@@ -175,7 +177,7 @@ Extract text for quick review or analysis:
 Convert PDF documentation to markdown:
 ```json
 {
-  "name": "pdf", 
+  "name": "pdf",
   "arguments": {
     "file_path": "/docs/api-reference.pdf",
     "extract_images": true,
@@ -214,7 +216,7 @@ Extract specific pages for further processing:
 
 ### Processing Speed
 - **Small PDFs** (< 10 pages): 1-3 seconds
-- **Medium PDFs** (10-50 pages): 3-15 seconds  
+- **Medium PDFs** (10-50 pages): 3-15 seconds
 - **Large PDFs** (50+ pages): 15+ seconds
 
 ### Factors Affecting Speed
@@ -250,14 +252,14 @@ pdf_extract="/path/to/research.pdf"
 # 2. Process with think tool
 think "I've extracted the research paper content. Let me analyse the key findings and methodology before proceeding with implementation."
 
-# 3. Store key insights  
+# 3. Store key insights
 memory create_entities --data '{"entities": [{"name": "Research_Paper_2024", "type": "document", "observations": ["Novel approach to distributed consensus", "Improves performance by 40%"]}]}'
 ```
 
 ### Documentation Workflow
 ```bash
 # 1. Extract PDF documentation
-pdf_extract="/technical-specs/api-guide.pdf" --pages="1-20" 
+pdf_extract="/technical-specs/api-guide.pdf" --pages="1-20"
 
 # 2. Search for additional information
 internet_search "REST API best practices 2024"
@@ -313,7 +315,7 @@ think "Comparing Q1 and Q2 reports, I can see a clear trend in customer acquisit
 ```json
 // Process table of contents and summary
 {
-  "name": "pdf", 
+  "name": "pdf",
   "arguments": {
     "file_path": "/reports/annual-report.pdf",
     "pages": "1-3,50-55",
@@ -327,7 +329,7 @@ think "Comparing Q1 and Q2 reports, I can see a clear trend in customer acquisit
 {
   "name": "pdf",
   "arguments": {
-    "file_path": "/presentations/slides.pdf", 
+    "file_path": "/presentations/slides.pdf",
     "extract_images": true,
     "pages": "10-20"
   }

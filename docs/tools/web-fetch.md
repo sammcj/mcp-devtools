@@ -11,11 +11,13 @@ Perfect for extracting content from documentation sites, blog posts, articles, a
 - **HTML to Markdown**: Clean conversion with preserved structure
 - **Pagination Support**: Handle large content with chunked responses
 - **Content Preview**: See what comes next in paginated responses
-- **Raw HTML Option**: Get original HTML when needed  
+- **Raw HTML Option**: Get original HTML when needed
 - **Smart Caching**: 15-minute cache for repeated requests
 - **Error Handling**: Robust handling of network issues and redirects
 
 ## Usage Examples
+
+While intended to be activated via a prompt to an agent, below are some example JSON tool calls.
 
 ### Basic URL Fetch
 ```json
@@ -104,7 +106,7 @@ Perfect for extracting content from documentation sites, blog posts, articles, a
 ### Paginated Response
 ```json
 {
-  "url": "https://blog.example.com/comprehensive-tutorial", 
+  "url": "https://blog.example.com/comprehensive-tutorial",
   "content": "Content starting from character 3000...",
   "pagination": {
     "total_lines": 500,
@@ -143,7 +145,7 @@ Fetch technical documentation for analysis:
 Extract articles for content analysis:
 ```json
 {
-  "name": "fetch_url", 
+  "name": "fetch_url",
   "arguments": {
     "url": "https://martinfowler.com/articles/microservices.html",
     "max_length": 10000
@@ -179,7 +181,7 @@ Handle large documents with pagination:
 {
   "name": "fetch_url",
   "arguments": {
-    "url": "https://example.com/comprehensive-guide", 
+    "url": "https://example.com/comprehensive-guide",
     "start_index": 5000,
     "max_length": 5000
   }
@@ -271,7 +273,7 @@ Handles various content types:
 ### HTTP Errors
 ```json
 {
-  "error": "HTTP 404: Page not found", 
+  "error": "HTTP 404: Page not found",
   "url": "https://example.com/missing-page",
   "status_code": 404
 }
@@ -293,7 +295,7 @@ Handles various content types:
 // Good: Request appropriate amount
 {"max_length": 5000}
 
-// Avoid: Unnecessarily large requests  
+// Avoid: Unnecessarily large requests
 {"max_length": 100000}
 ```
 

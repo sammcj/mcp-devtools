@@ -10,12 +10,12 @@ Instead of managing separate tools for different search providers, the Internet 
 
 ### Brave Search
 - **Web Search**: General web search with fresh results
-- **Image Search**: Search for images with metadata  
+- **Image Search**: Search for images with metadata
 - **News Search**: Recent news articles and events
 - **Video Search**: Video content with metadata
 - **Local Search**: Local businesses and points of interest (Pro API required)
 
-### SearXNG  
+### SearXNG
 - **Web Search**: Privacy-focused search aggregation
 - **Image Search**: Images via SearXNG instance
 - **News Search**: News articles via SearXNG
@@ -26,6 +26,23 @@ Instead of managing separate tools for different search providers, the Internet 
 
 ## Configuration
 
+Example MCP Client Configuration:
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "stdio",
+      "command": "/path/to/mcp-devtools",
+      "env": {
+        "BRAVE_API_KEY": "your-brave-api-key",
+        "SEARXNG_BASE_URL": "https://your-searxng-instance.com"
+      }
+    }
+  }
+}
+```
+
 ### Brave Search Setup
 Get your API key from [Brave Search API](https://brave.com/search/api/) and set:
 
@@ -33,13 +50,13 @@ Get your API key from [Brave Search API](https://brave.com/search/api/) and set:
 BRAVE_API_KEY="your-brave-api-key"
 ```
 
-### SearXNG Setup  
+### SearXNG Setup
 For self-hosted or public SearXNG instances:
 
 ```bash
 SEARXNG_BASE_URL="https://your-searxng-instance.com"
 # Optional authentication:
-SEARXNG_USERNAME="your-username" 
+SEARXNG_USERNAME="your-username"
 SEARXNG_PASSWORD="your-password"
 ```
 
@@ -47,6 +64,8 @@ SEARXNG_PASSWORD="your-password"
 No configuration required - works out of the box.
 
 ## Usage Examples
+
+While intended to be activated via a prompt to an agent, below are some example JSON tool calls.
 
 ### Web Search
 ```json
@@ -65,7 +84,7 @@ No configuration required - works out of the box.
 ### Image Search
 ```json
 {
-  "name": "internet_search", 
+  "name": "internet_search",
   "arguments": {
     "type": "image",
     "query": "golang gopher mascot",
@@ -80,7 +99,7 @@ No configuration required - works out of the box.
 {
   "name": "internet_search",
   "arguments": {
-    "type": "news", 
+    "type": "news",
     "query": "artificial intelligence breakthrough",
     "count": 10,
     "provider": "brave",
@@ -95,7 +114,7 @@ No configuration required - works out of the box.
   "name": "internet_search",
   "arguments": {
     "type": "video",
-    "query": "golang tutorial", 
+    "query": "golang tutorial",
     "count": 10,
     "provider": "searxng"
   }
@@ -121,7 +140,7 @@ No configuration required - works out of the box.
   "name": "internet_search",
   "arguments": {
     "type": "web",
-    "query": "golang best practices", 
+    "query": "golang best practices",
     "count": 5,
     "provider": "duckduckgo"
   }
@@ -139,7 +158,7 @@ No configuration required - works out of the box.
 ### Brave-Specific Parameters
 - **`freshness`**: Time filter for results
   - `pd`: Past 24 hours
-  - `pw`: Past week  
+  - `pw`: Past week
   - `pm`: Past month
   - `py`: Past year
   - `YYYY-MM-DDtoYYYY-MM-DD`: Custom date range
@@ -159,7 +178,7 @@ Best for general information gathering, research, and finding relevant websites.
 - Publication dates
 - Source metadata
 
-### Image Search  
+### Image Search
 Find relevant images with metadata for presentations, documentation, or reference.
 
 **Example Results:**
@@ -243,7 +262,7 @@ Find local businesses, restaurants, and services (Brave Pro API required).
 - Depends on instance configuration
 - Self-hosted instances have no built-in limits
 
-### DuckDuckGo  
+### DuckDuckGo
 - No official limits for reasonable usage
 - Automatic rate limiting applies
 

@@ -1,6 +1,6 @@
 # American to English Conversion Tool
 
-The American to English conversion tool converts American English text to British English spelling, helping maintain consistent International English standards in documentation and content.
+The American to English conversion tool converts American English text to International / British English spelling, helping maintain consistent International English standards in documentation and content.
 
 ## Overview
 
@@ -14,7 +14,9 @@ This tool automatically converts American English spellings to their British Eng
 - **Comprehensive Coverage**: Handles common American/British spelling differences
 - **Preserve Formatting**: Maintains original text structure and formatting
 
-## Usage Modes
+## Usage
+
+While intended to be activated via a prompt to an agent, below are some example JSON tool calls.
 
 ### File Processing (In-Place)
 Convert an entire file and save changes:
@@ -31,7 +33,7 @@ Convert an entire file and save changes:
 Convert text and return the result:
 ```json
 {
-  "name": "murican_to_english", 
+  "name": "murican_to_english",
   "arguments": {
     "text": "The color of the aluminum center was optimized for organization."
   }
@@ -102,7 +104,7 @@ Convert text and return the result:
   "conversions_made": 15,
   "examples": [
     "color → colour",
-    "organization → organisation", 
+    "organization → organisation",
     "analyze → analyse"
   ]
 }
@@ -170,7 +172,7 @@ Process multiple files systematically:
 
 // Process documentation
 {
-  "name": "murican_to_english", 
+  "name": "murican_to_english",
   "arguments": {
     "file_path": "/project/docs/user-guide.md"
   }

@@ -77,10 +77,10 @@ install-docling:
 	@echo "Installing Python dependencies for document processing..."
 	@if command -v python3 >/dev/null 2>&1; then \
 		echo "Found python3, installing docling..."; \
-		python3 -m pip install --user docling; \
+		python3 -m pip install --user -U docling; \
 	elif command -v python >/dev/null 2>&1; then \
 		echo "Found python, installing docling..."; \
-		python -m pip install --user docling; \
+		python -m pip install --user -U docling; \
 	else \
 		echo "Error: Python 3.10+ is required for document processing"; \
 		echo "Please install Python 3.10+ and try again"; \
@@ -108,31 +108,6 @@ check-docling:
 install-all: deps install-docling
 	@echo "All dependencies installed successfully!"
 
-# Generate API documentation
-.PHONY: generate-api-docs
-generate-api-docs:
-	@echo "Generating API documentation..."
-	@mkdir -p docs/api
-	$(GO) run scripts/generate-api-docs.go --output=docs/api --templates=docs/api/templates
-	@echo "API documentation generated in docs/api/"
-
-# Generate documentation for specific tool
-.PHONY: generate-tool-docs
-generate-tool-docs:
-	@if [ -z "$(TOOL)" ]; then echo "TOOL is required. Use: make generate-tool-docs TOOL=tool_name"; exit 1; fi
-	@echo "Generating documentation for tool: $(TOOL)"
-	$(GO) run scripts/generate-api-docs.go --tool=$(TOOL) --output=docs/api --templates=docs/api/templates
-	@echo "Documentation for $(TOOL) generated in docs/api/"
-
-# Validate documentation templates
-.PHONY: validate-docs-templates
-validate-docs-templates:
-	@echo "Validating documentation templates..."
-	@for template in docs/api/templates/*.tmpl; do \
-		echo "Checking $$template..."; \
-		$(GO) run -c "text/template" -c "fmt" -e "t,err := template.ParseFiles(\"$$template\"); if err != nil { fmt.Printf(\"Error in %s: %v\n\", \"$$template\", err); exit(1) }"; \
-	done
-	@echo "All templates are valid!"
 
 # Build Docker image
 .PHONY: docker-build
@@ -169,9 +144,6 @@ help:
 	@echo "  install-docling : Install Python dependencies for document processing"
 	@echo "  check-docling   : Check if docling is available"
 	@echo "  install-all     : Install all dependencies (Go + Python)"
-	@echo "  generate-api-docs : Generate API documentation for all tools"
-	@echo "  generate-tool-docs : Generate docs for specific tool (requires TOOL=tool_name)"
-	@echo "  validate-docs-templates : Validate documentation templates"
 	@echo "  docker-build : Build Docker image"
 	@echo "  docker-run   : Run Docker container with HTTP transport"
 	@echo "  release      : Create a new release (requires VERSION=x.y.z)"

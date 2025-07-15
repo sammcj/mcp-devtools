@@ -55,6 +55,8 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
 
 ## Usage Examples
 
+While intended to be activated via a prompt to an agent, below are some example JSON tool calls.
+
 ### Creating Entities
 ```json
 {
@@ -66,7 +68,7 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
       "entities": [
         {
           "name": "John_Doe",
-          "entityType": "person", 
+          "entityType": "person",
           "observations": [
             "Software engineer at TechCorp",
             "Specialises in Go and Python",
@@ -94,7 +96,7 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
   "name": "memory",
   "arguments": {
     "operation": "create_relations",
-    "namespace": "my_project", 
+    "namespace": "my_project",
     "data": {
       "relations": [
         {
@@ -103,7 +105,7 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
           "relationType": "works_at"
         },
         {
-          "from": "John_Doe", 
+          "from": "John_Doe",
           "to": "CloudPlatform_Project",
           "relationType": "leads"
         }
@@ -204,7 +206,7 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
   "data": {
     "entities": [
       {
-        "name": "APIGateway_Project", 
+        "name": "APIGateway_Project",
         "entityType": "project",
         "observations": ["REST API gateway for microservices", "Built with Go and Docker"]
       }
@@ -228,12 +230,12 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
 
 // 3. Create relationships
 {
-  "operation": "create_relations", 
+  "operation": "create_relations",
   "data": {
     "relations": [
       {
         "from": "Alice_Smith",
-        "to": "APIGateway_Project", 
+        "to": "APIGateway_Project",
         "relationType": "leads"
       }
     ]
@@ -253,7 +255,7 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
         "entityType": "concept",
         "observations": [
           "Manages external access to services",
-          "Provides load balancing and SSL termination", 
+          "Provides load balancing and SSL termination",
           "Uses nginx-ingress controller"
         ]
       }
@@ -268,7 +270,7 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
     "relations": [
       {
         "from": "Kubernetes_Ingress",
-        "to": "Load_Balancing", 
+        "to": "Load_Balancing",
         "relationType": "implements"
       }
     ]
@@ -289,7 +291,7 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
 }
 ```
 
-### Meeting Notes Workflow  
+### Meeting Notes Workflow
 ```json
 // 1. Create meeting entity
 {
@@ -301,7 +303,7 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
         "entityType": "meeting",
         "observations": [
           "Discussed microservices migration strategy",
-          "Decided on API-first approach", 
+          "Decided on API-first approach",
           "Timeline: 3 months for phase 1"
         ]
       }
@@ -356,7 +358,7 @@ MEMORY_ENABLE_FUZZY_SEARCH="true"             # Enable fuzzy search
 The tool finds entities even with partial or approximate matches:
 
 ```json
-// Query: "engineer" 
+// Query: "engineer"
 // Finds: "John_Doe" (has "Software engineer" in observations)
 
 // Query: "tech"
@@ -421,7 +423,7 @@ The tool finds entities even with partial or approximate matches:
 memory create_entities --namespace "codebase_analysis" --data '{
   "entities": [{
     "name": "Authentication_Service",
-    "entityType": "service", 
+    "entityType": "service",
     "observations": ["Uses JWT tokens", "Redis for session storage", "Rate limiting implemented"]
   }]
 }'
@@ -450,7 +452,7 @@ memory create_entities --namespace "learning" --data '{
 # Connect to related patterns
 memory create_relations --data '{
   "relations": [{
-    "from": "Event_Sourcing", 
+    "from": "Event_Sourcing",
     "to": "CQRS_Pattern",
     "relationType": "often_used_with"
   }]

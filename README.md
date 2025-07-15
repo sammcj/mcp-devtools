@@ -85,7 +85,7 @@ make build
 ```
 
 **Option 3: Download Release**
-Download the latest binary from [releases](https://github.com/sammcj/mcp-devtools/releases) and place in your PATH.
+Download the latest binary from [releases](https://github.com/sammcj/mcp-devtools/releases) and place in your PATH and remember to check for updates!
 
 ### Basic MCP Configuration
 
@@ -98,7 +98,7 @@ Download the latest binary from [releases](https://github.com/sammcj/mcp-devtool
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "BRAVE_API_KEY": "Optionally add your free Brave API key here, or remove if not needed",
+        "BRAVE_API_KEY": "This is optional - remove if not needed",
       }
     }
   }
@@ -236,7 +236,7 @@ Each tool is self-contained and registers automatically when the binary starts.
 ## Advanced Features
 
 ### OAuth 2.0/2.1 Authentication
-For production deployments requiring user authentication:
+For production deployments requiring centralised user authentication:
 
 👉 **[Complete OAuth Setup Guide](docs/oauth/README.md)**
 
@@ -261,13 +261,13 @@ docker run -e BRAVE_API_KEY="your-key" ghcr.io/sammcj/mcp-devtools:latest
 
 ### Creating New Tools
 
-Want to add your own tools? See the **[Development Guide](docs/development/creating-new-tools.md)**.
+Want to add your own tools? See the **[Development Guide](docs/creating-new-tools.md)**.
 
 ## Getting Help
 
 - **Tool Documentation**: [docs/tools/overview.md](docs/tools/overview.md)
 - **OAuth Setup**: [docs/oauth/README.md](docs/oauth/README.md)
-- **Development**: [docs/development/creating-new-tools.md](docs/development/creating-new-tools.md)
+- **Development**: [docs/development/creating-new-tools.md](docs/creating-new-tools.md)
 - **Issues**: [GitHub Issues](https://github.com/sammcj/mcp-devtools/issues), please note that I built this tool for my own use and it is not a commercially supported product, so if you can - please raise a PR instead of an issue.
 
 ## Contributing

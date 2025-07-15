@@ -23,6 +23,8 @@ The tool uses a two-step process for optimal results:
 
 ## Usage Examples
 
+While intended to be activated via a prompt to an agent, below are some example JSON tool calls.
+
 ### Step 1: Resolve Library ID
 
 Find the correct library identifier:
@@ -48,7 +50,7 @@ Use the resolved ID to fetch documentation:
 
 ```json
 {
-  "name": "get_library_docs", 
+  "name": "get_library_docs",
   "arguments": {
     "context7CompatibleLibraryID": "/facebook/react",
     "topic": "hooks",
@@ -74,7 +76,7 @@ Use the resolved ID to fetch documentation:
   "name": "get_library_docs",
   "arguments": {
     "context7CompatibleLibraryID": "/facebook/react",
-    "topic": "hooks", 
+    "topic": "hooks",
     "tokens": 15000
   }
 }
@@ -84,7 +86,7 @@ Use the resolved ID to fetch documentation:
 ```json
 // Step 1: Resolve
 {
-  "name": "resolve_library_id", 
+  "name": "resolve_library_id",
   "arguments": {
     "libraryName": "express"
   }
@@ -111,7 +113,7 @@ Use the resolved ID to fetch documentation:
   }
 }
 
-// Step 2: Get ML-specific docs  
+// Step 2: Get ML-specific docs
 {
   "name": "get_library_docs",
   "arguments": {
@@ -134,7 +136,7 @@ Use the resolved ID to fetch documentation:
 
 // Step 2: Get authentication docs
 {
-  "name": "get_library_docs", 
+  "name": "get_library_docs",
   "arguments": {
     "context7CompatibleLibraryID": "/django/django",
     "topic": "authentication",
@@ -196,7 +198,7 @@ Use the resolved ID to fetch documentation:
 {
   "selected_library": {
     "id": "/facebook/react",
-    "name": "React", 
+    "name": "React",
     "description": "A JavaScript library for building user interfaces",
     "trust_score": 9.5,
     "code_snippets": 1247,
@@ -251,7 +253,7 @@ Use the resolved ID to fetch documentation:
 
 ### Effective Topic Selection
 - **Be specific**: "authentication" vs "auth"
-- **Use common terms**: "routing" vs "navigation patterns" 
+- **Use common terms**: "routing" vs "navigation patterns"
 - **Match library terminology**: React "hooks" vs "composition API"
 - **Combine related topics**: "hooks useState useEffect"
 
@@ -281,7 +283,7 @@ Use the resolved ID to fetch documentation:
 
 ### Problem-Solving Workflow
 ```json
-// 1. Identify library  
+// 1. Identify library
 {"name": "resolve_library_id", "arguments": {"libraryName": "django"}}
 
 // 2. Get targeted help

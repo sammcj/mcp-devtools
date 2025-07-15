@@ -8,16 +8,16 @@ Instead of manually checking different package managers, the Package Search tool
 
 ## Supported Ecosystems
 
-| Ecosystem | Package Types | Features |
-|-----------|---------------|----------|
-| **NPM** | Node.js packages | Version constraints, dependency trees |
-| **Python** | PyPI packages | Requirements.txt and pyproject.toml formats |
-| **Go** | Go modules | Module versions and dependencies |
-| **Java** | Maven & Gradle | Group/artifact resolution |
-| **Swift** | Swift Package Manager | Package dependencies |
-| **Docker** | Container images | Tag information and registries |
-| **GitHub Actions** | Workflow actions | Action versions and metadata |
-| **AWS Bedrock** | AI/ML models | Model availability and capabilities |
+| Ecosystem          | Package Types         | Features                                    |
+|--------------------|-----------------------|---------------------------------------------|
+| **NPM**            | Node.js packages      | Version constraints, dependency trees       |
+| **Python**         | PyPI packages         | Requirements.txt and pyproject.toml formats |
+| **Go**             | Go modules            | Module versions and dependencies            |
+| **Java**           | Maven & Gradle        | Group/artifact resolution                   |
+| **Swift**          | Swift Package Manager | Package dependencies                        |
+| **Docker**         | Container images      | Tag information and registries              |
+| **GitHub Actions** | Workflow actions      | Action versions and metadata                |
+| **AWS Bedrock**    | AI/ML models          | Model availability and capabilities         |
 
 ## Usage Examples
 
@@ -39,7 +39,7 @@ Instead of manually checking different package managers, the Package Search tool
 {
   "name": "search_packages",
   "arguments": {
-    "ecosystem": "npm", 
+    "ecosystem": "npm",
     "data": {
       "react": "^17.0.2",
       "react-dom": "^17.0.2",
@@ -70,12 +70,12 @@ Instead of manually checking different package managers, the Package Search tool
 **Requirements.txt Format:**
 ```json
 {
-  "name": "search_packages", 
+  "name": "search_packages",
   "arguments": {
     "ecosystem": "python",
     "data": [
       "requests==2.28.1",
-      "flask>=2.0.0", 
+      "flask>=2.0.0",
       "numpy"
     ]
   }
@@ -120,7 +120,7 @@ Instead of manually checking different package managers, the Package Search tool
     "data": [
       {
         "groupId": "org.springframework.boot",
-        "artifactId": "spring-boot-starter-web", 
+        "artifactId": "spring-boot-starter-web",
         "version": "2.7.0"
       }
     ]
@@ -211,7 +211,7 @@ Instead of manually checking different package managers, the Package Search tool
 {
   "name": "search_packages",
   "arguments": {
-    "ecosystem": "bedrock", 
+    "ecosystem": "bedrock",
     "action": "search",
     "query": "claude"
   }
@@ -256,7 +256,7 @@ Check all dependencies in a project for outdated versions:
     "ecosystem": "npm",
     "data": {
       "express": "^4.18.0",
-      "mongoose": "^6.5.0", 
+      "mongoose": "^6.5.0",
       "jsonwebtoken": "^8.5.1"
     }
   }
@@ -316,7 +316,7 @@ For efficiency, prefer batch operations over individual queries:
 ```json
 // Avoid this approach
 {"ecosystem": "npm", "query": "react"}
-{"ecosystem": "npm", "query": "lodash"} 
+{"ecosystem": "npm", "query": "lodash"}
 {"ecosystem": "npm", "query": "express"}
 ```
 
@@ -359,7 +359,7 @@ For efficiency, prefer batch operations over individual queries:
       "status": "outdated"
     },
     "lodash": {
-      "latest_version": "4.17.21", 
+      "latest_version": "4.17.21",
       "requested_version": "4.17.21",
       "status": "up_to_date"
     }
@@ -384,6 +384,8 @@ Common error scenarios and responses:
 - **Rate limiting**: Information about limits and retry timing
 
 ## Integration Examples
+
+While intended to be activated via a prompt to an agent, below are some example JSON tool calls that can also be used directly or in scripts such as CI/CD pipelines.
 
 ### CI/CD Pipeline
 Use for automated dependency checking:
@@ -412,7 +414,7 @@ Plan upgrades across multiple ecosystems:
 
 ```json
 {
-  "name": "search_packages", 
+  "name": "search_packages",
   "arguments": {
     "ecosystem": "java-maven",
     "data": [

@@ -16,14 +16,16 @@ shadcn/ui is a popular React component library that provides beautifully designe
 
 ## Available Actions
 
-| Action | Purpose | Required Parameters |
-|--------|---------|-------------------|
-| `list` | Get all available components | None |
-| `search` | Find components by keyword | `query` |
-| `details` | Get detailed component information | `componentName` |
-| `examples` | Get usage examples for component | `componentName` |
+| Action     | Purpose                            | Required Parameters |
+|------------|------------------------------------|---------------------|
+| `list`     | Get all available components       | None                |
+| `search`   | Find components by keyword         | `query`             |
+| `details`  | Get detailed component information | `componentName`     |
+| `examples` | Get usage examples for component   | `componentName`     |
 
 ## Usage Examples
+
+While intended to be activated via a prompt to an agent, below are some example JSON tool calls.
 
 ### List All Components
 ```json
@@ -140,7 +142,7 @@ shadcn/ui is a popular React component library that provides beautifully designe
 {
   "name": "shadcn",
   "arguments": {
-    "action": "examples", 
+    "action": "examples",
     "componentName": "dialog"
   }
 }
@@ -320,7 +322,7 @@ memory create_entities --namespace="project_components" --data='{"entities": [{"
 # 1. Explore navigation options
 shadcn --action="search" --query="navigation"
 
-# 2. Compare different navigation components  
+# 2. Compare different navigation components
 shadcn --action="details" --componentName="navigation-menu"
 shadcn --action="details" --componentName="breadcrumb"
 

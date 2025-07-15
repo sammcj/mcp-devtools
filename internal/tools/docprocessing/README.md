@@ -64,7 +64,7 @@ DOCLING_EXTRA_CA_CERTS="/path/to/mitm-ca-bundle.pem"
 
 # LLM Configuration (for advanced diagram processing)
 DOCLING_VLM_API_URL="http://localhost:11434/v1"
-DOCLING_VLM_MODEL="mistral-small3.2:24b"
+DOCLING_VLM_MODEL="qwen2.5vl:7b-q8_0"
 DOCLING_VLM_API_KEY="your-api-key-here"
 ```
 
@@ -237,7 +237,7 @@ For diagram-to-Mermaid conversion, first configure external LLM integration:
 ```bash
 # Required environment variables
 export DOCLING_VLM_API_URL="http://localhost:11434/v1"   # Any OpenAI-compatible endpoint
-export DOCLING_VLM_MODEL="llava:latest"                     # Vision-capable model
+export DOCLING_VLM_MODEL="qwen2.5vl:7b-q8_0"                     # Vision-capable model
 export DOCLING_VLM_API_KEY="your-api-key-here"            # API key
 
 # Optional configuration
@@ -263,7 +263,7 @@ The tool supports any OpenAI-compatible API endpoint, e.g:
 - **OpenAI**: `https://api.openai.com/v1`
 - **OpenRouter**: `https://openrouter.ai/api/v1`
 
-Ensure you select a model that supports vision input (e.g., `mistral-small3.2:24b`, `gpt-4-vision-preview`, `claude-3-sonnet`).
+Ensure you select a model that supports vision input (e.g., `qwen2.5vl:7b-q8_0`, `gpt-4-vision-preview`, `claude-3-sonnet`).
 
 ### Diagram Analysis Features
 

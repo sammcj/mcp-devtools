@@ -6,7 +6,9 @@ The Document Processing tool provides intelligent document conversion capabiliti
 
 Convert documents to structured Markdown while preserving formatting, extracting tables, images, and metadata. The tool offers processing profiles for different use cases, from simple text extraction to advanced diagram analysis with AI models.
 
-**Note**: This tool is experimental and actively developed.
+Note: mcp-devtools also providers a PDF extraction tool that's not quite as smart but is quick and doesn't require docling, see [PDF Processing](pdf-processing.md) for more details.
+
+**This tool is experimental and actively developed.**
 
 ## Features
 
@@ -30,7 +32,10 @@ First ensure docling is installed in the environment you'll be running the MCP S
 pip install -U pip docling
 ```
 
-### Simple Usage (Recommended)
+### Usage
+
+You can simply prompt the agent using the tool, e.g: "Use your document processing tool to convert and save /path/to/document.pdf to markdown".
+
 ```json
 {
   "name": "process_document",
@@ -197,7 +202,7 @@ DOCLING_OCR_LANGUAGES="en,fr,de"
 #### LLM Configuration (for `llm-external` profile)
 ```bash
 DOCLING_VLM_API_URL="http://localhost:11434/v1"     # OpenAI-compatible endpoint
-DOCLING_VLM_MODEL="mistral-small3.2:24b"           # Vision-capable model
+DOCLING_VLM_MODEL="qwen2.5vl:7b-q8_0"              # Vision-capable model
 DOCLING_VLM_API_KEY="your-api-key-here"            # API key
 ```
 
@@ -254,12 +259,12 @@ The `llm-external` profile converts diagrams to Mermaid syntax:
 
 #### LLM Configuration
 ```bash
-export DOCLING_VLM_API_URL="http://localhost:11434/v1"
-export DOCLING_VLM_MODEL="llava:latest"
-export DOCLING_VLM_API_KEY="your-api-key"
-export DOCLING_LLM_MAX_TOKENS="16384"
-export DOCLING_LLM_TEMPERATURE="0.1"
-export DOCLING_LLM_TIMEOUT="240"
+DOCLING_VLM_API_URL="http://localhost:11434/v1"
+DOCLING_VLM_MODEL="qwen2.5vl:7b-q8_0"
+DOCLING_VLM_API_KEY="your-api-key"
+DOCLING_LLM_MAX_TOKENS="16384"
+DOCLING_LLM_TEMPERATURE="0.1"
+DOCLING_LLM_TIMEOUT="240"
 ```
 
 #### Diagram Features
