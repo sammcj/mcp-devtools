@@ -17,7 +17,7 @@ jobs:
   bump-version:
     name: Bump Version
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip-ci]')
     outputs:
       new_tag: ${{ steps.tag_version.outputs.new_tag }}
       changelog: ${{ steps.tag_version.outputs.changelog }}
@@ -422,8 +422,8 @@ jobs:
   docker:
     name: Build and Push Docker Image
     needs: [build-linux-amd64, build-linux-arm64, bump-version]
-    # Only run for main branch and tag builds, not for PRs
-    if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
+    # Only run for main branch and tag builds, not for PRs, and skip if [skip-ci] is in commit message
+    if: (startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip-ci]'))) && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
