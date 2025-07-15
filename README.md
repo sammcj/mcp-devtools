@@ -53,18 +53,18 @@ graph TD
 
 ## Available Tools
 
-| Tool                                                             | Purpose                          | Dependencies             | Quick Example                    |
-| ---------------------------------------------------------------- | -------------------------------- | ------------------------ | -------------------------------- |
-| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search        | Brave API key (optional) | Web, image, news, video search   |
-| **[Document Processing](docs/tools/document-processing.md)**     | Convert documents to Markdown    | Python 3.10+             | PDF, DOCX → Markdown with OCR    |
-| **[Package Search](docs/tools/package-search.md)**               | Check package versions           | None                     | NPM, Python, Go, Java, Docker    |
-| **[Think](docs/tools/think.md)**                                 | Structured reasoning space       | None                     | Complex problem analysis         |
-| **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs      | None                     | Store entities and relationships |
-| **[PDF Processing](docs/tools/pdf-processing.md)**               | Fast PDF text extraction         | None                     | Quick PDF to Markdown            |
-| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown | None                     | Documentation and articles       |
-| **[Package Documentation](docs/tools/package-documentation.md)** | Library documentation lookup     | None                     | React, Django, TensorFlow docs   |
-| **[ShadCN UI](docs/tools/shadcn-ui.md)**                         | Component information            | None                     | Button, Dialog, Form components  |
-| **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling      | None                     | Organise, colour, centre         |
+| Tool                                                             | Purpose                          | Dependencies                  | Quick Example                    |
+|------------------------------------------------------------------|----------------------------------|-------------------------------|----------------------------------|
+| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown | None                          | Documentation and articles       |
+| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search        | None (Provider keys optional) | Web, image, news, video search   |
+| **[Package Search](docs/tools/package-search.md)**               | Check package versions           | None                          | NPM, Python, Go, Java, Docker    |
+| **[Package Documentation](docs/tools/package-documentation.md)** | Library documentation lookup     | None                          | React, Django, TensorFlow docs   |
+| **[PDF Processing](docs/tools/pdf-processing.md)**               | Fast PDF text extraction         | None                          | Quick PDF to Markdown            |
+| **[Document Processing](docs/tools/document-processing.md)**     | Convert documents to Markdown    | `pip install - U docling`     | PDF, DOCX → Markdown with OCR    |
+| **[Think](docs/tools/think.md)**                                 | Structured reasoning space       | None                          | Complex problem analysis         |
+| **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs      | None                          | Store entities and relationships |
+| **[ShadCN UI](docs/tools/shadcn-ui.md)**                         | Component information            | None                          | Button, Dialog, Form components  |
+| **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling      | None                          | Organise, colour, centre         |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
