@@ -65,6 +65,21 @@ OAUTH_REQUIRE_HTTPS=true  # Set false only for development
 
 ### Basic Browser Authentication
 
+**MCP Client Configuration:**
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "streamableHttp",
+      "url": "http://localhost:18080/http"
+    }
+  }
+}
+```
+
+> **Note**: No OAuth configuration is needed in the MCP client for Browser Authentication Mode. The server authenticates itself during startup, and clients connect normally.
+
+**Server Command:**
 ```bash
 # Enable browser authentication with minimum configuration
 OAUTH_BROWSER_AUTH=true \
@@ -129,6 +144,41 @@ When browser authentication is enabled, the flow integrates seamlessly with MCP 
 3. **Middleware Integration**: Works with existing OAuth resource server middleware
 4. **Transport Compatibility**: Only available for HTTP transport (not stdio)
 
+## MCP Client Configuration Comparison
+
+### Browser Authentication Mode (This Guide)
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "streamableHttp",
+      "url": "http://localhost:18080/http"
+    }
+  }
+}
+```
+**Why no OAuth config?** The server authenticates itself during startup. Clients connect to an already-authenticated server.
+
+### Resource Server Mode (Different Scenario)
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "streamableHttp",
+      "url": "http://localhost:8080/http",
+      "oauth": {
+        "authorization_url": "https://auth.example.com/application/o/authorize/",
+        "token_url": "https://auth.example.com/application/o/token/",
+        "client_id": "mcp-client-id",
+        "client_secret": "mcp-client-secret",
+        "scopes": ["openid", "profile", "mcp:tools"]
+      }
+    }
+  }
+}
+```
+**Why OAuth config needed?** Each client must authenticate itself with the server using its own credentials.
+
 ## Error Handling
 
 The implementation provides comprehensive error handling:
@@ -164,6 +214,7 @@ The temporary callback server provides:
 2. **Callback timeout**: Increase `--oauth-auth-timeout` value
 3. **Port conflicts**: Use `--oauth-callback-port=0` for random port
 4. **HTTPS errors**: Set `--oauth-require-https=false` for development
+5. **Endpoint discovery fails**: The client now automatically tries both OpenID Connect Discovery (`/.well-known/openid-configuration`) and OAuth 2.0 Authorization Server Metadata (`/.well-known/oauth-authorization-server`) endpoints
 
 ### Debug Logging
 
@@ -174,6 +225,15 @@ Enable debug logging to see detailed OAuth flow information:
     --oauth-client-id="test-client" \
     --oauth-issuer="https://auth.example.com"
 ```
+
+### Endpoint Discovery
+
+The OAuth client automatically discovers endpoints using:
+
+1. **OpenID Connect Discovery** (tried first): `{issuer}/.well-known/openid-configuration`
+2. **OAuth 2.0 Authorization Server Metadata** (fallback): `{issuer}/.well-known/oauth-authorization-server`
+
+Most providers (including Authentik, Keycloak, Auth0) use OpenID Connect Discovery.
 
 ## Standards Compliance
 

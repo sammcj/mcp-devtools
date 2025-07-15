@@ -43,19 +43,37 @@ func (c *DefaultOAuth2Client) ValidateConfiguration() error {
 	return validateClientConfig(c.config)
 }
 
-// DiscoverEndpoints discovers OAuth endpoints from the issuer URL using RFC8414
+// DiscoverEndpoints discovers OAuth endpoints from the issuer URL using RFC8414 or OpenID Connect Discovery
 func (c *DefaultOAuth2Client) DiscoverEndpoints(ctx context.Context) error {
 	if c.config.IssuerURL == "" {
 		return fmt.Errorf("issuer URL is required for endpoint discovery")
 	}
 
-	// Construct well-known URL
-	wellKnownURL := strings.TrimSuffix(c.config.IssuerURL, "/") + "/.well-known/oauth-authorization-server"
+	baseURL := strings.TrimSuffix(c.config.IssuerURL, "/")
 
-	c.logger.Debugf("Discovering OAuth endpoints from: %s", wellKnownURL)
+	// Try OpenID Connect Discovery first (most common)
+	oidcURL := baseURL + "/.well-known/openid-configuration"
+	c.logger.Debugf("Trying OpenID Connect Discovery from: %s", oidcURL)
 
+	if err := c.tryDiscoverFromURL(ctx, oidcURL, true); err == nil {
+		return nil
+	}
+
+	// Fallback to OAuth 2.0 Authorization Server Metadata (RFC8414)
+	oauthURL := baseURL + "/.well-known/oauth-authorization-server"
+	c.logger.Debugf("Trying OAuth 2.0 Authorization Server Metadata from: %s", oauthURL)
+
+	if err := c.tryDiscoverFromURL(ctx, oauthURL, false); err == nil {
+		return nil
+	}
+
+	return fmt.Errorf("failed to discover endpoints from both OpenID Connect Discovery (%s) and OAuth 2.0 Authorization Server Metadata (%s)", oidcURL, oauthURL)
+}
+
+// tryDiscoverFromURL attempts to discover endpoints from a specific URL
+func (c *DefaultOAuth2Client) tryDiscoverFromURL(ctx context.Context, discoveryURL string, isOpenIDConnect bool) error {
 	// Make HTTP request to discovery endpoint
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, wellKnownURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, discoveryURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create discovery request: %w", err)
 	}
@@ -65,26 +83,47 @@ func (c *DefaultOAuth2Client) DiscoverEndpoints(ctx context.Context) error {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to fetch authorization server metadata: %w", err)
+		return fmt.Errorf("failed to fetch metadata: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("authorization server metadata request failed with status %d", resp.StatusCode)
+		return fmt.Errorf("metadata request failed with status %d", resp.StatusCode)
 	}
 
-	// Parse the metadata response
-	var metadata types.AuthorizationServerMetadata
-	if err := json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
-		return fmt.Errorf("failed to parse authorization server metadata: %w", err)
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// Update client configuration with discovered endpoints
-	c.config.AuthorizationEndpoint = metadata.AuthorizationEndpoint
-	c.config.TokenEndpoint = metadata.TokenEndpoint
+	// Parse the metadata response - both OpenID Connect and OAuth 2.0 use similar structures
+	var metadata map[string]interface{}
+	if err := json.Unmarshal(body, &metadata); err != nil {
+		return fmt.Errorf("failed to parse metadata: %w", err)
+	}
 
-	c.logger.Debugf("Discovered authorization endpoint: %s", metadata.AuthorizationEndpoint)
-	c.logger.Debugf("Discovered token endpoint: %s", metadata.TokenEndpoint)
+	// Extract authorization endpoint
+	if authEndpoint, ok := metadata["authorization_endpoint"].(string); ok && authEndpoint != "" {
+		c.config.AuthorizationEndpoint = authEndpoint
+		c.logger.Debugf("Discovered authorization endpoint: %s", authEndpoint)
+	} else {
+		return fmt.Errorf("authorization_endpoint not found in metadata")
+	}
+
+	// Extract token endpoint
+	if tokenEndpoint, ok := metadata["token_endpoint"].(string); ok && tokenEndpoint != "" {
+		c.config.TokenEndpoint = tokenEndpoint
+		c.logger.Debugf("Discovered token endpoint: %s", tokenEndpoint)
+	} else {
+		return fmt.Errorf("token_endpoint not found in metadata")
+	}
+
+	discoveryType := "OAuth 2.0 Authorization Server Metadata"
+	if isOpenIDConnect {
+		discoveryType = "OpenID Connect Discovery"
+	}
+	c.logger.Infof("Successfully discovered endpoints using %s", discoveryType)
 
 	return nil
 }
@@ -163,7 +202,7 @@ func (c *DefaultOAuth2Client) StartAuthentication(ctx context.Context) (*Authent
 }
 
 // ExchangeCodeForToken exchanges an authorization code for an access token
-func (c *DefaultOAuth2Client) ExchangeCodeForToken(ctx context.Context, code string, pkce *types.PKCEChallenge) (*TokenResponse, error) {
+func (c *DefaultOAuth2Client) ExchangeCodeForToken(ctx context.Context, code string, pkce *types.PKCEChallenge, redirectURI string) (*TokenResponse, error) {
 	if c.config.TokenEndpoint == "" {
 		return nil, fmt.Errorf("token endpoint is required")
 	}
@@ -172,7 +211,7 @@ func (c *DefaultOAuth2Client) ExchangeCodeForToken(ctx context.Context, code str
 	data := url.Values{
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
-		"redirect_uri":  {c.config.RedirectURI},
+		"redirect_uri":  {redirectURI},
 		"client_id":     {c.config.ClientID},
 		"code_verifier": {pkce.CodeVerifier},
 	}
@@ -284,7 +323,7 @@ func (c *DefaultOAuth2Client) handleAuthenticationFlow(session *AuthenticationSe
 		c.logger.Debug("Received authorization code from callback")
 
 		// Exchange code for token
-		tokenResp, err := c.ExchangeCodeForToken(session.Context, code, session.PKCEChallenge)
+		tokenResp, err := c.ExchangeCodeForToken(session.Context, code, session.PKCEChallenge, session.RedirectURI)
 		if err != nil {
 			session.ErrorCh <- fmt.Errorf("failed to exchange code for token: %w", err)
 			return
