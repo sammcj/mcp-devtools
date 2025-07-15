@@ -54,44 +54,48 @@ Convert text and return the result:
 ## Parameters Reference
 
 ### Core Parameters
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `file_path` | string | ❌ | Absolute path to file to convert in place |
-| `text` | string | ❌ | Text to convert and return inline |
-| `keep_smart_quotes` | boolean | ❌ | Keep smart quotes and em-dashes (default: false) |
+
+| Parameter           | Type    | Required | Description                                      |
+|---------------------|---------|----------|--------------------------------------------------|
+| `file_path`         | string  | ❌        | Absolute path to file to convert in place        |
+| `text`              | string  | ❌        | Text to convert and return inline                |
+| `keep_smart_quotes` | boolean | ❌        | Keep smart quotes and em-dashes (default: false) |
 
 **Note**: Either `file_path` or `text` must be provided, but not both.
 
 ## Common Spelling Conversions
 
 ### Word Endings
-| American | British | Example |
-|----------|---------|---------|
-| -ize | -ise | organize → organise |
+
+| American | British  | Example                     |
+|----------|----------|-----------------------------|
+| -ize     | -ise     | organize → organise         |
 | -ization | -isation | organization → organisation |
-| -yze | -yse | analyze → analyse |
-| -or | -our | color → colour |
-| -er | -re | center → centre |
+| -yze     | -yse     | analyze → analyse           |
+| -or      | -our     | color → colour              |
+| -er      | -re      | center → centre             |
 
 ### Specific Words
-| American | British |
-|----------|---------|
-| aluminum | aluminium |
-| defense | defence |
-| license | licence (noun) |
+
+| American | British         |
+|----------|-----------------|
+| aluminum | aluminium       |
+| defense  | defence         |
+| license  | licence (noun)  |
 | practice | practise (verb) |
-| gray | grey |
-| tire | tyre |
-| curb | kerb |
-| mom | mum |
+| gray     | grey            |
+| tire     | tyre            |
+| curb     | kerb            |
+| mom      | mum             |
 
 ### Double Letters
-| American | British |
-|----------|---------|
-| modeling | modelling |
+
+| American  | British    |
+|-----------|------------|
+| modeling  | modelling  |
 | traveling | travelling |
-| canceled | cancelled |
-| labeled | labelled |
+| canceled  | cancelled  |
+| labeled   | labelled   |
 
 ## Response Formats
 
