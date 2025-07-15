@@ -24,7 +24,7 @@ You may want OAuth if you need:
 - **User authentication** for accessing the MCP server
 - **Token-based security** for production deployments
 - **Integration with existing identity providers** (Authentik, Keycloak, etc.)
-- **Compliance with organizational authentication** requirements
+- **Compliance with organisational authentication** requirements
 
 Most users can skip OAuth and use simple bearer tokens or run without authentication for development as long as the MCP Server is running locally - or does not have access to sensitive data.
 
@@ -162,7 +162,7 @@ All environment variables have corresponding CLI flags:
 
 When OAuth is enabled, metadata endpoints are available:
 
-- `/.well-known/oauth-authorization-server` - Authorization server metadata (RFC8414)
+- `/.well-known/oauth-authorization-server` - Authorisation server metadata (RFC8414)
 - `/.well-known/oauth-protected-resource` - Protected resource metadata (RFC9728)
 - `/oauth/register` - Dynamic client registration (RFC7591) _(if enabled)_
 
@@ -215,12 +215,12 @@ sequenceDiagram
 
 This implementation follows these RFCs:
 
-- **OAuth 2.1** (draft-ietf-oauth-v2-1-12): Core authorization framework
-- **RFC8414**: OAuth 2.0 Authorization Server Metadata
+- **OAuth 2.1** (draft-ietf-oauth-v2-1-12): Core authorisation framework
+- **RFC8414**: OAuth 2.0 Authorisation Server Metadata
 - **RFC9728**: OAuth 2.0 Protected Resource Metadata
 - **RFC7591**: OAuth 2.0 Dynamic Client Registration Protocol
 - **RFC8707**: Resource Indicators for OAuth 2.0
-- **MCP 2025-06-18**: Model Context Protocol authorization specification
+- **MCP 2025-06-18**: Model Context Protocol authorisation specification
 
 ## Security Considerations
 

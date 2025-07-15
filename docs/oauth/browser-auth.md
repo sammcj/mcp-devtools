@@ -4,11 +4,11 @@ This guide covers the browser-based authentication functionality in MCP DevTools
 
 ## Overview
 
-Browser authentication implements OAuth 2.1 authorization code flow with PKCE (Proof Key for Code Exchange) for enhanced security. It's designed for scenarios where users need to authenticate with identity providers before the MCP server can access protected resources.
+Browser authentication implements OAuth 2.1 authorisation code flow with PKCE (Proof Key for Code Exchange) for enhanced security. It's designed for scenarios where users need to authenticate with identity providers before the MCP server can access protected resources.
 
 ## Features
 
-- **OAuth 2.1 Compliant**: Full implementation of OAuth 2.1 authorization code flow
+- **OAuth 2.1 Compliant**: Full implementation of OAuth 2.1 authorisation code flow
 - **PKCE Support**: Implements RFC7636 Proof Key for Code Exchange for enhanced security
 - **Browser Integration**: Cross-platform browser launching for authentication
 - **Localhost Callback Server**: Temporary HTTP server for handling OAuth callbacks
@@ -19,12 +19,12 @@ Browser authentication implements OAuth 2.1 authorization code flow with PKCE (P
 ## Authentication Flow
 
 1. **Configuration**: Client is configured with OAuth provider details
-2. **Endpoint Discovery**: Discovers authorization/token endpoints via RFC8414
+2. **Endpoint Discovery**: Discovers authorisation/token endpoints via RFC8414
 3. **PKCE Generation**: Creates secure code challenge/verifier pair
 4. **Callback Server**: Starts temporary localhost HTTP server
-5. **Browser Launch**: Opens system browser to authorization URL
+5. **Browser Launch**: Opens system browser to authorisation URL
 6. **User Authentication**: User completes authentication in browser
-7. **Code Exchange**: Exchanges authorization code for access token
+7. **Code Exchange**: Exchanges authorisation code for access token
 8. **Cleanup**: Shuts down callback server and completes flow
 
 ## Configuration
@@ -103,14 +103,14 @@ OAUTH_REQUIRE_HTTPS=false \
 
 - Generates cryptographically secure 256-bit code verifiers
 - Uses SHA256 challenge method for maximum security
-- Prevents authorization code interception attacks
+- Prevents authorisation code interception attacks
 - Required for all public clients per OAuth 2.1
 
 ### Token Audience Binding (RFC8707)
 
 - Explicitly binds tokens to intended resource servers
 - Prevents token reuse across different services
-- Implements resource parameter in authorization/token requests
+- Implements resource parameter in authorisation/token requests
 - Validates audience claims in received tokens
 
 ### Secure Callback Handling
@@ -135,7 +135,7 @@ The implementation provides comprehensive error handling:
 
 - **Configuration Errors**: Invalid or missing configuration parameters
 - **Network Errors**: Connection failures, timeouts, DNS resolution
-- **OAuth Errors**: Standard OAuth 2.0 error responses from authorization servers
+- **OAuth Errors**: Standard OAuth 2.0 error responses from authorisation servers
 - **Browser Errors**: Browser launching failures, callback timeouts
 - **Server Errors**: Callback server startup/shutdown issues
 
@@ -144,7 +144,7 @@ The implementation provides comprehensive error handling:
 Supports cross-platform browser launching:
 
 - **macOS**: Uses `open` command
-- **Linux**: Uses `xdg-open` command  
+- **Linux**: Uses `xdg-open` command
 - **Windows**: Uses `rundll32` with `url.dll`
 
 ## Callback Server
@@ -179,11 +179,11 @@ Enable debug logging to see detailed OAuth flow information:
 
 This implementation complies with:
 
-- **OAuth 2.1** (draft-ietf-oauth-v2-1-12): Core authorization framework
+- **OAuth 2.1** (draft-ietf-oauth-v2-1-12): Core authorisation framework
 - **RFC7636**: Proof Key for Code Exchange (PKCE)
-- **RFC8414**: OAuth 2.0 Authorization Server Metadata
+- **RFC8414**: OAuth 2.0 Authorisation Server Metadata
 - **RFC8707**: Resource Indicators for OAuth 2.0
-- **MCP 2025-06-18**: Model Context Protocol authorization specification
+- **MCP 2025-06-18**: Model Context Protocol authorisation specification
 
 ## Limitations
 
