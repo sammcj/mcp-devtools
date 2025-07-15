@@ -77,10 +77,10 @@ install-docling:
 	@echo "Installing Python dependencies for document processing..."
 	@if command -v python3 >/dev/null 2>&1; then \
 		echo "Found python3, installing docling..."; \
-		python3 -m pip install --user docling; \
+		python3 -m pip install --user -U docling; \
 	elif command -v python >/dev/null 2>&1; then \
 		echo "Found python, installing docling..."; \
-		python -m pip install --user docling; \
+		python -m pip install --user -U docling; \
 	else \
 		echo "Error: Python 3.10+ is required for document processing"; \
 		echo "Please install Python 3.10+ and try again"; \
@@ -107,6 +107,7 @@ check-docling:
 .PHONY: install-all
 install-all: deps install-docling
 	@echo "All dependencies installed successfully!"
+
 
 # Build Docker image
 .PHONY: docker-build
