@@ -28,6 +28,189 @@ You may want OAuth if you need:
 
 Most users can skip OAuth and use simple bearer tokens or run without authentication for development as long as the MCP Server is running locally - or does not have access to sensitive data.
 
+## OAuth Authentication Scenarios
+
+MCP DevTools supports three main OAuth authentication patterns:
+
+```mermaid
+graph TD
+    subgraph "OAuth Authentication Scenarios"
+        direction TB
+
+        subgraph "Scenario 1: Server-Level Authentication"
+            S1[🛡️ Users must authenticate to access MCP DevTools]
+            S1A[Browser Authentication Mode<br/>Server authenticates on startup]
+            S1B[Resource Server Mode<br/>Clients authenticate to server]
+            S1 --> S1A
+            S1 --> S1B
+        end
+
+        subgraph "Scenario 2: Tool-Level Authentication"
+            S2[🔐 Users authenticate for specific tools<br/>Identity passed to underlying services]
+            S2A[Per-tool OAuth scopes<br/>Fine-grained permissions]
+            S2B[User identity context<br/>Available to tools]
+            S2 --> S2A
+            S2 --> S2B
+        end
+
+        subgraph "Scenario 3: Service-to-Service Authentication"
+            S3[🔌 MCP DevTools authenticates to external services<br/>Tools access downstream APIs]
+            S3A[Confluence Tool<br/>OAuth to Confluence API]
+            S3B[GitHub Tool<br/>OAuth to GitHub API]
+            S3C[Google Drive Tool<br/>OAuth to Google API]
+            S3 --> S3A
+            S3 --> S3B
+            S3 --> S3C
+        end
+    end
+
+    subgraph "Implementation Status"
+        direction LR
+        Implemented[✅ Fully Implemented]
+        Partial[🔄 Partially Supported]
+        Future[🚧 Future Enhancement]
+    end
+
+    S1A --> Implemented
+    S1B --> Implemented
+    S2B --> Partial
+    S2A --> Future
+    S3A --> Future
+    S3B --> Future
+    S3C --> Future
+
+    classDef implemented fill:#e8f5e8,stroke:#2e7d32,color:#000
+    classDef partial fill:#fff3e0,stroke:#ef6c00,color:#000
+    classDef future fill:#f3e5f5,stroke:#7b1fa2,color:#000
+    classDef scenario fill:#e1f5fe,stroke:#0277bd,color:#000
+
+    class S1A,S1B,Implemented implemented
+    class S2B,Partial partial
+    class S2A,S3A,S3B,S3C,Future future
+    class S1,S2,S3 scenario
+```
+
+## Configuration Guide by Scenario
+
+### 🛡️ Scenario 1: Server-Level Authentication
+**"Users must authenticate to access MCP DevTools"**
+
+#### Browser Authentication Mode (Personal/Development)
+```bash
+# Server authenticates on startup
+OAUTH_BROWSER_AUTH=true
+OAUTH_CLIENT_ID="mcp-devtools-client"
+OAUTH_ISSUER="https://auth.example.com"
+./mcp-devtools --transport=http
+```
+
+**MCP Client Config:**
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "streamableHttp",
+      "url": "http://localhost:18080/http"
+    }
+  }
+}
+```
+
+#### Resource Server Mode (Production/Shared)
+```bash
+# Server validates client tokens
+OAUTH_ENABLED=true
+OAUTH_ISSUER="https://auth.example.com"
+OAUTH_AUDIENCE="https://mcp.example.com"
+OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
+./mcp-devtools --transport=http
+```
+
+**MCP Client Config:**
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "streamableHttp",
+      "url": "https://mcp.example.com/http",
+      "oauth": {
+        "authorization_url": "https://auth.example.com/authorize/",
+        "token_url": "https://auth.example.com/token/",
+        "client_id": "mcp-client-id",
+        "scopes": ["openid", "profile", "mcp:tools"]
+      }
+    }
+  }
+}
+```
+
+### 🔐 Scenario 2: Tool-Level Authentication
+**"Users authenticate for specific tools, identity passed to services"**
+
+#### Current Support (Partial)
+```bash
+# Server-level OAuth provides user context to tools
+OAUTH_BROWSER_AUTH=true
+OAUTH_CLIENT_ID="mcp-devtools-client"
+OAUTH_ISSUER="https://auth.example.com"
+OAUTH_SCOPE="openid profile mcp:search mcp:documents"
+./mcp-devtools --transport=http
+```
+
+Tools can access user identity from OAuth claims in request context.
+
+#### Future Enhancement
+```bash
+# Per-tool scopes and fine-grained permissions
+OAUTH_TOOL_SCOPES="search:read,documents:write,memory:admin"
+OAUTH_TOOL_DELEGATION=true
+```
+
+### 🔌 Scenario 3: Service-to-Service Authentication
+**"MCP DevTools authenticates to external services for tools"**
+
+#### Future Implementation Example
+```bash
+# Tool-specific OAuth configurations
+CONFLUENCE_OAUTH_CLIENT_ID="confluence-tool-client"
+CONFLUENCE_OAUTH_CLIENT_SECRET="secret"
+CONFLUENCE_OAUTH_ISSUER="https://auth.atlassian.com"
+
+GITHUB_OAUTH_CLIENT_ID="github-tool-client"
+GITHUB_OAUTH_CLIENT_SECRET="secret"
+GITHUB_OAUTH_ISSUER="https://github.com"
+
+./mcp-devtools --transport=http
+```
+
+Tools would handle their own OAuth flows to external services.
+
+## Quick Decision Guide: Which OAuth Mode Should I Use?
+
+### 🌐 Use Browser Authentication Mode When
+- **You're running MCP DevTools locally** (development, personal use)
+- **You want interactive login** before the server starts
+- **You're using it as a CLI tool** or desktop application
+- **You have browser access** on the machine running the server
+- **You want the simplest setup** with your OAuth provider
+
+**Example**: Running MCP DevTools on your laptop for personal development work.
+
+### 🛡️ Use Resource Server Mode When
+- **You're deploying MCP DevTools as a service** (production, shared environments)
+- **External clients will connect** with their own tokens
+- **You're building a microservice** that validates incoming tokens
+- **You're running headless** (no browser access)
+- **You need to validate tokens from multiple different clients**
+
+**Example**: Deploying MCP DevTools on a server that multiple team members access via their MCP clients.
+
+### 🔄 Use Both Modes When
+- **The server needs its own authentication** AND **validates external client tokens**
+- **You're building a complex multi-tenant system**
+
+**Most users should start with Browser Authentication Mode** - it's simpler and works great for personal/development use.
+
 ## Architecture Overview
 
 ```mermaid

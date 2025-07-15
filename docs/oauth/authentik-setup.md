@@ -162,7 +162,7 @@ Configure MCP DevTools for interactive browser authentication:
 OAUTH_BROWSER_AUTH=true
 
 # OAuth Client Configuration for Authentik
-OAUTH_CLIENT_ID="your-client-id-from-authentik"
+OAUTH_CLIENT_ID="your-client-id"
 OAUTH_CLIENT_SECRET="your-client-secret"  # Optional for public clients
 OAUTH_ISSUER="https://your-authentik.example.com/application/o/mcp-devtools/"
 OAUTH_AUDIENCE="https://your-mcp-server.example.com"  # For token binding
@@ -202,96 +202,67 @@ OAUTH_REQUIRE_HTTPS=true  # Set to false for development only
 BRAVE_API_KEY="your-api-key-if-needed"
 ```
 
-### Command Line Configuration
+## 🎯 Quick Start: Which Mode Should I Use?
 
-Alternatively, configure via command-line flags:
+### 🌐 Most Users: Browser Authentication Mode
 
-**Browser Authentication Mode:**
+**Perfect for**: Personal use, development, CLI tools, desktop applications
+**What it does**: Opens your browser to log in with Authentik before starting the MCP server
+**When to use**:
+- ✅ Running MCP DevTools on your laptop/desktop
+- ✅ You want simple interactive login
+- ✅ You have browser access on the machine
+
 ```bash
-./mcp-devtools --transport=http --port=18080 \
-    --oauth-browser-auth \
-    --oauth-client-id="your-client-id-from-authentik" \
-    --oauth-issuer="https://your-authentik.example.com/application/o/mcp-devtools/" \
-    --oauth-scope="openid profile mcp:tools" \
-    --oauth-callback-port=8888
+./bin/mcp-devtools --transport=http --port=18080 \
+   --oauth-browser-auth --oauth-client-id="your-client-id" \
+   --oauth-issuer="https://your-auth-server/application/o/mcpoauth/" \
+   --oauth-scope="openid profile your-username-or-profile" \
+   --oauth-callback-port=8888
 ```
 
-**Resource Server Mode:**
+### 🛡️ Advanced Users: Resource Server Mode
+
+**Perfect for**: Production deployments, shared servers, microservices
+**What it does**: Validates JWT tokens from external MCP clients (no browser interaction)
+**When to use**:
+- ✅ Deploying MCP DevTools as a shared service
+- ✅ Multiple team members connecting with their own MCP clients
+- ✅ Headless/server environments (no browser)
+- ✅ Building microservices that validate tokens
+
+**Example command**:
 ```bash
-./mcp-devtools --transport=http --port=8080 \
+./bin/mcp-devtools --transport=http --port=8080 \
     --oauth-enabled \
-    --oauth-issuer="https://your-authentik.example.com/application/o/mcp-devtools/" \
-    --oauth-audience="https://your-mcp-server.example.com" \
-    --oauth-jwks-url="https://your-authentik.example.com/application/o/mcp-devtools/jwks/" \
+    --oauth-audience="http://localhost:8080" \
+    --oauth-issuer="https://your-auth-server/application/o/mcpoauth/" \
+    --oauth-jwks-url="https://your-auth-server/application/o/mcpoauth/jwks/" \
     --oauth-dynamic-registration
 ```
 
-## OAuth Mode Selection Guide
+### 🔄 Expert Users: Both Modes Together
 
-### When to Use Browser Authentication Mode
+**Perfect for**: Complex multi-tenant systems
+**What it does**: Server authenticates on startup AND validates external client tokens
+**When to use**:
+- ✅ Server needs its own authentication AND validates external tokens
+- ✅ Building complex multi-tenant systems
 
-**🌐 Browser Authentication Mode** is ideal for:
-
-- **Development environments** where you want interactive authentication
-- **Desktop applications** that can launch a browser
-- **CLI tools** that need user authentication
-- **Personal use** where the server runs on your local machine
-- **Prototyping** with OAuth providers
-
-**Example Use Cases:**
+**Example command**:
 ```bash
-# Development with automatic browser login
-OAUTH_BROWSER_AUTH=true \
-OAUTH_CLIENT_ID="dev-client-123" \
-OAUTH_ISSUER="https://auth.company.com/application/o/mcp-dev/" \
-./mcp-devtools --transport=http
-
-# CLI tool that needs user auth
-./mcp-devtools --oauth-browser-auth \
-    --oauth-client-id="cli-tool-client" \
-    --oauth-issuer="https://auth.example.com/o/mcp/"
+./bin/mcp-devtools --transport=http --port=18080 \
+    --oauth-browser-auth \
+    --oauth-client-id="your-client-id" \
+    --oauth-issuer="https://your-auth-server/application/o/mcpoauth/" \
+    --oauth-enabled \
+    --oauth-audience="http://localhost:18080" \
+    --oauth-jwks-url="https://your-auth-server/application/o/mcpoauth/jwks/"
 ```
 
-### When to Use Resource Server Mode
+## 💡 Recommendation
 
-**🛡️ Resource Server Mode** is ideal for:
-
-- **Production API servers** that validate external client tokens
-- **Microservices** that need to authenticate incoming requests
-- **Server-to-server** communication
-- **Multi-tenant** environments
-- **Headless servers** without browser access
-
-**Example Use Cases:**
-```bash
-# Production API server
-OAUTH_ENABLED=true \
-OAUTH_ISSUER="https://auth.company.com/application/o/mcp-prod/" \
-OAUTH_AUDIENCE="https://api.company.com/mcp" \
-./mcp-devtools --transport=http --port=443
-
-# Microservice validation
-./mcp-devtools --oauth-enabled \
-    --oauth-audience="https://internal.company.com/mcp-service"
-```
-
-### Using Both Modes Together
-
-You can use both modes simultaneously for advanced scenarios:
-
-```bash
-# Server that authenticates on startup AND validates external tokens
-OAUTH_BROWSER_AUTH=true \
-OAUTH_CLIENT_ID="server-startup-client" \
-OAUTH_ENABLED=true \
-OAUTH_AUDIENCE="https://api.company.com/mcp" \
-./mcp-devtools --transport=http
-```
-
-This configuration:
-1. **Authenticates the server** on startup via browser
-2. **Validates external client tokens** for incoming requests
-3. **Stores the startup token** for server-initiated operations
+**Start with Browser Authentication Mode** (the command you just tested) - it's the simplest and works great for most use cases. You can always switch to Resource Server Mode later if you need to deploy as a shared service.
 
 ## Client Configuration
 
@@ -439,6 +410,11 @@ OAUTH_ISSUER="https://your-authentik.example.com/application/o/mcp-devtools/" \
    - Ensure Authentik redirect URIs include your callback port
    - Use `http://127.0.0.1:PORT/callback` format
    - Check that `OAUTH_CALLBACK_PORT` matches Authentik configuration
+
+5. **Endpoint discovery fails with 404 error**
+   - This is now fixed! The client automatically tries both OpenID Connect Discovery (`/.well-known/openid-configuration`) and OAuth 2.0 Authorization Server Metadata (`/.well-known/oauth-authorization-server`)
+   - Authentik uses OpenID Connect Discovery, which is tried first
+   - Enable debug logging to see which discovery method is being used
 
 #### Resource Server Issues
 

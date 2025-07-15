@@ -94,7 +94,7 @@ type OAuth2Client interface {
 	StartAuthentication(ctx context.Context) (*AuthenticationSession, error)
 
 	// ExchangeCodeForToken exchanges authorization code for access token
-	ExchangeCodeForToken(ctx context.Context, code string, pkce *types.PKCEChallenge) (*TokenResponse, error)
+	ExchangeCodeForToken(ctx context.Context, code string, pkce *types.PKCEChallenge, redirectURI string) (*TokenResponse, error)
 
 	// DiscoverEndpoints discovers OAuth endpoints from issuer URL
 	DiscoverEndpoints(ctx context.Context) error
