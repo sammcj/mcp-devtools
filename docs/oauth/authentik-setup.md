@@ -72,38 +72,38 @@ sequenceDiagram
    - Click **Create** and select **OAuth2/OpenID Provider**
 
 3. **Provider Configuration**
-   ```
-   Name: MCP DevTools OAuth Provider
-   Authorization flow: default-authorization-flow
-   Client type: Public (recommended for browser auth) or Confidential
-   Client ID: (auto-generated or custom - save this for MCP configuration)
-   Client Secret: (auto-generated - save this, optional for public clients)
-   Redirect URIs:
-     # For Browser Authentication Mode (localhost callbacks)
-     - http://127.0.0.1:8080/callback     (for browser auth on port 8080)
-     - http://127.0.0.1:8888/callback     (for browser auth on port 8888)
-     - http://localhost:*/callback         (wildcard for development)
-
-     # For External MCP Clients (if using resource server mode)
-     - https://your-mcp-client.example.com/oauth/callback
-     - http://localhost:3000/oauth/callback  (for development)
-   Signing Key: (select a certificate for JWT signing)
 
 ```
+Name: MCP DevTools OAuth Provider
+Authorization flow: default-authorization-flow
+Client type: Public (recommended for browser auth) or Confidential
+Client ID: (auto-generated or custom - save this for MCP configuration)
+Client Secret: (auto-generated - save this, optional for public clients)
+Redirect URIs:
+   # For Browser Authentication Mode (localhost callbacks)
+   - http://127.0.0.1:8080/callback     (for browser auth on port 8080)
+   - http://127.0.0.1:8888/callback     (for browser auth on port 8888)
+   - http://localhost:*/callback         (wildcard for development)
 
-   **Important for Browser Authentication:**
-   - Use `Public` client type for browser authentication mode
-   - Add localhost redirect URIs for the callback server
-   - The port number should match your `--oauth-callback-port` setting
+   # For External MCP Clients (if using resource server mode)
+   - https://your-mcp-client.example.com/oauth/callback
+   - http://localhost:3000/oauth/callback  (for development)
+Signing Key: (select a certificate for JWT signing)
+```
 
-4. **Advanced Settings**
-   ```
-   Include claims in id_token: Yes
-   Issuer mode: Each provider has a different issuer
-   Subject mode: Based on the User's hashed ID
-   Access token validity: 10 minutes (recommended)
-   Refresh token validity: 30 days
+**Important for Browser Authentication:**
+- Use `Public` client type for browser authentication mode
+- Add localhost redirect URIs for the callback server
+- The port number should match your `--oauth-callback-port` setting
 
+1. **Advanced Settings**
+
+```
+Include claims in id_token: Yes
+Issuer mode: Each provider has a different issuer
+Subject mode: Based on the User's hashed ID
+Access token validity: 10 minutes (recommended)
+Refresh token validity: 30 days
 ```
 
 ### Step 2: Configure Scopes
@@ -130,11 +130,10 @@ sequenceDiagram
    - Click **Create**
 
 2. **Application Settings**
-   ```
-   Name: MCP DevTools
-   Slug: mcp-devtools
-   Provider: MCP DevTools OAuth Provider (from Step 1)
-
+```
+Name: MCP DevTools
+Slug: mcp-devtools
+Provider: MCP DevTools OAuth Provider (from Step 1)
 ```
 
 3. **Access Control**
@@ -326,16 +325,15 @@ For development environments, you can relax HTTPS requirements:
 
 1. **Create HTTP-only provider** for local development
 2. **Configure redirect URIs for both modes**:
-   ```
-   # For Browser Authentication Mode (localhost callbacks)
-   http://127.0.0.1:8080/callback
-   http://127.0.0.1:8888/callback
-   http://localhost:*/callback         # Wildcard for development
+```
+# For Browser Authentication Mode (localhost callbacks)
+http://127.0.0.1:8080/callback
+http://127.0.0.1:8888/callback
+http://localhost:*/callback         # Wildcard for development
 
-   # For External MCP Clients (resource server mode)
-   http://localhost:18080/oauth/callback
-   http://127.0.0.1:18080/oauth/callback
-
+# For External MCP Clients (resource server mode)
+http://localhost:18080/oauth/callback
+http://127.0.0.1:18080/oauth/callback
 ```
 
 ### Browser Authentication Development
