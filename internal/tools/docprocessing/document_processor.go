@@ -56,6 +56,7 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 		),
 		mcp.WithArray("sources",
 			mcp.Description("Multiple document sources for batch processing: Array of fully qualified absolute file paths or URLs. When provided, 'source' parameter is ignored."),
+			mcp.Items(map[string]any{"type": "string"}),
 		),
 		mcp.WithString("profile",
 			mcp.Description(profileDesc),
