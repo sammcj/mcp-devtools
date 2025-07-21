@@ -22,7 +22,7 @@ The GitHub tool supports multiple authentication methods:
 Set the `GITHUB_TOKEN` environment variable with your personal access token:
 
 ```bash
-export GITHUB_TOKEN="ghp_your_token_here"
+GITHUB_TOKEN="ghp_your_token_here"
 ```
 
 **Token Permissions**: For read-only operations, create a token with minimal permissions:
@@ -33,7 +33,7 @@ export GITHUB_TOKEN="ghp_your_token_here"
 Set `GITHUB_AUTH_METHOD=ssh` to use SSH keys for git operations:
 
 ```bash
-export GITHUB_AUTH_METHOD=ssh
+GITHUB_AUTH_METHOD=ssh
 ```
 
 **SSH Key Detection**: Automatically detects SSH keys in this order:
@@ -293,7 +293,7 @@ Common error scenarios and solutions:
 
 ### Clone with SSH
 ```bash
-export GITHUB_AUTH_METHOD=ssh
+GITHUB_AUTH_METHOD=ssh
 ```
 ```json
 {
