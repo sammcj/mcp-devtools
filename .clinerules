@@ -1,11 +1,15 @@
 # MCP DevTools Rules
 
-- Always use `make clean && make build` to build the project.
+- Always use `make lint && make test && make clean && make build` etc... to build the project rather than gofmt, go build or test directly.
 - Once you've build the project, you can try using the tools if you need to test them as they will automatically be made available to you.
 - Always ensure `make lint` is passing before stating a task is complete.
-- When adding new tools ensure they are registered in the list of available tools in the server (within their init function), ensure they have a basic unit test, and that they have a README.md and they're mentioned in the main README.md.
-- Ensure that when running in stdio mode that we NEVER log to stdout or stderr, as this will break the MCP protocol.
+- When adding new tools ensure they are registered in the list of available tools in the server (within their init function), ensure they have a basic unit test, and that they have docs/tools/<toolname>.md with concise, clear information about the tool and that they're mentioned in the main README.md and docs/tools/overview.md.
+- On occasion the user may ask you to build a new tool and provide reference code or information in a provided directory such as `tmp_repo_clones/<dirname>` unless specified otherwise this should only be used for reference and learning purposes, we don't ever want to use code that directory as part of the project's codebase.
+- CRITICAL: Ensure that when running in stdio mode that we NEVER log to stdout or stderr, as this will break the MCP protocol.
+- We should be mindful of the risks of code injection and other security risks when parsing any information from external sources.
 - When creating new MCP tools make sure descriptions are clear and concise as they are what is used as hints to the AI coding agent using the tool, you should also make good use of MCP's annotations.
+- Always use British English spelling, we are not American.
+- Unit tests for tools should be located within the tests/tools/ directory, and should be named <toolname>_test.go.
 - You can debug the tool by running it in debug mode interactively, e.g. `rm -f debug.log; pkill -f "mcp-devtools.*" ; echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "fetch_url", "arguments": {"url": "https://go.dev", "max_length": 500, "raw": false}}}' | ./bin/mcp-devtools stdio`, or `BRAVE_API_KEY="ask the user if you need this" ./bin/mcp-devtools stdio <<< '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "brave_search", "arguments": {"type": "web", "query": "cat facts", "count": 1}}}'`
 - Any tools we create must work on both macOS and Linux unless the user states otherwise (we don't need to bother with MS Windows).
 - When testing the docprocessing tool, unless otherwise instructed always call it with "clear_file_cache": true and do not enable return_inline_only
