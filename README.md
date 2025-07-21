@@ -13,7 +13,7 @@ graph TD
     B --> B1[Internet Search]
     B --> B2[Package Search]
     B --> B3[Package Documentation]
-    B --> B4[GitHub Integration]
+    B --> B4[GitHub]
 
     C --> C1[Document Processing]
     C --> C2[PDF Processing]
