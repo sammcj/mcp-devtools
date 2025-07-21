@@ -2,6 +2,8 @@
 
 Access GitHub repositories and data with comprehensive read-only operations including searching, retrieving file contents, cloning repositories, and monitoring GitHub Actions workflows.
 
+This was added as the official Github MCP server fills the context with many tools, tool parameters and returns information that's not overly useful.
+
 ## Features
 
 - **Repository Search**: Find GitHub repositories by name, description, or other criteria
