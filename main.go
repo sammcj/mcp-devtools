@@ -18,6 +18,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	// Import all tool packages to register them
+	_ "github.com/sammcj/mcp-devtools/internal/tools/confluence"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/docprocessing"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/internetsearch/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/m2e"

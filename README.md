@@ -47,7 +47,7 @@ graph TD
 - Works out of the box for most tools
 
 **🛠 Comprehensive Tool Suite**
-- 10+ essential developer tools in one package
+- 11+ essential developer tools in one package
 - No need to manage multiple MCP server installations
 - Consistent API across all tools
 
@@ -65,6 +65,7 @@ graph TD
 | **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs      | None                          | Store entities and relationships |
 | **[ShadCN UI](docs/tools/shadcn-ui.md)**                         | Component information            | None                          | Button, Dialog, Form components  |
 | **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling      | None                          | Organise, colour, centre         |
+| **[Confluence Search](docs/tools/confluence.md)**                | Search Confluence content        | None (Auth keys optional)     | Search pages, convert to Markdown |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
