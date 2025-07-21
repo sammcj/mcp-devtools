@@ -13,6 +13,7 @@ graph TD
     B --> B1[Internet Search]
     B --> B2[Package Search]
     B --> B3[Package Documentation]
+    B --> B4[GitHub]
 
     C --> C1[Document Processing]
     C --> C2[PDF Processing]
@@ -31,7 +32,7 @@ graph TD
 
     class A server
     class B,C,D,E,F category
-    class B1,B2,B3,C1,C2,D1,E1,E2,F1,F2 tool
+    class B1,B2,B3,B4,C1,C2,D1,E1,E2,F1,F2 tool
 ```
 
 ## Why I Built MCP DevTools
@@ -47,7 +48,7 @@ graph TD
 - Works out of the box for most tools
 
 **🛠 Comprehensive Tool Suite**
-- 10+ essential developer tools in one package
+- 11+ essential developer tools in one package
 - No need to manage multiple MCP server installations
 - Consistent API across all tools
 
@@ -65,6 +66,7 @@ graph TD
 | **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs      | None                          | Store entities and relationships |
 | **[ShadCN UI](docs/tools/shadcn-ui.md)**                         | Component information            | None                          | Button, Dialog, Form components  |
 | **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling      | None                          | Organise, colour, centre         |
+| **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data     | None (GitHub token optional)  | Issues, PRs, repos, cloning      |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 

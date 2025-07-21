@@ -15,9 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `go test -short -v ./tests/...` - Run specific test suites
 
 ### Code Quality
-- `make fmt` - Format code using go fmt
-- `make lint` - Run linting with gofmt and golangci-lint
-- `gofmt -w -s .` - Format and simplify code
+- `make lint` - Run linting and formatting with gofmt and golangci-lint
 
 ### Dependencies
 - `make deps` - Install dependencies
@@ -28,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a modular MCP (Model Context Protocol) server built in Go that provides developer tools through a plugin-like architecture.
 
-Please read the README.md for more information.
+Please read the `README.md` for more information, and `docs/creating-new-tools.md` for details on how to create new tools.
 
 ### Core Components
 
@@ -39,7 +37,7 @@ Please read the README.md for more information.
 ### Tool Categories
 
 Tools are organized into categories under `internal/tools/`, e.g:
-- `internetsearch/brave/` - Brave Search API integration (web, image, news, video, local)
+- `internetsearch/` - Internet Search API integrations (web, image, news, video, local)
 - `packageversions/` - Package version checking across ecosystems (npm, python, go, java, swift, docker, github-actions, bedrock)
 - `shadcnui/` - shadcn/ui component information and examples
 - `think/` - Structured reasoning tool for AI agents
@@ -62,23 +60,8 @@ Tools automatically get:
 
 The server supports three transport modes:
 - **stdio** (default) - Standard input/output for MCP clients
-- **sse** - Server-Sent Events for web clients
-- **http** - Streamable HTTP with optional authentication
-
-## Environment Variables
-
-### Core
-- `BRAVE_API_KEY` - Required for Brave Search tools
-- `DISABLED_FUNCTIONS` - Comma-separated list of function names to disable
-
-### OAuth 2.0/2.1 (Optional)
-- `OAUTH_ENABLED` or `MCP_OAUTH_ENABLED` - Enable OAuth 2.0/2.1 authorization (HTTP transport only)
-- `OAUTH_ISSUER` or `MCP_OAUTH_ISSUER` - OAuth issuer URL (required if OAuth enabled)
-- `OAUTH_AUDIENCE` or `MCP_OAUTH_AUDIENCE` - OAuth audience for this resource server
-- `OAUTH_JWKS_URL` or `MCP_OAUTH_JWKS_URL` - JWKS URL for token validation
-- `OAUTH_DYNAMIC_REGISTRATION` or `MCP_OAUTH_DYNAMIC_REGISTRATION` - Enable RFC7591 dynamic client registration
-- `OAUTH_AUTHORIZATION_SERVER` or `MCP_OAUTH_AUTHORIZATION_SERVER` - Authorization server URL (if different from issuer)
-- `OAUTH_REQUIRE_HTTPS` or `MCP_OAUTH_REQUIRE_HTTPS` - Require HTTPS for OAuth endpoints (default: true)
+- **http** - Streamable HTTP with optional authentication, optional upgrade to SSE if needed
+- **sse** - Server-Sent Events for web clients (deprecated in favour of streamable HTTP)
 
 ## Important Files
 
@@ -90,7 +73,7 @@ The server supports three transport modes:
 
 ## Testing Strategy
 
-Tests are organized in `tests/` directory:
+Tests are organised in `tests/` directory:
 - `testutils/` - Test helpers and mocks
 - `tools/` - Tool-specific tests
 - `unit/` - Unit tests for core components
@@ -112,10 +95,14 @@ All tools follow this pattern:
 
 ## General Guidelines
 
-- Any tools we create must work on both macOS and Linux unless the user states otherwise (we don't need to bother with MS Windows).
+- Any tools we create must work on both macOS and Linux unless the user states otherwise (we don't care about MS Windows).
+- CRITICAL: Ensure that when running in stdio mode that we NEVER log to stdout or stderr, as this will break the MCP protocol.
 - When testing the docprocessing tool, unless otherwise instructed always call it with "clear_file_cache": true and do not enable return_inline_only
-- When adding new tools ensure they are registered in the list of available tools in the server (within their init function), ensure they have a basic unit test, and that they have a README.md and they're mentioned in the main README.md.
-- Ensure that when running in stdio mode that we NEVER log to stdout or stderr, as this will break the MCP protocol.
+- When adding new tools ensure they are registered in the list of available tools in the server (within their init function), ensure they have a basic unit test, and that they have docs/tools/<toolname>.md with concise, clear information about the tool and that they're mentioned in the main README.md and docs/tools/overview.md.
+- Always use British English spelling, we are not American.
+- Unit tests for tools should be located within the tests/tools/ directory, and should be named <toolname>_test.go.
+- We should be mindful of the risks of code injection and other security risks when parsing any information from external sources.
+- On occasion the user may ask you to build a new tool and provide reference code or information in a provided directory such as `tmp_repo_clones/<dirname>` unless specified otherwise this should only be used for reference and learning purposes, we don't ever want to use code that directory as part of the project's codebase.
 - When creating new MCP tools make sure descriptions are clear and concise as they are what is used as hints to the AI coding agent using the tool, you should also make good use of MCP's annotations.
 - You can debug the tool by running it in debug mode interactively, e.g. `rm -f debug.log; pkill -f "mcp-devtools.*" ; echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "fetch_url", "arguments": {"url": "https://go.dev", "max_length": 500, "raw": false}}}' | ./bin/mcp-devtools stdio`, or `BRAVE_API_KEY="ask the user if you need this" ./bin/mcp-devtools stdio <<< '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "brave_search", "arguments": {"type": "web", "query": "cat facts", "count": 1}}}'`
-- Always use `make lint && make clean && make build` to build the project rather than gofmt, go build or test directly.
+- Always use `make lint && make test && make clean && make build` etc... to build the project rather than gofmt, go build or test directly.
