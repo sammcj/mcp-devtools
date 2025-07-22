@@ -76,6 +76,9 @@ echo "${GOPATH}/bin/mcp-devtools" # Use this path in your MCP configuration, if 
     "dev-tools": {
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
+      "env": {
+        "DISABLED_FUNCTIONS": "brave_local_search,brave_video_search" // Optional, disable specific tools if not needed
+      }
     }
   }
 }
