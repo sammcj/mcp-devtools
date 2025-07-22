@@ -4,7 +4,7 @@
 BINARY_NAME=mcp-devtools
 BINARY_PATH=bin/$(BINARY_NAME)
 GO=go
-GOFLAGS=-v
+GOFLAGS=
 GOFMT=$(GO) fmt
 GOTEST=$(GO) test
 DOCKER=docker
@@ -37,12 +37,12 @@ run-http: build
 # Run tests (all tests including external dependencies)
 .PHONY: test
 test:
-	$(GOTEST) $(GOFLAGS) ./...
+	$(GOTEST) $(GOFLAGS) ./tests/...
 
 # Run fast tests (no external dependencies)
 .PHONY: test-fast
 test-fast:
-	$(GOTEST) -short -v ./tests/...
+	$(GOTEST) -short ./tests/...
 
 # Clean build artifacts
 .PHONY: clean
