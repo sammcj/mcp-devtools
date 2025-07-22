@@ -195,7 +195,6 @@ Supports cross-platform browser launching:
 
 - **macOS**: Uses `open` command
 - **Linux**: Uses `xdg-open` command
-- **Windows**: Uses `rundll32` with `url.dll`
 
 ## Callback Server
 

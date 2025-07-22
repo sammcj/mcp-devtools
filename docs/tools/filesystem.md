@@ -1,6 +1,54 @@
 # Filesystem Tool
 
-The filesystem tool provides secure file and directory operations with directory access control via MCP Roots protocol.
+The filesystem tool provides secure file and directory operations with strict access controls. **This tool is disabled by default for security reasons** and must be explicitly enabled.
+
+## Security Notice
+
+⚠️ **IMPORTANT**: This tool provides direct filesystem access and is **disabled by default**. Only enable it if you understand the security implications and trust the AI agent with filesystem operations.
+
+## Enabling the Tool
+
+To enable the filesystem tool, set the environment variable:
+```bash
+export FILESYSTEM_TOOL_ENABLE=true
+```
+
+## Configuration
+
+### Environment Variables
+
+- **`FILESYSTEM_TOOL_ENABLE`** (required): Set to `"true"` to enable the tool (disabled by default)
+- **`FILESYSTEM_TOOL_ALLOWED_DIRS`** (optional): Colon-separated (Unix) list of allowed directory paths
+
+### Custom Allowed Directories
+
+By default, the tool allows access to:
+- Current working directory
+- User home directory
+
+To restrict access to specific directories only:
+
+**Unix/Linux/macOS:**
+```bash
+export FILESYSTEM_TOOL_ALLOWED_DIRS="/home/user/projects:/tmp:/home/user/documents"
+```
+
+### MCP Configuration Example
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "stdio",
+      "command": "/path/to/mcp-devtools",
+      "env": {
+        "FILESYSTEM_TOOL_ENABLE": "true",
+        "FILESYSTEM_TOOL_ALLOWED_DIRS": "/home/user/projects:/tmp"
+      }
+    }
+  }
+}
+```
 
 ## Features
 
@@ -8,8 +56,9 @@ The filesystem tool provides secure file and directory operations with directory
 - **Directory Operations**: Create, list, and navigate directories
 - **File Search**: Recursively search for files with pattern matching
 - **File Metadata**: Get detailed file information including size, permissions, and timestamps
-- **Security**: Directory access control prevents operations outside allowed directories
+- **Security**: Strict directory access control prevents operations outside allowed directories
 - **Advanced Features**: Head/tail file reading, directory trees, file moving
+- **Configurable Access**: Customisable allowed directories via environment variables
 
 ## Functions
 
@@ -361,5 +410,5 @@ The tool provides comprehensive error handling for:
 ## Dependencies
 
 - **None**: Pure Go implementation with standard library
-- **Cross-platform**: Works on macOS, Linux, and Windows
+- **Cross-platform**: Works on macOS and Linux
 - **Secure by default**: Directory access control enabled by default
