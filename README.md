@@ -6,33 +6,39 @@ A single, high-performance MCP server that replaces multiple Node.js and Python-
 graph TD
     A[MCP DevTools Server] --> B[Search & Discovery]
     A --> C[Document Processing]
-    A --> D[Web & Network]
     A --> E[Intelligence & Memory]
-    A --> F[UI & Utilities]
+    A --> F[Utilities]
 
     B --> B1[Internet Search]
     B --> B2[Package Search]
     B --> B3[Package Documentation]
     B --> B4[GitHub]
+    B --> B5[ShadCN UI Components]
+    B --> B6[Web Fetch]
 
     C --> C1[Document Processing]
     C --> C2[PDF Processing]
 
-    D --> D1[Web Fetch]
 
     E --> E1[Think Tool]
     E --> E2[Memory Graph]
 
-    F --> F1[ShadCN UI Components]
-    F --> F2[American→English]
+    F --> F3[American→English]
+    F --> F4[Filesystem]
 
     classDef server fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef category fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
-    classDef tool fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
+    classDef utility fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
+    classDef searchDiscovery fill:#FFF3E6,stroke:#FF9800,color:#F57C00
+    classDef intelligence fill:#E6F7FF,stroke:#81D4FA,color:#0288D1
+    classDef documentProcessing fill:#FFF0F0,stroke:#FFCDD2,color:#C62828
 
     class A server
     class B,C,D,E,F category
-    class B1,B2,B3,B4,C1,C2,D1,E1,E2,F1,F2 tool
+    class D1,F1,F2,F3,F4 utility
+    class B1,B2,B3,B4,B5,B6 searchDiscovery
+    class C1,C2 documentProcessing
+    class E1,E2 intelligence
 ```
 
 ## Why I Built MCP DevTools
@@ -48,9 +54,34 @@ graph TD
 - Works out of the box for most tools
 
 **🛠 Comprehensive Tool Suite**
-- 11+ essential developer tools in one package
+- 12+ essential developer tools in one package
 - No need to manage multiple MCP server installations
 - Consistent API across all tools
+
+## Quickstart
+
+You must have a recent version of Go installed.
+
+1. Install the latest MCP DevTools binary:
+
+```shell
+go install github.com/sammcj/mcp-devtools@HEAD
+echo "${GOPATH}/bin/mcp-devtools" # Use this path in your MCP configuration, if your GOPATH is not set, please check your Go installation / configuration.
+```
+
+2. Update your MCP client to add the MCP DevTools server configuration, replacing `/path/to/mcp-devtools` with the actual path to the binary (e.g. `/Users/samm/go/bin/mcp-devtools`):
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "stdio",
+      "command": "/path/to/mcp-devtools",
+    }
+  }
+}
+```
+
+See below for various environment variables you can set to configure specific features.
 
 ## Available Tools
 
@@ -67,6 +98,7 @@ graph TD
 | **[ShadCN UI](docs/tools/shadcn-ui.md)**                         | Component information            | None                          | Button, Dialog, Form components  |
 | **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling      | None                          | Organise, colour, centre         |
 | **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data     | None (GitHub token optional)  | Issues, PRs, repos, cloning      |
+| **[Filesystem](docs/tools/filesystem.md)**                       | File and directory operations    | None                          | Read, write, edit, search files  |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
