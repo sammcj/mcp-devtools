@@ -1,4 +1,4 @@
-package go_tool
+package tools
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
+	go_tool "github.com/sammcj/mcp-devtools/internal/tools/packageversions/go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,10 +28,7 @@ func TestGoTool_Execute_SimpleFormat(t *testing.T) {
 	// Create cache
 	cache := &sync.Map{}
 
-	// Create tool instance
-	tool := &GoTool{
-		client: packageversions.DefaultHTTPClient,
-	}
+	tool := go_tool.NewGoTool(packageversions.DefaultHTTPClient)
 
 	// Test simple format (key-value pairs)
 	args := map[string]interface{}{
@@ -66,9 +64,7 @@ func TestGoTool_Execute_ComplexFormat(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Create tool instance
-	tool := &GoTool{
-		client: packageversions.DefaultHTTPClient,
-	}
+	tool := go_tool.NewGoTool(packageversions.DefaultHTTPClient)
 
 	// Test complex format (structured with require array)
 	args := map[string]interface{}{
@@ -113,9 +109,7 @@ func TestGoTool_Execute_MissingDependencies(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Create tool instance
-	tool := &GoTool{
-		client: packageversions.DefaultHTTPClient,
-	}
+	tool := go_tool.NewGoTool(packageversions.DefaultHTTPClient)
 
 	// Test missing dependencies parameter
 	args := map[string]interface{}{}
@@ -142,9 +136,7 @@ func TestGoTool_Execute_InvalidDependenciesFormat(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Create tool instance
-	tool := &GoTool{
-		client: packageversions.DefaultHTTPClient,
-	}
+	tool := go_tool.NewGoTool(packageversions.DefaultHTTPClient)
 
 	// Test invalid dependencies format
 	args := map[string]interface{}{

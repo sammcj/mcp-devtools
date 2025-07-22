@@ -54,7 +54,7 @@ func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 	logger.Debug("Executing PDF processing tool")
 
 	// Parse and validate parameters
-	request, err := t.parseRequest(args)
+	request, err := t.ParseRequest(args)
 	if err != nil {
 		return nil, fmt.Errorf("invalid parameters: %w", err)
 	}
@@ -93,8 +93,8 @@ func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 	return t.newToolResultJSON(result)
 }
 
-// parseRequest parses and validates the tool arguments
-func (t *PDFTool) parseRequest(args map[string]interface{}) (*PDFRequest, error) {
+// ParseRequest parses and validates the tool arguments
+func (t *PDFTool) ParseRequest(args map[string]interface{}) (*PDFRequest, error) {
 	// Parse file_path (required)
 	filePath, ok := args["file_path"].(string)
 	if !ok || filePath == "" {
@@ -168,7 +168,7 @@ func (t *PDFTool) processPDF(ctx context.Context, logger *logrus.Logger, request
 	logger.WithField("page_count", pageCount).Debug("PDF page count")
 
 	// Parse page selection
-	selectedPages, err := t.parsePageSelection(request.Pages, pageCount)
+	selectedPages, err := t.ParsePageSelection(request.Pages, pageCount)
 	if err != nil {
 		return nil, fmt.Errorf("invalid page selection: %w", err)
 	}
@@ -247,8 +247,8 @@ func (t *PDFTool) processPDF(ctx context.Context, logger *logrus.Logger, request
 	return response, nil
 }
 
-// parsePageSelection parses page selection string into a slice of page numbers
-func (t *PDFTool) parsePageSelection(pages string, maxPage int) ([]int, error) {
+// ParsePageSelection parses page selection string into a slice of page numbers
+func (t *PDFTool) ParsePageSelection(pages string, maxPage int) ([]int, error) {
 	if pages == "" || pages == "all" {
 		result := make([]int, maxPage)
 		for i := 0; i < maxPage; i++ {
@@ -425,7 +425,7 @@ func (t *PDFTool) extractAllTextFromPDFContent(content string) []string {
 			strings.Contains(line, "' ") || strings.Contains(line, "\" ") {
 
 			// Extract text from this line
-			lineTexts := t.extractTextFromPDFOperation(line)
+			lineTexts := t.ExtractTextFromPDFOperation(line)
 			for _, text := range lineTexts {
 				if text != "" {
 					texts = append(texts, text)
@@ -437,8 +437,8 @@ func (t *PDFTool) extractAllTextFromPDFContent(content string) []string {
 	return texts
 }
 
-// extractTextFromPDFOperation extracts all text strings from a PDF operation line
-func (t *PDFTool) extractTextFromPDFOperation(operation string) []string {
+// ExtractTextFromPDFOperation extracts all text strings from a PDF operation line
+func (t *PDFTool) ExtractTextFromPDFOperation(operation string) []string {
 	var texts []string
 	inText := false
 	start := -1

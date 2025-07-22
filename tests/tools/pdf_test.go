@@ -1,11 +1,13 @@
-package pdf
+package tools
 
 import (
 	"testing"
+
+	"github.com/sammcj/mcp-devtools/internal/tools/pdf"
 )
 
 func TestParsePageSelection(t *testing.T) {
-	tool := &PDFTool{}
+	tool := &pdf.PDFTool{}
 
 	tests := []struct {
 		name     string
@@ -81,7 +83,7 @@ func TestParsePageSelection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tool.parsePageSelection(tt.pages, tt.maxPage)
+			result, err := tool.ParsePageSelection(tt.pages, tt.maxPage)
 
 			if tt.hasError {
 				if err == nil {
@@ -110,7 +112,7 @@ func TestParsePageSelection(t *testing.T) {
 }
 
 func TestParseRequest(t *testing.T) {
-	tool := &PDFTool{}
+	tool := &pdf.PDFTool{}
 
 	tests := []struct {
 		name     string
@@ -167,7 +169,7 @@ func TestParseRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tool.parseRequest(tt.args)
+			result, err := tool.ParseRequest(tt.args)
 
 			if tt.hasError {
 				if err == nil {
@@ -189,7 +191,7 @@ func TestParseRequest(t *testing.T) {
 }
 
 func TestExtractTextFromPDFOperation(t *testing.T) {
-	tool := &PDFTool{}
+	tool := &pdf.PDFTool{}
 
 	tests := []struct {
 		name      string
@@ -230,7 +232,7 @@ func TestExtractTextFromPDFOperation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tool.extractTextFromPDFOperation(tt.operation)
+			result := tool.ExtractTextFromPDFOperation(tt.operation)
 
 			if len(result) != len(tt.expected) {
 				t.Errorf("expected %d results, got %d", len(tt.expected), len(result))
