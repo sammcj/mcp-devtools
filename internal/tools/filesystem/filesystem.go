@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -1090,15 +1089,12 @@ func (t *FileSystemTool) getFileInfo(ctx context.Context, logger *logrus.Logger,
 	fileInfo.Created = info.ModTime()
 	fileInfo.Accessed = info.ModTime()
 
-	// On Unix-like systems, try to get more accurate timestamps
-	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-		// Different platforms have different field names
-		// macOS/Darwin uses Ctimespec and Atimespec
-		// Linux uses Ctim and Atim
-		// We'll use reflection-like approach or handle the common case
-		fileInfo.Created = time.Unix(stat.Ctimespec.Sec, stat.Ctimespec.Nsec)
-		fileInfo.Accessed = time.Unix(stat.Atimespec.Sec, stat.Atimespec.Nsec)
-	}
+	// For cross-platform compatibility, we use modification time for all timestamps
+	// Different platforms have different field names in syscall.Stat_t
+	// To avoid compilation issues, we'll keep it simple and use ModTime
+	// This ensures the tool works consistently across all platforms
+	fileInfo.Created = info.ModTime()
+	fileInfo.Accessed = info.ModTime()
 
 	var result strings.Builder
 	result.WriteString(fmt.Sprintf("Path: %s\n", path))
