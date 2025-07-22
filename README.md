@@ -101,7 +101,7 @@ See below for various environment variables you can set to configure specific fe
 | **[ShadCN UI](docs/tools/shadcn-ui.md)**                         | Component information            | None                          | Button, Dialog, Form components  |
 | **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling      | None                          | Organise, colour, centre         |
 | **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data     | None (GitHub token optional)  | Issues, PRs, repos, cloning      |
-| **[Filesystem](docs/tools/filesystem.md)**                       | File and directory operations    | None                          | Read, write, edit, search files  |
+| **[Filesystem](docs/tools/filesystem.md)**                       | File and directory operations    | `FILESYSTEM_TOOL_ENABLE=true` | Read, write, edit, search files  |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
@@ -243,6 +243,10 @@ All environment variables are optional, but if you want to use specific search p
 - `SEARXNG_BASE_URL` - Enable SearXNG search provider by providing the base URL (e.g. `https://searxng.example.com`)
 - `MEMORY_FILE_PATH` - Memory storage location (default: `~/.mcp-devtools/`)
 - `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
+
+**Filesystem Tool (Security-Sensitive):**
+- `FILESYSTEM_TOOL_ENABLE` - Set to `"true"` to enable filesystem operations (disabled by default)
+- `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories
 
 **Document Processing:**
 - `DOCLING_PYTHON_PATH` - Python executable path (default: auto-detected)

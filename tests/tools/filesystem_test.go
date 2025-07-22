@@ -13,6 +13,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// setupFilesystemTool creates a filesystem tool for testing with proper environment setup
+func setupFilesystemTool(tempDir string) *filesystem.FileSystemTool {
+	// Set environment variable to enable the tool for testing
+	_ = os.Setenv("FILESYSTEM_TOOL_ENABLE", "true") // Ignore error in tests
+
+	// Create tool and set allowed directories for testing
+	tool := &filesystem.FileSystemTool{}
+	tool.SetAllowedDirectories([]string{tempDir})
+	return tool
+}
+
 // Helper function to extract text content from MCP result
 func getTextContent(result *mcp.CallToolResult) string {
 	if result == nil || len(result.Content) == 0 {
@@ -76,8 +87,7 @@ func TestFileSystemTool_CreateAndReadFile(t *testing.T) {
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create tool with temp directory as allowed
-	tool := &filesystem.FileSystemTool{}
-	tool.SetAllowedDirectories([]string{tempDir}) // Allow access to temp directory
+	tool := setupFilesystemTool(tempDir)
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 	cache := &sync.Map{}
@@ -132,8 +142,7 @@ func TestFileSystemTool_CreateDirectory(t *testing.T) {
 	}
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
-	tool := &filesystem.FileSystemTool{}
-	tool.SetAllowedDirectories([]string{tempDir}) // Allow access to temp directory
+	tool := setupFilesystemTool(tempDir)
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 	cache := &sync.Map{}
@@ -185,8 +194,7 @@ func TestFileSystemTool_ListDirectory(t *testing.T) {
 		t.Fatalf("Failed to create test directory: %v", err)
 	}
 
-	tool := &filesystem.FileSystemTool{}
-	tool.SetAllowedDirectories([]string{tempDir}) // Allow access to temp directory
+	tool := setupFilesystemTool(tempDir)
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 	cache := &sync.Map{}
@@ -230,8 +238,7 @@ func TestFileSystemTool_GetFileInfo(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
-	tool := &filesystem.FileSystemTool{}
-	tool.SetAllowedDirectories([]string{tempDir}) // Allow access to temp directory
+	tool := setupFilesystemTool(tempDir)
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 	cache := &sync.Map{}
@@ -281,8 +288,7 @@ func TestFileSystemTool_ReadFileHead(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
-	tool := &filesystem.FileSystemTool{}
-	tool.SetAllowedDirectories([]string{tempDir}) // Allow access to temp directory
+	tool := setupFilesystemTool(tempDir)
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 	cache := &sync.Map{}
