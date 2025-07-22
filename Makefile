@@ -108,6 +108,10 @@ check-docling:
 install-all: deps install-docling
 	@echo "All dependencies installed successfully!"
 
+# Run gosec security scans
+.PHONY: gosec
+gosec:
+	gosec -confidence medium -out gosec.out ./...
 
 # Build Docker image
 .PHONY: docker-build
@@ -136,6 +140,7 @@ help:
 	@echo "  run-http     : Run the server with Streamable HTTP transport"
 	@echo "  test         : Run all tests (including external dependencies)"
 	@echo "  test-fast    : Run fast tests (no external dependencies)"
+	@echo "  gosec				: Run gosec security tests"
 	@echo "  clean        : Clean build artifacts"
 	@echo "  fmt          : Format code"
 	@echo "  lint         : Lint code"

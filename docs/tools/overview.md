@@ -87,6 +87,12 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
 - Package management → Package Search + Package Documentation
 - Code research → Internet Search + Web Fetch
 - Architecture planning → Think + Memory
+- File operations → Filesystem + Think
+
+**For File Management:**
+- File operations → Filesystem
+- Project setup → Filesystem + Package Search
+- Code analysis → Filesystem + Think
 
 **For Content Creation:**
 - Research → Internet Search + Web Fetch + Memory
