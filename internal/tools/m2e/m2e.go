@@ -27,8 +27,8 @@ func (m *M2ETool) Definition() mcp.Tool {
 		"murican_to_english",
 		mcp.WithDescription(`Convert American English text to standard International / British English spelling.
 
-**Default behaviour**: Updates files in place. Provide a file_path to convert a file.
-**Inline mode**: Provide text parameter instead to get converted text returned directly.`),
+Default behaviour: Updates files in place. Provide a file_path to convert a file.
+Inline mode: Provide text parameter instead to get converted text returned directly.`),
 		mcp.WithString("file_path",
 			mcp.Description("Fully qualified absolute path to the file to update in place"),
 		),
