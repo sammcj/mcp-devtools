@@ -316,8 +316,8 @@ func (t *SearchPackagesTool) handleBedrock(ctx context.Context, logger *logrus.L
 func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult, query, ecosystem string) (*mcp.CallToolResult, error) {
 	if result == nil {
 		return packageversions.NewToolResultJSON(map[string]interface{}{
-			"error":     fmt.Sprintf("Search returned no results for query '%s' in ecosystem '%s'", query, ecosystem),
-			"message":   "Try searching for the specific package name instead of a description. For example, search for 'chromedp' instead of 'chromedp headless browser'.",
+			"error":     fmt.Sprintf("No results for query '%s' in ecosystem '%s'", query, ecosystem),
+			"message":   "Try searching for the specific package name instead of a description.",
 			"query":     query,
 			"ecosystem": ecosystem,
 		})
@@ -331,8 +331,8 @@ func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult
 			// Check for various indicators of empty/failed results
 			if text == "null" || text == "[]" || text == "{}" {
 				return packageversions.NewToolResultJSON(map[string]interface{}{
-					"error":     fmt.Sprintf("Search returned no results for query '%s' in ecosystem '%s'", query, ecosystem),
-					"message":   "Try searching for the specific package name instead of a description. For example, search for 'chromedp' instead of 'chromedp headless browser'.",
+					"error":     fmt.Sprintf("No results for query '%s' in ecosystem '%s'", query, ecosystem),
+					"message":   "Try searching for the specific package name instead of a description.",
 					"query":     query,
 					"ecosystem": ecosystem,
 				})
@@ -344,8 +344,8 @@ func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult
 				if array, ok := jsonData.([]interface{}); ok {
 					if len(array) == 0 {
 						return packageversions.NewToolResultJSON(map[string]interface{}{
-							"error":     fmt.Sprintf("Search returned no results for query '%s' in ecosystem '%s'", query, ecosystem),
-							"message":   "Try searching for the specific package name instead of a description. For example, search for 'chromedp' instead of 'chromedp headless browser'.",
+							"error":     fmt.Sprintf("No results for query '%s' in ecosystem '%s'", query, ecosystem),
+							"message":   "Try searching for the specific package name instead of a description.",
 							"query":     query,
 							"ecosystem": ecosystem,
 						})
@@ -364,8 +364,8 @@ func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult
 
 					if allSkipped {
 						return packageversions.NewToolResultJSON(map[string]interface{}{
-							"error":     fmt.Sprintf("Search returned no valid results for query '%s' in ecosystem '%s'", query, ecosystem),
-							"message":   "The package was not found. Try searching for the specific package name instead of a description. For example, search for 'chromedp' instead of 'chromedp headless browser'.",
+							"error":     fmt.Sprintf("No valid results for query '%s' in ecosystem '%s'", query, ecosystem),
+							"message":   "The package was not found. Try searching for the specific package name instead of a description.",
 							"query":     query,
 							"ecosystem": ecosystem,
 						})
