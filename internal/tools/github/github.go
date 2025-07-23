@@ -28,14 +28,17 @@ func (t *GitHubTool) Definition() mcp.Tool {
 
 Functions and their required parameters:
 
-• search_repositories: repository (optional), options.query, options.limit (optional)
-• search_issues: repository (required), options.query (optional), options.limit (optional)
-• search_pull_requests: repository (required), options.query (optional), options.limit (optional)
-• get_issue: repository (required), options.number (required unless repository contains full issue URL), options.include_comments (optional)
-• get_pull_request: repository (required), options.number (required unless repository contains full PR URL), options.include_comments (optional)
-• get_file_contents: repository (required), options.paths (required), options.ref (optional)
-• clone_repository: repository (required), options.local_path (optional)
-• get_workflow_run: repository (required), options.run_id (required unless repository contains full workflow URL), options.include_logs (optional)
+• search_repositories: repository (o), options.query, options.limit (o)
+• search_issues: repository (r), options.query (o), options.limit (o)
+• search_pull_requests: repository (r), options.query (o), options.limit (o)
+• get_issue: repository (r), options.number (required unless repository contains full issue URL), options.include_comments (o)
+• get_pull_request: repository (r), options.number (required unless repository contains full PR URL), options.include_comments (o)
+• get_file_contents: repository (r), options.paths (r), options.ref (o)
+• clone_repository: repository (r), options.local_path (o)
+• get_workflow_run: repository (r), options.run_id (required unless repository contains full workflow URL), options.include_logs (o)
+
+(o) = optional
+(r) = required
 
 Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow URLs.`),
 		mcp.WithString("function",
