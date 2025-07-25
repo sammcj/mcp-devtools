@@ -402,6 +402,16 @@ jobs:
 
             ## Installation
 
+            ### Option 1: Install with `go install`
+
+              ```shell
+              go install github.com/sammcj/mcp-devtools@HEAD
+              echo "${GOPATH}/bin/mcp-devtools"
+              # Use this path in your MCP configuration, if your GOPATH is not set, please check your Go installation / configuration.
+              ```
+
+            ### Option 2: Download pre-built binaries
+
             1. Download the binary for your platform:
 
             - **Linux AMD64**: `mcp-devtools-linux-amd64`
@@ -410,6 +420,12 @@ jobs:
 
             2. Rename it to `mcp-devtools` and place it in your path (e.g., `mv mcp-devtools-darwin-arm64 /usr/local/bin/mcp-devtools`).
             3. Make the binary executable e.g. `chmod +x /usr/local/bin/mcp-devtools` and configure it in your MCP client as per the README.md
+
+
+            In both cases, if you're on macOS, you'll also need to run the following command to allow the downloaded binary to run:
+              ```shell
+              xattr -r -d com.apple.quarantine /usr/local/bin/mcp-devtools
+              ```
 
           files: |
             release/mcp-devtools-linux-amd64

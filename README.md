@@ -67,6 +67,9 @@ You must have a recent version of Go installed.
 ```shell
 go install github.com/sammcj/mcp-devtools@HEAD
 echo "${GOPATH}/bin/mcp-devtools" # Use this path in your MCP configuration, if your GOPATH is not set, please check your Go installation / configuration.
+
+# If you're on macOS, you'll also need to run the following command to allow the downloaded binary to run:
+xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
 ```
 
 2. Update your MCP client to add the MCP DevTools server configuration, replacing `/path/to/mcp-devtools` with the actual path to the binary (e.g. `/Users/samm/go/bin/mcp-devtools`):
