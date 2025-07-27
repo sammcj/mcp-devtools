@@ -98,7 +98,7 @@ See below for various environment variables you can set to configure specific fe
 | **[Package Search](docs/tools/package-search.md)**               | Check package versions           | None                          | NPM, Python, Go, Java, Docker    |
 | **[Package Documentation](docs/tools/package-documentation.md)** | Library documentation lookup     | None                          | React, Django, TensorFlow docs   |
 | **[PDF Processing](docs/tools/pdf-processing.md)**               | Fast PDF text extraction         | None                          | Quick PDF to Markdown            |
-| **[Document Processing](docs/tools/document-processing.md)**     | Convert documents to Markdown    | `pip install - U docling`     | PDF, DOCX → Markdown with OCR    |
+| **[Document Processing](docs/tools/document-processing.md)**     | Convert documents to Markdown    | `pip install -U docling`      | PDF, DOCX → Markdown with OCR    |
 | **[Think](docs/tools/think.md)**                                 | Structured reasoning space       | None                          | Complex problem analysis         |
 | **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs      | None                          | Store entities and relationships |
 | **[ShadCN UI](docs/tools/shadcn-ui.md)**                         | Component information            | None                          | Button, Dialog, Form components  |
