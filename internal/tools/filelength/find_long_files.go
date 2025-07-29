@@ -83,7 +83,7 @@ func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, 
 	}).Debug("Find long files parameters")
 
 	// Find long files
-	longFiles, totalScanned, err := t.findLongFiles(ctx, logger, request)
+	longFiles, totalScanned, skippedLargeFiles, err := t.findLongFiles(ctx, logger, request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find long files: %w", err)
 	}
@@ -110,6 +110,7 @@ func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, 
 		CalculationTime:   time.Since(startTime).String(),
 		TotalFilesScanned: totalScanned,
 		TotalFilesFound:   len(longFiles),
+		SkippedLargeFiles: skippedLargeFiles,
 		Message:           defaultMessage,
 	}
 
@@ -119,11 +120,39 @@ func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, 
 		"calculation_time":    response.CalculationTime,
 	}).Info("Find long files completed successfully")
 
-	// Only include message if it's not empty after trimming
-	if defaultMessage == "" {
-		return t.newToolResultText(response.Checklist)
+	// Build output with optional skipped files section and message
+	output := response.Checklist
+
+	// Add skipped large files section if any
+	if len(response.SkippedLargeFiles) > 0 {
+		// Get the max size for display purposes
+		maxFileSizeKB := 2048 // Default
+		if envMaxSize := os.Getenv("LONG_FILES_MAX_SIZE_KB"); envMaxSize != "" {
+			if parsedSize, err := strconv.Atoi(envMaxSize); err == nil && parsedSize > 0 {
+				maxFileSizeKB = parsedSize
+			}
+		}
+
+		// Format size display
+		var sizeDisplay string
+		if maxFileSizeKB >= 1024 {
+			sizeDisplay = fmt.Sprintf("%.1fMB", float64(maxFileSizeKB)/1024)
+		} else {
+			sizeDisplay = fmt.Sprintf("%dKB", maxFileSizeKB)
+		}
+
+		output += fmt.Sprintf("\n## Skipped Files (>%s)\n\nThe following files were skipped due to being larger than %s:\n\n", sizeDisplay, sizeDisplay)
+		for _, file := range response.SkippedLargeFiles {
+			output += fmt.Sprintf("- `%s`\n", file)
+		}
 	}
-	return t.newToolResultText(fmt.Sprintf("%s\n\n%s", response.Checklist, response.Message))
+
+	// Add message if not empty
+	if defaultMessage != "" {
+		output += "\n\n" + response.Message
+	}
+
+	return t.newToolResultText(output)
 }
 
 // parseRequest parses and validates the tool arguments
@@ -194,9 +223,19 @@ func (t *FindLongFilesTool) parseRequest(args map[string]interface{}) (*FindLong
 }
 
 // findLongFiles finds all files exceeding the line threshold
-func (t *FindLongFilesTool) findLongFiles(ctx context.Context, logger *logrus.Logger, request *FindLongFilesRequest) ([]FileInfo, int, error) {
+func (t *FindLongFilesTool) findLongFiles(ctx context.Context, logger *logrus.Logger, request *FindLongFilesRequest) ([]FileInfo, int, []string, error) {
 	var longFiles []FileInfo
+	var skippedLargeFiles []string
 	totalScanned := 0
+
+	// Get maximum file size from environment variable or use default (2MB)
+	maxFileSizeKB := 2048 // Default 2MB in KB
+	if envMaxSize := os.Getenv("LONG_FILES_MAX_SIZE_KB"); envMaxSize != "" {
+		if parsedSize, err := strconv.Atoi(envMaxSize); err == nil && parsedSize > 0 {
+			maxFileSizeKB = parsedSize
+		}
+	}
+	maxFileSize := int64(maxFileSizeKB * 1024) // Convert KB to bytes
 
 	// Load gitignore patterns
 	gitignorePatterns, err := t.loadGitignorePatterns(request.Path)
@@ -230,6 +269,21 @@ func (t *FindLongFilesTool) findLongFiles(ctx context.Context, logger *logrus.Lo
 
 		// Check if file should be excluded
 		if t.shouldExcludeFile(path, gitignorePatterns, request.AdditionalExcludes) {
+			return nil
+		}
+
+		// Check file size - skip files larger than 2MB
+		if info.Size() > maxFileSize {
+			relPath, _ := filepath.Rel(request.Path, path)
+			if !strings.HasPrefix(relPath, "./") && !strings.HasPrefix(relPath, "../") {
+				relPath = "./" + relPath
+			}
+			skippedLargeFiles = append(skippedLargeFiles, relPath)
+			logger.WithFields(logrus.Fields{
+				"file":        relPath,
+				"size":        info.Size(),
+				"max_size_kb": maxFileSizeKB,
+			}).Debug("Skipping file due to size limit")
 			return nil
 		}
 
@@ -272,7 +326,7 @@ func (t *FindLongFilesTool) findLongFiles(ctx context.Context, logger *logrus.Lo
 	})
 
 	if err != nil {
-		return nil, totalScanned, err
+		return nil, totalScanned, skippedLargeFiles, err
 	}
 
 	// Sort files
@@ -285,7 +339,7 @@ func (t *FindLongFilesTool) findLongFiles(ctx context.Context, logger *logrus.Lo
 		})
 	}
 
-	return longFiles, totalScanned, nil
+	return longFiles, totalScanned, skippedLargeFiles, nil
 }
 
 // loadGitignorePatterns loads gitignore patterns from .gitignore file

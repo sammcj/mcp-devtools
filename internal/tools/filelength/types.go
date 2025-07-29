@@ -17,6 +17,7 @@ type FindLongFilesResponse struct {
 	CalculationTime   string    `json:"calculation_time"`
 	TotalFilesScanned int       `json:"total_files_scanned"`
 	TotalFilesFound   int       `json:"total_files_found"`
+	SkippedLargeFiles []string  `json:"skipped_large_files"`
 	Message           string    `json:"message"`
 }
 
