@@ -19,6 +19,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	defaultMaxFileSizeKB = 2048
+	defaultLineThreshold = 700
+	bufferSize           = 32 * 1024 // 32KB buffer for optimal line counting performance
+)
+
 // FindLongFilesTool implements finding files with excessive line counts
 type FindLongFilesTool struct{}
 
@@ -126,12 +132,7 @@ func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, 
 	// Add skipped large files section if any
 	if len(response.SkippedLargeFiles) > 0 {
 		// Get the max size for display purposes
-		maxFileSizeKB := 2048 // Default
-		if envMaxSize := os.Getenv("LONG_FILES_MAX_SIZE_KB"); envMaxSize != "" {
-			if parsedSize, err := strconv.Atoi(envMaxSize); err == nil && parsedSize > 0 {
-				maxFileSizeKB = parsedSize
-			}
-		}
+		maxFileSizeKB := t.getMaxFileSizeKB()
 
 		// Format size display
 		var sizeDisplay string
@@ -158,7 +159,7 @@ func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, 
 // parseRequest parses and validates the tool arguments
 func (t *FindLongFilesTool) parseRequest(args map[string]interface{}) (*FindLongFilesRequest, error) {
 	request := &FindLongFilesRequest{
-		LineThreshold:         700,
+		LineThreshold:         defaultLineThreshold,
 		AdditionalExcludes:    []string{},
 		SortByDirectoryTotals: false,
 	}
@@ -228,13 +229,8 @@ func (t *FindLongFilesTool) findLongFiles(ctx context.Context, logger *logrus.Lo
 	var skippedLargeFiles []string
 	totalScanned := 0
 
-	// Get maximum file size from environment variable or use default (2MB)
-	maxFileSizeKB := 2048 // Default 2MB in KB
-	if envMaxSize := os.Getenv("LONG_FILES_MAX_SIZE_KB"); envMaxSize != "" {
-		if parsedSize, err := strconv.Atoi(envMaxSize); err == nil && parsedSize > 0 {
-			maxFileSizeKB = parsedSize
-		}
-	}
+	// Get maximum file size from environment variable or use default
+	maxFileSizeKB := t.getMaxFileSizeKB()
 	maxFileSize := int64(maxFileSizeKB * 1024) // Convert KB to bytes
 
 	// Load gitignore patterns
@@ -542,7 +538,6 @@ func (t *FindLongFilesTool) countLines(path string) (int, error) {
 
 	// Use optimised buffer-based counting for better performance
 	// Based on JimBLineCounter from go-line-counter benchmark results
-	const bufferSize = 32 * 1024 // 32KB buffer provides optimal performance
 	buf := make([]byte, bufferSize)
 	lineCount := 0
 	lineSep := []byte("\n")
@@ -661,6 +656,17 @@ func (t *FindLongFilesTool) formatFileSize(sizeBytes int64) string {
 	default:
 		return fmt.Sprintf("%dB", sizeBytes)
 	}
+}
+
+// getMaxFileSizeKB returns the configured maximum file size in KB
+func (t *FindLongFilesTool) getMaxFileSizeKB() int {
+	maxFileSizeKB := defaultMaxFileSizeKB
+	if envMaxSize := os.Getenv("LONG_FILES_MAX_SIZE_KB"); envMaxSize != "" {
+		if parsedSize, err := strconv.Atoi(envMaxSize); err == nil && parsedSize > 0 {
+			maxFileSizeKB = parsedSize
+		}
+	}
+	return maxFileSizeKB
 }
 
 // newToolResultText creates a new tool result with text content

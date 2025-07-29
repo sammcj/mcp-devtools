@@ -268,6 +268,83 @@ func TestFindLongFilesTool_EnvironmentVariables(t *testing.T) {
 	assert.Contains(t, content_result, "Custom test message")
 }
 
+func TestFindLongFilesTool_MaxFileSize(t *testing.T) {
+	// Save original environment
+	originalMaxSize := os.Getenv("LONG_FILES_MAX_SIZE_KB")
+	defer func() {
+		if originalMaxSize == "" {
+			_ = os.Unsetenv("LONG_FILES_MAX_SIZE_KB")
+		} else {
+			_ = os.Setenv("LONG_FILES_MAX_SIZE_KB", originalMaxSize)
+		}
+	}()
+
+	// Create a temporary directory for testing
+	tempDir, err := os.MkdirTemp("", "max_size_test")
+	require.NoError(t, err)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Failed to remove temp dir: %v", err)
+		}
+	}()
+
+	// Create a small file that will be under any reasonable limit
+	smallContent := strings.Repeat("// Small file line\n", 50) // ~1KB
+	err = os.WriteFile(filepath.Join(tempDir, "small.go"), []byte(smallContent), 0644)
+	require.NoError(t, err)
+
+	// Create a 3KB file
+	largeContent := strings.Repeat("// Large file line\n", 150) // ~3KB
+	err = os.WriteFile(filepath.Join(tempDir, "large.go"), []byte(largeContent), 0644)
+	require.NoError(t, err)
+
+	tool := &filelength.FindLongFilesTool{}
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	cache := &sync.Map{}
+
+	// Test with 2KB limit - should skip the large file
+	require.NoError(t, os.Setenv("LONG_FILES_MAX_SIZE_KB", "2"))
+
+	args := map[string]interface{}{
+		"path":           tempDir,
+		"line_threshold": float64(10), // Low threshold to catch both files if not skipped
+	}
+
+	result, err := tool.Execute(context.Background(), logger, cache, args)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	require.True(t, len(result.Content) > 0, "Expected content in result")
+	textContent, ok := mcp.AsTextContent(result.Content[0])
+	require.True(t, ok, "Expected TextContent type")
+	content := textContent.Text
+
+	// Should contain the small file
+	assert.Contains(t, content, "small.go")
+	// Should have skipped files section with large file
+	assert.Contains(t, content, "Skipped Files")
+	assert.Contains(t, content, "large.go")
+
+	// Test with 5KB limit - should include both files
+	require.NoError(t, os.Setenv("LONG_FILES_MAX_SIZE_KB", "5"))
+
+	result2, err := tool.Execute(context.Background(), logger, cache, args)
+	require.NoError(t, err)
+	require.NotNil(t, result2)
+
+	require.True(t, len(result2.Content) > 0, "Expected content in result")
+	textContent2, ok := mcp.AsTextContent(result2.Content[0])
+	require.True(t, ok, "Expected TextContent type")
+	content2 := textContent2.Text
+
+	// Should contain both files
+	assert.Contains(t, content2, "small.go")
+	assert.Contains(t, content2, "large.go")
+	// Should not have skipped files section
+	assert.NotContains(t, content2, "Skipped Files")
+}
+
 func TestFindLongFilesTool_Definition(t *testing.T) {
 	tool := &filelength.FindLongFilesTool{}
 	definition := tool.Definition()
