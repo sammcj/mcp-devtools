@@ -19,6 +19,7 @@ import (
 
 	// Import all tool packages to register them
 	_ "github.com/sammcj/mcp-devtools/internal/tools/docprocessing"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/filelength"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/filesystem"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/github"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/internetsearch/unified"
