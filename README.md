@@ -105,6 +105,7 @@ See below for various environment variables you can set to configure specific fe
 | **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling        | None                          | Organise, colour, centre         |
 | **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data       | None (GitHub token optional)  | Issues, PRs, repos, cloning      |
 | **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring | None                          | Find files over 700 lines        |
+| **[Replace in All Files](docs/tools/replace_in_all_files.md)**   | Safe text replacement across files | None                          | Rename variables, update APIs     |
 | **[Filesystem](docs/tools/filesystem.md)**                       | File and directory operations      | `FILESYSTEM_TOOL_ENABLE=true` | Read, write, edit, search files  |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**

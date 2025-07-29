@@ -93,6 +93,7 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
 - File operations → Filesystem
 - Project setup → Filesystem + Package Search
 - Code analysis → Filesystem + Think
+- Code refactoring → Find Long Files + Replace in All Files
 
 **For Content Creation:**
 - Research → Internet Search + Web Fetch + Memory
