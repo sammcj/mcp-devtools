@@ -3,6 +3,7 @@
 The MCP DevTools server is designed to be easily extensible with new tools. This section provides detailed guidance on how to create and integrate new tools into the server.
 
 - [Creating New Tools](#creating-new-tools)
+  - [Considerations](#considerations)
   - [Tool Interface](#tool-interface)
   - [Tool Structure](#tool-structure)
   - [Step-by-Step Guide](#step-by-step-guide)
@@ -15,6 +16,14 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
     - [Testing Your Tool](#testing-your-tool)
   - [Testing](#testing)
   - [Additional Considerations](#additional-considerations)
+
+## Considerations
+
+- Keep in mind that you should align with the code styles and values of our existing tools.
+- When adding a new tool, you must register the tool so that it is made available when the client connects.
+- Follow least privileged security principles when designing your tool. Ensure that the tool only has access to the resources it needs.
+- Remember that when running in stdio mode the tool and MCP server should NEVER output logs / messages to stdio / stderr as this would break the MCP protocol.
+- Tool descriptions and parameter annotations should be clear, concise and designed keeping in mind that when the tool is enabled they will always be provided to the AI agents that use this MCP server and it's tools.
 
 ## Tool Interface
 
