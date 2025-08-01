@@ -32,6 +32,10 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
 ### Required Environment Variables
 | Tool                      | Variable           | Purpose                      |
 |---------------------------|--------------------|------------------------------|
+| Agents (Claude, Gemini)   | `ENABLE_AGENTS`    | Comma-separated list of agents to enable (e.g., `claude,gemini`) |
+|                           | `AGENT_TIMEOUT`    | Timeout for agent commands (default: 180s) |
+| Claude Agent              | `CLAUDE_SYSTEM_PROMPT` | Append a system prompt to the default system prompt |
+|                           | `CLAUDE_PERMISSION_MODE` | Permission mode for the session |
 | Internet Search (Brave)   | `BRAVE_API_KEY`    | Enable Brave search provider |
 | Internet Search (SearXNG) | `SEARXNG_BASE_URL` | Enable SearXNG provider      |
 | Document Processing       | `DOCLING_*`        | Configure processing options |
