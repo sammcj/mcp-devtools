@@ -1,6 +1,7 @@
 package tools_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -115,14 +116,14 @@ func TestThinkTool_Execute_LongThought(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	// Test with a very long thought
-	longThought := "This is a very long thought that goes on and on about complex reasoning and analysis. " +
+	// Test with a thought that's within the default limit (should succeed)
+	normalLongThought := "This is a very long thought that goes on and on about complex reasoning and analysis. " +
 		"It includes multiple sentences and demonstrates that the think tool can handle substantial " +
 		"amounts of text for complex reasoning tasks. This is important for AI agents that need to " +
 		"work through complicated problems step by step."
 
 	args := map[string]interface{}{
-		"thought": longThought,
+		"thought": normalLongThought,
 	}
 
 	result, err := tool.Execute(ctx, logger, cache, args)
@@ -137,7 +138,78 @@ func TestThinkTool_Execute_LongThought(t *testing.T) {
 		t.Fatal("Expected TextContent, got different type")
 	}
 
-	if !testutils.Contains(textContent.Text, longThought) {
+	if !testutils.Contains(textContent.Text, normalLongThought) {
 		t.Error("Expected result to contain full long thought")
 	}
+}
+
+func TestThinkTool_Execute_ExcessivelyLongThought(t *testing.T) {
+	tool := &think.ThinkTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Create a thought that exceeds the default 2000 character limit
+	baseText := "This is a very long thought that will be repeated many times to exceed the character limit. "
+	repetitions := 25 // 90 chars * 25 = ~2250 chars (exceeds 2000)
+	var excessivelyLongThought string
+	for i := 0; i < repetitions; i++ {
+		excessivelyLongThought += baseText
+	}
+
+	args := map[string]interface{}{
+		"thought": excessivelyLongThought,
+	}
+
+	_, err := tool.Execute(ctx, logger, cache, args)
+
+	testutils.AssertError(t, err)
+	testutils.AssertErrorContains(t, err, "thought exceeds maximum length of 2000 characters")
+}
+
+func TestThinkTool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
+	// Save original environment variable
+	originalValue := os.Getenv("THINK_MAX_LENGTH")
+	defer func() {
+		if originalValue == "" {
+			_ = os.Unsetenv("THINK_MAX_LENGTH")
+		} else {
+			_ = os.Setenv("THINK_MAX_LENGTH", originalValue)
+		}
+	}()
+
+	// Set custom max length to 100 characters
+	err := os.Setenv("THINK_MAX_LENGTH", "100")
+	if err != nil {
+		t.Fatalf("Failed to set environment variable: %v", err)
+	}
+
+	tool := &think.ThinkTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Test with a thought that exceeds the custom limit (over 100 characters)
+	longThought := "This is a thought that is definitely longer than one hundred characters and should trigger the validation error when testing custom limits set via environment variables."
+
+	args := map[string]interface{}{
+		"thought": longThought,
+	}
+
+	_, execErr := tool.Execute(ctx, logger, cache, args)
+
+	testutils.AssertError(t, execErr)
+	testutils.AssertErrorContains(t, execErr, "thought exceeds maximum length of 100 characters")
+
+	// Test with a thought within the custom limit (should succeed)
+	shortThought := "This is within the custom limit."
+
+	args = map[string]interface{}{
+		"thought": shortThought,
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
 }

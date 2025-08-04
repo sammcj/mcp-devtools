@@ -109,9 +109,19 @@ install-all: deps install-docling
 	@echo "All dependencies installed successfully!"
 
 # Run gosec security scans
-.PHONY: gosec
-gosec:
+.PHONY: sec-gosec
+sec-gosec:
 	gosec -confidence medium -out gosec.out ./...
+
+# Run mcp-scan security scan
+.PHONY: sec-mcp-scan
+sec-mcp-scan:
+	rm -f mcp-scan.out && uvx mcp-scan@latest --opt-out --full-toxic-flows --storage-file .mcp-scan mcp.json > mcp-scan.out && cat mcp-scan.out
+
+# Run semgrep security scan
+.PHONY: sec-semgrep
+sec-semgrep:
+	semgrep --config auto --output semgrep.out
 
 # Build Docker image
 .PHONY: docker-build

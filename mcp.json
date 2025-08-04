@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "dev-tools": {
+      "disabled": false,
+      "timeout": 300,
+      "type": "stdio",
+      "command": "mcp-devtools",
+      "env": {
+        "NOTE": "See the README for information on available environment variables"
+      }
+    }
+  }
+}
