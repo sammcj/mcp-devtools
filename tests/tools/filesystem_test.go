@@ -20,6 +20,7 @@ func setupFilesystemTool(tempDir string) *filesystem.FileSystemTool {
 
 	// Create tool and set allowed directories for testing
 	tool := &filesystem.FileSystemTool{}
+	tool.LoadSecurityConfig()
 	tool.SetAllowedDirectories([]string{tempDir})
 	return tool
 }

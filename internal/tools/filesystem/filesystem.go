@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,9 +20,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	// Filesystem security limits
+	DefaultMaxFileSize             = int64(2 * 1024 * 1024 * 1024) // 2GB default file size limit
+	DefaultSecureFilePermissions   = 0600                          // Read/write for owner only
+	FilesystemMaxFileSizeEnvVar    = "FILESYSTEM_MAX_FILE_SIZE"
+	FilesystemSecurePermissionsVar = "FILESYSTEM_SECURE_PERMISSIONS"
+)
+
 // FileSystemTool implements filesystem operations with directory access control
 type FileSystemTool struct {
 	allowedDirectories []string
+	maxFileSize        int64
+	secureFileMode     os.FileMode
 	mu                 sync.RWMutex
 }
 
@@ -32,9 +43,11 @@ func init() {
 		return // Tool is disabled by default
 	}
 
-	registry.Register(&FileSystemTool{
+	tool := &FileSystemTool{
 		allowedDirectories: getAllowedDirectories(),
-	})
+	}
+	tool.loadSecurityConfig()
+	registry.Register(tool)
 }
 
 // getAllowedDirectories returns allowed directories from environment or defaults
@@ -92,6 +105,35 @@ func getDefaultAllowedDirectories() []string {
 	}
 
 	return dirs
+}
+
+// loadSecurityConfig loads security configuration from environment variables
+func (t *FileSystemTool) loadSecurityConfig() {
+	// Load max file size
+	t.maxFileSize = DefaultMaxFileSize
+	if sizeStr := os.Getenv(FilesystemMaxFileSizeEnvVar); sizeStr != "" {
+		if size, err := strconv.ParseInt(sizeStr, 10, 64); err == nil && size > 0 {
+			t.maxFileSize = size
+		}
+	}
+
+	// Load secure file permissions
+	t.secureFileMode = DefaultSecureFilePermissions
+	if permStr := os.Getenv(FilesystemSecurePermissionsVar); permStr != "" {
+		if perm, err := strconv.ParseUint(permStr, 8, 32); err == nil {
+			t.secureFileMode = os.FileMode(perm)
+		}
+	}
+}
+
+// validateFileSize validates that the file size is within limits
+func (t *FileSystemTool) validateFileSize(size int64) error {
+	if size > t.maxFileSize {
+		sizeMB := float64(size) / (1024 * 1024)
+		maxSizeMB := float64(t.maxFileSize) / (1024 * 1024)
+		return fmt.Errorf("file size %.1fMB exceeds maximum allowed size of %.1fMB (use %s environment variable to adjust limit)", sizeMB, maxSizeMB, FilesystemMaxFileSizeEnvVar)
+	}
+	return nil
 }
 
 // Definition returns the tool's definition for MCP registration
@@ -343,6 +385,15 @@ func (t *FileSystemTool) readFile(ctx context.Context, logger *logrus.Logger, op
 		return nil, err
 	}
 
+	// Check file size if file exists
+	if fileInfo, err := os.Stat(validPath); err == nil {
+		if err := t.validateFileSize(fileInfo.Size()); err != nil {
+			return nil, fmt.Errorf("file size validation failed: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		return nil, fmt.Errorf("file access error: %w", err)
+	}
+
 	// Check for head/tail options
 	var head, tail *int
 	if headRaw, ok := options["head"]; ok {
@@ -516,6 +567,17 @@ func (t *FileSystemTool) readMultipleFiles(ctx context.Context, logger *logrus.L
 			continue
 		}
 
+		// Check file size before reading
+		if fileInfo, err := os.Stat(validPath); err == nil {
+			if err := t.validateFileSize(fileInfo.Size()); err != nil {
+				results = append(results, fmt.Sprintf("%s: Error - file size validation failed: %s", path, err.Error()))
+				continue
+			}
+		} else if !os.IsNotExist(err) {
+			results = append(results, fmt.Sprintf("%s: Error - file access error: %s", path, err.Error()))
+			continue
+		}
+
 		content, err := os.ReadFile(validPath)
 		if err != nil {
 			results = append(results, fmt.Sprintf("%s: Error - %s", path, err.Error()))
@@ -545,6 +607,12 @@ func (t *FileSystemTool) writeFile(ctx context.Context, logger *logrus.Logger, o
 		return nil, err
 	}
 
+	// Validate content size before writing
+	contentSize := int64(len(content))
+	if err := t.validateFileSize(contentSize); err != nil {
+		return nil, fmt.Errorf("content size validation failed: %w", err)
+	}
+
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(validPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -554,7 +622,7 @@ func (t *FileSystemTool) writeFile(ctx context.Context, logger *logrus.Logger, o
 	// Use atomic write with temporary file
 	tempPath := validPath + ".tmp." + t.generateRandomString(8)
 
-	if err := os.WriteFile(tempPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(tempPath, []byte(content), t.secureFileMode); err != nil {
 		return nil, fmt.Errorf("failed to write temporary file: %w", err)
 	}
 
@@ -597,6 +665,15 @@ func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, op
 		return nil, err
 	}
 
+	// Check existing file size if file exists
+	if fileInfo, err := os.Stat(validPath); err == nil {
+		if err := t.validateFileSize(fileInfo.Size()); err != nil {
+			return nil, fmt.Errorf("existing file size validation failed: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		return nil, fmt.Errorf("file access error: %w", err)
+	}
+
 	// Parse edits
 	var edits []EditOperation
 	if editsArray, ok := editsRaw.([]interface{}); ok {
@@ -635,6 +712,12 @@ func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, op
 		modifiedContent = strings.Replace(modifiedContent, edit.OldText, edit.NewText, 1)
 	}
 
+	// Validate modified content size
+	modifiedSize := int64(len(modifiedContent))
+	if err := t.validateFileSize(modifiedSize); err != nil {
+		return nil, fmt.Errorf("modified content size validation failed: %w", err)
+	}
+
 	// Create diff
 	diff := t.createDiff(originalContent, modifiedContent, path)
 
@@ -642,7 +725,7 @@ func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, op
 		// Write the modified content atomically
 		tempPath := validPath + ".tmp." + t.generateRandomString(8)
 
-		if err := os.WriteFile(tempPath, []byte(modifiedContent), 0644); err != nil {
+		if err := os.WriteFile(tempPath, []byte(modifiedContent), t.secureFileMode); err != nil {
 			return nil, fmt.Errorf("failed to write temporary file: %w", err)
 		}
 
@@ -1127,4 +1210,9 @@ func (t *FileSystemTool) SetAllowedDirectories(dirs []string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.allowedDirectories = dirs
+}
+
+// LoadSecurityConfig loads security configuration (for testing purposes)
+func (t *FileSystemTool) LoadSecurityConfig() {
+	t.loadSecurityConfig()
 }
