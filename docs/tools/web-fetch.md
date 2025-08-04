@@ -14,6 +14,7 @@ Perfect for extracting content from documentation sites, blog posts, articles, a
 - **Raw HTML Option**: Get original HTML when needed
 - **Smart Caching**: 15-minute cache for repeated requests
 - **Error Handling**: Robust handling of network issues and redirects
+- **Optional Domain Allowlist**: Control which domains can be accessed
 
 ## Usage Examples
 
@@ -66,12 +67,12 @@ While intended to be activated via a prompt to an agent, below are some example 
 ## Parameters Reference
 
 ### Core Parameters
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `url` | string | Required | HTTP/HTTPS URL to fetch |
-| `max_length` | number | 6000 | Maximum characters to return |
-| `raw` | boolean | false | Return raw HTML instead of Markdown |
-| `start_index` | number | 0 | Starting character index for pagination |
+| Parameter     | Type    | Default  | Description                             |
+|---------------|---------|----------|-----------------------------------------|
+| `url`         | string  | Required | HTTP/HTTPS URL to fetch                 |
+| `max_length`  | number  | 6000     | Maximum characters to return            |
+| `raw`         | boolean | false    | Return raw HTML instead of Markdown     |
+| `start_index` | number  | 0        | Starting character index for pagination |
 
 ### URL Requirements
 - Must be `http://` or `https://` protocol
