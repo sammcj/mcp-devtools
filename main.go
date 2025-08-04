@@ -348,9 +348,17 @@ func startStreamableHTTPServer(c *cli.Context, mcpServer *mcpserver.MCPServer, l
 		// Register the main MCP endpoint
 		mux.Handle(endpointPath, httpServer)
 
-		// Start the server with custom mux
+		// Start the server with custom mux and security timeouts
 		logger.Infof("OAuth endpoints available at %s/.well-known/", fullBaseURL)
-		return http.ListenAndServe(":"+port, mux)
+		server := &http.Server{
+			Addr:           ":" + port,
+			Handler:        mux,
+			ReadTimeout:    30 * time.Second,  // Prevent slow loris attacks
+			WriteTimeout:   30 * time.Second,  // Prevent slow writes
+			IdleTimeout:    120 * time.Second, // Close idle connections
+			MaxHeaderBytes: 1 << 20,           // 1MB max header size
+		}
+		return server.ListenAndServe()
 
 	} else if authToken != "" {
 		// Use legacy token authentication

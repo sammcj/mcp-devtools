@@ -1,7 +1,7 @@
 package docprocessing
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -55,7 +55,7 @@ func (cm *CacheManager) GenerateCacheKey(req *DocumentProcessingRequest) string 
 
 	// Convert to JSON and hash
 	jsonData, _ := json.Marshal(keyData)
-	hash := md5.Sum(jsonData)
+	hash := sha256.Sum256(jsonData)
 	return hex.EncodeToString(hash[:])
 }
 
@@ -138,7 +138,7 @@ func (cm *CacheManager) Set(cacheKey string, response *DocumentProcessingRespons
 
 	// Write to cache file
 	filePath := cm.GetCacheFilePath(cacheKey)
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
+	if err := os.WriteFile(filePath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
 

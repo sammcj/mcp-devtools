@@ -60,7 +60,7 @@ func extractEmbeddedScripts() (string, error) {
 
 		// Write to temporary directory
 		extractedPath := filepath.Join(tempDir, entry.Name())
-		if err := os.WriteFile(extractedPath, content, 0755); err != nil {
+		if err := os.WriteFile(extractedPath, content, 0700); err != nil {
 			return "", fmt.Errorf("failed to write extracted file %s: %w", extractedPath, err)
 		}
 	}

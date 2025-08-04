@@ -129,7 +129,7 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 	// Log outputs for debugging (but not to stdout/stderr to avoid MCP protocol issues)
 	// Write to a debug log file instead
 	if debugFile, debugErr := os.OpenFile(filepath.Join(os.Getenv("HOME"), ".mcp-devtools", "debug.log"),
-		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); debugErr == nil {
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); debugErr == nil {
 		defer func() { _ = debugFile.Close() }()
 		_, _ = fmt.Fprintf(debugFile, "[%s] Command: %s\n", time.Now().Format("2006-01-02 15:04:05"), cmdStr)
 		_, _ = fmt.Fprintf(debugFile, "[%s] Exit Code: %v\n", time.Now().Format("2006-01-02 15:04:05"), err)

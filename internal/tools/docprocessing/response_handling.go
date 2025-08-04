@@ -76,7 +76,7 @@ func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *Docu
 	}
 
 	// Write content to file
-	if err := os.WriteFile(savePath, []byte(response.Content), 0644); err != nil {
+	if err := os.WriteFile(savePath, []byte(response.Content), 0600); err != nil {
 		return nil, fmt.Errorf("failed to write content to %s: %w", savePath, err)
 	}
 
