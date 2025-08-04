@@ -132,7 +132,7 @@ func (m *M2ETool) executeUpdateFileMode(conv *converter.Converter, request *Conv
 
 	// Only write the file if there are changes
 	if changesCount > 0 {
-		err = os.WriteFile(request.FilePath, []byte(convertedText), 0644)
+		err = os.WriteFile(request.FilePath, []byte(convertedText), 0600)
 		if err != nil {
 			return nil, fmt.Errorf("failed to write file %s: %w", request.FilePath, err)
 		}

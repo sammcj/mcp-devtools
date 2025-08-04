@@ -247,7 +247,7 @@ func (t *PDFTool) processPDF(ctx context.Context, logger *logrus.Logger, request
 	}
 
 	// Write markdown file
-	err = os.WriteFile(markdownFile, []byte(markdownContent.String()), 0644)
+	err = os.WriteFile(markdownFile, []byte(markdownContent.String()), 0600)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write markdown file: %w", err)
 	}
