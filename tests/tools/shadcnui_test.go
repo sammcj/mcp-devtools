@@ -2,7 +2,11 @@ package tools_test
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/sammcj/mcp-devtools/internal/tools/shadcnui"
 	"github.com/sammcj/mcp-devtools/tests/testutils"
@@ -365,4 +369,151 @@ func TestUnifiedShadcnTool_EdgeCases(t *testing.T) {
 
 	// Note: Tests for whitespace-only parameters are omitted as they may trigger
 	// HTTP calls depending on the validation logic implementation.
+}
+
+// MockHTTPClient implements HTTPClient for testing rate limiting
+type MockHTTPClient struct {
+	RequestTimes []time.Time
+	mu           sync.Mutex
+}
+
+func (m *MockHTTPClient) Get(url string) (*http.Response, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.RequestTimes = append(m.RequestTimes, time.Now())
+
+	// Return a minimal mock response that won't crash the parser
+	return &http.Response{
+		StatusCode: 200,
+		Body:       http.NoBody,
+	}, nil
+}
+
+func TestRateLimitedHTTPClient_DefaultRateLimit(t *testing.T) {
+	client := shadcnui.NewRateLimitedHTTPClient()
+
+	// Make multiple requests and measure timing
+	start := time.Now()
+	numRequests := 3
+
+	for i := 0; i < numRequests; i++ {
+		_, err := client.Get("http://example.com")
+		if err != nil {
+			t.Fatalf("Request %d failed: %v", i, err)
+		}
+	}
+
+	elapsed := time.Since(start)
+
+	// With 5 req/s default rate limit, 3 requests should take at least 400ms (2/5 = 0.4s)
+	// Allow some tolerance for timing variations
+	minExpected := time.Duration(float64(numRequests-1)/float64(shadcnui.DefaultShadcnRateLimit)*1000) * time.Millisecond
+
+	if elapsed < minExpected {
+		t.Errorf("Requests completed too quickly: %v, expected at least %v (rate limiting may not be working)", elapsed, minExpected)
+	}
+}
+
+func TestRateLimitedHTTPClient_CustomRateLimit(t *testing.T) {
+	// Save original environment variable
+	originalValue := os.Getenv("SHADCN_RATE_LIMIT")
+	defer func() {
+		if originalValue == "" {
+			_ = os.Unsetenv("SHADCN_RATE_LIMIT")
+		} else {
+			_ = os.Setenv("SHADCN_RATE_LIMIT", originalValue)
+		}
+	}()
+
+	// Set custom rate limit to 10 requests per second
+	err := os.Setenv("SHADCN_RATE_LIMIT", "10")
+	if err != nil {
+		t.Fatalf("Failed to set environment variable: %v", err)
+	}
+
+	client := shadcnui.NewRateLimitedHTTPClient()
+
+	// Make multiple requests and measure timing
+	start := time.Now()
+	numRequests := 3
+
+	for i := 0; i < numRequests; i++ {
+		_, err := client.Get("http://example.com")
+		if err != nil {
+			t.Fatalf("Request %d failed: %v", i, err)
+		}
+	}
+
+	elapsed := time.Since(start)
+
+	// With 10 req/s rate limit, 3 requests should take at least 200ms (2/10 = 0.2s)
+	minExpected := time.Duration(float64(numRequests-1)/10.0*1000) * time.Millisecond
+
+	if elapsed < minExpected {
+		t.Errorf("Requests completed too quickly: %v, expected at least %v (custom rate limiting may not be working)", elapsed, minExpected)
+	}
+}
+
+func TestRateLimitedHTTPClient_InvalidEnvironmentVariable(t *testing.T) {
+	// Save original environment variable
+	originalValue := os.Getenv("SHADCN_RATE_LIMIT")
+	defer func() {
+		if originalValue == "" {
+			_ = os.Unsetenv("SHADCN_RATE_LIMIT")
+		} else {
+			_ = os.Setenv("SHADCN_RATE_LIMIT", originalValue)
+		}
+	}()
+
+	// Set invalid rate limit (negative number)
+	err := os.Setenv("SHADCN_RATE_LIMIT", "-5")
+	if err != nil {
+		t.Fatalf("Failed to set environment variable: %v", err)
+	}
+
+	client := shadcnui.NewRateLimitedHTTPClient()
+
+	// Should fall back to default rate limit
+	// Make a quick test to ensure client is functional
+	_, err = client.Get("http://example.com")
+	testutils.AssertNoError(t, err)
+
+	// Reset to test non-numeric value
+	err = os.Setenv("SHADCN_RATE_LIMIT", "invalid")
+	if err != nil {
+		t.Fatalf("Failed to set environment variable: %v", err)
+	}
+
+	client = shadcnui.NewRateLimitedHTTPClient()
+
+	// Should fall back to default rate limit
+	_, err = client.Get("http://example.com")
+	testutils.AssertNoError(t, err)
+}
+
+func TestGetShadcnRateLimit_Function(t *testing.T) {
+	// Save original environment variable
+	originalValue := os.Getenv("SHADCN_RATE_LIMIT")
+	defer func() {
+		if originalValue == "" {
+			_ = os.Unsetenv("SHADCN_RATE_LIMIT")
+		} else {
+			_ = os.Setenv("SHADCN_RATE_LIMIT", originalValue)
+		}
+	}()
+
+	// Test default value
+	_ = os.Unsetenv("SHADCN_RATE_LIMIT")
+	// Can't directly test the function as it's not exported, but we can test through NewRateLimitedHTTPClient
+	client := shadcnui.NewRateLimitedHTTPClient()
+	testutils.AssertNotNil(t, client)
+
+	// Test custom value
+	err := os.Setenv("SHADCN_RATE_LIMIT", "2.5")
+	if err != nil {
+		t.Fatalf("Failed to set environment variable: %v", err)
+	}
+
+	client = shadcnui.NewRateLimitedHTTPClient()
+	testutils.AssertNotNil(t, client)
 }

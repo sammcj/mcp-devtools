@@ -14,6 +14,24 @@ shadcn/ui is a popular React component library that provides beautifully designe
 - **Search Functionality**: Find components by name or description
 - **No Dependencies**: Works without any setup or API keys
 
+## Configuration
+
+### Environment Variables
+
+The ShadCN UI tool supports the following configuration options:
+
+- **`SHADCN_RATE_LIMIT`**: Maximum HTTP requests per second to shadcn/ui documentation
+  - **Default**: `5`
+  - **Description**: Controls the rate of HTTP requests to prevent overwhelming the documentation servers
+  - **Example**: `SHADCN_RATE_LIMIT=10` allows up to 10 requests per second
+
+### Security Features
+
+- **Rate Limiting**: Configurable request rate limiting protects against overwhelming external services
+- **Caching**: Built-in caching reduces API calls and improves performance
+- **Trusted Sources**: Only fetches data from official shadcn/ui documentation and GitHub repository
+- **Error Handling**: Graceful handling of network issues and rate limit scenarios
+
 ## Available Actions
 
 | Action     | Purpose                            | Required Parameters |
