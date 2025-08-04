@@ -1,11 +1,8 @@
 name: Go Dependency Submission
 on:
-  push:
-    branches: [ main ]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
+  # release:
+  #   types: [ published ]
 
 # cancel in progress runs for the same branch
 concurrency:
@@ -31,6 +28,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+          key: ${{ runner.os }}-pip-docling-3.13
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install Python dependencies
         run: |
