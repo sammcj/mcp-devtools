@@ -15,4 +15,14 @@ Requires the [Gemini CLI](https://github.com/google-gemini/gemini-cli) to be ins
 ## Environment Variables
 
 - `ENABLE_AGENTS`: A comma-separated list of agents to enable (e.g., `claude,gemini`).
-- `GEMINI_TIMEOUT`: The timeout in seconds for the `gemini` command. Defaults to `180`.
+- `AGENT_TIMEOUT`: The timeout in seconds for the `gemini` command. Defaults to `180`.
+- `AGENT_MAX_RESPONSE_SIZE`: Maximum response size in bytes. Defaults to `2097152` (2MB).
+
+## Security Features
+
+- **Response Size Limits**: Configurable maximum response size prevents excessive memory usage and potential DoS conditions
+- **Input Validation**: Comprehensive parameter validation and type checking
+- **Process Isolation**: Agent execution runs in isolated subprocess with proper timeout controls
+- **Timeout Controls**: Configurable timeout limits prevent runaway processes
+- **Error Handling**: Secure error handling that doesn't expose sensitive system information
+- **Model Fallback**: Automatic fallback to flash model on quota exhaustion provides resilience

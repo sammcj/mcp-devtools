@@ -20,8 +20,10 @@ import (
 type GeminiTool struct{}
 
 const (
-	defaultModel = "gemini-2.5-pro"
-	flashModel   = "gemini-2.5-flash"
+	defaultModel               = "gemini-2.5-pro"
+	flashModel                 = "gemini-2.5-flash"
+	DefaultMaxResponseSize     = 2 * 1024 * 1024 // 2MB default limit
+	AgentMaxResponseSizeEnvVar = "AGENT_MAX_RESPONSE_SIZE"
 )
 
 // init registers the tool with the registry if enabled
@@ -101,6 +103,9 @@ func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		return nil, fmt.Errorf("gemini command failed: %w", err)
 	}
 
+	// Apply response size limits
+	output = t.ApplyResponseSizeLimit(output, logger)
+
 	return mcp.NewToolResultText(output), nil
 }
 
@@ -155,4 +160,40 @@ func (t *GeminiTool) runGemini(ctx context.Context, logger *logrus.Logger, timeo
 	}
 
 	return strings.Join(cleanLines, "\n"), nil
+}
+
+// GetMaxResponseSize returns the configured maximum response size
+func (t *GeminiTool) GetMaxResponseSize() int {
+	if sizeStr := os.Getenv(AgentMaxResponseSizeEnvVar); sizeStr != "" {
+		if size, err := strconv.Atoi(sizeStr); err == nil && size > 0 {
+			return size
+		}
+	}
+	return DefaultMaxResponseSize
+}
+
+// ApplyResponseSizeLimit truncates the response if it exceeds the configured size limit
+func (t *GeminiTool) ApplyResponseSizeLimit(output string, logger *logrus.Logger) string {
+	maxSize := t.GetMaxResponseSize()
+
+	// Check if output exceeds limit
+	if len(output) <= maxSize {
+		return output
+	}
+
+	// Truncate and add informative message
+	truncated := output[:maxSize]
+
+	// Try to truncate at a natural boundary (line break) within the last 100 characters
+	if lastNewline := strings.LastIndex(truncated[maxSize-100:], "\n"); lastNewline != -1 {
+		truncated = truncated[:maxSize-100+lastNewline]
+	}
+
+	sizeInMB := float64(maxSize) / (1024 * 1024)
+	message := fmt.Sprintf("\n\n[RESPONSE TRUNCATED: Output exceeded %.1fMB limit. Original size: %.1fMB. Use AGENT_MAX_RESPONSE_SIZE environment variable to adjust limit.]",
+		sizeInMB, float64(len(output))/(1024*1024))
+
+	logger.Warnf("Gemini agent response truncated from %d bytes to %d bytes due to size limit", len(output), len(truncated))
+
+	return truncated + message
 }
