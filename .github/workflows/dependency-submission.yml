@@ -1,8 +1,16 @@
 name: Go Dependency Submission
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+# cancel in progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 # The API requires write permission on the repository to submit dependencies
 permissions:
