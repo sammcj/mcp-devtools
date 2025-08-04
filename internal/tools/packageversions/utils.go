@@ -1,14 +1,19 @@
 package packageversions
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/time/rate"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sirupsen/logrus"
@@ -19,11 +24,58 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-var (
-	// DefaultHTTPClient is the default HTTP client
-	DefaultHTTPClient HTTPClient = &http.Client{
-		Timeout: 30 * time.Second,
+const (
+	// DefaultPackagesRateLimit is the default maximum requests per second
+	DefaultPackagesRateLimit = 10
+	// PackagesRateLimitEnvVar is the environment variable for configuring rate limit
+	PackagesRateLimitEnvVar = "PACKAGES_RATE_LIMIT"
+)
+
+// RateLimitedHTTPClient implements HTTPClient with rate limiting
+type RateLimitedHTTPClient struct {
+	client  *http.Client
+	limiter *rate.Limiter
+	mu      sync.Mutex
+}
+
+// getPackagesRateLimit returns the configured rate limit for package requests
+func getPackagesRateLimit() float64 {
+	if envValue := os.Getenv(PackagesRateLimitEnvVar); envValue != "" {
+		if value, err := strconv.ParseFloat(envValue, 64); err == nil && value > 0 {
+			return value
+		}
 	}
+	return DefaultPackagesRateLimit
+}
+
+// NewRateLimitedHTTPClient creates a new rate-limited HTTP client
+func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
+	rateLimit := getPackagesRateLimit()
+	return &RateLimitedHTTPClient{
+		client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+		limiter: rate.NewLimiter(rate.Limit(rateLimit), 1), // Allow burst of 1
+	}
+}
+
+// Do implements the HTTPClient interface with rate limiting
+func (c *RateLimitedHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Wait for rate limiter to allow the request
+	err := c.limiter.Wait(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return c.client.Do(req)
+}
+
+var (
+	// DefaultHTTPClient is the default HTTP client with rate limiting
+	DefaultHTTPClient HTTPClient = NewRateLimitedHTTPClient()
 )
 
 // MakeRequest makes an HTTP request and returns the response body

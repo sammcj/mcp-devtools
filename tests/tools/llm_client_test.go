@@ -13,6 +13,11 @@ import (
 )
 
 func TestLLMClient_Connectivity(t *testing.T) {
+	// Skip this test unless explicitly requested via TEST_VLM_INTEGRATION
+	if os.Getenv("TEST_VLM_INTEGRATION") == "" {
+		t.Skip("Skipping LLM connectivity test: Set TEST_VLM_INTEGRATION=1 to run external LLM tests")
+	}
+
 	// Load .env file from project root
 	projectRoot, err := findProjectRoot()
 	require.NoError(t, err, "Failed to find project root")

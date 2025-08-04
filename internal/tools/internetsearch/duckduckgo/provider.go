@@ -16,16 +16,14 @@ import (
 
 // DuckDuckGoProvider implements the unified SearchProvider interface
 type DuckDuckGoProvider struct {
-	client *http.Client
+	client internetsearch.HTTPClientInterface
 }
 
-// NewDuckDuckGoProvider creates a new DuckDuckGo search provider
+// NewDuckDuckGoProvider creates a new DuckDuckGo search provider with rate limiting
 // DuckDuckGo doesn't require an API key, so it's always available
 func NewDuckDuckGoProvider() *DuckDuckGoProvider {
 	return &DuckDuckGoProvider{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client: internetsearch.NewRateLimitedHTTPClient(),
 	}
 }
 

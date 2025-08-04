@@ -234,6 +234,23 @@ think "The metrics show memory usage spikes correlating with the errors. This su
 internet_search "node.js memory leak detection production"
 ```
 
+## Configuration
+
+### Environment Variables
+
+The Think tool supports the following configuration options:
+
+- **`THINK_MAX_LENGTH`**: Maximum length for thought input in characters
+  - **Default**: `2000`
+  - **Description**: Controls the maximum length of thoughts to prevent resource exhaustion
+  - **Example**: `THINK_MAX_LENGTH=5000` allows thoughts up to 5000 characters
+
+### Security Features
+
+- **Input Length Validation**: Prevents excessively long thoughts that could impact performance
+- **Resource Protection**: Configurable limits help maintain system stability
+- **Error Handling**: Clear feedback when thoughts exceed configured limits
+
 ## Performance Impact
 
 The Think tool has minimal performance overhead:
@@ -241,6 +258,7 @@ The Think tool has minimal performance overhead:
 - **Memory usage**: Negligible
 - **Network**: No external calls
 - **Storage**: Thoughts are logged but not persisted
+- **Input limits**: Configurable to balance functionality with resource protection
 
 ## Response Format
 

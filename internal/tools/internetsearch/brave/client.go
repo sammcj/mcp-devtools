@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,18 +28,16 @@ const (
 // BraveClient handles HTTP requests to the Brave Search API
 type BraveClient struct {
 	apiKey     string
-	httpClient *http.Client
+	httpClient internetsearch.HTTPClientInterface
 	baseURL    string
 }
 
-// NewBraveClient creates a new Brave API client
+// NewBraveClient creates a new Brave API client with rate limiting
 func NewBraveClient(apiKey string) *BraveClient {
 	return &BraveClient{
-		apiKey:  apiKey,
-		baseURL: BraveAPIBaseURL,
-		httpClient: &http.Client{
-			Timeout: DefaultTimeout,
-		},
+		apiKey:     apiKey,
+		baseURL:    BraveAPIBaseURL,
+		httpClient: internetsearch.NewRateLimitedHTTPClient(),
 	}
 }
 

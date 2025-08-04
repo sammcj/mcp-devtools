@@ -61,4 +61,10 @@ DOCLING_DEV_PLAN.md
 tests/docprocessing/*.md
 tests/docprocessing/*.png
 tmp_*
+
+# Security scan outputs
+SECURITY_HARDENING.md
 gosec.out
+.mcp-scan
+mcp-scan.out
+semgrep.out

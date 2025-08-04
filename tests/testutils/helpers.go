@@ -68,6 +68,22 @@ func AssertEqual(t *testing.T, expected, actual interface{}) {
 	}
 }
 
+// AssertTrue fails the test if condition is false
+func AssertTrue(t *testing.T, condition bool) {
+	t.Helper()
+	if !condition {
+		t.Fatal("Expected condition to be true")
+	}
+}
+
+// AssertFalse fails the test if condition is true
+func AssertFalse(t *testing.T, condition bool) {
+	t.Helper()
+	if condition {
+		t.Fatal("Expected condition to be false")
+	}
+}
+
 // Contains checks if a string contains a substring
 func Contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||

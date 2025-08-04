@@ -44,6 +44,13 @@ test:
 test-fast:
 	$(GOTEST) -short ./tests/...
 
+# Run VLM/LLM integration tests (requires external VLM/LLM server configuration)
+.PHONY: test-docling-vlm
+test-docling-vlm:
+	@echo "Running VLM/LLM integration tests..."
+	@echo "Note: This requires VLM environment variables to be configured in .env"
+	TEST_VLM_INTEGRATION=1 $(GOTEST) -v -run "TestVLMPipeline_ActualIntegration|TestLLMClient_Connectivity|TestMermaidGeneration" ./tests/tools/
+
 # Clean build artifacts
 .PHONY: clean
 clean:
@@ -109,9 +116,29 @@ install-all: deps install-docling
 	@echo "All dependencies installed successfully!"
 
 # Run gosec security scans
-.PHONY: gosec
-gosec:
+.PHONY: sec-gosec
+sec-gosec:
 	gosec -confidence medium -out gosec.out ./...
+
+# Run mcp-scan security scan
+.PHONY: sec-mcp-scan
+sec-mcp-scan:
+	rm -f mcp-scan.out && uvx mcp-scan@latest --opt-out --full-toxic-flows --storage-file .mcp-scan mcp.json > mcp-scan.out && cat mcp-scan.out
+
+# Run semgrep security scan
+.PHONY: sec-semgrep
+sec-semgrep:
+	semgrep --config auto --output semgrep.out
+
+# Run safedep vet (vet scan -D .)
+.PHONY: sec-safedep-vet
+sec-safedep-vet:
+# check for the correct vet binary (brew install safedep/tap/vet, not go vet)
+	@if ! command -v vet >/dev/null 2>&1; then \
+		echo "Error: safedep vet is not installed. Please install it with 'brew install safedep/tap/vet'"; \
+		exit 1; \
+	fi
+	vet scan -D .
 
 # Build Docker image
 .PHONY: docker-build
@@ -140,6 +167,7 @@ help:
 	@echo "  run-http     : Run the server with Streamable HTTP transport"
 	@echo "  test         : Run all tests (including external dependencies)"
 	@echo "  test-fast    : Run fast tests (no external dependencies)"
+	@echo "  test-docling-vlm : Run VLM/LLM integration tests (requires .env configuration)"
 	@echo "  gosec				: Run gosec security tests"
 	@echo "  clean        : Clean build artifacts"
 	@echo "  fmt          : Format code"

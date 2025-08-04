@@ -63,6 +63,24 @@ Convert text and return the result:
 
 **Note**: Either `file_path` or `text` must be provided, but not both.
 
+## Configuration
+
+### Environment Variables
+
+The American to English tool supports the following configuration options:
+
+- **`M2E_MAX_LENGTH`**: Maximum length for text input in characters
+  - **Default**: `40000`
+  - **Description**: Controls the maximum length of text that can be processed (applies to both inline text and file content)
+  - **Example**: `M2E_MAX_LENGTH=100000` allows processing text up to 100,000 characters
+
+### Security Features
+
+- **Input Length Validation**: Prevents processing of excessively large text that could impact performance
+- **Resource Protection**: Configurable limits help maintain system stability while handling legitimate large documents
+- **Error Handling**: Clear feedback when text exceeds configured limits
+- **File Size Limits**: Both inline text and file content are subject to the same length restrictions
+
 ## Common Spelling Conversions
 
 ### Word Endings
@@ -302,11 +320,12 @@ memory add_observations --data='{"observations": [{"entityName": "Project_Style_
 ### File Errors
 - **File not found**: Check file path is absolute and correct
 - **Permission denied**: Ensure write access to target file
-- **File too large**: Tool may have size limits for processing
+- **File content too large**: File content exceeds maximum length limit (default: 40,000 characters, configurable via `M2E_MAX_LENGTH`)
 - **Encoding issues**: Ensure files are UTF-8 encoded
 
 ### Text Errors
 - **Empty input**: Provide non-empty text for conversion
+- **Text too long**: Text exceeds maximum length limit (default: 40,000 characters, configurable via `M2E_MAX_LENGTH`)
 - **Encoding problems**: Ensure text is properly encoded
 - **Special characters**: Some characters may not convert correctly
 

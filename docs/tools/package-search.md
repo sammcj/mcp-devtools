@@ -6,6 +6,24 @@ The Package Search tool provides version checking and package information across
 
 Instead of manually checking different package managers, the Package Search tool lets you query NPM, PyPI, Go modules, Maven, Docker Hub, GitHub Actions, and more from one place. Perfect for dependency management, security audits, and keeping projects up-to-date.
 
+## Configuration
+
+### Environment Variables
+
+The Package Search tool supports the following configuration options:
+
+- **`PACKAGES_RATE_LIMIT`**: Maximum HTTP requests per second to package registries
+  - **Default**: `10`
+  - **Description**: Controls the rate of HTTP requests to prevent overwhelming package registry APIs
+  - **Example**: `PACKAGES_RATE_LIMIT=20` allows up to 20 requests per second
+
+### Security Features
+
+- **Rate Limiting**: Configurable request rate limiting protects against overwhelming external package registries
+- **Input Validation**: Comprehensive validation of package names and version constraints
+- **Error Handling**: Graceful handling of network issues and API failures
+- **Trusted Sources**: Only queries well-known, established package registries
+
 ## Supported Ecosystems
 
 | Ecosystem          | Package Types         | Features                                    |

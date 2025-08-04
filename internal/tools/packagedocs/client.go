@@ -7,9 +7,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/time/rate"
 
 	"github.com/sirupsen/logrus"
 )
@@ -18,11 +22,63 @@ const (
 	context7BaseURL      = "https://context7.com/api"
 	defaultMinimumTokens = 10000
 	cacheExpiry          = 120 * time.Minute
+
+	// DefaultPackageDocsRateLimit is the default maximum requests per second for package docs
+	DefaultPackageDocsRateLimit = 10
+	// PackageDocsRateLimitEnvVar is the environment variable for configuring rate limit
+	PackageDocsRateLimitEnvVar = "PACKAGE_DOCS_RATE_LIMIT"
 )
+
+// RateLimitedHTTPClient implements a rate-limited HTTP client
+type RateLimitedHTTPClient struct {
+	client  *http.Client
+	limiter *rate.Limiter
+	mu      sync.Mutex
+}
+
+// Do implements the HTTP client interface with rate limiting
+func (c *RateLimitedHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Wait for rate limiter to allow the request
+	err := c.limiter.Wait(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return c.client.Do(req)
+}
+
+// getPackageDocsRateLimit returns the configured rate limit for package docs requests
+func getPackageDocsRateLimit() float64 {
+	if envValue := os.Getenv(PackageDocsRateLimitEnvVar); envValue != "" {
+		if value, err := strconv.ParseFloat(envValue, 64); err == nil && value > 0 {
+			return value
+		}
+	}
+	return DefaultPackageDocsRateLimit
+}
+
+// newRateLimitedHTTPClient creates a new rate-limited HTTP client
+func newRateLimitedHTTPClient() *RateLimitedHTTPClient {
+	rateLimit := getPackageDocsRateLimit()
+	return &RateLimitedHTTPClient{
+		client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+		limiter: rate.NewLimiter(rate.Limit(rateLimit), 1), // Allow burst of 1
+	}
+}
+
+// HTTPClientInterface defines the interface for HTTP clients
+type HTTPClientInterface interface {
+	Do(req *http.Request) (*http.Response, error)
+}
 
 // Client handles communication with the Context7 API
 type Client struct {
-	httpClient *http.Client
+	httpClient HTTPClientInterface
 	logger     *logrus.Logger
 	cache      map[string]cacheEntry
 }
@@ -32,14 +88,12 @@ type cacheEntry struct {
 	timestamp time.Time
 }
 
-// NewClient creates a new Context7 API client
+// NewClient creates a new Context7 API client with rate limiting
 func NewClient(logger *logrus.Logger) *Client {
 	return &Client{
-		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
-		logger: logger,
-		cache:  make(map[string]cacheEntry),
+		httpClient: newRateLimitedHTTPClient(),
+		logger:     logger,
+		cache:      make(map[string]cacheEntry),
 	}
 }
 

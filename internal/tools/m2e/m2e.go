@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -15,6 +16,23 @@ import (
 
 // M2ETool implements the American to British English converter tool
 type M2ETool struct{}
+
+const (
+	// DefaultMaxTextLength is the default maximum length for text input
+	DefaultMaxTextLength = 40000
+	// M2EMaxLengthEnvVar is the environment variable for configuring max text length
+	M2EMaxLengthEnvVar = "M2E_MAX_LENGTH"
+)
+
+// getMaxTextLength returns the configured maximum text length
+func getMaxTextLength() int {
+	if envValue := os.Getenv(M2EMaxLengthEnvVar); envValue != "" {
+		if value, err := strconv.Atoi(envValue); err == nil && value > 0 {
+			return value
+		}
+	}
+	return DefaultMaxTextLength
+}
 
 // init registers the m2e tool
 func init() {
@@ -33,6 +51,7 @@ Inline mode: Provide text parameter instead to get converted text returned direc
 			mcp.Description("Fully qualified absolute path to the file to update in place"),
 		),
 		mcp.WithString("text",
+			mcp.MaxLength(getMaxTextLength()),
 			mcp.Description("Text to convert and return inline (if not using file_path)"),
 		),
 		mcp.WithBoolean("keep_smart_quotes",
@@ -97,6 +116,12 @@ func (m *M2ETool) executeUpdateFileMode(conv *converter.Converter, request *Conv
 	}
 
 	originalText := string(originalContent)
+
+	// Validate file content length
+	maxLength := getMaxTextLength()
+	if len(originalText) > maxLength {
+		return nil, fmt.Errorf("file content exceeds maximum length of %d characters (got %d)", maxLength, len(originalText))
+	}
 
 	// Convert the text (note: !KeepSmartQuotes because the converter expects normaliseSmartQuotes bool)
 	normaliseSmartQuotes := !request.KeepSmartQuotes
@@ -164,6 +189,11 @@ func (m *M2ETool) parseRequest(args map[string]interface{}) (*ConvertRequest, er
 		// Inline mode validation
 		if strings.TrimSpace(request.Text) == "" {
 			return nil, fmt.Errorf("text parameter cannot be empty")
+		}
+		// Validate text length
+		maxLength := getMaxTextLength()
+		if len(request.Text) > maxLength {
+			return nil, fmt.Errorf("text exceeds maximum length of %d characters (got %d)", maxLength, len(request.Text))
 		}
 	} else if request.FilePath != "" {
 		// Update file mode validation

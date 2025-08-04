@@ -249,6 +249,24 @@ Use the resolved ID to fetch documentation:
 2. Get documentation for same topics across libraries
 3. Compare approaches and features
 
+## Configuration
+
+### Environment Variables
+
+The Package Documentation tool supports the following configuration options:
+
+- **`PACKAGE_DOCS_RATE_LIMIT`**: Maximum HTTP requests per second to the Context7 API
+  - **Default**: `10`
+  - **Description**: Controls the rate of HTTP requests to prevent overwhelming the Context7 API service
+  - **Example**: `PACKAGE_DOCS_RATE_LIMIT=15` allows up to 15 requests per second
+  
+### Security Features
+
+- **Rate Limiting**: Configurable request rate limiting protects against overwhelming external documentation APIs
+- **Input Validation**: Comprehensive validation of library IDs and search parameters
+- **Error Handling**: Graceful handling of network issues and API failures
+- **Trusted Sources**: Only queries the established Context7 documentation service
+
 ## Best Practices
 
 ### Effective Topic Selection
