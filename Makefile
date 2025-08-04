@@ -130,6 +130,16 @@ sec-mcp-scan:
 sec-semgrep:
 	semgrep --config auto --output semgrep.out
 
+# Run safedep vet (vet scan -D .)
+.PHONY: sec-safedep-vet
+sec-safedep-vet:
+# check for the correct vet binary (brew install safedep/tap/vet, not go vet)
+	@if ! command -v vet >/dev/null 2>&1; then \
+		echo "Error: safedep vet is not installed. Please install it with 'brew install safedep/tap/vet'"; \
+		exit 1; \
+	fi
+	vet scan -D .
+
 # Build Docker image
 .PHONY: docker-build
 docker-build:

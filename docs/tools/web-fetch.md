@@ -334,6 +334,25 @@ Handles various content types:
 - **Standardises**: Consistent formatting and spacing
 - **Maintains**: Original content structure and flow
 
+## Configuration
+
+### Domain Allowlist Configuration
+
+The Web Fetch tool supports an optional domain allowlist for enhanced security control:
+
+- **`FETCH_DOMAIN_ALLOWLIST`**: Comma-separated list of allowed domains
+  - **Default**: Empty (all domains allowed)
+  - **Description**: Restricts web fetching to specified domains only
+  - **Wildcard Support**: Use `*.example.com` to allow all subdomains
+  - **Example**: `FETCH_DOMAIN_ALLOWLIST="github.com,*.docs.example.com,api.service.com"`
+
+### Security Features
+
+- **Domain Restrictions**: Optional allowlist prevents access to unauthorised domains
+- **Wildcard Subdomains**: Flexible subdomain matching with `*.domain.com` syntax
+- **Input Validation**: Comprehensive URL and parameter validation
+- **Error Handling**: Clear error messages for domain restriction violations
+
 ## Security Considerations
 
 - **URL Validation**: Only HTTP/HTTPS URLs accepted
@@ -341,6 +360,7 @@ Handles various content types:
 - **Timeout Protection**: Prevents hanging requests
 - **No File Downloads**: Only web page content, not file downloads
 - **Public Content Only**: No authentication or cookie support
+- **Domain Control**: Optional allowlist for restricting accessible domains
 
 ---
 
