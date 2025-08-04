@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,7 +51,7 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 
 	return mcp.NewTool(
 		"process_document",
-		mcp.WithDescription("Process documents (PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, JPG) and convert them to structured Markdown with optional OCR, image extraction, and table processing. Supports hardware acceleration, intelligent caching, and batch processing."),
+		mcp.WithDescription("Process documents (PDF, DOCX, DOC, XLSX, XLS, PPTX, PPT, TXT, MD, RTF, HTML, CSV, PNG, JPG, JPEG, GIF, BMP, TIFF) and convert them to structured Markdown with optional OCR, image extraction, and table processing. Supports hardware acceleration, intelligent caching, and batch processing."),
 		mcp.WithString("source",
 			mcp.Description("Document source: MUST be a fully qualified absolute file path (e.g., /Users/user/documents/file.pdf), complete URL (e.g., https://example.com/doc.pdf). Relative paths are NOT supported - always provide the complete absolute path to the file. For batch processing, use 'sources' instead."),
 		),
@@ -83,7 +84,7 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
 	// Note: No logging to stdout/stderr in stdio mode to avoid breaking MCP protocol
 
-	// Perform cache maintenance in background (6 weeks default, configurable)
+	// Perform cache maintenance and temporary file cleanup in background
 	go func() {
 		maxAge := 6 * 7 * 24 * time.Hour // 6 weeks default
 		if maxAgeEnv := os.Getenv("DOCLING_CACHE_MAX_AGE_HOURS"); maxAgeEnv != "" {
@@ -94,6 +95,9 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 
 		// Silently perform maintenance - no logging to avoid MCP protocol interference
 		_ = t.cacheManager.PerformMaintenance(maxAge)
+
+		// Perform temporary file cleanup
+		_ = t.config.CleanupTemporaryFiles()
 	}()
 
 	// Check for batch processing (sources array)
@@ -105,6 +109,24 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 	req, err := t.parseRequest(args)
 	if err != nil {
 		return nil, fmt.Errorf("invalid request: %w", err)
+	}
+
+	// Validate file type and size for local file paths
+	if !strings.HasPrefix(req.Source, "http://") && !strings.HasPrefix(req.Source, "https://") {
+		// Validate file type
+		if err := t.config.ValidateFileType(req.Source); err != nil {
+			return nil, fmt.Errorf("file type validation failed: %w", err)
+		}
+
+		// Validate file size if file exists
+		if fileInfo, err := os.Stat(req.Source); err == nil {
+			if err := t.config.ValidateFileSize(fileInfo.Size()); err != nil {
+				return nil, fmt.Errorf("file size validation failed: %w", err)
+			}
+		} else if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("file access error: %w", err)
+		}
+		// Note: If file doesn't exist, let the processing handle it (it might be a URL or other valid source)
 	}
 
 	// Handle debug mode - return debug information without processing

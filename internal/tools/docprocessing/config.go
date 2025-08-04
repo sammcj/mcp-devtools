@@ -14,6 +14,41 @@ import (
 	"github.com/sammcj/mcp-devtools/internal/config"
 )
 
+const (
+	// Document processing security limits
+	DefaultMaxMemoryLimit             = int64(5 * 1024 * 1024 * 1024) // 5GB default memory limit
+	DefaultMaxFileSizeMB              = 100                           // Default file size in MB
+	DocProcessingMaxMemoryLimitEnvVar = "DOCLING_MAX_MEMORY_LIMIT"
+	DocProcessingMaxFileSizeEnvVar    = "DOCLING_MAX_FILE_SIZE"
+)
+
+// Supported file types for document processing
+var SupportedFileTypes = map[string]bool{
+	// Document formats
+	".pdf":  true,
+	".docx": true,
+	".doc":  true, // Legacy Word format
+	".xlsx": true,
+	".xls":  true, // Legacy Excel format
+	".pptx": true,
+	".ppt":  true, // Legacy PowerPoint format
+	".txt":  true, // Plain text
+	".md":   true, // Markdown
+	".rtf":  true, // Rich Text Format
+	// Web formats
+	".html": true,
+	".htm":  true,
+	".csv":  true,
+	// Image formats
+	".png":  true,
+	".jpg":  true,
+	".jpeg": true,
+	".gif":  true,
+	".bmp":  true,
+	".tiff": true,
+	".tif":  true,
+}
+
 // Config holds the configuration for document processing
 type Config struct {
 	// Python Configuration
@@ -27,8 +62,9 @@ type Config struct {
 	HardwareAcceleration HardwareAcceleration // Hardware acceleration mode
 
 	// Processing Configuration
-	Timeout     int // Processing timeout in seconds
-	MaxFileSize int // Maximum file size in MB
+	Timeout        int   // Processing timeout in seconds
+	MaxFileSize    int   // Maximum file size in MB
+	MaxMemoryLimit int64 // Maximum memory limit in bytes
 
 	// OCR Configuration
 	OCRLanguages []string // Default OCR languages
@@ -50,8 +86,9 @@ func DefaultConfig() *Config {
 		CacheDir:             defaultCacheDir,
 		CacheEnabled:         true,
 		HardwareAcceleration: HardwareAccelerationAuto,
-		Timeout:              300, // 5 minutes
-		MaxFileSize:          100, // 100 MB
+		Timeout:              300,                   // 5 minutes
+		MaxFileSize:          DefaultMaxFileSizeMB,  // 100 MB
+		MaxMemoryLimit:       DefaultMaxMemoryLimit, // 5GB
 		OCRLanguages:         []string{"en"},
 		VisionModel:          "SmolDocling",
 	}
@@ -104,6 +141,12 @@ func LoadConfig() *Config {
 		}
 	}
 
+	if maxMemoryLimit := os.Getenv("DOCLING_MAX_MEMORY_LIMIT"); maxMemoryLimit != "" {
+		if limit, err := strconv.ParseInt(maxMemoryLimit, 10, 64); err == nil && limit > 0 {
+			config.MaxMemoryLimit = limit
+		}
+	}
+
 	// OCR Configuration
 	if ocrLangs := os.Getenv("DOCLING_OCR_LANGUAGES"); ocrLangs != "" {
 		languages := strings.Split(ocrLangs, ",")
@@ -148,6 +191,11 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("max file size must be greater than 0")
 	}
 
+	// Validate max memory limit
+	if c.MaxMemoryLimit <= 0 {
+		return fmt.Errorf("max memory limit must be greater than 0")
+	}
+
 	// Validate OCR languages
 	if len(c.OCRLanguages) == 0 {
 		return fmt.Errorf("at least one OCR language must be specified")
@@ -174,6 +222,137 @@ func (c *Config) EnsureCacheDir() error {
 	return nil
 }
 
+// CleanupTemporaryFiles performs cleanup of temporary files and directories
+func (c *Config) CleanupTemporaryFiles() error {
+	var errors []string
+
+	// Clean up embedded scripts temporary directory
+	if err := CleanupEmbeddedScripts(); err != nil {
+		errors = append(errors, fmt.Sprintf("embedded scripts cleanup failed: %v", err))
+	}
+
+	// Clean up old cache files (older than configured max age)
+	if c.CacheEnabled && c.CacheDir != "" {
+		maxAge := 6 * 7 * 24 * time.Hour // 6 weeks default
+		if maxAgeEnv := os.Getenv("DOCLING_CACHE_MAX_AGE_HOURS"); maxAgeEnv != "" {
+			if hours, err := strconv.Atoi(maxAgeEnv); err == nil && hours > 0 {
+				maxAge = time.Duration(hours) * time.Hour
+			}
+		}
+
+		if err := c.cleanupCacheFiles(maxAge); err != nil {
+			errors = append(errors, fmt.Sprintf("cache cleanup failed: %v", err))
+		}
+	}
+
+	// Clean up system temporary directory for mcp-devtools files
+	if err := c.cleanupSystemTempFiles(); err != nil {
+		errors = append(errors, fmt.Sprintf("system temp cleanup failed: %v", err))
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("cleanup errors: %s", strings.Join(errors, "; "))
+	}
+
+	return nil
+}
+
+// cleanupCacheFiles removes old cache files
+func (c *Config) cleanupCacheFiles(maxAge time.Duration) error {
+	if !c.CacheEnabled || c.CacheDir == "" {
+		return nil
+	}
+
+	cutoffTime := time.Now().Add(-maxAge)
+	return filepath.Walk(c.CacheDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // Skip files we can't access
+		}
+
+		if !info.IsDir() && info.ModTime().Before(cutoffTime) {
+			_ = os.Remove(path) // Silently remove old files
+		}
+
+		return nil
+	})
+}
+
+// cleanupSystemTempFiles removes old temporary files created by mcp-devtools
+func (c *Config) cleanupSystemTempFiles() error {
+	tempDir := os.TempDir()
+	cutoffTime := time.Now().Add(-24 * time.Hour) // Remove files older than 24 hours
+
+	entries, err := os.ReadDir(tempDir)
+	if err != nil {
+		return nil // Silently fail if we can't read temp directory
+	}
+
+	for _, entry := range entries {
+		// Only clean up mcp-devtools related temp files
+		if !strings.HasPrefix(entry.Name(), "mcp-devtools-") {
+			continue
+		}
+
+		filePath := filepath.Join(tempDir, entry.Name())
+		if info, err := os.Stat(filePath); err == nil {
+			if info.ModTime().Before(cutoffTime) {
+				if entry.IsDir() {
+					_ = os.RemoveAll(filePath)
+				} else {
+					_ = os.Remove(filePath)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// GetMaxMemoryLimit returns the configured maximum memory limit in bytes
+func (c *Config) GetMaxMemoryLimit() int64 {
+	return c.MaxMemoryLimit
+}
+
+// ValidateFileSize validates that the file size is within limits
+func (c *Config) ValidateFileSize(fileSizeBytes int64) error {
+	maxSizeBytes := int64(c.MaxFileSize) * 1024 * 1024 // Convert MB to bytes
+	if fileSizeBytes > maxSizeBytes {
+		sizeMB := float64(fileSizeBytes) / (1024 * 1024)
+		maxSizeMB := float64(maxSizeBytes) / (1024 * 1024)
+		return fmt.Errorf("document file size %.1fMB exceeds maximum allowed size of %.1fMB (use %s environment variable to adjust limit)", sizeMB, maxSizeMB, DocProcessingMaxFileSizeEnvVar)
+	}
+	return nil
+}
+
+// ValidateMemoryLimit validates that memory usage is within limits
+func (c *Config) ValidateMemoryLimit() error {
+	// This is a placeholder for future memory monitoring implementation
+	// For now, we rely on the file size limits and Python process limits
+	// to prevent excessive memory usage during document processing
+	if c.MaxMemoryLimit <= 0 {
+		return fmt.Errorf("memory limit must be greater than 0")
+	}
+	return nil
+}
+
+// ValidateFileType validates that the file type is supported for processing
+func (c *Config) ValidateFileType(filePath string) error {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	if ext == "" {
+		return fmt.Errorf("file has no extension, unable to determine file type")
+	}
+
+	if !SupportedFileTypes[ext] {
+		supportedTypes := make([]string, 0, len(SupportedFileTypes))
+		for fileType := range SupportedFileTypes {
+			supportedTypes = append(supportedTypes, fileType)
+		}
+		return fmt.Errorf("unsupported file type '%s'. Supported types: %s", ext, strings.Join(supportedTypes, ", "))
+	}
+
+	return nil
+}
+
 // GetSystemInfo returns system information for diagnostics
 func (c *Config) GetSystemInfo() *SystemInfo {
 	info := &SystemInfo{
@@ -184,6 +363,7 @@ func (c *Config) GetSystemInfo() *SystemInfo {
 		CacheDirectory:   c.CacheDir,
 		CacheEnabled:     c.CacheEnabled,
 		MaxFileSize:      c.MaxFileSize,
+		MaxMemoryLimit:   c.MaxMemoryLimit,
 		DefaultTimeout:   c.Timeout,
 	}
 
