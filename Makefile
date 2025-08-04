@@ -128,7 +128,7 @@ sec-mcp-scan:
 # Run semgrep security scan
 .PHONY: sec-semgrep
 sec-semgrep:
-	semgrep --config auto --output semgrep.out
+	semgrep --config auto --text --output semgrep.out
 
 # Run safedep vet (vet scan -D .)
 .PHONY: sec-safedep-vet

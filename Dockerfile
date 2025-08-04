@@ -53,8 +53,16 @@ COPY --from=builder /app/mcp-devtools .
 # Copy the Python scripts
 COPY internal/tools/docprocessing/python/docling_processor.py ./internal/tools/python/docprocessing/
 
-# Create cache directory
-RUN mkdir -p /app/.mcp-devtools/docling-cache
+# Create a non-root user for security
+RUN addgroup -g 1001 appgroup && \
+    adduser -D -u 1001 -G appgroup appuser
+
+# Create cache directory with proper ownership
+RUN mkdir -p /app/.mcp-devtools/docling-cache && \
+    chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
 
 # Set environment variables for document processing
 # ENV DOCLING_PYTHON_PATH=/usr/local/bin/python3
