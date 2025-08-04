@@ -10,16 +10,29 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"sync"
 
 	"github.com/google/go-github/v73/github"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
+)
+
+const (
+	// GitHub API rate limits based on GitHub best practices
+	DefaultCoreAPIRateLimit        = 80 // requests per minute (4800/hour, under 5000/hour limit)
+	DefaultSearchAPIRateLimit      = 25 // requests per minute (under 30/minute limit)
+	GitHubCoreAPIRateLimitEnvVar   = "GITHUB_CORE_API_RATE_LIMIT"
+	GitHubSearchAPIRateLimitEnvVar = "GITHUB_SEARCH_API_RATE_LIMIT"
 )
 
 // GitHubClient wraps the GitHub API client with additional functionality
 type GitHubClient struct {
-	client     *github.Client
-	authConfig *AuthConfig
-	logger     *logrus.Logger
+	client           *github.Client
+	authConfig       *AuthConfig
+	logger           *logrus.Logger
+	coreAPILimiter   *rate.Limiter
+	searchAPILimiter *rate.Limiter
+	mu               sync.Mutex
 }
 
 // NewGitHubClientWrapper creates a new GitHub client wrapper
@@ -35,14 +48,21 @@ func NewGitHubClientWrapper(ctx context.Context, logger *logrus.Logger) (*GitHub
 	}
 
 	return &GitHubClient{
-		client:     client,
-		authConfig: authConfig,
-		logger:     logger,
+		client:           client,
+		authConfig:       authConfig,
+		logger:           logger,
+		coreAPILimiter:   newCoreAPIRateLimiter(),
+		searchAPILimiter: newSearchAPIRateLimiter(),
 	}, nil
 }
 
 // SearchRepositories searches for repositories
 func (gc *GitHubClient) SearchRepositories(ctx context.Context, query string, limit int) (*SearchResult, error) {
+	// Apply search API rate limiting
+	if err := gc.waitForSearchAPIRateLimit(ctx); err != nil {
+		return nil, fmt.Errorf("search API rate limit wait failed: %w", err)
+	}
+
 	opts := &github.SearchOptions{
 		ListOptions: github.ListOptions{
 			PerPage: limit,
@@ -74,6 +94,11 @@ func (gc *GitHubClient) SearchRepositories(ctx context.Context, query string, li
 
 // SearchIssues searches for issues in a repository
 func (gc *GitHubClient) SearchIssues(ctx context.Context, owner, repo, query string, limit int, includeClosed bool) (*SearchResult, error) {
+	// Apply search API rate limiting
+	if err := gc.waitForSearchAPIRateLimit(ctx); err != nil {
+		return nil, fmt.Errorf("search API rate limit wait failed: %w", err)
+	}
+
 	searchQuery := fmt.Sprintf("repo:%s/%s %s", owner, repo, query)
 	if !includeClosed {
 		searchQuery += " state:open"
@@ -118,6 +143,11 @@ func (gc *GitHubClient) SearchIssues(ctx context.Context, owner, repo, query str
 
 // SearchPullRequests searches for pull requests in a repository
 func (gc *GitHubClient) SearchPullRequests(ctx context.Context, owner, repo, query string, limit int, includeClosed bool) (*SearchResult, error) {
+	// Apply search API rate limiting
+	if err := gc.waitForSearchAPIRateLimit(ctx); err != nil {
+		return nil, fmt.Errorf("search API rate limit wait failed: %w", err)
+	}
+
 	searchQuery := fmt.Sprintf("repo:%s/%s type:pr %s", owner, repo, query)
 	if !includeClosed {
 		searchQuery += " state:open"
@@ -162,6 +192,11 @@ func (gc *GitHubClient) SearchPullRequests(ctx context.Context, owner, repo, que
 
 // GetIssue gets a specific issue with optional comments
 func (gc *GitHubClient) GetIssue(ctx context.Context, owner, repo string, number int, includeComments bool) (*FilteredIssueDetails, []Comment, error) {
+	// Apply core API rate limiting
+	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
+		return nil, nil, fmt.Errorf("core API rate limit wait failed: %w", err)
+	}
+
 	issue, _, err := gc.client.Issues.Get(ctx, owner, repo, number)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get issue: %w", err)
@@ -176,6 +211,10 @@ func (gc *GitHubClient) GetIssue(ctx context.Context, owner, repo string, number
 
 	var comments []Comment
 	if includeComments && issue.GetComments() > 0 {
+		// Apply core API rate limiting for comments
+		if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
+			return nil, nil, fmt.Errorf("core API rate limit wait failed for comments: %w", err)
+		}
 		commentList, _, err := gc.client.Issues.ListComments(ctx, owner, repo, number, nil)
 		if err != nil {
 			gc.logger.Warnf("Failed to get comments for issue #%d: %v", number, err)
@@ -207,6 +246,11 @@ func (gc *GitHubClient) GetIssue(ctx context.Context, owner, repo string, number
 
 // GetPullRequest gets a specific pull request with optional comments
 func (gc *GitHubClient) GetPullRequest(ctx context.Context, owner, repo string, number int, includeComments bool) (*FilteredPullRequestDetails, []Comment, error) {
+	// Apply core API rate limiting
+	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
+		return nil, nil, fmt.Errorf("core API rate limit wait failed: %w", err)
+	}
+
 	pr, _, err := gc.client.PullRequests.Get(ctx, owner, repo, number)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get pull request: %w", err)
@@ -228,6 +272,10 @@ func (gc *GitHubClient) GetPullRequest(ctx context.Context, owner, repo string, 
 
 	var comments []Comment
 	if includeComments && pr.GetComments() > 0 {
+		// Apply core API rate limiting for comments
+		if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
+			return nil, nil, fmt.Errorf("core API rate limit wait failed for comments: %w", err)
+		}
 		commentList, _, err := gc.client.PullRequests.ListComments(ctx, owner, repo, number, nil)
 		if err != nil {
 			gc.logger.Warnf("Failed to get comments for PR #%d: %v", number, err)
@@ -262,6 +310,11 @@ func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string,
 	var results []FilteredFileContent
 
 	for _, path := range paths {
+		// Apply core API rate limiting for each file request
+		if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
+			return nil, fmt.Errorf("core API rate limit wait failed: %w", err)
+		}
+
 		opts := &github.RepositoryContentGetOptions{}
 		if ref != "" {
 			opts.Ref = ref
@@ -402,6 +455,11 @@ func (gc *GitHubClient) CloneRepository(ctx context.Context, owner, repo, localP
 
 // GetWorkflowRun gets GitHub Actions workflow run status and optionally logs
 func (gc *GitHubClient) GetWorkflowRun(ctx context.Context, owner, repo string, runID int64, includeLogs bool) (*WorkflowRun, string, error) {
+	// Apply core API rate limiting
+	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
+		return nil, "", fmt.Errorf("core API rate limit wait failed: %w", err)
+	}
+
 	run, _, err := gc.client.Actions.GetWorkflowRunByID(ctx, owner, repo, runID)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get workflow run: %w", err)
@@ -421,6 +479,10 @@ func (gc *GitHubClient) GetWorkflowRun(ctx context.Context, owner, repo string, 
 
 	var logs string
 	if includeLogs {
+		// Apply core API rate limiting for logs
+		if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
+			return nil, "", fmt.Errorf("core API rate limit wait failed for logs: %w", err)
+		}
 		// Get logs URL
 		logsURL, _, err := gc.client.Actions.GetWorkflowRunLogs(ctx, owner, repo, runID, 1)
 		if err != nil {
@@ -478,4 +540,40 @@ func formatTimestamp(ts *github.Timestamp) string {
 		return ""
 	}
 	return ts.Format("2006-01-02T15:04:05Z")
+}
+
+// newCoreAPIRateLimiter creates a rate limiter for GitHub Core API calls
+func newCoreAPIRateLimiter() *rate.Limiter {
+	rateLimit := GetEnvRateLimit(GitHubCoreAPIRateLimitEnvVar, DefaultCoreAPIRateLimit)
+	return rate.NewLimiter(rate.Limit(rateLimit)/60, 1) // Convert per-minute to per-second
+}
+
+// newSearchAPIRateLimiter creates a rate limiter for GitHub Search API calls
+func newSearchAPIRateLimiter() *rate.Limiter {
+	rateLimit := GetEnvRateLimit(GitHubSearchAPIRateLimitEnvVar, DefaultSearchAPIRateLimit)
+	return rate.NewLimiter(rate.Limit(rateLimit)/60, 1) // Convert per-minute to per-second
+}
+
+// GetEnvRateLimit gets rate limit from environment variable with fallback to default
+func GetEnvRateLimit(envVar string, defaultValue int) int {
+	if limitStr := os.Getenv(envVar); limitStr != "" {
+		if limit, err := strconv.Atoi(limitStr); err == nil && limit > 0 {
+			return limit
+		}
+	}
+	return defaultValue
+}
+
+// waitForCoreAPIRateLimit waits for core API rate limit before making a request
+func (gc *GitHubClient) waitForCoreAPIRateLimit(ctx context.Context) error {
+	gc.mu.Lock()
+	defer gc.mu.Unlock()
+	return gc.coreAPILimiter.Wait(ctx)
+}
+
+// waitForSearchAPIRateLimit waits for search API rate limit before making a request
+func (gc *GitHubClient) waitForSearchAPIRateLimit(ctx context.Context) error {
+	gc.mu.Lock()
+	defer gc.mu.Unlock()
+	return gc.searchAPILimiter.Wait(ctx)
 }

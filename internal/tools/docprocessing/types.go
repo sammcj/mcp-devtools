@@ -264,6 +264,7 @@ type SystemInfo struct {
 	CacheDirectory       string                 `json:"cache_directory,omitempty"`       // Cache directory path
 	CacheEnabled         bool                   `json:"cache_enabled"`                   // Whether caching is enabled
 	MaxFileSize          int                    `json:"max_file_size"`                   // Maximum file size in MB
+	MaxMemoryLimit       int64                  `json:"max_memory_limit"`                // Maximum memory limit in bytes
 	DefaultTimeout       int                    `json:"default_timeout"`                 // Default timeout in seconds
 }
 

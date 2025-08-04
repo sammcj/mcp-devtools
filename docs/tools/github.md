@@ -304,3 +304,26 @@ GITHUB_AUTH_METHOD=ssh
   }
 }
 ```
+
+## Environment Variables
+
+### Authentication
+- **`GITHUB_TOKEN`**: GitHub personal access token for API authentication
+- **`GITHUB_AUTH_METHOD`**: Authentication method (`token` or `ssh`). Defaults to `token`
+- **`GITHUB_SSH_PRIVATE_KEY_PATH`**: Path to SSH private key file (when using SSH authentication)
+
+### Rate Limiting Configuration
+- **`GITHUB_CORE_API_RATE_LIMIT`**: Maximum Core API requests per minute. Defaults to `80`
+- **`GITHUB_SEARCH_API_RATE_LIMIT`**: Maximum Search API requests per minute. Defaults to `25`
+
+## Security Features
+
+- **API Rate Limiting**: Intelligent rate limiting based on GitHub API best practices
+  - Core API: 80 requests/minute (4800/hour, under GitHub's 5000/hour limit)
+  - Search API: 25 requests/minute (under GitHub's 30/minute limit)
+  - Environment variable override for custom limits
+- **Input Validation**: Comprehensive validation of repository names, URLs, file paths, and git references
+- **Authentication Security**: Secure token and SSH key handling with proper environment variable usage
+- **Error Handling**: Structured error responses that don't expose sensitive authentication information
+- **Process Isolation**: Repository cloning runs in isolated subprocesses with proper cleanup
+- **Content Filtering**: Binary file detection and size limits for content retrieval

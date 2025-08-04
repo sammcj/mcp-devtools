@@ -18,6 +18,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	// PDF security limits
+	DefaultMaxFileSize      = int64(200 * 1024 * 1024)      // 200MB default file size limit
+	DefaultMaxMemoryLimit   = int64(5 * 1024 * 1024 * 1024) // 5GB default memory limit
+	PDFMaxFileSizeEnvVar    = "PDF_MAX_FILE_SIZE"
+	PDFMaxMemoryLimitEnvVar = "PDF_MAX_MEMORY_LIMIT"
+)
+
 // PDFTool implements PDF processing with pdfcpu
 type PDFTool struct{}
 
@@ -66,13 +74,23 @@ func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 		"pages":          request.Pages,
 	}).Debug("PDF processing parameters")
 
-	// Validate input file exists
-	if _, err := os.Stat(request.FilePath); os.IsNotExist(err) {
+	// Validate input file exists and check file size
+	fileInfo, err := os.Stat(request.FilePath)
+	if os.IsNotExist(err) {
 		return nil, fmt.Errorf("PDF file does not exist: %s", request.FilePath)
 	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat PDF file: %w", err)
+	}
 
-	// Create configuration
+	// Apply file size limits
+	if err := t.ValidateFileSize(fileInfo.Size()); err != nil {
+		return nil, fmt.Errorf("file size validation failed: %w", err)
+	}
+
+	// Create configuration with memory limits
 	conf := model.NewDefaultConfiguration()
+	t.applyMemoryLimits(conf)
 
 	// Process the PDF
 	result, err := t.processPDF(ctx, logger, request, conf)
@@ -689,4 +707,49 @@ func (t *PDFTool) newToolResultJSON(data interface{}) (*mcp.CallToolResult, erro
 	}
 
 	return mcp.NewToolResultText(string(jsonBytes)), nil
+}
+
+// GetMaxFileSize returns the configured maximum file size in bytes
+func (t *PDFTool) GetMaxFileSize() int64 {
+	if sizeStr := os.Getenv(PDFMaxFileSizeEnvVar); sizeStr != "" {
+		if size, err := strconv.ParseInt(sizeStr, 10, 64); err == nil && size > 0 {
+			return size
+		}
+	}
+	return DefaultMaxFileSize
+}
+
+// GetMaxMemoryLimit returns the configured maximum memory limit in bytes
+func (t *PDFTool) GetMaxMemoryLimit() int64 {
+	if limitStr := os.Getenv(PDFMaxMemoryLimitEnvVar); limitStr != "" {
+		if limit, err := strconv.ParseInt(limitStr, 10, 64); err == nil && limit > 0 {
+			return limit
+		}
+	}
+	return DefaultMaxMemoryLimit
+}
+
+// ValidateFileSize validates that the file size is within limits
+func (t *PDFTool) ValidateFileSize(fileSize int64) error {
+	maxSize := t.GetMaxFileSize()
+	if fileSize > maxSize {
+		sizeMB := float64(fileSize) / (1024 * 1024)
+		maxSizeMB := float64(maxSize) / (1024 * 1024)
+		return fmt.Errorf("PDF file size %.1fMB exceeds maximum allowed size of %.1fMB (use %s environment variable to adjust limit)", sizeMB, maxSizeMB, PDFMaxFileSizeEnvVar)
+	}
+	return nil
+}
+
+// applyMemoryLimits applies memory limits to the PDF configuration
+func (t *PDFTool) applyMemoryLimits(conf *model.Configuration) {
+	// Note: pdfcpu doesn't have direct memory limit configuration
+	// This function is a placeholder for future memory limiting implementation
+	// For now, we rely on the file size limits to prevent excessive memory usage
+	// since PDF processing memory usage is generally proportional to file size
+
+	// Set stricter validation to prevent malformed PDFs from consuming excessive memory
+	conf.ValidationMode = model.ValidationStrict
+
+	// Note: Configuration struct doesn't expose OptimizationMode field
+	// Memory limits are enforced through file size validation
 }

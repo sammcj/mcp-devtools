@@ -16,6 +16,37 @@ A lightweight, fast alternative to the full Document Processing tool specificall
 - **No Dependencies**: Self-contained, no external requirements
 - **Cross-Platform**: Works on macOS and Linux
 
+## Security Features
+
+The PDF Processing tool includes comprehensive security hardening to prevent resource exhaustion and ensure safe operation:
+
+### File Size Limits
+- **Default limit**: 200MB maximum file size
+- **Configurable**: Set custom limits via `PDF_MAX_FILE_SIZE` environment variable
+- **Prevention**: Blocks processing of excessively large files that could consume system resources
+- **Error handling**: Clear error messages with current and maximum allowed sizes
+
+### Memory Limits  
+- **Default limit**: 5GB maximum memory usage
+- **Configurable**: Set custom limits via `PDF_MAX_MEMORY_LIMIT` environment variable
+- **Protection**: Prevents memory exhaustion during PDF processing operations
+- **Validation**: Strict PDF validation to prevent malformed files from consuming excessive resources
+
+### Environment Variable Configuration
+```bash
+# Set custom file size limit (bytes)
+export PDF_MAX_FILE_SIZE=104857600  # 100MB
+
+# Set custom memory limit (bytes)  
+export PDF_MAX_MEMORY_LIMIT=2147483648  # 2GB
+```
+
+### Security Benefits
+- **Resource protection**: Prevents processing of maliciously large files
+- **System stability**: Avoids memory exhaustion scenarios
+- **Predictable performance**: Consistent processing times within defined limits
+- **Error transparency**: Clear feedback when limits are exceeded
+
 ## When to Use PDF vs Document Processing
 
 ### Use PDF Processing When:

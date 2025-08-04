@@ -333,6 +333,7 @@ cd mcp-devtools
 make deps
 make test
 make build
+# Run security checks, see make help
 ```
 
 ## License
