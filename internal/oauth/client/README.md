@@ -154,8 +154,7 @@ The implementation provides comprehensive error handling:
 Supports cross-platform browser launching:
 
 - **macOS**: Uses `open` command
-- **Linux**: Uses `xdg-open` command  
-- **Windows**: Uses `rundll32` with `url.dll`
+- **Linux**: Uses `xdg-open` command
 
 ## Callback Server
 

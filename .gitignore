@@ -60,3 +60,5 @@ DOCLING_DEV_PLAN.md
 
 tests/docprocessing/*.md
 tests/docprocessing/*.png
+tmp_*
+gosec.out

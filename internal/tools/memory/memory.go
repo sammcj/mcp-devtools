@@ -26,7 +26,9 @@ func init() {
 func (m *MemoryTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"memory",
-		mcp.WithDescription(`Persistent knowledge graph memory system for AI agents. Stores entities, relations, and observations across sessions.
+		mcp.WithDescription(`Persistent knowledge graph memory system. Stores entities, relations, and observations across sessions.
+
+This can be useful if the user asks you to store or retrieve something specific in your memory.
 
 - **Entities** MUST be created before relations can reference them
 - **Destructive operations** (delete_*) permanently remove data - use carefully!
@@ -38,7 +40,7 @@ func (m *MemoryTool) Definition() mcp.Tool {
 		// Subcommand parameter to specify the operation
 		mcp.WithString("operation",
 			mcp.Required(),
-			mcp.Description("Memory operation to perform"),
+			mcp.Description("Operation to perform"),
 			mcp.Enum(
 				"create_entities",
 				"create_relations",

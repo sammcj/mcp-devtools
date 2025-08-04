@@ -30,17 +30,17 @@ func init() {
 func (t *PDFTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"pdf",
-		mcp.WithDescription(`Extract text, tables and images from PDFs. The text extraction quality depends on the PDF structure. This PDF extraction tool is simpler and faster than the document processing tool, in general try this tool for PDFs first`),
+		mcp.WithDescription(`Extract text, tables & images from PDFs. The text extraction quality depends on the PDF structure. This PDF extraction tool is simpler & faster than the document processing tool, in general try this tool for PDFs first`),
 		mcp.WithString("file_path",
 			mcp.Required(),
 			mcp.Description("Absolute file path to the PDF document to process"),
 		),
 		mcp.WithString("output_dir",
-			mcp.Description("Output directory for markdown and images (defaults to same directory as PDF)"),
+			mcp.Description("Output directory for markdown & images (defaults to same directory as PDF)"),
 		),
 		mcp.WithBoolean("extract_images",
-			mcp.Description("Whether to extract images from the PDF (default: true)"),
-			mcp.DefaultBool(true),
+			mcp.Description("Extract images from the PDF (default: false)"),
+			mcp.DefaultBool(false),
 		),
 		mcp.WithString("pages",
 			mcp.Description("Page range to process (e.g., '1-5', '1,3,5', or 'all' for all pages, default: all)"),
@@ -54,7 +54,7 @@ func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 	logger.Debug("Executing PDF processing tool")
 
 	// Parse and validate parameters
-	request, err := t.parseRequest(args)
+	request, err := t.ParseRequest(args)
 	if err != nil {
 		return nil, fmt.Errorf("invalid parameters: %w", err)
 	}
@@ -93,8 +93,8 @@ func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 	return t.newToolResultJSON(result)
 }
 
-// parseRequest parses and validates the tool arguments
-func (t *PDFTool) parseRequest(args map[string]interface{}) (*PDFRequest, error) {
+// ParseRequest parses and validates the tool arguments
+func (t *PDFTool) ParseRequest(args map[string]interface{}) (*PDFRequest, error) {
 	// Parse file_path (required)
 	filePath, ok := args["file_path"].(string)
 	if !ok || filePath == "" {
@@ -168,7 +168,7 @@ func (t *PDFTool) processPDF(ctx context.Context, logger *logrus.Logger, request
 	logger.WithField("page_count", pageCount).Debug("PDF page count")
 
 	// Parse page selection
-	selectedPages, err := t.parsePageSelection(request.Pages, pageCount)
+	selectedPages, err := t.ParsePageSelection(request.Pages, pageCount)
 	if err != nil {
 		return nil, fmt.Errorf("invalid page selection: %w", err)
 	}
@@ -247,8 +247,8 @@ func (t *PDFTool) processPDF(ctx context.Context, logger *logrus.Logger, request
 	return response, nil
 }
 
-// parsePageSelection parses page selection string into a slice of page numbers
-func (t *PDFTool) parsePageSelection(pages string, maxPage int) ([]int, error) {
+// ParsePageSelection parses page selection string into a slice of page numbers
+func (t *PDFTool) ParsePageSelection(pages string, maxPage int) ([]int, error) {
 	if pages == "" || pages == "all" {
 		result := make([]int, maxPage)
 		for i := 0; i < maxPage; i++ {
@@ -425,7 +425,7 @@ func (t *PDFTool) extractAllTextFromPDFContent(content string) []string {
 			strings.Contains(line, "' ") || strings.Contains(line, "\" ") {
 
 			// Extract text from this line
-			lineTexts := t.extractTextFromPDFOperation(line)
+			lineTexts := t.ExtractTextFromPDFOperation(line)
 			for _, text := range lineTexts {
 				if text != "" {
 					texts = append(texts, text)
@@ -437,8 +437,8 @@ func (t *PDFTool) extractAllTextFromPDFContent(content string) []string {
 	return texts
 }
 
-// extractTextFromPDFOperation extracts all text strings from a PDF operation line
-func (t *PDFTool) extractTextFromPDFOperation(operation string) []string {
+// ExtractTextFromPDFOperation extracts all text strings from a PDF operation line
+func (t *PDFTool) ExtractTextFromPDFOperation(operation string) []string {
 	var texts []string
 	inText := false
 	start := -1

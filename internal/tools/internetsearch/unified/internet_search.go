@@ -145,7 +145,7 @@ Provider-specific optional parameters:
 			mcp.Enum(providerEnumValues...),
 		),
 		mcp.WithNumber("count",
-			mcp.Description("Number of results (limits vary by provider and type)"),
+			mcp.Description("Number of results (limits vary by provider & type)"),
 			mcp.DefaultNumber(5),
 		),
 	}

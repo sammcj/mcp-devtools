@@ -34,7 +34,7 @@ func init() {
 func (t *UnifiedShadcnTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"shadcn",
-		mcp.WithDescription(`shadcn ui components. Supports listing, searching, getting details, and examples for shadcn ui components.
+		mcp.WithDescription(`shadcn ui components. Supports listing, searching, getting details, & examples for shadcn ui components.
 
 Actions:
 - list: Get all available shadcn ui components

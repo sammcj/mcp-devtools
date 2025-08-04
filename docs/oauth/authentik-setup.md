@@ -24,7 +24,7 @@ When configured with Authentik, both modes provide:
 - **Dynamic client registration** (RFC7591)
 - **Standards-compliant metadata** endpoints (RFC8414, RFC9728)
 - **Audience validation** for token security
-- **Cross-platform browser integration** (macOS, Linux, Windows)
+- **Cross-platform browser integration** (macOS and Linux)
 
 ## Prerequisites
 

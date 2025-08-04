@@ -6,32 +6,44 @@ A single, high-performance MCP server that replaces multiple Node.js and Python-
 graph TD
     A[MCP DevTools Server] --> B[Search & Discovery]
     A --> C[Document Processing]
-    A --> D[Web & Network]
     A --> E[Intelligence & Memory]
-    A --> F[UI & Utilities]
+    A --> F[Utilities]
+    A --> G[Agents]
 
     B --> B1[Internet Search]
     B --> B2[Package Search]
     B --> B3[Package Documentation]
+    B --> B4[GitHub]
+    B --> B5[ShadCN UI Components]
+    B --> B6[Web Fetch]
 
     C --> C1[Document Processing]
     C --> C2[PDF Processing]
 
-    D --> D1[Web Fetch]
-
     E --> E1[Think Tool]
     E --> E2[Memory Graph]
 
-    F --> F1[ShadCN UI Components]
-    F --> F2[American→English]
+    F --> F3[American→English]
+    F --> F4[Filesystem]
+
+    G --> G1[Claude Code]
+    G --> G2[Gemini CLI]
 
     classDef server fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef category fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
-    classDef tool fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
+    classDef utility fill:#E6FFE6,stroke:#4CAF50,color:#2E7D32
+    classDef searchDiscovery fill:#FFF3E6,stroke:#FF9800,color:#F57C00
+    classDef intelligence fill:#E6F7FF,stroke:#81D4FA,color:#0288D1
+    classDef documentProcessing fill:#FFF0F0,stroke:#FFCDD2,color:#C62828
+    classDef agents fill:#F0E6FF,stroke:#9575CD,color:#5E35B1
 
     class A server
-    class B,C,D,E,F category
-    class B1,B2,B3,C1,C2,D1,E1,E2,F1,F2 tool
+    class B,C,E,F,G category
+    class F3,F4 utility
+    class B1,B2,B3,B4,B5,B6 searchDiscovery
+    class C1,C2 documentProcessing
+    class E1,E2 intelligence
+    class G1,G2 agents
 ```
 
 ## Why I Built MCP DevTools
@@ -47,9 +59,40 @@ graph TD
 - Works out of the box for most tools
 
 **🛠 Comprehensive Tool Suite**
-- 11+ essential developer tools in one package
+- 12+ essential developer tools in one package
 - No need to manage multiple MCP server installations
 - Consistent API across all tools
+
+## Quickstart
+
+You must have a recent version of Go installed.
+
+1. Install the latest MCP DevTools binary:
+
+```shell
+go install github.com/sammcj/mcp-devtools@HEAD
+echo "${GOPATH}/bin/mcp-devtools" # Use this path in your MCP configuration, if your GOPATH is not set, please check your Go installation / configuration.
+
+# If you're on macOS, you'll also need to run the following command to allow the downloaded binary to run:
+xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
+```
+
+2. Update your MCP client to add the MCP DevTools server configuration, replacing `/path/to/mcp-devtools` with the actual path to the binary (e.g. `/Users/samm/go/bin/mcp-devtools`):
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "stdio",
+      "command": "/path/to/mcp-devtools",
+      "env": {
+        "DISABLED_FUNCTIONS": "brave_local_search,brave_video_search" // Optional, disable specific tools if not needed
+      }
+    }
+  }
+}
+```
+
+See below for various environment variables you can set to configure specific features.
 
 ## Available Tools
 
@@ -207,6 +250,10 @@ All environment variables are optional, but if you want to use specific search p
 - `SEARXNG_BASE_URL` - Enable SearXNG search provider by providing the base URL (e.g. `https://searxng.example.com`)
 - `MEMORY_FILE_PATH` - Memory storage location (default: `~/.mcp-devtools/`)
 - `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
+
+**Filesystem Tool (Security-Sensitive):**
+- `FILESYSTEM_TOOL_ENABLE` - Set to `"true"` to enable filesystem operations (disabled by default)
+- `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories
 
 **Document Processing:**
 - `DOCLING_PYTHON_PATH` - Python executable path (default: auto-detected)

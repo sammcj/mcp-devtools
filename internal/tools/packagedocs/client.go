@@ -17,7 +17,7 @@ import (
 const (
 	context7BaseURL      = "https://context7.com/api"
 	defaultMinimumTokens = 10000
-	cacheExpiry          = 30 * time.Minute
+	cacheExpiry          = 120 * time.Minute
 )
 
 // Client handles communication with the Context7 API
