@@ -63,6 +63,22 @@ SEARXNG_PASSWORD="your-password"
 ### DuckDuckGo
 No configuration required - works out of the box.
 
+### Rate Limiting Configuration
+
+The Internet Search tool supports configurable rate limiting to protect external search providers:
+
+- **`INTERNET_SEARCH_RATE_LIMIT`**: Maximum HTTP requests per second to search providers
+  - **Default**: `1`
+  - **Description**: Controls the rate of HTTP requests to prevent overwhelming search provider APIs
+  - **Example**: `INTERNET_SEARCH_RATE_LIMIT=2` allows up to 2 requests per second
+
+### Security Features
+
+- **Rate Limiting**: Configurable request rate limiting protects against overwhelming external search provider APIs
+- **Input Validation**: Comprehensive validation of search parameters and provider selection
+- **Error Handling**: Graceful handling of network issues and API failures
+- **Trusted Sources**: Only queries established search provider APIs (Brave, SearXNG, DuckDuckGo)
+
 ## Usage Examples
 
 While intended to be activated via a prompt to an agent, below are some example JSON tool calls.

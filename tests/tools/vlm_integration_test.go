@@ -10,14 +10,14 @@ import (
 )
 
 func TestVLMPipeline_ActualIntegration(t *testing.T) {
+	// Skip this test unless explicitly requested via TEST_VLM_INTEGRATION
+	if os.Getenv("TEST_VLM_INTEGRATION") == "" {
+		t.Skip("Skipping VLM Pipeline integration test: Set TEST_VLM_INTEGRATION=1 to run external VLM tests")
+	}
+
 	// Load .env file from project root
 	projectRoot, err := findProjectRootIntegration()
 	require.NoError(t, err, "Failed to find project root")
-
-	// if the environment variable TEST_FAST is set, skip this test
-	if os.Getenv("TEST_FAST") != "" {
-		t.Skip("Skipping VLM Pipeline integration test: TEST_FAST environment variable is set")
-	}
 
 	envPath := filepath.Join(projectRoot, ".env")
 	if _, err := os.Stat(envPath); os.IsNotExist(err) {

@@ -17,6 +17,11 @@ import (
 )
 
 func TestMermaidGeneration(t *testing.T) {
+	// Skip this test unless explicitly requested via TEST_VLM_INTEGRATION
+	if os.Getenv("TEST_VLM_INTEGRATION") == "" {
+		t.Skip("Skipping Mermaid generation test: Set TEST_VLM_INTEGRATION=1 to run external VLM tests")
+	}
+
 	// Load .env file if it exists
 	loadDotEnv()
 
@@ -61,11 +66,26 @@ func TestMermaidGeneration(t *testing.T) {
 			t.Fatal("process_document tool not found in registry")
 		}
 
-		// Test with a document that should contain diagrams
-		testPDFPath := "/Users/samm/Downloads/ocrtest/my-pdf.pdf"
-		if _, err := os.Stat(testPDFPath); os.IsNotExist(err) {
-			t.Skip("Test PDF not available - skipping VLM processing test")
+		// Look for test PDFs in the tests/docprocessing directory
+		testPDFPaths := []string{
+			"tests/docprocessing/test-complex-pdf.pdf",
+			"tests/docprocessing/test-tables-charts.pdf",
+			"/Users/samm/Downloads/ocrtest/my-pdf.pdf", // Keep as fallback
 		}
+
+		var testPDFPath string
+		for _, path := range testPDFPaths {
+			if _, err := os.Stat(path); err == nil {
+				testPDFPath = path
+				break
+			}
+		}
+
+		if testPDFPath == "" {
+			t.Skip("No test PDF available - skipping VLM processing test")
+		}
+
+		t.Logf("Using test PDF: %s", testPDFPath)
 
 		args := map[string]interface{}{
 			"source":                      testPDFPath,

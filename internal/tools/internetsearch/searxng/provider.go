@@ -20,6 +20,7 @@ type SearXNGProvider struct {
 	baseURL  string
 	username string
 	password string
+	client   internetsearch.HTTPClientInterface
 }
 
 // SearXNGResponse represents the response from SearXNG API
@@ -51,6 +52,7 @@ func NewSearXNGProvider() *SearXNGProvider {
 		baseURL:  strings.TrimSuffix(baseURL, "/"),
 		username: os.Getenv("SEARXNG_USERNAME"),
 		password: os.Getenv("SEARXNG_PASSWORD"),
+		client:   internetsearch.NewRateLimitedHTTPClient(),
 	}
 }
 
@@ -168,12 +170,8 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 	// Add user agent
 	req.Header.Set("User-Agent", "MCP-DevTools/1.0")
 
-	// Execute request
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
-	resp, err := client.Do(req)
+	// Execute request using rate-limited client
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("search request failed: %w", err)
 	}

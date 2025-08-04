@@ -44,6 +44,13 @@ test:
 test-fast:
 	$(GOTEST) -short ./tests/...
 
+# Run VLM/LLM integration tests (requires external VLM/LLM server configuration)
+.PHONY: test-docling-vlm
+test-docling-vlm:
+	@echo "Running VLM/LLM integration tests..."
+	@echo "Note: This requires VLM environment variables to be configured in .env"
+	TEST_VLM_INTEGRATION=1 $(GOTEST) -v -run "TestVLMPipeline_ActualIntegration|TestLLMClient_Connectivity|TestMermaidGeneration" ./tests/tools/
+
 # Clean build artifacts
 .PHONY: clean
 clean:
@@ -150,6 +157,7 @@ help:
 	@echo "  run-http     : Run the server with Streamable HTTP transport"
 	@echo "  test         : Run all tests (including external dependencies)"
 	@echo "  test-fast    : Run fast tests (no external dependencies)"
+	@echo "  test-docling-vlm : Run VLM/LLM integration tests (requires .env configuration)"
 	@echo "  gosec				: Run gosec security tests"
 	@echo "  clean        : Clean build artifacts"
 	@echo "  fmt          : Format code"
