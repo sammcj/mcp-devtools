@@ -115,10 +115,12 @@ Examples:
 - Image search: {"type": "image", "query": "golang gopher mascot", "count": 3}
 - News search: {"type": "news", "query": "AI breakthrough", "time_range": "day"}
 - Video search: {"type": "video", "query": "golang tutorial"}
-- Local search: {"type": "local", "query": "pizza near Central Park"}
 
 Provider-specific optional parameters:
-%s`,
+%s
+
+After you have received the results you can fetch the url if you want to read the full content.
+`,
 		strings.Join(availableProviders, ", "), defaultProvider, typesList, strings.Join(providerSpecificParams, "\n"))
 
 	enumValues := make([]string, 0, len(typesList))
@@ -146,7 +148,7 @@ Provider-specific optional parameters:
 		),
 		mcp.WithNumber("count",
 			mcp.Description("Number of results (limits vary by provider & type)"),
-			mcp.DefaultNumber(5),
+			mcp.DefaultNumber(4),
 		),
 	}
 

@@ -25,10 +25,13 @@ func init() {
 func (t *GetLibraryDocsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"get_library_docs",
-		mcp.WithDescription(`Fetches up-to-date documentation for a library / package. You must call 'resolve_library_id' first to obtain the exact Context7-compatible library ID required to use this tool, UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.`),
+		mcp.WithDescription(`Fetches up to date documentation for a library / package. You must call 'resolve_library_id' first to obtain the exact Context7-compatible library ID required to use this tool, UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.
+
+		You should use this tool in combination with resolve_library_id when looking up software documentation and examples to understand how to implement a specific library or package in your code.
+		`),
 		mcp.WithString("context7CompatibleLibraryID",
 			mcp.Required(),
-			mcp.Description("Exact Context7-compatible library ID (e.g., '/mongodb/docs', '/vercel/next.js', '/supabase/supabase', '/vercel/next.js/v14.3.0-canary.87') retrieved from 'resolve_library_id' or directly from user query in the format '/org/project' or '/org/project/version'."),
+			mcp.Description("Exact Context7-compatible library ID (e.g., '/strands-agents/sdk-python', '/strands-agents/tools', '/strands-agents/samples', '/mongodb/docs', '/vercel/next.js', '/mark3labs/mcp-go', '/vercel/next.js/v14.3.0-canary.87') retrieved from 'resolve_library_id' or directly from user query in the format '/org/project' or '/org/project/version'."),
 		),
 		mcp.WithString("topic",
 			mcp.Description("Topic to focus documentation on (e.g., 'hooks', 'routing')."),
