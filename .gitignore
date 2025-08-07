@@ -68,3 +68,6 @@ gosec.out
 .mcp-scan
 mcp-scan.out
 semgrep.out
+**/*sbom*.json
+**/*vulnerability*scan*.json
+**/*.sarif

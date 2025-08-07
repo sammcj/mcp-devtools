@@ -33,7 +33,7 @@ func init() {
 func (t *SBOMTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"sbom",
-		mcp.WithDescription("Generate Software Bill of Materials (SBOM) from source code projects using Syft. Analyses current project dependencies and components."),
+		mcp.WithDescription("Generate Software Bill of Materials (SBOM) from source code projects using Syft. Analyses current project dependencies and components. Always saves to specified file and returns summary."),
 
 		// Required parameters
 		mcp.WithString("source",
@@ -52,7 +52,8 @@ func (t *SBOMTool) Definition() mcp.Tool {
 			mcp.DefaultBool(false),
 		),
 		mcp.WithString("output_file",
-			mcp.Description("Optional: Save output to an absolute file path rather than returning it."),
+			mcp.Required(),
+			mcp.Description("Absolute file path to save SBOM output. Creates directories as needed."),
 		),
 	)
 }
@@ -94,7 +95,10 @@ func (t *SBOMTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 		"output_file":   response.OutputFile,
 	}).Info("SBOM generation completed successfully")
 
-	return mcp.NewToolResultText(response.Content), nil
+	summary := fmt.Sprintf("SBOM generation completed successfully!\n\nDetails:\n- Source: %s\n- Format: %s\n- Packages found: %d\n- Output saved to: %s\n\nThe SBOM has been saved to the specified file and is ready for vulnerability scanning or compliance review.",
+		response.Source, response.Format, response.PackageCount, response.OutputFile)
+
+	return mcp.NewToolResultText(summary), nil
 }
 
 // SBOMRequest represents the parsed request parameters
@@ -138,10 +142,12 @@ func (t *SBOMTool) parseRequest(args map[string]interface{}) (*SBOMRequest, erro
 		request.IncludeDevDependencies = includeDevRaw
 	}
 
-	// Parse output_file (optional)
-	if outputFileRaw, ok := args["output_file"].(string); ok && outputFileRaw != "" {
-		request.OutputFile = strings.TrimSpace(outputFileRaw)
+	// Parse output_file (required)
+	outputFile, ok := args["output_file"].(string)
+	if !ok || outputFile == "" {
+		return nil, fmt.Errorf("missing or invalid required parameter: output_file")
 	}
+	request.OutputFile = strings.TrimSpace(outputFile)
 
 	// Validate paths are absolute
 	if err := t.validateAbsolutePaths(request); err != nil {
@@ -158,8 +164,8 @@ func (t *SBOMTool) validateAbsolutePaths(request *SBOMRequest) error {
 		return fmt.Errorf("source path must be absolute: %s", request.Source)
 	}
 
-	// Validate output file path if specified
-	if request.OutputFile != "" && !filepath.IsAbs(request.OutputFile) {
+	// Validate output file path is absolute
+	if !filepath.IsAbs(request.OutputFile) {
 		return fmt.Errorf("output_file path must be absolute: %s", request.OutputFile)
 	}
 
@@ -213,19 +219,16 @@ func (t *SBOMTool) executeSyft(ctx context.Context, request *SBOMRequest, logger
 		return nil, fmt.Errorf("failed to format SBOM: %w", err)
 	}
 
+	if err := t.writeToFile(request.OutputFile, string(content)); err != nil {
+		return nil, fmt.Errorf("failed to write to file: %w", err)
+	}
+
 	response := &SBOMResponse{
-		Content:      string(content),
+		Content:      "", // Don't include full content in response
 		Format:       request.OutputFormat,
 		PackageCount: len(sbomResult.Artifacts.Packages.Sorted()),
 		Source:       request.Source,
 		OutputFile:   request.OutputFile,
-	}
-
-	// Handle file output if specified
-	if request.OutputFile != "" {
-		if err := t.writeToFile(request.OutputFile, string(content)); err != nil {
-			return nil, fmt.Errorf("failed to write to file: %w", err)
-		}
 	}
 
 	return response, nil

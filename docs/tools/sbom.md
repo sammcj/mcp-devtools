@@ -1,6 +1,6 @@
 # SBOM Tool
 
-The SBOM (Software Bill of Materials) tool generates comprehensive dependency inventories from source code projects using Anchore Syft, providing essential visibility into software composition for AI-assisted development workflows.
+The SBOM (Software Bill of Materials) tool generates comprehensive dependency inventories from source code projects using Anchore Syft, always saving results to a specified file and returning a concise summary for efficient AI-assisted development workflows.
 
 ## Overview
 
@@ -11,6 +11,7 @@ Critical for modern software development, this tool creates detailed inventories
 - **Source Code Analysis**: Scan project dependencies from multiple package managers
 - **Multiple Output Formats**: Syft JSON, CycloneDX, SPDX, and human-readable table formats
 - **Development Dependencies**: Optional inclusion of dev/test dependencies
+- **File-First Operation**: Always saves detailed SBOM to specified file, returns summary
 - **Absolute Path Requirements**: Consistent file path handling for MCP environments
 - **Multi-Language Support**: Works with npm, pip, go.mod, Maven, Gradle, Cargo, and more
 - **Security-First Design**: Disabled by default, explicitly enabled via environment variable
@@ -29,7 +30,8 @@ While intended to be activated via a prompt to an agent, below are some example 
 {
   "name": "sbom",
   "arguments": {
-    "source": "/Users/developer/my-project"
+    "source": "/Users/developer/my-project",
+    "output_file": "/Users/developer/my-project-sbom.json"
   }
 }
 ```
@@ -51,6 +53,7 @@ While intended to be activated via a prompt to an agent, below are some example 
   "name": "sbom",
   "arguments": {
     "source": "/Users/developer/api-service",
+    "output_file": "/Users/developer/api-service-sbom.json",
     "include_dev_dependencies": true,
     "output_format": "cyclonedx-json"
   }
@@ -77,7 +80,7 @@ While intended to be activated via a prompt to an agent, below are some example 
 | `source`                   | string  | -           | Yes      | Absolute path to source directory        |
 | `output_format`            | string  | "syft-json" | No       | SBOM output format                       |
 | `include_dev_dependencies` | boolean | false       | No       | Include development dependencies         |
-| `output_file`              | string  | -           | No       | Absolute path to save SBOM               |
+| `output_file`              | string  | -           | Yes      | Absolute path to save SBOM               |
 
 ### Output Format Options
 
@@ -105,67 +108,29 @@ The tool automatically detects and analyses dependencies from these package mana
 
 ## Response Format
 
-### Syft JSON Response (Default)
-```json
-{
-  "sbom_format": "syft-json",
-  "source": "/Users/developer/my-project",
-  "packages": [
-    {
-      "name": "express",
-      "version": "4.18.2",
-      "type": "npm",
-      "foundBy": "javascript-package-cataloger",
-      "locations": [
-        {
-          "path": "/Users/developer/my-project/package.json"
-        }
-      ],
-      "licenses": ["MIT"],
-      "purl": "pkg:npm/express@4.18.2"
-    }
-  ],
-  "package_count": 156,
-  "timestamp": "2024-01-15T10:30:45Z"
-}
+The tool always returns a concise summary while saving the detailed SBOM to the specified file.
+
+### Tool Response (Summary)
+```
+SBOM generation completed successfully!
+
+Details:
+- Source: /Users/developer/my-project
+- Format: syft-json
+- Packages found: 156
+- Output saved to: /Users/developer/my-project-sbom.json
+
+The SBOM has been saved to the specified file and is ready for vulnerability scanning or compliance review.
 ```
 
-### CycloneDX JSON Response
-```json
-{
-  "bomFormat": "CycloneDX",
-  "specVersion": "1.4",
-  "version": 1,
-  "metadata": {
-    "timestamp": "2024-01-15T10:30:45Z",
-    "component": {
-      "name": "my-project",
-      "type": "application"
-    }
-  },
-  "components": [
-    {
-      "type": "library",
-      "name": "express",
-      "version": "4.18.2",
-      "purl": "pkg:npm/express@4.18.2",
-      "licenses": [{"license": {"name": "MIT"}}]
-    }
-  ]
-}
-```
+### Generated File Formats
 
-### Table Format Response
-```
-NAME                    VERSION    TYPE
-express                 4.18.2     npm
-body-parser            1.20.1     npm
-cookie-parser          1.4.6      npm
-cors                   2.8.5      npm
-helmet                 6.0.1      npm
-morgan                 1.10.0     npm
-...
-```
+The detailed SBOM is saved to the specified file in the chosen format. The tool supports multiple industry-standard formats:
+
+**Syft JSON Format**: Rich metadata, optimised for vulnerability scanning
+**CycloneDX Format**: OWASP standard for security toolchain integration  
+**SPDX Format**: Linux Foundation standard for compliance and legal review
+**Table Format**: Human-readable text format for manual review
 
 ## Common Use Cases
 
@@ -176,6 +141,7 @@ Understand your project's dependency landscape:
   "name": "sbom",
   "arguments": {
     "source": "/Users/developer/new-service",
+    "output_file": "/Users/developer/new-service-sbom.json",
     "include_dev_dependencies": true
   }
 }
