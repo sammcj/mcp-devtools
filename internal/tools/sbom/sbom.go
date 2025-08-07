@@ -9,6 +9,9 @@ import (
 	"sync"
 	"time"
 
+	gologger "github.com/anchore/go-logger"
+	"github.com/anchore/go-logger/adapter/discard"
+	logrusadapter "github.com/anchore/go-logger/adapter/logrus"
 	"github.com/anchore/syft/syft"
 	"github.com/anchore/syft/syft/format"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -63,6 +66,29 @@ func (t *SBOMTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 	// Check if SBOM tool is enabled (disabled by default)
 	if !tools.IsToolEnabled("sbom") {
 		return nil, fmt.Errorf("SBOM tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'sbom'")
+	}
+
+	// Configure Syft logging to prevent stdout/stderr interference in stdio mode
+	// Check if we're likely in stdio mode by checking log level (ErrorLevel = stdio mode)
+	if logger.Level == logrus.ErrorLevel {
+		// In stdio mode, disable Syft logging completely to prevent MCP protocol interference
+		syft.SetLogger(discard.New())
+	} else {
+		// In non-stdio mode, allow minimal Syft logging to stderr
+		stderrLogger, err := logrusadapter.New(logrusadapter.Config{
+			EnableConsole: true,
+			Level:         gologger.WarnLevel,
+		})
+		if err != nil {
+			// Fallback to discard if logger creation fails
+			syft.SetLogger(discard.New())
+		} else {
+			// Type assert to Controller to access SetOutput method
+			if ctrl, ok := stderrLogger.(gologger.Controller); ok {
+				ctrl.SetOutput(os.Stderr)
+			}
+			syft.SetLogger(stderrLogger)
+		}
 	}
 
 	// Parse and validate parameters
