@@ -456,7 +456,7 @@ func (gm *GraphManager) SearchNodes(query string) (*KnowledgeGraph, []SearchResu
 					continue
 				}
 
-				// Calculate fuzzy score (normalize to 0-1 range)
+				// Calculate fuzzy score (Normalise to 0-1 range)
 				fuzzyScore := float64(result.Score) / 100.0
 				if fuzzyScore < 0.3 { // Skip very low relevance matches
 					continue

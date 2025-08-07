@@ -9,7 +9,7 @@ Based on Anthropic's research, the Think tool allows AI agents to pause and reas
 ## Features
 
 - **Structured Reasoning**: Dedicated space for analysis and planning
-- **Complex Problem Solving**: Break down multi-step problems systematically  
+- **Complex Problem Solving**: Break down multi-step problems systematically
 - **Decision Support**: Evaluate options before choosing actions
 - **Edge Case Handling**: Consider unusual scenarios and potential issues
 - **Workflow Integration**: Seamlessly fits into existing tool chains
@@ -17,7 +17,7 @@ Based on Anthropic's research, the Think tool allows AI agents to pause and reas
 ## Research Background
 
 According to Anthropic's research, the Think tool provides:
-- **54% relative improvement** in complex airline domain scenarios
+- **54% relative improvement** in complex domain scenarios
 - **Better consistency** across multiple trials
 - **Enhanced handling** of edge cases and unusual scenarios
 
@@ -38,7 +38,7 @@ Before acting on complex tool results:
 For multi-step challenges:
 ```json
 {
-  "name": "think", 
+  "name": "think",
   "arguments": {
     "thought": "This deployment issue involves network configuration, database migrations, and service dependencies. Let me work through each component systematically to identify the root cause."
   }
@@ -185,7 +185,7 @@ After gathering data:
 ### Debugging Complex Issues
 ```json
 {
-  "name": "think", 
+  "name": "think",
   "arguments": {
     "thought": "The application works locally but fails in production. Key differences: environment variables, database connections, network configuration, and load balancing. I should systematically check each difference."
   }
@@ -209,7 +209,7 @@ After gathering data:
 # 1. Gather information
 internet_search "kubernetes ingress nginx configuration"
 
-# 2. Think through findings  
+# 2. Think through findings
 think "The search results show multiple configuration approaches. I need to consider which matches their cloud provider and security requirements."
 
 # 3. Get detailed documentation

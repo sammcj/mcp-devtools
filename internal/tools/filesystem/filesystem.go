@@ -37,13 +37,8 @@ type FileSystemTool struct {
 	mu                 sync.RWMutex
 }
 
-// init registers the filesystem tool if enabled
+// init registers the filesystem tool
 func init() {
-	// Check if filesystem tool is enabled (disabled by default for security)
-	if os.Getenv("FILESYSTEM_TOOL_ENABLE") != "true" {
-		return // Tool is disabled by default
-	}
-
 	tool := &FileSystemTool{
 		allowedDirectories: getAllowedDirectories(),
 	}
@@ -247,6 +242,11 @@ Functions and their required parameters:
 
 // Execute executes the filesystem tool
 func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+	// Check if filesystem tool is enabled (disabled by defaulty)
+	if !tools.IsToolEnabled("filesystem") {
+		return nil, fmt.Errorf("filesystem tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'filesystem'")
+	}
+
 	// Parse function parameter
 	function, ok := args["function"].(string)
 	if !ok {
@@ -1293,11 +1293,7 @@ func (t *FileSystemTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Troubleshooting: []tools.TroubleshootingTip{
 			{
 				Problem:  "Access denied - path outside allowed directories",
-				Solution: "The filesystem tool has security restrictions. Use 'list_allowed_directories' to see valid paths, or set FILESYSTEM_TOOL_ALLOWED_DIRS environment variable to configure allowed directories.",
-			},
-			{
-				Problem:  "Tool not available/registered",
-				Solution: "Filesystem tool is disabled by default for security. Set FILESYSTEM_TOOL_ENABLE=true environment variable to enable the tool.",
+				Solution: "The filesystem tool has security restrictions. Use 'list_allowed_directories' to see valid paths, or ask the user to set FILESYSTEM_TOOL_ALLOWED_DIRS environment variable to configure allowed directories.",
 			},
 			{
 				Problem:  "File size exceeds maximum allowed size error",

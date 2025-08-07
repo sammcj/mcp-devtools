@@ -6,6 +6,7 @@ A single, high-performance MCP server that replaces multiple Node.js and Python-
 graph TD
     A[MCP DevTools Server] --> B[Search & Discovery]
     A --> C[Document Processing]
+    A --> D[Security Analysis]
     A --> E[Intelligence & Memory]
     A --> F[Utilities]
     A --> G[Agents]
@@ -19,6 +20,9 @@ graph TD
 
     C --> C1[Document Processing]
     C --> C2[PDF Processing]
+
+    D --> D1[SBOM Generation]
+    D --> D2[Vulnerability Scan]
 
     E --> E1[Think Tool]
     E --> E2[Memory Graph]
@@ -35,13 +39,15 @@ graph TD
     classDef searchDiscovery fill:#FFF3E6,stroke:#FF9800,color:#F57C00
     classDef intelligence fill:#E6F7FF,stroke:#81D4FA,color:#0288D1
     classDef documentProcessing fill:#FFF0F0,stroke:#FFCDD2,color:#C62828
+    classDef security fill:#FFE6E6,stroke:#FF6B6B,color:#D63031
     classDef agents fill:#F0E6FF,stroke:#9575CD,color:#5E35B1
 
     class A server
-    class B,C,E,F,G category
+    class B,C,D,E,F,G category
     class F3,F4 utility
     class B1,B2,B3,B4,B5,B6 searchDiscovery
     class C1,C2 documentProcessing
+    class D1,D2 security
     class E1,E2 intelligence
     class G1,G2 agents
 ```
@@ -59,7 +65,7 @@ graph TD
 - Works out of the box for most tools
 
 **🛠 Comprehensive Tool Suite**
-- 12+ essential developer tools in one package
+- 15+ essential developer tools in one package
 - No need to manage multiple MCP server installations
 - Consistent API across all tools
 
@@ -85,7 +91,8 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "DISABLED_FUNCTIONS": "brave_local_search,brave_video_search" // Optional, disable specific tools if not needed
+        "DISABLED_FUNCTIONS": "brave_local_search,brave_video_search", // Optional, disable specific tools if not needed
+        "ENABLE_ADDITIONAL_TOOLS": "sbom,vulnerability_scan" // Optional, enable security analysis tools
       }
     }
   }
@@ -96,24 +103,26 @@ See below for various environment variables you can set to configure specific fe
 
 ## Available Tools
 
-| Tool                                                             | Purpose                            | Dependencies                  | Quick Example                    |
-|------------------------------------------------------------------|------------------------------------|-------------------------------|----------------------------------|
-| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown   | None                          | Documentation and articles       |
-| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search          | None (Provider keys optional) | Web, image, news, video search   |
-| **[Package Search](docs/tools/package-search.md)**               | Check package versions             | None                          | NPM, Python, Go, Java, Docker    |
-| **[Package Documentation](docs/tools/package-documentation.md)** | Library documentation lookup       | None                          | React, Django, TensorFlow docs   |
-| **[PDF Processing](docs/tools/pdf-processing.md)**               | Fast PDF text extraction           | None                          | Quick PDF to Markdown            |
-| **[Document Processing](docs/tools/document-processing.md)**     | Convert documents to Markdown      | `pip install -U docling`      | PDF, DOCX → Markdown with OCR    |
-| **[Think](docs/tools/think.md)**                                 | Structured reasoning space         | None                          | Complex problem analysis         |
-| **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs        | None                          | Store entities and relationships |
-| **[ShadCN UI](docs/tools/shadcn-ui.md)**                         | Component information              | None                          | Button, Dialog, Form components  |
-| **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling        | None                          | Organise, colour, centre         |
-| **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data       | None (GitHub token optional)  | Issues, PRs, repos, cloning      |
-| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring | None                          | Find files over 700 lines        |
-| **[DevTools Help](docs/tools/devtools_help.md)**                 | Extended info about DevTools tools | None                          | Usage examples, troubleshooting  |
-| **[Filesystem](docs/tools/filesystem.md)**                       | File and directory operations      | `ENABLE_AGENTS=filesystem`    | Read, write, edit, search files  |
-| **[Gemini Agent](docs/tools/gemini-agent.md)**                   | Gemini CLI Agent                   | `ENABLE_AGENTS=gemini`        | Code analysis, generation        |
-| **[Claude Agent](docs/tools/claude-agent.md)**                   | Claude Code CLI Agent              | `ENABLE_AGENTS=claude`        | Code analysis, generation        |
+| Tool                                                             | Purpose                             | Dependencies                                 | Quick Example                    |
+|------------------------------------------------------------------|-------------------------------------|----------------------------------------------|----------------------------------|
+| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown    | None                                         | Documentation and articles       |
+| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search           | None (Provider keys optional)                | Web, image, news, video search   |
+| **[Package Search](docs/tools/package-search.md)**               | Check package versions              | None                                         | NPM, Python, Go, Java, Docker    |
+| **[Package Documentation](docs/tools/package-documentation.md)** | Library documentation lookup        | None                                         | React, Django, TensorFlow docs   |
+| **[PDF Processing](docs/tools/pdf-processing.md)**               | Fast PDF text extraction            | None                                         | Quick PDF to Markdown            |
+| **[Document Processing](docs/tools/document-processing.md)**     | Convert documents to Markdown       | `pip install -U docling`                     | PDF, DOCX → Markdown with OCR    |
+| **[Think](docs/tools/think.md)**                                 | Structured reasoning space          | None                                         | Complex problem analysis         |
+| **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs         | None                                         | Store entities and relationships |
+| **[ShadCN UI](docs/tools/shadcn-ui.md)**                         | Component information               | None                                         | Button, Dialog, Form components  |
+| **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling         | None                                         | Organise, colour, centre         |
+| **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data        | None (GitHub token optional)                 | Issues, PRs, repos, cloning      |
+| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring  | None                                         | Find files over 700 lines        |
+| **[DevTools Help](docs/tools/devtools_help.md)**                 | Extended info about DevTools tools  | None                                         | Usage examples, troubleshooting  |
+| **[Filesystem](docs/tools/filesystem.md)**                       | File and directory operations       | `ENABLE_ADDITIONAL_TOOLS=filesystem`         | Read, write, edit, search files  |
+| **[SBOM Generation](docs/tools/sbom.md)**                        | Generate Software Bill of Materials | `ENABLE_ADDITIONAL_TOOLS=sbom`               | Analyse project dependencies     |
+| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)**       | Security vulnerability scanning     | `ENABLE_ADDITIONAL_TOOLS=vulnerability_scan` | Find security issues             |
+| **[Gemini Agent](docs/tools/gemini-agent.md)**                   | Gemini CLI Agent                    | `ENABLE_ADDITIONAL_TOOLS=gemini-agent`       | Code analysis, generation        |
+| **[Claude Agent](docs/tools/claude-agent.md)**                   | Claude Code CLI Agent               | `ENABLE_ADDITIONAL_TOOLS=claude-agent`       | Code analysis, generation        |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
@@ -256,9 +265,9 @@ All environment variables are optional, but if you want to use specific search p
 - `MEMORY_FILE_PATH` - Memory storage location (default: `~/.mcp-devtools/`)
 - `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
-**Filesystem Tool (Security-Sensitive):**
-- `FILESYSTEM_TOOL_ENABLE` - Set to `"true"` to enable filesystem operations (disabled by default)
-- `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories
+**Security-Sensitive Tools:**
+- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent`)
+- `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories (only for filesystem tool)
 
 **Document Processing:**
 - `DOCLING_PYTHON_PATH` - Python executable path (default: auto-detected)

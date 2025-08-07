@@ -27,12 +27,9 @@ const (
 	AgentMaxResponseSizeEnvVar = "AGENT_MAX_RESPONSE_SIZE"
 )
 
-// init registers the tool with the registry if enabled
+// init registers the tool with the registry
 func init() {
-	enabledAgents := os.Getenv("ENABLE_AGENTS")
-	if strings.Contains(enabledAgents, "gemini") {
-		registry.Register(&GeminiTool{})
-	}
+	registry.Register(&GeminiTool{})
 }
 
 // Definition returns the tool's definition for MCP registration
@@ -64,6 +61,11 @@ func (t *GeminiTool) Definition() mcp.Tool {
 
 // Execute executes the tool's logic by calling the gemini CLI
 func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+	// Check if gemini-agent tool is enabled (disabled by default for security)
+	if !tools.IsToolEnabled("gemini-agent") {
+		return nil, fmt.Errorf("gemini agent tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'gemini-agent'")
+	}
+
 	logger.Info("Executing gemini tool")
 
 	timeoutStr := os.Getenv("AGENT_TIMEOUT")
@@ -255,7 +257,7 @@ func (t *GeminiTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Troubleshooting: []tools.TroubleshootingTip{
 			{
 				Problem:  "Tool not available/gemini command not found",
-				Solution: "The gemini agent requires Gemini CLI to be installed and ENABLE_AGENTS environment variable to include 'gemini'. Install Gemini CLI and set ENABLE_AGENTS=gemini or ENABLE_AGENTS=gemini,claude for both.",
+				Solution: "The gemini agent requires Gemini CLI to be installed and ENABLE_ADDITIONAL_TOOLS environment variable to include 'gemini-agent'. Install Gemini CLI and set ENABLE_ADDITIONAL_TOOLS=gemini-agent.",
 			},
 			{
 				Problem:  "RESOURCE_EXHAUSTED quota exceeded error",

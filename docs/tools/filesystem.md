@@ -6,18 +6,11 @@ The filesystem tool provides secure file and directory operations with strict ac
 
 ⚠️ **IMPORTANT**: This tool provides direct filesystem access and is **disabled by default**. Only enable it if you understand the security implications and trust the AI agent with filesystem operations.
 
-## Enabling the Tool
-
-To enable the filesystem tool, set the environment variable:
-```bash
-export FILESYSTEM_TOOL_ENABLE=true
-```
-
 ## Configuration
 
 ### Environment Variables
 
-- **`FILESYSTEM_TOOL_ENABLE`** (required): Set to `"true"` to enable the tool (disabled by default)
+- **`ENABLE_ADDITIONAL_TOOLS`** (required): Add `filesystem` to enable the tool (disabled by default)
 - **`FILESYSTEM_TOOL_ALLOWED_DIRS`** (optional): Colon-separated (Unix) list of allowed directory paths
 
 ### Custom Allowed Directories
