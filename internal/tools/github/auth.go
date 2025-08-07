@@ -227,3 +227,43 @@ func parseInt(s string) (int, error) {
 	}
 	return result, nil
 }
+
+// CleanPath cleans and validates a file path
+func CleanPath(path string) string {
+	if path == "" {
+		return path
+	}
+
+	// Remove leading and trailing slashes
+	for len(path) > 0 && path[0] == '/' {
+		path = path[1:]
+	}
+	for len(path) > 0 && path[len(path)-1] == '/' {
+		path = path[:len(path)-1]
+	}
+
+	return path
+}
+
+// CreateFileNotFoundError creates a helpful error message for file not found
+func CreateFileNotFoundError(owner, repo, path, ref string) error {
+	refInfo := ""
+	if ref != "" {
+		refInfo = fmt.Sprintf(" in ref '%s'", ref)
+	} else {
+		refInfo = " in the default branch"
+	}
+
+	return fmt.Errorf("file '%s' not found in repository %s/%s%s. "+
+		"Suggestions: "+
+		"1) Verify the file path exists by checking https://github.com/%s/%s/tree/%s "+
+		"2) Use the list_directory function to explore the repository structure "+
+		"3) Ensure the path doesn't have typos or case sensitivity issues",
+		path, owner, repo, refInfo, owner, repo,
+		func() string {
+			if ref != "" {
+				return ref
+			}
+			return "main"
+		}())
+}
