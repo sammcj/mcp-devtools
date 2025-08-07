@@ -70,7 +70,6 @@ func TestMermaidGeneration(t *testing.T) {
 		testPDFPaths := []string{
 			"tests/docprocessing/test-complex-pdf.pdf",
 			"tests/docprocessing/test-tables-charts.pdf",
-			"/Users/samm/Downloads/ocrtest/my-pdf.pdf", // Keep as fallback
 		}
 
 		var testPDFPath string

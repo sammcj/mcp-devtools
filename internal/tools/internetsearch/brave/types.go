@@ -43,12 +43,12 @@ func decodeHTMLEntities(s string) string {
 	htmlTagRegex := regexp.MustCompile(`<[^>]*>`)
 	decoded = htmlTagRegex.ReplaceAllString(decoded, "")
 
-	// Clean up and normalize the text
-	return normalizeText(decoded)
+	// Clean up and Normalise the text
+	return NormaliseText(decoded)
 }
 
-// normalizeText removes problematic Unicode and normalizes whitespace
-func normalizeText(s string) string {
+// NormaliseText removes problematic Unicode and Normalises whitespace
+func NormaliseText(s string) string {
 	// Remove or replace problematic Unicode characters
 	var cleaned strings.Builder
 	for _, r := range s {
@@ -62,7 +62,7 @@ func normalizeText(s string) string {
 
 	result := cleaned.String()
 
-	// Normalize whitespace
+	// Normalise whitespace
 	result = regexp.MustCompile(`\s+`).ReplaceAllString(result, " ")
 	result = strings.TrimSpace(result)
 

@@ -27,12 +27,9 @@ const (
 	AgentMaxResponseSizeEnvVar = "AGENT_MAX_RESPONSE_SIZE"
 )
 
-// init registers the tool with the registry if enabled
+// init registers the tool with the registry
 func init() {
-	enabledAgents := os.Getenv("ENABLE_AGENTS")
-	if strings.Contains(enabledAgents, "claude") {
-		registry.Register(&ClaudeTool{})
-	}
+	registry.Register(&ClaudeTool{})
 }
 
 // Definition returns the tool's definition for MCP registration
@@ -66,6 +63,11 @@ func (t *ClaudeTool) Definition() mcp.Tool {
 
 // Execute executes the tool's logic by calling the claude CLI
 func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+	// Check if claude-agent tool is enabled (disabled by default for security)
+	if !tools.IsToolEnabled("claude-agent") {
+		return nil, fmt.Errorf("claude agent tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'claude-agent'")
+	}
+
 	logger.Info("Executing claude tool")
 
 	timeoutStr := os.Getenv("AGENT_TIMEOUT")

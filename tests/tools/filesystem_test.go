@@ -16,7 +16,7 @@ import (
 // setupFilesystemTool creates a filesystem tool for testing with proper environment setup
 func setupFilesystemTool(tempDir string) *filesystem.FileSystemTool {
 	// Set environment variable to enable the tool for testing
-	_ = os.Setenv("FILESYSTEM_TOOL_ENABLE", "true") // Ignore error in tests
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "filesystem") // Ignore error in tests
 
 	// Create tool and set allowed directories for testing
 	tool := &filesystem.FileSystemTool{}
@@ -53,6 +53,10 @@ func TestFileSystemTool_Definition(t *testing.T) {
 }
 
 func TestFileSystemTool_ListAllowedDirectories(t *testing.T) {
+	// Set environment variable to enable the tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "filesystem") // Ignore error in tests
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &filesystem.FileSystemTool{}
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests

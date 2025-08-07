@@ -30,9 +30,11 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packagedocs"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/pdf"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/sbom"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/think"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/utilities/toolhelp"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/vulnerabilityscan"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/webfetch"
 )
 
@@ -215,7 +217,7 @@ func main() {
 			mcpSrv := mcpserver.NewMCPServer("mcp-devtools", "MCP DevTools Server")
 
 			// Register tools - fix race condition by capturing variables properly
-			for toolName, toolImpl := range registry.GetTools() {
+			for toolName, toolImpl := range registry.GetEnabledTools() {
 				// Capture variables to avoid closure race condition
 				name := toolName
 				tool := toolImpl

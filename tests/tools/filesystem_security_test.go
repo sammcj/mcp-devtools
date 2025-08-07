@@ -15,6 +15,9 @@ import (
 )
 
 func TestFilesystem_DefaultLimits(t *testing.T) {
+	// Enable the filesystem tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "filesystem")
+
 	// Save original environment variables
 	originalMaxFileSize := os.Getenv("FILESYSTEM_MAX_FILE_SIZE")
 	originalSecurePermissions := os.Getenv("FILESYSTEM_SECURE_PERMISSIONS")
@@ -70,6 +73,9 @@ func TestFilesystem_DefaultLimits(t *testing.T) {
 }
 
 func TestFilesystem_CustomFileSizeLimit(t *testing.T) {
+	// Enable the filesystem tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "filesystem")
+
 	// Save original environment variable
 	originalMaxFileSize := os.Getenv("FILESYSTEM_MAX_FILE_SIZE")
 	defer func() {

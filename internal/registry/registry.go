@@ -92,6 +92,25 @@ func GetTools() map[string]tools.Tool {
 	return filteredTools
 }
 
+// GetEnabledTools returns all tools that are enabled for MCP server registration
+func GetEnabledTools() map[string]tools.Tool {
+	filteredTools := make(map[string]tools.Tool)
+	for name, tool := range toolRegistry {
+		// Skip disabled functions
+		if disabledFunctions[name] {
+			continue
+		}
+
+		// Skip tools that require enablement but aren't enabled
+		if requiresEnablement(name) && !isToolEnabled(name) {
+			continue
+		}
+
+		filteredTools[name] = tool
+	}
+	return filteredTools
+}
+
 // GetLogger returns the shared logger instance
 func GetLogger() *logrus.Logger {
 	return logger
@@ -131,4 +150,50 @@ func GetToolNamesWithExtendedHelp() []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// requiresEnablement checks if a tool requires enablement via ENABLE_ADDITIONAL_TOOLS
+func requiresEnablement(toolName string) bool {
+	additionalTools := []string{
+		"filesystem",
+		"sbom",
+		"vulnerability_scan",
+		"claude-agent",
+		"gemini-agent",
+	}
+
+	// Normalize the tool name (lowercase, replace underscores with hyphens)
+	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
+
+	for _, tool := range additionalTools {
+		// Normalize the additional tool name (lowercase, replace underscores with hyphens)
+		normalisedAdditionalTool := strings.ToLower(strings.ReplaceAll(tool, "_", "-"))
+		if normalisedToolName == normalisedAdditionalTool {
+			return true
+		}
+	}
+	return false
+}
+
+// isToolEnabled checks if a tool is enabled via the ENABLE_ADDITIONAL_TOOLS environment variable
+func isToolEnabled(toolName string) bool {
+	enabledTools := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
+	if enabledTools == "" {
+		return false
+	}
+
+	// Normalize the tool name (lowercase, replace underscores with hyphens)
+	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
+
+	// Split by comma and check each tool
+	toolsList := strings.Split(enabledTools, ",")
+	for _, tool := range toolsList {
+		// Normalize the tool from env var (trim spaces, lowercase, replace underscores with hyphens)
+		normalizedTool := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tool), "_", "-"))
+		if normalizedTool == normalisedToolName {
+			return true
+		}
+	}
+
+	return false
 }
