@@ -70,4 +70,5 @@ mcp-scan.out
 semgrep.out
 **/*sbom*.json
 **/*vulnerability*scan*.json
+**/vulnerability-report.json
 **/*.sarif
