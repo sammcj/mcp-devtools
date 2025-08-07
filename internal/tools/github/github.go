@@ -29,7 +29,7 @@ func (t *GitHubTool) Definition() mcp.Tool {
 
 Functions and their required parameters:
 
-• search_repositories: repository (o), options.query, options.limit (o)
+• search_repositories: options.query (r), repository (o), options.limit (o)
 • search_issues: repository (r), options.query (o), options.limit (o)
 • search_pull_requests: repository (r), options.query (o), options.limit (o)
 • get_issue: repository (r), options.number (required unless repository contains full issue URL), options.include_comments (o)
