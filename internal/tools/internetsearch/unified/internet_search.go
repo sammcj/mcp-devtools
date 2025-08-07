@@ -8,6 +8,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/brave"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/duckduckgo"
@@ -265,4 +266,193 @@ func (t *InternetSearchTool) providerSupportsType(provider SearchProvider, searc
 		}
 	}
 	return false
+}
+
+// ProvideExtendedInfo provides detailed usage information for the internet search tool
+func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	examples := []tools.ToolExample{
+		{
+			Description: "Basic web search with default provider",
+			Arguments: map[string]interface{}{
+				"query": "golang best practices",
+				"count": 5,
+			},
+			ExpectedResult: "Returns 5 web search results about Go programming best practices",
+		},
+		{
+			Description: "News search with time filtering",
+			Arguments: map[string]interface{}{
+				"type":  "news",
+				"query": "artificial intelligence breakthrough",
+				"count": 3,
+			},
+			ExpectedResult: "Returns 3 recent news articles about AI breakthroughs",
+		},
+		{
+			Description: "Image search with specific provider",
+			Arguments: map[string]interface{}{
+				"type":     "image",
+				"query":    "golang gopher mascot",
+				"provider": "brave",
+				"count":    10,
+			},
+			ExpectedResult: "Returns 10 images of the Go programming language mascot using Brave search",
+		},
+	}
+
+	// Add provider-specific examples if available
+	if t.hasProvider("brave") {
+		examples = append(examples, tools.ToolExample{
+			Description: "Brave search with time filtering and pagination",
+			Arguments: map[string]interface{}{
+				"query":     "machine learning tutorials",
+				"provider":  "brave",
+				"freshness": "pw", // Past week
+				"offset":    10,   // Skip first 10 results
+				"count":     5,
+			},
+			ExpectedResult: "Returns 5 ML tutorial results from the past week, starting from result 11",
+		})
+	}
+
+	if t.hasProvider("searxng") {
+		examples = append(examples, tools.ToolExample{
+			Description: "SearXNG search with language and safe search settings",
+			Arguments: map[string]interface{}{
+				"query":      "programming tutorials",
+				"provider":   "searxng",
+				"language":   "en",
+				"safesearch": "1",
+				"pageno":     2,
+			},
+			ExpectedResult: "Returns programming tutorials in English with moderate safe search, page 2",
+		})
+	}
+
+	commonPatterns := []string{
+		"Use count parameter to control result volume (more results = more context but higher latency)",
+		"Combine with web_fetch tool to get full content from interesting search results",
+		"For research workflows: search → analyse results → fetch detailed content → store in memory",
+	}
+
+	// Add provider-specific patterns only for available providers
+	if t.hasProvider("brave") && t.hasProvider("duckduckgo") {
+		commonPatterns = append(commonPatterns, "Use provider parameter to choose between Brave (with API features) and DuckDuckGo (always available)")
+	} else if t.hasProvider("searxng") && t.hasProvider("duckduckgo") {
+		commonPatterns = append(commonPatterns, "Use provider parameter to choose between SearXNG (with language options) and DuckDuckGo (always available)")
+	}
+
+	// Add search type guidance based on available providers
+	supportedTypes := make(map[string]bool)
+	for _, provider := range t.providers {
+		for _, searchType := range provider.GetSupportedTypes() {
+			supportedTypes[searchType] = true
+		}
+	}
+
+	if len(supportedTypes) > 1 {
+		var types []string
+		for searchType := range supportedTypes {
+			types = append(types, searchType)
+		}
+		commonPatterns = append(commonPatterns, fmt.Sprintf("Available search types with current providers: %s", strings.Join(types, ", ")))
+	}
+
+	troubleshooting := []tools.TroubleshootingTip{
+		{
+			Problem:  "No search results returned",
+			Solution: "Try different search terms, reduce specificity, or check for typos in your query.",
+		},
+	}
+
+	// Add provider-specific troubleshooting only for available providers
+	var apiRequirements []string
+	if t.hasProvider("brave") {
+		apiRequirements = append(apiRequirements, "BRAVE_API_KEY for Brave")
+	}
+	if t.hasProvider("searxng") {
+		apiRequirements = append(apiRequirements, "SEARXNG_BASE_URL for SearXNG")
+	}
+
+	if len(apiRequirements) > 0 {
+		troubleshooting = append(troubleshooting, tools.TroubleshootingTip{
+			Problem:  "Search returns 'provider not available' error",
+			Solution: fmt.Sprintf("Check that required API keys/URLs are set: %s. DuckDuckGo requires no setup.", strings.Join(apiRequirements, ", ")),
+		})
+	}
+
+	// Add search type troubleshooting if multiple providers with different capabilities
+	if len(t.providers) > 1 {
+		troubleshooting = append(troubleshooting, tools.TroubleshootingTip{
+			Problem:  "Search type not supported by chosen provider",
+			Solution: "Different providers support different search types. Use default provider selection or check supported types in error message.",
+		})
+	}
+
+	// Add rate limiting troubleshooting if there are multiple providers to switch between
+	if len(t.providers) > 1 {
+		troubleshooting = append(troubleshooting, tools.TroubleshootingTip{
+			Problem:  "Rate limit errors",
+			Solution: "Wait before retrying, or switch to a different provider using the 'provider' parameter. Each provider has different rate limits.",
+		})
+	} else {
+		troubleshooting = append(troubleshooting, tools.TroubleshootingTip{
+			Problem:  "Rate limit errors",
+			Solution: "Wait before retrying. Rate limits vary by provider and search type.",
+		})
+	}
+
+	parameterDetails := map[string]string{
+		"query": "The search query should be descriptive but not too long. Use natural language rather than keyword stuffing.",
+		"type":  "Web search is default and most versatile. Use 'news' for current events, 'image' for visual content, 'video' for tutorials.",
+		"count": "More results provide broader coverage but increase latency. Typical range: 3-10 results for focused searches, 10-20 for research.",
+	}
+
+	// Build provider description based on available providers
+	var providerDescriptions []string
+	if t.hasProvider("brave") {
+		providerDescriptions = append(providerDescriptions, "Brave (requires API key) offers freshness filtering")
+	}
+	if t.hasProvider("searxng") {
+		providerDescriptions = append(providerDescriptions, "SearXNG (requires instance URL) offers language options")
+	}
+	if t.hasProvider("duckduckgo") {
+		providerDescriptions = append(providerDescriptions, "DuckDuckGo (always available)")
+	}
+
+	if len(providerDescriptions) > 0 {
+		parameterDetails["provider"] = strings.Join(providerDescriptions, ". ")
+	}
+
+	// Add provider-specific parameter details only for available providers
+	if t.hasProvider("brave") {
+		parameterDetails["freshness"] = "Brave only: 'pd' (past day), 'pw' (past week), 'pm' (past month), 'py' (past year). Useful for current events."
+		parameterDetails["offset"] = "Brave only: Skip first N results for pagination. Useful for getting more diverse results."
+	}
+
+	if t.hasProvider("searxng") {
+		parameterDetails["language"] = "SearXNG only: Use language codes like 'en', 'fr', 'de', or 'all'. Affects both query processing and result filtering."
+		parameterDetails["safesearch"] = "SearXNG only: Safe search filter (0: None, 1: Moderate, 2: Strict). Default is moderate."
+		parameterDetails["pageno"] = "SearXNG only: Page number starting from 1. Use for pagination through results."
+		parameterDetails["time_range"] = "SearXNG only: Filter by time (day/month/year). Useful for recent content."
+	}
+
+	whenToUse := "Use internet search to find current information, research topics, discover resources, or gather multiple perspectives on a subject. Ideal for tasks requiring up-to-date information that may not be in training data."
+
+	whenNotToUse := "Avoid for: well-established facts available in training data, private/internal information, real-time data requiring live APIs, or when you already have specific URLs to fetch content from."
+
+	return &tools.ExtendedHelp{
+		Examples:         examples,
+		CommonPatterns:   commonPatterns,
+		Troubleshooting:  troubleshooting,
+		ParameterDetails: parameterDetails,
+		WhenToUse:        whenToUse,
+		WhenNotToUse:     whenNotToUse,
+	}
+}
+
+// hasProvider checks if a specific provider is available
+func (t *InternetSearchTool) hasProvider(providerName string) bool {
+	_, exists := t.providers[providerName]
+	return exists
 }

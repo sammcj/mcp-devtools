@@ -2,6 +2,7 @@ package registry
 
 import (
 	"os"
+	"sort"
 	"strings"
 	"sync"
 
@@ -99,4 +100,35 @@ func GetLogger() *logrus.Logger {
 // GetCache returns the shared cache instance
 func GetCache() *sync.Map {
 	return cache
+}
+
+// GetEnabledToolNames returns a sorted list of enabled tool names
+func GetEnabledToolNames() []string {
+	var names []string
+	for name := range toolRegistry {
+		// Skip disabled functions
+		if disabledFunctions[name] {
+			continue
+		}
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// GetToolNamesWithExtendedHelp returns a sorted list of enabled tool names that provide extended help
+func GetToolNamesWithExtendedHelp() []string {
+	var names []string
+	for name, tool := range toolRegistry {
+		// Skip disabled functions
+		if disabledFunctions[name] {
+			continue
+		}
+		// Only include tools that implement ExtendedHelpProvider
+		if _, ok := tool.(tools.ExtendedHelpProvider); ok {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
 }

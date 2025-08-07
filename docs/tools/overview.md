@@ -30,16 +30,16 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
 ## Tool Dependencies
 
 ### Required Environment Variables
-| Tool                      | Variable           | Purpose                      |
-|---------------------------|--------------------|------------------------------|
-| Agents (Claude, Gemini)   | `ENABLE_AGENTS`    | Comma-separated list of agents to enable (e.g., `claude,gemini`) |
-|                           | `AGENT_TIMEOUT`    | Timeout for agent commands (default: 180s) |
-| Claude Agent              | `CLAUDE_SYSTEM_PROMPT` | Append a system prompt to the default system prompt |
-|                           | `CLAUDE_PERMISSION_MODE` | Permission mode for the session |
-| Internet Search (Brave)   | `BRAVE_API_KEY`    | Enable Brave search provider |
-| Internet Search (SearXNG) | `SEARXNG_BASE_URL` | Enable SearXNG provider      |
-| Document Processing       | `DOCLING_*`        | Configure processing options |
-| Memory                    | `MEMORY_FILE_PATH` | Set storage location         |
+| Tool                      | Variable                 | Purpose                                                          |
+|---------------------------|--------------------------|------------------------------------------------------------------|
+| Agents (Claude, Gemini)   | `ENABLE_AGENTS`          | Comma-separated list of agents to enable (e.g., `claude,gemini`) |
+|                           | `AGENT_TIMEOUT`          | Timeout for agent commands (default: 180s)                       |
+| Claude Agent              | `CLAUDE_SYSTEM_PROMPT`   | Append a system prompt to the default system prompt              |
+|                           | `CLAUDE_PERMISSION_MODE` | Permission mode for the session                                  |
+| Internet Search (Brave)   | `BRAVE_API_KEY`          | Enable Brave search provider                                     |
+| Internet Search (SearXNG) | `SEARXNG_BASE_URL`       | Enable SearXNG provider                                          |
+| Document Processing       | `DOCLING_*`              | Configure processing options                                     |
+| Memory                    | `MEMORY_FILE_PATH`       | Set storage location                                             |
 
 ### Optional Dependencies
 - **Python 3.10+**: Required for Document Processing tool
@@ -105,6 +105,7 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
 
 ## Getting Help
 
+- **Extended tool information**: Use [Get DevTools Tool Info](devtools_help.md) for detailed usage examples and troubleshooting
 - **Tool-specific documentation**: Click tool names above for detailed guides
 - **Development**: See [Creating New Tools](../creating-new-tools.md)
 - **Issues**: Report problems on the [GitHub repository](https://github.com/sammcj/mcp-devtools/issues)
