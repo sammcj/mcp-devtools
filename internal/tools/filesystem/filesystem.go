@@ -17,6 +17,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -1215,4 +1216,107 @@ func (t *FileSystemTool) SetAllowedDirectories(dirs []string) {
 // LoadSecurityConfig loads security configuration (for testing purposes)
 func (t *FileSystemTool) LoadSecurityConfig() {
 	t.loadSecurityConfig()
+}
+
+// ProvideExtendedInfo provides detailed usage information for the filesystem tool
+func (t *FileSystemTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Read a file with line limits",
+				Arguments: map[string]interface{}{
+					"function": "read_file",
+					"options": map[string]interface{}{
+						"path": "/Users/username/projects/myapp/config.json",
+						"head": 20,
+					},
+				},
+				ExpectedResult: "Returns first 20 lines of the config file. Use 'tail' instead of 'head' to get last N lines",
+			},
+			{
+				Description: "Edit a file with multiple replacements",
+				Arguments: map[string]interface{}{
+					"function": "edit_file",
+					"options": map[string]interface{}{
+						"path": "/Users/username/projects/myapp/src/config.js",
+						"edits": []map[string]interface{}{
+							{"oldText": "const API_URL = 'http://localhost:3000'", "newText": "const API_URL = 'https://api.production.com'"},
+							{"oldText": "debug: true", "newText": "debug: false"},
+						},
+						"dryRun": true,
+					},
+				},
+				ExpectedResult: "Shows diff preview without applying changes. Remove dryRun or set to false to apply changes",
+			},
+			{
+				Description: "Search for files with exclusions",
+				Arguments: map[string]interface{}{
+					"function": "search_files",
+					"options": map[string]interface{}{
+						"path":            "/Users/username/projects/webapp",
+						"pattern":         "component",
+						"excludePatterns": []string{"node_modules", "*.test.js", "dist"},
+					},
+				},
+				ExpectedResult: "Finds files containing 'component' while excluding test files, dependencies, and build directories",
+			},
+			{
+				Description: "List directory with size information sorted by size",
+				Arguments: map[string]interface{}{
+					"function": "list_directory_with_sizes",
+					"options": map[string]interface{}{
+						"path":   "/Users/username/projects/myapp/src",
+						"sortBy": "size",
+					},
+				},
+				ExpectedResult: "Lists directory contents with file sizes, sorted from largest to smallest files",
+			},
+			{
+				Description: "Create directory structure and write file",
+				Arguments: map[string]interface{}{
+					"function": "write_file",
+					"options": map[string]interface{}{
+						"path":    "/Users/username/projects/newapp/src/config/database.js",
+						"content": "module.exports = {\n  host: 'localhost',\n  port: 5432,\n  database: 'myapp'\n};",
+					},
+				},
+				ExpectedResult: "Creates the directory structure if it doesn't exist, then writes the file with secure permissions",
+			},
+		},
+		CommonPatterns: []string{
+			"Use 'list_allowed_directories' first to see which directories you can access",
+			"Use 'dryRun: true' in edit_file operations to preview changes before applying",
+			"Use head/tail parameters in read_file for large files to avoid reading entire contents",
+			"Use 'get_file_info' to check file permissions and timestamps before operations",
+			"Combine 'search_files' with exclude patterns to filter out irrelevant results",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "Access denied - path outside allowed directories",
+				Solution: "The filesystem tool has security restrictions. Use 'list_allowed_directories' to see valid paths, or set FILESYSTEM_TOOL_ALLOWED_DIRS environment variable to configure allowed directories.",
+			},
+			{
+				Problem:  "Tool not available/registered",
+				Solution: "Filesystem tool is disabled by default for security. Set FILESYSTEM_TOOL_ENABLE=true environment variable to enable the tool.",
+			},
+			{
+				Problem:  "File size exceeds maximum allowed size error",
+				Solution: "Large files are rejected for security. Use FILESYSTEM_MAX_FILE_SIZE environment variable to increase limits, or use head/tail parameters for reading large files partially.",
+			},
+			{
+				Problem:  "Could not find text to replace in edit_file",
+				Solution: "The oldText in edit operations must match exactly, including whitespace. Use read_file first to see the exact content, or use dryRun to test edits.",
+			},
+			{
+				Problem:  "Permission denied errors",
+				Solution: "Ensure the process has read/write permissions to the target files and directories. Check file permissions with get_file_info function.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"function": "Required parameter specifying which filesystem operation to perform. Each function has different required parameters in the options object.",
+			"options":  "Function-specific parameters object. Structure varies by function - see examples for each function's required parameters.",
+		},
+		WhenToUse:    "Use when explicitly requested by the user to use the 'filesystem tool' (or 'filesystem mcp tool') file operations like reading, writing, editing, or managing files and directories. Do not use this tool unless specifically asked by the user.",
+		WhenNotToUse: "Don't use proactively or automatically. Do not use when you have other methods of interacting with files that are more efficient. Only use when the user explicitly requests file system operations. Not suitable for users who haven't enabled the tool or configured allowed directories.",
+	}
 }

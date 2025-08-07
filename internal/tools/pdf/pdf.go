@@ -15,6 +15,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -752,4 +753,83 @@ func (t *PDFTool) applyMemoryLimits(conf *model.Configuration) {
 
 	// Note: Configuration struct doesn't expose OptimizationMode field
 	// Memory limits are enforced through file size validation
+}
+
+// ProvideExtendedInfo provides detailed usage information for the PDF tool
+func (t *PDFTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Extract text and images from entire PDF",
+				Arguments: map[string]interface{}{
+					"file_path":      "/Users/username/documents/report.pdf",
+					"extract_images": true,
+				},
+				ExpectedResult: "Creates a markdown file with extracted text and saves images to a subfolder, returns paths to generated files and processing statistics",
+			},
+			{
+				Description: "Extract only text from specific pages",
+				Arguments: map[string]interface{}{
+					"file_path":      "/Users/username/documents/manual.pdf",
+					"pages":          "1-5,10,15-20",
+					"extract_images": false,
+				},
+				ExpectedResult: "Extracts text only from pages 1-5, 10, and 15-20, creating a markdown file without image extraction",
+			},
+			{
+				Description: "Extract to custom output directory",
+				Arguments: map[string]interface{}{
+					"file_path":      "/Users/username/pdfs/research.pdf",
+					"output_dir":     "/Users/username/extracted/research",
+					"extract_images": true,
+				},
+				ExpectedResult: "Extracts text and images to the specified output directory instead of the default PDF location",
+			},
+			{
+				Description: "Extract single page with images",
+				Arguments: map[string]interface{}{
+					"file_path":      "/Users/username/docs/presentation.pdf",
+					"pages":          "5",
+					"extract_images": true,
+				},
+				ExpectedResult: "Extracts only page 5 with any images on that page, useful for extracting specific slides or sections",
+			},
+		},
+		CommonPatterns: []string{
+			"Start with text-only extraction (extract_images: false) to quickly preview content before full processing",
+			"Use page ranges to extract specific sections rather than processing entire large documents",
+			"Specify custom output_dir when working with multiple PDFs to keep extractions organised",
+			"Use 'all' pages parameter (default) for comprehensive document processing",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "PDF file size exceeds maximum allowed size error",
+				Solution: "The tool has size limits (default 200MB) for security. Use PDF_MAX_FILE_SIZE environment variable to increase the limit, or split large PDFs into smaller files.",
+			},
+			{
+				Problem:  "Text extraction returns poor quality or garbled text",
+				Solution: "Some PDFs (especially scanned documents) may have poor text extraction. The tool works best with text-based PDFs. For scanned documents, consider OCR preprocessing.",
+			},
+			{
+				Problem:  "Invalid page range error",
+				Solution: "Ensure page numbers are valid (1-based) and don't exceed the PDF's page count. Use format '1-5' for ranges, '1,3,5' for specific pages, or 'all' for entire document.",
+			},
+			{
+				Problem:  "No images extracted despite extract_images: true",
+				Solution: "The PDF may not contain extractable images, or images may be embedded in a format not supported. Check the generated markdown file for any extracted content.",
+			},
+			{
+				Problem:  "Output directory permission errors",
+				Solution: "Ensure the output directory exists and has write permissions. The tool will create subdirectories but needs write access to the parent directory.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"file_path":      "Absolute path to PDF file (required). Must end with .pdf extension. File size limits apply for security (configurable via PDF_MAX_FILE_SIZE).",
+			"output_dir":     "Directory for extracted files (optional). Defaults to same directory as PDF. Tool creates markdown file and optional image subdirectory here.",
+			"extract_images": "Whether to extract and save images (optional, default: false). Images saved to subfolder with references in markdown file.",
+			"pages":          "Page selection (optional, default: 'all'). Supports ranges ('1-5'), lists ('1,3,5'), or 'all'. Pages are 1-based indexed.",
+		},
+		WhenToUse:    "Use for extracting text and images from text-based PDFs, converting PDFs to markdown format, extracting specific pages or sections, or processing documents for further analysis or conversion workflows.",
+		WhenNotToUse: "Don't use for scanned PDFs that need OCR, password-protected PDFs, or extremely large files that exceed memory constraints. Not suitable for preserving complex formatting or interactive PDF features.",
+	}
 }

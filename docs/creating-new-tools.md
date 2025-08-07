@@ -14,6 +14,11 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
   - [Example: Hello World Tool](#example-hello-world-tool)
     - [Testing Your Tool](#testing-your-tool)
   - [Testing](#testing)
+  - [Extended Help for Complex Tools](#extended-help-for-complex-tools)
+    - [Implementing Extended Help](#implementing-extended-help)
+    - [Extended Help Structure](#extended-help-structure)
+    - [When to Add Extended Help](#when-to-add-extended-help)
+    - [Extended Help Benefits](#extended-help-benefits)
   - [Additional Considerations](#additional-considerations)
 
 ## Tool Interface
@@ -333,10 +338,10 @@ func (t *YourTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 ### Extended Help Structure
 
 - **Examples**: Provide 3-5 real-world examples showing different usage patterns with expected results
-- **CommonPatterns**: List workflow patterns and best practices for using the tool effectively  
+- **CommonPatterns**: List workflow patterns and best practices for using the tool effectively
 - **Troubleshooting**: Address common errors and their solutions
 - **ParameterDetails**: Explain complex parameters that need more context than the basic description
-- **WhenToUse/WhenNotToUse**: Help AI agents understand appropriate tool selection
+- **WhenToUse/WhenNotToUse**: Help AI agents and less capable AI models understand appropriate tool selection
 
 ### When to Add Extended Help
 

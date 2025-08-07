@@ -13,6 +13,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -196,4 +197,95 @@ func (t *GeminiTool) ApplyResponseSizeLimit(output string, logger *logrus.Logger
 	logger.Warnf("Gemini agent response truncated from %d bytes to %d bytes due to size limit", len(output), len(truncated))
 
 	return truncated + message
+}
+
+// ProvideExtendedInfo provides detailed usage information for the gemini agent tool
+func (t *GeminiTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Get Gemini to analyze code with full project context",
+				Arguments: map[string]interface{}{
+					"prompt":            "Please analyze the performance bottlenecks in this web application and suggest optimizations.",
+					"include-all-files": true,
+					"model":             "gemini-2.5-pro",
+				},
+				ExpectedResult: "Gemini analyzes all project files for performance issues and provides specific optimization recommendations with code examples",
+			},
+			{
+				Description: "Ask Gemini to help debug with sandbox mode",
+				Arguments: map[string]interface{}{
+					"prompt":  "I'm getting intermittent test failures in my Jest test suite. Can you help identify the root cause and fix the timing issues? @tests/",
+					"sandbox": true,
+				},
+				ExpectedResult: "Gemini runs in isolated sandbox environment to safely analyze test failures and provide debugging assistance",
+			},
+			{
+				Description: "Let Gemini make actual changes to fix issues",
+				Arguments: map[string]interface{}{
+					"prompt":    "There are several TypeScript errors in @src/components/ that need to be fixed. Please resolve all type issues and update the interfaces accordingly.",
+					"yolo-mode": true,
+					"model":     "gemini-2.5-pro",
+				},
+				ExpectedResult: "Gemini analyzes TypeScript errors and makes actual file changes to fix type issues throughout the components directory",
+			},
+			{
+				Description: "Quick analysis with flash model for speed",
+				Arguments: map[string]interface{}{
+					"prompt": "Can you quickly review this API endpoint @src/api/users.js and check if it follows REST conventions?",
+					"model":  "gemini-2.5-flash",
+				},
+				ExpectedResult: "Fast analysis using Gemini Flash model to provide quick feedback on API design and REST compliance",
+			},
+			{
+				Description: "Comprehensive code review with context",
+				Arguments: map[string]interface{}{
+					"prompt": "Please conduct a thorough security review of the authentication system in @src/auth/ and identify any vulnerabilities or improvements needed.",
+				},
+				ExpectedResult: "Detailed security analysis of authentication code with specific vulnerability findings and remediation suggestions",
+			},
+		},
+		CommonPatterns: []string{
+			"Use @file or @directory/ syntax to provide specific context to Gemini",
+			"Use include-all-files for comprehensive project analysis when context is important",
+			"Use yolo-mode when you want Gemini to actually fix issues, not just suggest fixes",
+			"Use sandbox mode for safe exploration of potentially risky operations",
+			"Use gemini-2.5-flash model for quick responses, gemini-2.5-pro for complex analysis",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "Tool not available/gemini command not found",
+				Solution: "The gemini agent requires Gemini CLI to be installed and ENABLE_AGENTS environment variable to include 'gemini'. Install Gemini CLI and set ENABLE_AGENTS=gemini or ENABLE_AGENTS=gemini,claude for both.",
+			},
+			{
+				Problem:  "RESOURCE_EXHAUSTED quota exceeded error",
+				Solution: "Gemini API quota limits reached. The tool automatically falls back to gemini-2.5-flash when quota is exceeded. Wait for quota reset or upgrade your Google AI API plan.",
+			},
+			{
+				Problem:  "Agent timeout after 3 minutes",
+				Solution: "Complex analysis may need more time. Set AGENT_TIMEOUT environment variable to increase timeout (in seconds). Example: AGENT_TIMEOUT=600 for 10 minutes.",
+			},
+			{
+				Problem:  "Response truncated due to size limit",
+				Solution: "Large responses are truncated for memory safety. Increase AGENT_MAX_RESPONSE_SIZE environment variable (in bytes) or ask Gemini for more concise responses.",
+			},
+			{
+				Problem:  "Permission denied errors in yolo mode",
+				Solution: "Even in yolo-mode, Gemini respects file system permissions. Ensure the process has necessary read/write permissions to files and directories being modified.",
+			},
+			{
+				Problem:  "Data collection disabled messages in output",
+				Solution: "These are normal Gemini CLI startup messages that are automatically filtered out. They don't affect functionality but indicate Gemini's privacy settings.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"prompt":            "Clear, specific instruction to Gemini. Use @file or @directory/ syntax for context. Be detailed about what analysis, implementation, or assistance you need.",
+			"model":             "Gemini model selection affects capability vs speed. 'gemini-2.5-pro' (default, most capable), 'gemini-2.5-flash' (faster, good for simple tasks). Tool auto-falls back to flash on quota limits.",
+			"sandbox":           "Runs Gemini in isolated environment for safe exploration. Use when testing potentially risky operations or when you want isolated execution context.",
+			"yolo-mode":         "Allows Gemini to make actual file changes and run commands. Use with caution - only when you want Gemini to implement fixes, not just suggest them.",
+			"include-all-files": "Recursively includes all files in current directory as context. Powerful for comprehensive analysis but may hit token limits on large projects.",
+		},
+		WhenToUse:    "Use when you need Google's Gemini AI for code analysis, debugging assistance, comprehensive project reviews, or when you want a different AI perspective from Claude for complex problems beyond your capabilities or if directly asked to use Gemini by the user.",
+		WhenNotToUse: "Don't use when you need real-time responses, for simple questions that don't require AI analysis, or when working with highly sensitive code that shouldn't be sent to Google's APIs.",
+	}
 }
