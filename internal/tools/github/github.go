@@ -34,7 +34,8 @@ Functions and their required parameters:
 • search_pull_requests: repository (r), options.query (o), options.limit (o)
 • get_issue: repository (r), options.number (required unless repository contains full issue URL), options.include_comments (o)
 • get_pull_request: repository (r), options.number (required unless repository contains full PR URL), options.include_comments (o)
-• get_file_contents: repository (r), options.paths (r), options.ref (o)
+• get_file_contents: repository (r), options.paths (r), options.ref (o) - Returns partial results even if some files fail
+• list_directory: repository (r), options.path (optional, defaults to root), options.ref (o) - Lists directory contents to explore repository structure
 • clone_repository: repository (r), options.local_path (o)
 • get_workflow_run: repository (r), options.run_id (required unless repository contains full workflow URL), options.include_logs (o)
 
@@ -45,7 +46,7 @@ Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow
 		mcp.WithString("function",
 			mcp.Required(),
 			mcp.Description("Function to execute"),
-			mcp.Enum("search_repositories", "search_issues", "search_pull_requests", "get_issue", "get_pull_request", "get_file_contents", "clone_repository", "get_workflow_run"),
+			mcp.Enum("search_repositories", "search_issues", "search_pull_requests", "get_issue", "get_pull_request", "get_file_contents", "list_directory", "clone_repository", "get_workflow_run"),
 		),
 		mcp.WithString("repository",
 			mcp.Description("Repository identifier: owner/repo, GitHub URL, or full URL for specific issue/PR/workflow"),
@@ -92,6 +93,10 @@ Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow
 						"type": "string",
 					},
 				},
+				"path": map[string]interface{}{
+					"type":        "string",
+					"description": "Directory path to list (optional for list_directory, defaults to root)",
+				},
 				"ref": map[string]interface{}{
 					"type":        "string",
 					"description": "Git reference - branch, tag, or commit SHA (optional for get_file_contents)",
@@ -133,6 +138,8 @@ func (t *GitHubTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		return t.handleGetPullRequest(ctx, client, request)
 	case "get_file_contents":
 		return t.handleGetFileContents(ctx, client, request)
+	case "list_directory":
+		return t.handleListDirectory(ctx, client, request)
 	case "clone_repository":
 		return t.handleCloneRepository(ctx, client, request)
 	case "get_workflow_run":
@@ -415,7 +422,7 @@ func (t *GitHubTool) handleGetPullRequest(ctx context.Context, client *GitHubCli
 	return mcp.NewToolResultText(jsonString), nil
 }
 
-// handleGetFileContents handles getting file contents
+// handleGetFileContents handles getting file contents with graceful error handling
 func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
 	if request.Repository == "" {
 		return nil, fmt.Errorf("repository parameter is required for get_file_contents")
@@ -445,16 +452,67 @@ func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubCl
 		ref = r
 	}
 
-	files, err := client.GetFileContents(ctx, owner, repo, paths, ref)
+	// Get file results with graceful error handling
+	fileResults, err := client.GetFileContents(ctx, owner, repo, paths, ref)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get file contents: %w", err)
 	}
 
+	// Check if any files succeeded
+	successCount := 0
+	for _, result := range fileResults {
+		if result.Success {
+			successCount++
+		}
+	}
+
 	response := map[string]interface{}{
-		"function":   "get_file_contents",
+		"function":      "get_file_contents",
+		"repository":    fmt.Sprintf("%s/%s", owner, repo),
+		"ref":           ref,
+		"files":         fileResults,
+		"success_count": successCount,
+		"total_count":   len(fileResults),
+	}
+
+	jsonString, err := t.convertToJSON(response)
+	if err != nil {
+		return nil, err
+	}
+	return mcp.NewToolResultText(jsonString), nil
+}
+
+// handleListDirectory handles listing directory contents
+func (t *GitHubTool) handleListDirectory(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
+	if request.Repository == "" {
+		return nil, fmt.Errorf("repository parameter is required for list_directory")
+	}
+
+	owner, repo, err := ValidateRepository(request.Repository)
+	if err != nil {
+		return nil, fmt.Errorf("invalid repository: %w", err)
+	}
+
+	path := ""
+	if p, ok := request.Options["path"].(string); ok {
+		path = p
+	}
+
+	ref := ""
+	if r, ok := request.Options["ref"].(string); ok {
+		ref = r
+	}
+
+	listing, err := client.ListDirectory(ctx, owner, repo, path, ref)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list directory: %w", err)
+	}
+
+	response := map[string]interface{}{
+		"function":   "list_directory",
 		"repository": fmt.Sprintf("%s/%s", owner, repo),
 		"ref":        ref,
-		"files":      files,
+		"listing":    listing,
 	}
 
 	jsonString, err := t.convertToJSON(response)
@@ -582,6 +640,37 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				ExpectedResult: "Returns top 10 GitHub repositories matching 'machine learning python' with repository details, stars, and descriptions",
 			},
 			{
+				Description: "List root directory contents to explore repository structure",
+				Arguments: map[string]interface{}{
+					"function":   "list_directory",
+					"repository": "anchore/chronicle",
+				},
+				ExpectedResult: "Returns list of files and directories in the repository root, helping you understand the project structure before requesting specific files",
+			},
+			{
+				Description: "List contents of a specific directory",
+				Arguments: map[string]interface{}{
+					"function":   "list_directory",
+					"repository": "anchore/chronicle",
+					"options": map[string]interface{}{
+						"path": "internal",
+						"ref":  "main",
+					},
+				},
+				ExpectedResult: "Returns list of files and directories inside the 'internal' directory on the main branch",
+			},
+			{
+				Description: "Get file contents with graceful error handling",
+				Arguments: map[string]interface{}{
+					"function":   "get_file_contents",
+					"repository": "anchore/chronicle",
+					"options": map[string]interface{}{
+						"paths": []string{"README.md", "nonexistent-file.go", "go.mod"},
+					},
+				},
+				ExpectedResult: "Returns partial results showing success for README.md and go.mod, with detailed error message for nonexistent-file.go explaining how to verify file paths",
+			},
+			{
 				Description: "Get details of a specific issue with comments",
 				Arguments: map[string]interface{}{
 					"function":   "get_issue",
@@ -592,30 +681,6 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 					},
 				},
 				ExpectedResult: "Returns issue #12345 from microsoft/vscode including full description, labels, assignees, and all comments",
-			},
-			{
-				Description: "Search for open pull requests in a specific repository",
-				Arguments: map[string]interface{}{
-					"function":   "search_pull_requests",
-					"repository": "facebook/react",
-					"options": map[string]interface{}{
-						"query": "bug fix",
-						"limit": 5,
-					},
-				},
-				ExpectedResult: "Returns 5 open pull requests from facebook/react that match 'bug fix' in title or description",
-			},
-			{
-				Description: "Get file contents from a repository",
-				Arguments: map[string]interface{}{
-					"function":   "get_file_contents",
-					"repository": "torvalds/linux",
-					"options": map[string]interface{}{
-						"paths": []string{"README", "MAINTAINERS"},
-						"ref":   "v6.1",
-					},
-				},
-				ExpectedResult: "Returns contents of README and MAINTAINERS files from Linux kernel v6.1 tag",
 			},
 			{
 				Description: "Get workflow run details with logs",
@@ -630,14 +695,27 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 		},
 		CommonPatterns: []string{
+			"ALWAYS start with list_directory to explore repository structure before requesting specific files",
+			"Use get_file_contents for multiple files - it handles partial failures gracefully",
+			"Include specific refs (branches/tags) when analyzing version-specific code",
+			"Start with root directory listing, then navigate to subdirectories as needed",
 			"Use search functions to discover repositories, issues, and PRs before getting specific details",
-			"Include comments when investigating issues or PRs for full context",
-			"Use specific repository format: 'owner/repo' or full GitHub URLs",
-			"Combine get_file_contents with specific refs (branches/tags) for version-specific code analysis",
-			"Use workflow runs to debug CI/CD issues and understand build failures",
 			"Search with targeted queries to reduce result noise (e.g., 'is:open label:bug')",
+			"When file requests fail, check the error suggestions and use list_directory to verify paths",
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "File not found errors (404)",
+				Solution: "Use list_directory to explore the repository structure first. Check the detailed error message for suggestions including browsing the repo on GitHub, verifying branch/ref, and checking for typos.",
+			},
+			{
+				Problem:  "Some files succeed but others fail in get_file_contents",
+				Solution: "This is expected behaviour - the tool returns partial results. Check the 'success' field for each file and read error messages for failed files. Use list_directory to verify paths for failed files.",
+			},
+			{
+				Problem:  "Directory listing returns empty or unexpected results",
+				Solution: "Verify the directory path exists and you're using the correct branch/ref. Try listing the root directory first (no path specified) then navigate to subdirectories.",
+			},
 			{
 				Problem:  "Authentication errors or rate limits",
 				Solution: "Ensure GITHUB_TOKEN environment variable is set with appropriate permissions. Public repositories require fewer permissions than private ones.",
@@ -647,28 +725,16 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				Solution: "Check repository name format (owner/repo), ensure repository exists and is public (or you have access), and verify spelling of repository name.",
 			},
 			{
-				Problem:  "Issue or PR number not found",
-				Solution: "Verify the issue/PR number exists in the specified repository. You can use search functions first to find the correct numbers.",
-			},
-			{
-				Problem:  "File not found when getting file contents",
-				Solution: "Check file paths are correct and exist in the specified branch/tag. Use repository browsing on GitHub first to verify paths and refs.",
-			},
-			{
 				Problem:  "Workflow run access denied",
 				Solution: "Workflow runs may require higher permissions than basic repository access. Ensure your GitHub token has 'actions:read' scope.",
 			},
-			{
-				Problem:  "Search returns too many irrelevant results",
-				Solution: "Use GitHub search qualifiers: 'language:python', 'stars:>100', 'is:open', 'label:bug', 'author:username' to refine searches.",
-			},
 		},
 		ParameterDetails: map[string]string{
-			"function":   "The GitHub operation to perform. Each function has different requirements - see examples for patterns and required options.",
+			"function":   "The GitHub operation to perform. Use list_directory first to explore, then get_file_contents for specific files. Each function has different requirements - see examples.",
 			"repository": "Repository identifier in 'owner/repo' format, full GitHub URLs, or URLs with issue/PR/workflow IDs. The tool automatically extracts relevant information.",
-			"options":    "Function-specific parameters. Query for searches, number for specific items, paths for files, include_* flags for additional data. See examples for each function type.",
+			"options":    "Function-specific parameters. For list_directory: path (optional), ref (optional). For get_file_contents: paths (required array), ref (optional). Always check examples for each function.",
 		},
-		WhenToUse:    "Use for GitHub repository analysis, issue tracking, pull request review, file content examination, CI/CD debugging, and repository discovery. Essential for code analysis and project management workflows.",
+		WhenToUse:    "Use for GitHub repository exploration, file content examination with graceful error handling, repository structure analysis, issue tracking, PR review, and CI/CD debugging. Start with list_directory to understand repository layout.",
 		WhenNotToUse: "Don't use for non-GitHub repositories, private repositories without proper authentication, or when you need to modify GitHub data (this tool is read-only). Use Git commands for actual repository cloning and manipulation.",
 	}
 }

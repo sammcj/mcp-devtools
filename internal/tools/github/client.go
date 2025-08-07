@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/google/go-github/v73/github"
@@ -305,14 +306,22 @@ func (gc *GitHubClient) GetPullRequest(ctx context.Context, owner, repo string, 
 	return pullRequest, comments, nil
 }
 
-// GetFileContents gets the contents of one or more files from a repository
-func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string, paths []string, ref string) ([]FilteredFileContent, error) {
-	var results []FilteredFileContent
+// GetFileContents gets the contents of one or more files from a repository with graceful error handling
+func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string, paths []string, ref string) ([]FileResult, error) {
+	var results []FileResult
 
-	for _, path := range paths {
+	for _, originalPath := range paths {
+		// Clean and validate the path
+		path := CleanPath(originalPath)
+
 		// Apply core API rate limiting for each file request
 		if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
-			return nil, fmt.Errorf("core API rate limit wait failed: %w", err)
+			results = append(results, FileResult{
+				Path:    originalPath,
+				Success: false,
+				Error:   fmt.Sprintf("rate limit wait failed: %v", err),
+			})
+			continue
 		}
 
 		opts := &github.RepositoryContentGetOptions{}
@@ -322,10 +331,26 @@ func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string,
 
 		fileContent, _, _, err := gc.client.Repositories.GetContents(ctx, owner, repo, path, opts)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get file content for %s: %w", path, err)
+			// Create helpful error message for 404s
+			errorMsg := err.Error()
+			if strings.Contains(err.Error(), "404") {
+				errorMsg = CreateFileNotFoundError(owner, repo, path, ref).Error()
+			}
+
+			results = append(results, FileResult{
+				Path:    originalPath,
+				Success: false,
+				Error:   errorMsg,
+			})
+			continue
 		}
 
 		if fileContent == nil {
+			results = append(results, FileResult{
+				Path:    originalPath,
+				Success: false,
+				Error:   "file content is nil",
+			})
 			continue
 		}
 
@@ -378,14 +403,56 @@ func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string,
 			}
 		}
 
-		results = append(results, FilteredFileContent{
+		results = append(results, FileResult{
 			Path:    fileContent.GetPath(),
 			Size:    fileContent.GetSize(),
 			Content: content,
+			Success: true,
 		})
 	}
 
 	return results, nil
+}
+
+// ListDirectory lists the contents of a directory in a repository
+func (gc *GitHubClient) ListDirectory(ctx context.Context, owner, repo, path, ref string) (*DirectoryListing, error) {
+	// Apply core API rate limiting
+	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
+		return nil, fmt.Errorf("core API rate limit wait failed: %w", err)
+	}
+
+	// Clean the path
+	cleanPath := CleanPath(path)
+
+	opts := &github.RepositoryContentGetOptions{}
+	if ref != "" {
+		opts.Ref = ref
+	}
+
+	_, directoryContents, _, err := gc.client.Repositories.GetContents(ctx, owner, repo, cleanPath, opts)
+	if err != nil {
+		// Create helpful error message for 404s
+		if strings.Contains(err.Error(), "404") {
+			return nil, CreateFileNotFoundError(owner, repo, cleanPath, ref)
+		}
+		return nil, fmt.Errorf("failed to list directory contents: %w", err)
+	}
+
+	items := make([]DirectoryItem, len(directoryContents))
+	for i, item := range directoryContents {
+		items[i] = DirectoryItem{
+			Name: item.GetName(),
+			Path: item.GetPath(),
+			Type: item.GetType(),
+			Size: item.GetSize(),
+			SHA:  item.GetSHA(),
+		}
+	}
+
+	return &DirectoryListing{
+		Path:  cleanPath,
+		Items: items,
+	}, nil
 }
 
 // CloneRepository clones a repository to a local directory
