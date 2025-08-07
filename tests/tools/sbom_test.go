@@ -124,7 +124,8 @@ func TestSBOMTool_Execute_ParameterValidation(t *testing.T) {
 
 	// Test with relative path (should fail fast)
 	args := map[string]interface{}{
-		"source": "./relative/path",
+		"source":      "./relative/path",
+		"output_file": "/tmp/test-sbom.json",
 	}
 
 	result, err := tool.Execute(ctx, logger, cache, args)
@@ -169,7 +170,8 @@ func TestSBOMTool_ValidateSourcePath_Security(t *testing.T) {
 
 	// Test path traversal (should fail fast during parameter validation)
 	args := map[string]interface{}{
-		"source": "../../../etc",
+		"source":      "../../../etc",
+		"output_file": "/tmp/test-sbom.json",
 	}
 	result, err := tool.Execute(ctx, logger, cache, args)
 	require.Error(t, err)
@@ -178,7 +180,8 @@ func TestSBOMTool_ValidateSourcePath_Security(t *testing.T) {
 
 	// Test non-existent path (should fail fast during source validation)
 	args = map[string]interface{}{
-		"source": "/nonexistent/path/12345",
+		"source":      "/nonexistent/path/12345",
+		"output_file": "/tmp/test-sbom.json",
 	}
 	result, err = tool.Execute(ctx, logger, cache, args)
 	require.Error(t, err)
