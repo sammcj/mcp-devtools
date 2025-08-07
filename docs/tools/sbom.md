@@ -75,36 +75,36 @@ While intended to be activated via a prompt to an agent, below are some example 
 ## Parameters Reference
 
 ### Core Parameters
-| Parameter                  | Type    | Default     | Required | Description                              |
-|----------------------------|---------|-------------|----------|------------------------------------------|
-| `source`                   | string  | -           | Yes      | Absolute path to source directory        |
-| `output_format`            | string  | "syft-json" | No       | SBOM output format                       |
-| `include_dev_dependencies` | boolean | false       | No       | Include development dependencies         |
-| `output_file`              | string  | -           | Yes      | Absolute path to save SBOM               |
+| Parameter                  | Type    | Default     | Required | Description                       |
+|----------------------------|---------|-------------|----------|-----------------------------------|
+| `source`                   | string  | -           | Yes      | Absolute path to source directory |
+| `output_format`            | string  | "syft-json" | No       | SBOM output format                |
+| `include_dev_dependencies` | boolean | false       | No       | Include development dependencies  |
+| `output_file`              | string  | -           | Yes      | Absolute path to save SBOM        |
 
 ### Output Format Options
 
-| Format         | Description                    | Best For                          | File Extension    |
-|----------------|--------------------------------|-----------------------------------|-------------------|
-| `syft-json`    | Syft native JSON format        | Vulnerability scanning, analysis  | `.json`           |
-| `cyclonedx-json` | CycloneDX standard format    | Industry toolchain integration    | `.cdx.json`       |
-| `spdx-json`    | SPDX standard format           | Compliance, legal review          | `.spdx.json`      |
-| `syft-table`   | Human-readable table format    | Manual review, documentation      | `.txt`            |
+| Format           | Description                 | Best For                         | File Extension |
+|------------------|-----------------------------|----------------------------------|----------------|
+| `syft-json`      | Syft native JSON format     | Vulnerability scanning, analysis | `.json`        |
+| `cyclonedx-json` | CycloneDX standard format   | Industry toolchain integration   | `.cdx.json`    |
+| `spdx-json`      | SPDX standard format        | Compliance, legal review         | `.spdx.json`   |
+| `syft-table`     | Human-readable table format | Manual review, documentation     | `.txt`         |
 
 ### Supported Package Managers
 
 The tool automatically detects and analyses dependencies from these package managers:
 
-| Language/Platform | Package Manager | Detection Files                   |
-|-------------------|-----------------|-----------------------------------|
-| Node.js           | npm/yarn        | package.json, package-lock.json   |
-| Python            | pip/poetry      | requirements.txt, pyproject.toml  |
-| Go                | go modules      | go.mod, go.sum                    |
-| Java              | Maven/Gradle    | pom.xml, build.gradle             |
-| Rust              | Cargo           | Cargo.toml, Cargo.lock            |
+| Language/Platform | Package Manager | Detection Files                  |
+|-------------------|-----------------|----------------------------------|
+| Node.js           | npm/yarn        | package.json, package-lock.json  |
+| Python            | pip/poetry      | requirements.txt, pyproject.toml |
+| Go                | go modules      | go.mod, go.sum                   |
+| Java              | Maven/Gradle    | pom.xml, build.gradle            |
+| Rust              | Cargo           | Cargo.toml, Cargo.lock           |
 | C#                | NuGet           | packages.config, *.csproj        |
-| Ruby              | Bundler         | Gemfile, Gemfile.lock             |
-| PHP               | Composer        | composer.json, composer.lock      |
+| Ruby              | Bundler         | Gemfile, Gemfile.lock            |
+| PHP               | Composer        | composer.json, composer.lock     |
 
 ## Response Format
 
@@ -128,7 +128,7 @@ The SBOM has been saved to the specified file and is ready for vulnerability sca
 The detailed SBOM is saved to the specified file in the chosen format. The tool supports multiple industry-standard formats:
 
 **Syft JSON Format**: Rich metadata, optimised for vulnerability scanning
-**CycloneDX Format**: OWASP standard for security toolchain integration  
+**CycloneDX Format**: OWASP standard for security toolchain integration
 **SPDX Format**: Linux Foundation standard for compliance and legal review
 **Table Format**: Human-readable text format for manual review
 
