@@ -64,8 +64,6 @@ func (t *SBOMTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 		return nil, fmt.Errorf("SBOM tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'sbom'")
 	}
 
-	logger.Info("Executing SBOM generation tool")
-
 	// Parse and validate parameters
 	request, err := t.parseRequest(args)
 	if err != nil {
@@ -182,22 +180,21 @@ func (t *SBOMTool) executeSyft(ctx context.Context, request *SBOMRequest, logger
 
 	logger.WithField("source_path", sourcePath).Debug("Validated source path")
 
-	// Get source using Syft's helper
-	src, err := syft.GetSource(ctx, fmt.Sprintf("dir:%s", sourcePath), syft.DefaultGetSourceConfig())
+	// Get source using Syft's helper exactly like the working example
+	logger.WithField("syft_input", sourcePath).Info("FIXED VERSION: About to call syft.GetSource without dir: prefix")
+	src, err := syft.GetSource(ctx, sourcePath, nil)
 	if err != nil {
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"input": sourcePath,
+		}).Error("syft.GetSource failed")
 		return nil, fmt.Errorf("failed to create source from directory: %w", err)
 	}
+	logger.WithField("source_type", fmt.Sprintf("%T", src)).Info("Successfully created source")
 
-	// Create SBOM config
-	config := syft.DefaultCreateSBOMConfig()
-
-	// Configure based on include_dev_dependencies setting
-	// Note: For production-only dependencies, we'd need to configure cataloger selection
-	// For now, include all dependencies as Syft's default behavior is generally production-focused
-
-	// Generate SBOM using Syft
+	// Generate SBOM using Syft with nil config (like the simple example)
 	logger.Debug("Starting SBOM generation with Syft")
-	sbomResult, err := syft.CreateSBOM(ctx, src, config)
+	sbomResult, err := syft.CreateSBOM(ctx, src, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate SBOM: %w", err)
 	}
