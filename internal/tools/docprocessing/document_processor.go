@@ -11,6 +11,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -191,4 +192,104 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 func (t *DocumentProcessorTool) shouldUseCache(req *DocumentProcessingRequest) bool {
 	// Always use cache since we removed the cache_enabled parameter
 	return t.config.CacheEnabled
+}
+
+// ProvideExtendedInfo provides detailed usage information for the document processing tool
+func (t *DocumentProcessorTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Process a PDF with text and images",
+				Arguments: map[string]interface{}{
+					"source":  "/Users/username/documents/report.pdf",
+					"profile": "text-and-image",
+				},
+				ExpectedResult: "Extracts text and images, saves markdown file to same directory, returns structured content with metadata and processing statistics",
+			},
+			{
+				Description: "Batch process multiple documents",
+				Arguments: map[string]interface{}{
+					"sources": []string{
+						"/Users/username/docs/file1.pdf",
+						"/Users/username/docs/file2.docx",
+						"/Users/username/docs/file3.xlsx",
+					},
+					"profile": "basic",
+				},
+				ExpectedResult: "Processes all documents in batch, returns array of results with individual success/failure status and content for each file",
+			},
+			{
+				Description: "Process scanned document with OCR",
+				Arguments: map[string]interface{}{
+					"source":  "/Users/username/scanned/invoice.pdf",
+					"profile": "scanned",
+				},
+				ExpectedResult: "Applies OCR to extract text from scanned/image-based PDF, may take longer but handles non-text documents",
+			},
+			{
+				Description: "Return content inline without saving file",
+				Arguments: map[string]interface{}{
+					"source":             "/Users/username/docs/contract.docx",
+					"profile":            "text-and-image",
+					"return_inline_only": true,
+				},
+				ExpectedResult: "Processes document and returns content in response only, does not save to file system",
+			},
+			{
+				Description: "Force cache refresh and save to custom location",
+				Arguments: map[string]interface{}{
+					"source":           "/Users/username/docs/presentation.pptx",
+					"profile":          "text-and-image",
+					"clear_file_cache": true,
+					"save_to":          "/Users/username/output/presentation.md",
+				},
+				ExpectedResult: "Clears any cached results, reprocesses document, and saves output to specified location",
+			},
+		},
+		CommonPatterns: []string{
+			"Use 'text-and-image' profile (default) for comprehensive document processing including visual elements",
+			"Use 'basic' profile for faster text-only extraction when images are not needed",
+			"Use 'scanned' profile specifically for PDFs that contain scanned images or poor-quality text",
+			"Use batch processing with 'sources' array for multiple files to improve efficiency",
+			"Set 'clear_file_cache: true' when document content has changed but filename is the same",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "Relative paths are NOT supported error",
+				Solution: "Always use fully qualified absolute paths starting with / (Unix) or drive letter (Windows). Convert relative paths like './file.pdf' to absolute paths like '/Users/username/project/file.pdf'.",
+			},
+			{
+				Problem:  "Configuration error: docling not available",
+				Solution: "The document processing tool requires docling Python package. Install with: pip install docling. Ensure Python is in your PATH and docling is importable.",
+			},
+			{
+				Problem:  "File size exceeds maximum allowed size",
+				Solution: "Large files are rejected for security. Increase limits with environment variables DOC_PROCESSOR_MAX_FILE_SIZE or split large documents into smaller files.",
+			},
+			{
+				Problem:  "Unsupported file type error",
+				Solution: "Check that file extension is supported: PDF, DOCX, DOC, XLSX, XLS, PPTX, PPT, TXT, MD, RTF, HTML, CSV, PNG, JPG, JPEG, GIF, BMP, TIFF. Verify file is not corrupted.",
+			},
+			{
+				Problem:  "Processing timeout or hanging",
+				Solution: "Complex documents may take time. Increase timeout parameter or use 'basic' profile for faster processing. Check that docling environment is properly configured.",
+			},
+			{
+				Problem:  "Poor OCR results or missing text",
+				Solution: "For scanned documents, ensure you use 'scanned' profile. Some documents may have complex layouts that are difficult to process. Try different profiles or preprocessing the document.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"source":             "Single document source (required unless using sources). MUST be absolute path (e.g., /Users/user/file.pdf) or complete URL. Supports PDF, Office documents, images, and text files.",
+			"sources":            "Array of document sources for batch processing. When provided, 'source' is ignored. Each item must be an absolute path or URL. Batch processing is more efficient for multiple files.",
+			"profile":            "Processing profile affects quality vs speed: 'text-and-image' (comprehensive, default), 'basic' (text-only, fast), 'scanned' (OCR for images), 'llm-smoldocling' (vision model), 'llm-external' (if configured).",
+			"return_inline_only": "When true, returns content only in response without saving to file. When false (default), saves processed markdown to file system and returns file path.",
+			"save_to":            "Override output file location (absolute path required). By default, saves to same directory as source with .md extension. Useful for organising output or preventing overwrites.",
+			"clear_file_cache":   "Forces reprocessing by clearing cached results for the source file. Use when document content changed but filename is the same, or when troubleshooting cache issues.",
+			"timeout":            "Processing timeout in seconds. Override default timeouts for complex documents. Larger documents or OCR processing may need longer timeouts.",
+			"debug":              "Returns environment and configuration information without processing. Useful for troubleshooting setup issues or verifying tool configuration.",
+		},
+		WhenToUse:    "Use for extracting structured content from documents, converting documents to markdown, batch processing document collections, OCR on scanned documents, or preparing documents for analysis workflows.",
+		WhenNotToUse: "Don't use for simple text files that don't need processing, password-protected documents, or when you need to preserve exact formatting. Not suitable for real-time processing due to potential processing overhead.",
+	}
 }

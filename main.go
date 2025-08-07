@@ -32,6 +32,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/pdf"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/think"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/utilities/toolhelp"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/webfetch"
 )
 

@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -204,4 +205,91 @@ func (t *ClaudeTool) ApplyResponseSizeLimit(output string, logger *logrus.Logger
 	logger.Warnf("Claude agent response truncated from %d bytes to %d bytes due to size limit", len(output), len(truncated))
 
 	return truncated + message
+}
+
+// ProvideExtendedInfo provides detailed usage information for the claude agent tool
+func (t *ClaudeTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Get Claude to review a completed implementation",
+				Arguments: map[string]interface{}{
+					"prompt": "Please review the authentication implementation in @src/auth/ and check for security best practices, edge cases, and potential improvements.",
+				},
+				ExpectedResult: "Claude agent analyzes the authentication code and provides detailed feedback on security, implementation quality, and suggestions for improvement",
+			},
+			{
+				Description: "Ask Claude to help debug a specific issue",
+				Arguments: map[string]interface{}{
+					"prompt":         "I'm getting a 'connection refused' error when trying to connect to the database. Here's the error: @logs/database.log. Can you help troubleshoot?",
+					"override-model": "opus",
+				},
+				ExpectedResult: "Claude agent examines the log file and provides specific debugging steps and potential solutions for the database connection issue",
+			},
+			{
+				Description: "Continue a previous conversation",
+				Arguments: map[string]interface{}{
+					"prompt":                     "Thanks for the previous suggestions. I've implemented the caching layer you recommended. Can you now help me add monitoring?",
+					"continue-last-conversation": true,
+				},
+				ExpectedResult: "Claude agent continues from the previous conversation context and helps with adding monitoring to the caching implementation",
+			},
+			{
+				Description: "Get help with a complex refactoring task in yolo mode",
+				Arguments: map[string]interface{}{
+					"prompt":    "I need to refactor this legacy payment processing code in @src/payments/ to use the new payment gateway API. Please help me migrate it while preserving all existing functionality.",
+					"yolo-mode": true,
+				},
+				ExpectedResult: "Claude agent performs the refactoring with full permissions, making necessary code changes and updates across the payment processing system",
+			},
+			{
+				Description: "Resume a specific session with additional directory access",
+				Arguments: map[string]interface{}{
+					"prompt":                  "Now let's work on the frontend components that integrate with the API we just built.",
+					"resume-specific-session": "abc123-def456-ghi789",
+					"include-directories":     []string{"/Users/username/project/frontend", "/Users/username/project/shared"},
+				},
+				ExpectedResult: "Claude agent resumes the specified session and gains access to frontend and shared directories to work on UI integration",
+			},
+		},
+		CommonPatterns: []string{
+			"Use @file or @directory/ syntax to provide context about specific files or directories",
+			"Use continue-last-conversation for iterative work on the same topic",
+			"Use override-model to get different perspectives (sonnet for speed, opus for complex analysis)",
+			"Use yolo-mode only when you trust Claude to make changes without permission prompts",
+			"Include specific error messages, logs, or symptoms in your prompts for better debugging help",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "Tool not available/claude command not found",
+				Solution: "The claude agent requires Claude CLI to be installed and ENABLE_AGENTS environment variable to include 'claude'. Install Claude CLI and set ENABLE_AGENTS=claude.",
+			},
+			{
+				Problem:  "Agent timeout after 3 minutes",
+				Solution: "Complex tasks may need more time. Set AGENT_TIMEOUT environment variable to increase timeout (in seconds). Example: AGENT_TIMEOUT=600 for 10 minutes.",
+			},
+			{
+				Problem:  "Response truncated due to size limit",
+				Solution: "Large responses are truncated for memory safety. Increase AGENT_MAX_RESPONSE_SIZE environment variable (in bytes) or ask Claude to provide more concise responses.",
+			},
+			{
+				Problem:  "Permission denied errors in yolo mode",
+				Solution: "Even in yolo-mode, Claude respects file system permissions. Ensure the process has necessary read/write permissions to the files and directories being accessed.",
+			},
+			{
+				Problem:  "Session ID not found when resuming",
+				Solution: "Session IDs expire after some time. Use continue-last-conversation for recent sessions, or start a new conversation if the session ID is no longer valid.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"prompt":                     "Clear, specific instruction to Claude. Use @file or @directory/ syntax for context. Be detailed about what you want Claude to analyze, implement, or help with.",
+			"override-model":             "Model selection affects response quality vs speed. 'sonnet' (default, fast), 'haiku' (fastest), 'opus' (most capable). Choose based on task complexity.",
+			"yolo-mode":                  "Bypasses permission prompts, allowing Claude to write/modify files directly. Use with caution - only when you trust Claude's judgement completely.",
+			"continue-last-conversation": "Resumes most recent conversation with context. Useful for iterative work where previous context is important for the current task.",
+			"resume-specific-session":    "Resumes specific session by ID. Session IDs are provided in previous responses. Use when you need to return to a specific conversation thread.",
+			"include-directories":        "Array of additional directory paths Claude can access. Expands Claude's context beyond default allowed directories for comprehensive analysis.",
+		},
+		WhenToUse:    "Use when you need external, expert AI assistance for code review, debugging complex issues, architectural decisions, refactoring guidance, or when you're stuck on challenging implementation problems or when directly asked to use Claude Code or Claude CLI by the user.",
+		WhenNotToUse: "Don't use for simple questions that don't require code analysis, when you need real-time responses, or for tasks that require access to external APIs or services Claude can't access.",
+	}
 }

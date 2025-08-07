@@ -8,6 +8,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -142,4 +143,82 @@ func (t *GetLibraryDocsTool) formatResponse(libraryID, topic string, tokens int,
 	builder.WriteString("*Documentation retrieved from Context7. This content is optimised for AI consumption and may be summarised or filtered based on the specified topic and token limits.*")
 
 	return builder.String()
+}
+
+// ProvideExtendedInfo provides detailed usage information for the get_library_docs tool
+func (t *GetLibraryDocsTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Get Next.js documentation without a specific topic focus",
+				Arguments: map[string]interface{}{
+					"context7CompatibleLibraryID": "/vercel/next.js",
+				},
+				ExpectedResult: "Returns general Next.js documentation up to 10,000 tokens covering core concepts, setup, and API reference",
+			},
+			{
+				Description: "Get focused React hooks documentation with higher token limit",
+				Arguments: map[string]interface{}{
+					"context7CompatibleLibraryID": "/facebook/react",
+					"topic":                       "hooks",
+					"tokens":                      20000,
+				},
+				ExpectedResult: "Returns React documentation focused specifically on hooks (useState, useEffect, custom hooks, etc.) with up to 20,000 tokens",
+			},
+			{
+				Description: "Get MongoDB driver documentation for a specific version",
+				Arguments: map[string]interface{}{
+					"context7CompatibleLibraryID": "/mongodb/node-mongodb-native/v4.17.1",
+					"topic":                       "aggregation",
+				},
+				ExpectedResult: "Returns MongoDB Node.js driver v4.17.1 documentation focused on aggregation pipelines and operations",
+			},
+			{
+				Description: "Get concise AWS SDK documentation for Lambda functions",
+				Arguments: map[string]interface{}{
+					"context7CompatibleLibraryID": "/aws/aws-sdk-js-v3",
+					"topic":                       "lambda",
+					"tokens":                      5000,
+				},
+				ExpectedResult: "Returns AWS SDK v3 documentation focused on Lambda client and operations, limited to 5,000 tokens for conciseness",
+			},
+		},
+		CommonPatterns: []string{
+			"Always call 'resolve_library_id' first to get the correct Context7-compatible library ID",
+			"Use specific topic focus to get targeted documentation (e.g., 'authentication', 'routing', 'database')",
+			"Start with lower token counts (5000-10000) for quick overviews, increase (15000-25000) for comprehensive docs",
+			"Common workflow: resolve_library_id → get_library_docs → implement based on documentation",
+			"Combine with package version tools to ensure you're using compatible API versions",
+			"Use topic parameter to avoid overwhelming responses for large libraries",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "Invalid library ID format error",
+				Solution: "Ensure the library ID starts with '/' and follows the pattern '/org/project' or '/org/project/version'. Use 'resolve_library_id' tool first to get the correct format.",
+			},
+			{
+				Problem:  "No documentation content found for the specified library",
+				Solution: "The library might not be available in Context7's database. Try using 'resolve_library_id' to search for alternative names or check if the library exists in the Context7 catalogue.",
+			},
+			{
+				Problem:  "Documentation is too broad or unfocused",
+				Solution: "Use the 'topic' parameter to focus on specific areas (e.g., 'getting-started', 'api-reference', 'examples'). Also consider reducing the token count for more targeted results.",
+			},
+			{
+				Problem:  "Token limit errors or truncated responses",
+				Solution: "Reduce the 'tokens' parameter (minimum 1000, maximum 100,000). For large libraries, use multiple calls with different topics rather than one large request.",
+			},
+			{
+				Problem:  "Outdated or incorrect documentation",
+				Solution: "Specify a version in the library ID (e.g., '/vercel/next.js/v13.0.0') or use 'resolve_library_id' to find the most recent available version.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"context7CompatibleLibraryID": "Must be in the format '/org/project' or '/org/project/version'. Examples: '/vercel/next.js', '/facebook/react/v18.2.0'. Always use 'resolve_library_id' first unless the user provides this exact format.",
+			"topic":                       "Optional focus area for the documentation. Examples: 'getting-started', 'api-reference', 'hooks', 'routing', 'authentication', 'examples'. Helps filter large documentation sets to relevant sections.",
+			"tokens":                      "Controls the amount of documentation returned (1000-100000). Lower values (5000) for quick reference, higher values (20000+) for comprehensive guides. Default is 10000 tokens.",
+		},
+		WhenToUse:    "Use when you need current, comprehensive documentation for implementing a specific library or package. Ideal for understanding APIs, getting code examples, learning best practices, or troubleshooting integration issues.",
+		WhenNotToUse: "Don't use for general programming concepts, language syntax, or libraries not available in Context7. Use 'resolve_library_id' first if you're unsure about library availability or naming.",
+	}
 }

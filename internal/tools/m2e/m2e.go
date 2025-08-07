@@ -11,6 +11,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/m2e/pkg/converter"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -240,4 +241,73 @@ func (m *M2ETool) countChanges(original, converted string) int {
 	}
 
 	return changes
+}
+
+// ProvideExtendedInfo provides detailed usage information for the m2e tool
+func (m *M2ETool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Convert inline text from American to British English",
+				Arguments: map[string]interface{}{
+					"text": "The color of the aluminum center was gray, and we realized it needed optimization.",
+				},
+				ExpectedResult: "Returns the converted text with British spellings: 'The colour of the aluminium centre was grey, and we realised it needed optimisation.'",
+			},
+			{
+				Description: "Convert a file in place with British spellings",
+				Arguments: map[string]interface{}{
+					"file_path": "/Users/username/projects/myapp/README.md",
+				},
+				ExpectedResult: "Updates the file directly, converting American spellings to British throughout the document and returns a summary of changes made",
+			},
+			{
+				Description: "Convert text while preserving smart quotes",
+				Arguments: map[string]interface{}{
+					"text":              "The program's behavior was optimized for the organization's needs.",
+					"keep_smart_quotes": true,
+				},
+				ExpectedResult: "Converts spellings but keeps smart quotes intact: 'The program's behaviour was optimised for the organisation's needs.'",
+			},
+			{
+				Description: "Convert text with smart quote normalisation",
+				Arguments: map[string]interface{}{
+					"text":              "The program's behavior was \"optimized\" for the organization's needs.",
+					"keep_smart_quotes": false,
+				},
+				ExpectedResult: "Converts spellings and normalises smart quotes to standard quotes: 'The program's behaviour was \"optimised\" for the organisation's needs.'",
+			},
+		},
+		CommonPatterns: []string{
+			"Use text parameter for quick inline conversions and previews",
+			"Use file_path parameter to update documentation files in place",
+			"Set keep_smart_quotes to true when working with formatted documents that use typographic quotes",
+			"Test with text parameter first before updating important files",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "Cannot provide both 'text' and 'file_path' parameters",
+				Solution: "Choose either inline mode (text parameter) or file update mode (file_path parameter). Use text for quick conversions, file_path for updating files in place.",
+			},
+			{
+				Problem:  "File path must be fully qualified absolute path",
+				Solution: "Ensure file_path starts with / (Unix) or drive letter (Windows). Use complete paths like '/Users/username/project/file.md', not relative paths like './file.md'.",
+			},
+			{
+				Problem:  "Text exceeds maximum length error",
+				Solution: "The tool has configurable limits (default 40,000 characters). For larger texts, either increase M2E_MAX_LENGTH environment variable or process in chunks.",
+			},
+			{
+				Problem:  "File content exceeds maximum length",
+				Solution: "Large files are rejected for safety. Consider splitting the file or increasing the M2E_MAX_LENGTH environment variable if the file legitimately needs processing.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"text":              "Text to convert inline and return immediately. Cannot be used with file_path. Best for previews, testing, or small conversions where you need the result returned.",
+			"file_path":         "Absolute path to file to update in place. File is read, converted, and written back only if changes are needed. Cannot be used with text parameter.",
+			"keep_smart_quotes": "Whether to preserve smart quotes and em-dashes (true) or normalise them to standard ASCII quotes (false, default). Useful when working with formatted documents vs plain text.",
+		},
+		WhenToUse:    "Use for converting documentation, code comments, README files, or any text from American to British English spelling. Ideal for maintaining consistent language standards across international projects.",
+		WhenNotToUse: "Don't use for code syntax, variable names, API endpoints, or technical identifiers. Not suitable for languages other than English or for complex linguistic transformations beyond spelling differences.",
+	}
 }

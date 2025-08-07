@@ -14,6 +14,11 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
   - [Example: Hello World Tool](#example-hello-world-tool)
     - [Testing Your Tool](#testing-your-tool)
   - [Testing](#testing)
+  - [Extended Help for Complex Tools](#extended-help-for-complex-tools)
+    - [Implementing Extended Help](#implementing-extended-help)
+    - [Extended Help Structure](#extended-help-structure)
+    - [When to Add Extended Help](#when-to-add-extended-help)
+    - [Extended Help Benefits](#extended-help-benefits)
   - [Additional Considerations](#additional-considerations)
 
 ## Tool Interface
@@ -283,6 +288,79 @@ make test
 # Run only fast tests (no external dependencies)
 make test-fast
 ```
+
+## Extended Help for Complex Tools
+
+For tools with complex parameter structures or usage patterns, you can implement the optional `ExtendedHelpProvider` interface to provide detailed usage information accessible through the `devtools_help` tool.
+
+### Implementing Extended Help
+
+To add extended help to your tool, implement the `ExtendedHelpProvider` interface:
+
+```go
+import "github.com/sammcj/mcp-devtools/internal/tools"
+
+// Add the ProvideExtendedInfo method to your tool
+func (t *YourTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+    return &tools.ExtendedHelp{
+        Examples: []tools.ToolExample{
+            {
+                Description: "Basic usage example",
+                Arguments: map[string]interface{}{
+                    "param1": "example_value",
+                    "param2": 42,
+                },
+                ExpectedResult: "Description of what this example returns",
+            },
+            // Add more examples for different use cases
+        },
+        CommonPatterns: []string{
+            "Start with basic parameters before using advanced options",
+            "Use parameter X for Y scenario",
+            "Combine with other tools for complete workflows",
+        },
+        Troubleshooting: []tools.TroubleshootingTip{
+            {
+                Problem:  "Common error or issue users might encounter",
+                Solution: "How to resolve this issue step by step",
+            },
+        },
+        ParameterDetails: map[string]string{
+            "param1": "Detailed explanation of param1 with examples and constraints",
+            "param2": "Advanced usage information for param2 including edge cases",
+        },
+        WhenToUse:    "Describe when this tool is the right choice",
+        WhenNotToUse: "Describe when other tools would be better alternatives",
+    }
+}
+```
+
+### Extended Help Structure
+
+- **Examples**: Provide 3-5 real-world examples showing different usage patterns with expected results
+- **CommonPatterns**: List workflow patterns and best practices for using the tool effectively
+- **Troubleshooting**: Address common errors and their solutions
+- **ParameterDetails**: Explain complex parameters that need more context than the basic description
+- **WhenToUse/WhenNotToUse**: Help AI agents and less capable AI models understand appropriate tool selection
+
+### When to Add Extended Help
+
+Consider adding extended help for tools that have:
+
+- Multiple parameter combinations with different behaviours
+- Complex parameter structures (nested objects, arrays with specific formats)
+- Integration patterns with other tools
+- Common error conditions or edge cases
+- Context-sensitive behaviour based on available resources/configurations
+
+### Extended Help Benefits
+
+Tools with extended help:
+
+- Appear in the `devtools_help` tool for discoverability
+- Provide rich context for AI agents to use tools more effectively
+- Reduce trial-and-error by providing clear examples and patterns
+- Prevent common mistakes through proactive troubleshooting guidance
 
 ## Additional Considerations
 

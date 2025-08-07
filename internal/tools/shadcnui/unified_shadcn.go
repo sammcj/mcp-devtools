@@ -15,6 +15,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -34,10 +35,10 @@ func init() {
 func (t *UnifiedShadcnTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"shadcn",
-		mcp.WithDescription(`shadcn ui components. Supports listing, searching, getting details, & examples for shadcn ui components.
+		mcp.WithDescription(`List, search, get details & examples for shadcn ui components.
 
 Actions:
-- list: Get all available shadcn ui components
+- list: Get all available components
 - search: Search components by keyword in name or description
 - details: Get detailed information about a specific component
 - examples: Get usage examples for a specific component
@@ -365,4 +366,84 @@ func (t *UnifiedShadcnTool) fetchComponentsList(logger *logrus.Logger, cache *sy
 	})
 
 	return components, nil
+}
+
+// ProvideExtendedInfo provides detailed usage information for the shadcn tool
+func (t *UnifiedShadcnTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "List all available shadcn/ui components",
+				Arguments: map[string]interface{}{
+					"action": "list",
+				},
+				ExpectedResult: "Returns a complete list of all available shadcn/ui components with names and URLs",
+			},
+			{
+				Description: "Search for button-related components",
+				Arguments: map[string]interface{}{
+					"action": "search",
+					"query":  "button",
+				},
+				ExpectedResult: "Returns components matching 'button' in their name (button, toggle-button, etc.)",
+			},
+			{
+				Description: "Get detailed information about the dialog component",
+				Arguments: map[string]interface{}{
+					"action":        "details",
+					"componentName": "dialog",
+				},
+				ExpectedResult: "Returns detailed info about the dialog component including description, installation command, usage examples, and props",
+			},
+			{
+				Description: "Get code examples for the table component",
+				Arguments: map[string]interface{}{
+					"action":        "examples",
+					"componentName": "table",
+				},
+				ExpectedResult: "Returns React/TypeScript code examples showing how to use the table component in practice",
+			},
+			{
+				Description: "Search for form-related components",
+				Arguments: map[string]interface{}{
+					"action": "search",
+					"query":  "form",
+				},
+				ExpectedResult: "Returns components related to forms (form, input, select, checkbox, etc.)",
+			},
+		},
+		CommonPatterns: []string{
+			"Start with 'list' action to see all available components",
+			"Use 'search' to find components by keyword (e.g., 'form', 'button', 'navigation')",
+			"Get component 'details' first to understand usage and installation",
+			"Follow up with 'examples' action to see practical implementation code",
+			"Common workflow: search → details → examples → implement",
+			"Component names must match exactly (use lowercase with hyphens)",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "Component not found error when using 'details' or 'examples'",
+				Solution: "Use the 'list' or 'search' action first to get the exact component name. Names are case-sensitive and use lowercase with hyphens (e.g., 'toggle-group', not 'ToggleGroup').",
+			},
+			{
+				Problem:  "No examples returned for a component",
+				Solution: "Some components may have limited examples in the documentation. Try the 'details' action instead which provides usage information and installation commands.",
+			},
+			{
+				Problem:  "Search returns too many/few results",
+				Solution: "Use more specific keywords for fewer results (e.g., 'data-table' vs 'table') or broader terms for more results (e.g., 'input' to find all input-related components).",
+			},
+			{
+				Problem:  "Installation command missing from details",
+				Solution: "Not all components have explicit installation commands. Use the general pattern: 'npx shadcn-ui@latest add [component-name]' where component-name matches the name from the list.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"action":        "The operation to perform. 'list' shows all components, 'search' finds components by keyword, 'details' gets comprehensive info, 'examples' provides code samples.",
+			"query":         "Search term for finding components. Searches in component names only. Use keywords like 'button', 'form', 'navigation', 'data' to find related components.",
+			"componentName": "Exact component name from the list (use lowercase with hyphens). Get correct names from 'list' or 'search' actions first.",
+		},
+		WhenToUse:    "Use this tool when building React applications with shadcn/ui components. Ideal for discovering available components, understanding their API, getting installation commands, and finding implementation examples.",
+		WhenNotToUse: "Don't use for non-shadcn/ui components, Vue/Angular frameworks, or general React documentation. This tool is specifically for the shadcn/ui component library.",
+	}
 }

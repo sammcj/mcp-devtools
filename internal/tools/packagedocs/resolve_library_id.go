@@ -8,6 +8,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -152,4 +153,82 @@ func (t *ResolveLibraryIDTool) formatResponse(libraryName string, results []*Sea
 	}
 
 	return builder.String()
+}
+
+// ProvideExtendedInfo provides detailed usage information for the resolve_library_id tool
+func (t *ResolveLibraryIDTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Find the Context7 library ID for React",
+				Arguments: map[string]interface{}{
+					"libraryName": "React",
+				},
+				ExpectedResult: "Returns the Context7-compatible library ID for React (e.g., '/facebook/react') along with trust score, stars, and documentation coverage details",
+			},
+			{
+				Description: "Resolve Next.js library ID",
+				Arguments: map[string]interface{}{
+					"libraryName": "Next.js",
+				},
+				ExpectedResult: "Identifies '/vercel/next.js' as the library ID with explanation of selection criteria and alternative matches if available",
+			},
+			{
+				Description: "Find MongoDB Node.js driver",
+				Arguments: map[string]interface{}{
+					"libraryName": "mongodb nodejs driver",
+				},
+				ExpectedResult: "Locates the official MongoDB Node.js driver library ID with version information and documentation metrics",
+			},
+			{
+				Description: "Search for AWS SDK",
+				Arguments: map[string]interface{}{
+					"libraryName": "aws-sdk",
+				},
+				ExpectedResult: "Returns the most relevant AWS SDK library ID (likely JavaScript version) with alternatives for different language SDKs",
+			},
+			{
+				Description: "Resolve specific version of a library",
+				Arguments: map[string]interface{}{
+					"libraryName": "vue 3",
+				},
+				ExpectedResult: "Finds Vue.js version 3 specific documentation or the main Vue library with version-specific information",
+			},
+		},
+		CommonPatterns: []string{
+			"Always use this tool BEFORE calling get_library_docs to find the correct library ID format",
+			"Use specific library names rather than generic terms (e.g., 'React' not 'frontend framework')",
+			"Include version or variant info in search (e.g., 'vue 3', 'aws-sdk-js')",
+			"Check alternative matches if the selected library doesn't match your needs",
+			"Use the exact library ID returned in subsequent get_library_docs calls",
+			"For ambiguous results, try more specific search terms or library variants",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "No libraries found for a search term",
+				Solution: "Try alternative names, abbreviations, or more generic terms. For example, try 'mongoose' instead of 'mongoose orm', or 'express' instead of 'express.js'.",
+			},
+			{
+				Problem:  "Wrong library selected as best match",
+				Solution: "Check the alternative matches section in the response. You can use a more specific libraryName or manually select from the alternatives provided.",
+			},
+			{
+				Problem:  "Multiple similar libraries returned",
+				Solution: "Look at trust scores, GitHub stars, and documentation coverage to choose the most appropriate option. Higher trust scores (7-10) indicate more authoritative sources.",
+			},
+			{
+				Problem:  "Library ID format doesn't work with get_library_docs",
+				Solution: "Ensure you're using the exact library ID returned (e.g., '/facebook/react'), not the library title. The library ID always starts with '/' and follows '/org/project' format.",
+			},
+			{
+				Problem:  "Outdated or deprecated library versions",
+				Solution: "Check the alternative matches for newer versions, or search with version-specific terms like 'react 18' or 'vue 3' to find current versions.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"libraryName": "Library or package name to search for. Can include version numbers, variants, or descriptive terms. Examples: 'React', 'Next.js', 'mongodb driver', 'aws-sdk-js', 'vue 3'. More specific terms usually yield better results.",
+		},
+		WhenToUse:    "Use as the first step before getting library documentation. Essential when you know the library name but need the Context7-compatible format, or when discovering available libraries for a technology stack.",
+		WhenNotToUse: "Don't use when you already have the exact Context7 library ID in '/org/project' format, for general technology searches (use web search instead), or when looking for tutorials rather than official documentation.",
+	}
 }

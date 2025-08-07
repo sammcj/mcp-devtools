@@ -9,6 +9,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -419,4 +420,109 @@ func (m *MemoryTool) newToolResultJSON(data interface{}) (*mcp.CallToolResult, e
 	}
 
 	return mcp.NewToolResultText(string(jsonData)), nil
+}
+
+// ProvideExtendedInfo provides detailed usage information for the memory tool
+func (m *MemoryTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Create entities for a project team",
+				Arguments: map[string]interface{}{
+					"operation": "create_entities",
+					"namespace": "project_alpha",
+					"data": map[string]interface{}{
+						"entities": []map[string]interface{}{
+							{"name": "alice", "entityType": "person", "observations": []string{"Senior Developer", "Team Lead"}},
+							{"name": "backend_api", "entityType": "system", "observations": []string{"REST API", "Handles authentication"}},
+						},
+					},
+				},
+				ExpectedResult: "Creates two entities (alice and backend_api) in the project_alpha namespace with their observations",
+			},
+			{
+				Description: "Create relationships between entities",
+				Arguments: map[string]interface{}{
+					"operation": "create_relations",
+					"namespace": "project_alpha",
+					"data": map[string]interface{}{
+						"relations": []map[string]interface{}{
+							{"from": "alice", "to": "backend_api", "relationType": "maintains"},
+						},
+					},
+				},
+				ExpectedResult: "Creates a relationship showing that alice maintains the backend_api system",
+			},
+			{
+				Description: "Search for entities containing specific terms",
+				Arguments: map[string]interface{}{
+					"operation": "search_nodes",
+					"namespace": "project_alpha",
+					"data": map[string]interface{}{
+						"query": "API",
+					},
+				},
+				ExpectedResult: "Returns entities and observations containing 'API' with full graph context",
+			},
+			{
+				Description: "Read the complete memory graph",
+				Arguments: map[string]interface{}{
+					"operation": "read_graph",
+					"namespace": "project_alpha",
+				},
+				ExpectedResult: "Returns the complete knowledge graph including all entities, relations, and observations for the namespace",
+			},
+			{
+				Description: "Add observations to existing entities",
+				Arguments: map[string]interface{}{
+					"operation": "add_observations",
+					"namespace": "project_alpha",
+					"data": map[string]interface{}{
+						"observations": []map[string]interface{}{
+							{"entityName": "alice", "contents": []string{"Proficient in Go", "Mentor for junior developers"}},
+							{"entityName": "backend_api", "contents": []string{"Uses PostgreSQL", "Deployed on AWS"}},
+						},
+					},
+				},
+				ExpectedResult: "Adds new observations to alice and backend_api entities without affecting existing data",
+			},
+		},
+		CommonPatterns: []string{
+			"Always create entities before creating relations that reference them",
+			"Use meaningful entity names without spaces (e.g., 'user_service' not 'User Service')",
+			"Keep observations atomic - one fact per observation for better searchability",
+			"Use namespaces to separate different projects or contexts",
+			"Use search_nodes to find information before creating duplicate entities",
+			"Use read_graph periodically to understand the current state of your knowledge base",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "Cannot create relation: entity does not exist",
+				Solution: "Ensure both 'from' and 'to' entities exist by creating them first with create_entities operation. Relations require existing entities as endpoints.",
+			},
+			{
+				Problem:  "Empty or unexpected search results",
+				Solution: "Search is case-sensitive and searches entity names and observations. Try broader terms or use read_graph to see all available entities first.",
+			},
+			{
+				Problem:  "Data parameter structure errors",
+				Solution: "Each operation requires specific data structure. Check examples for correct format: create_entities needs 'entities' array, create_relations needs 'relations' array, etc.",
+			},
+			{
+				Problem:  "Namespace confusion or missing data",
+				Solution: "Data is isolated by namespace. Ensure you're using the correct namespace parameter. Default namespace is 'default' if not specified.",
+			},
+			{
+				Problem:  "Accidental data deletion",
+				Solution: "Delete operations are permanent. Use search_nodes or read_graph to verify what exists before deleting. Consider using different namespaces for testing.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"operation": "Specifies the memory operation to perform. Create operations add data, delete operations permanently remove data, read/search operations retrieve data without modification.",
+			"namespace": "Isolates memory data into separate contexts. Use different namespaces for different projects or use cases. Default is 'default'. Namespace affects all operations.",
+			"data":      "Operation-specific structured data. Format varies significantly by operation - see examples for correct structure for each operation type.",
+		},
+		WhenToUse:    "Use for persistent knowledge management across sessions, building project memory, storing entity relationships, tracking facts and observations, or creating searchable knowledge bases for complex workflows.",
+		WhenNotToUse: "Don't use for temporary data that doesn't need persistence, large file storage, real-time data that changes frequently, or simple key-value storage needs (use regular variables instead).",
+	}
 }
