@@ -31,8 +31,8 @@ func (t *ToolHelpTool) Definition() mcp.Tool {
 	if len(toolsWithExtendedHelp) > 0 {
 		description = fmt.Sprintf(
 			"Use to get detailed usage information if you fail to correctly use tools that the MCP DevTools server provides. "+
-				"This tool provides extended help for: [ %s ]. "+
-				"Do NOT use routinely - only when you encounter errors using the above mentioned tools",
+				"This tool only provides extended help for: [ %s ]. "+
+				"Do NOT use routinely - only when you encounter errors using the above mentioned tools and no other tools.",
 			toolList,
 		)
 	} else {
@@ -50,7 +50,7 @@ func (t *ToolHelpTool) Definition() mcp.Tool {
 		mcp.WithDescription(description),
 		mcp.WithString("tool_name",
 			mcp.Required(),
-			mcp.Description(fmt.Sprintf("Name of the DevTools tool that provides extended help. Must be one of: %s", toolList)),
+			mcp.Description(fmt.Sprintf("Name of the DevTools tool that provides extended help. MUST be one of: %s", toolList)),
 			mcp.Enum(enumValues...),
 		),
 	)

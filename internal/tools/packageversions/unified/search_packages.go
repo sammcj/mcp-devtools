@@ -9,6 +9,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/bedrock"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/docker"
@@ -376,4 +377,118 @@ func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult
 	}
 
 	return result, nil
+}
+
+// ProvideExtendedInfo provides detailed usage information for the search_packages tool
+func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Check single npm package version",
+				Arguments: map[string]interface{}{
+					"ecosystem": "npm",
+					"query":     "react",
+				},
+				ExpectedResult: "Returns latest version information for React from npm registry",
+			},
+			{
+				Description: "Check multiple npm packages efficiently",
+				Arguments: map[string]interface{}{
+					"ecosystem": "npm",
+					"query":     "react,lodash,axios",
+					"data": map[string]interface{}{
+						"react":  "latest",
+						"lodash": "^4.0.0",
+						"axios":  "~1.0.0",
+					},
+				},
+				ExpectedResult: "Returns version information for multiple packages in a single call with specific version constraints",
+			},
+			{
+				Description: "Search for Python packages",
+				Arguments: map[string]interface{}{
+					"ecosystem": "python",
+					"query":     "requests",
+					"data":      []interface{}{"requests", "numpy", "pandas"},
+				},
+				ExpectedResult: "Returns PyPI information for Python packages including latest versions and dependencies",
+			},
+			{
+				Description: "Find Docker image tags",
+				Arguments: map[string]interface{}{
+					"ecosystem": "docker",
+					"query":     "nginx",
+					"action":    "tags",
+					"limit":     10,
+				},
+				ExpectedResult: "Returns available Docker image tags for nginx from DockerHub",
+			},
+			{
+				Description: "Search AWS Bedrock models",
+				Arguments: map[string]interface{}{
+					"ecosystem": "bedrock",
+					"query":     "anthropic",
+					"action":    "search",
+				},
+				ExpectedResult: "Returns available Anthropic models on AWS Bedrock with their details",
+			},
+			{
+				Description: "Check Go module with specific version",
+				Arguments: map[string]interface{}{
+					"ecosystem": "go",
+					"query":     "github.com/gin-gonic/gin",
+					"data": map[string]interface{}{
+						"github.com/gin-gonic/gin": "v1.9.0",
+					},
+				},
+				ExpectedResult: "Returns Go module information and version details from the Go module proxy",
+			},
+		},
+		CommonPatterns: []string{
+			"Use 'data' parameter for batch checking multiple packages - much more efficient than separate calls",
+			"Specify version constraints in data object (npm: '^1.0.0', python: '>=1.0.0', etc.)",
+			"For Docker: use 'tags' action to see available versions, 'info' for metadata",
+			"For Bedrock: use 'list' to see all models, 'search' to find specific providers",
+			"Common workflow: search → check versions → update dependency files",
+			"Combine with package documentation tools for complete development workflow",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "No results returned for package query",
+				Solution: "Ensure you're using the exact package name, not a description. Try searching on the ecosystem's official site first to get the correct name.",
+			},
+			{
+				Problem:  "Unsupported ecosystem error",
+				Solution: "Check that the ecosystem parameter matches one of: npm, go, python, python-pyproject, java-maven, java-gradle, swift, github-actions, docker, bedrock.",
+			},
+			{
+				Problem:  "Version constraint errors with npm or Python",
+				Solution: "Use proper semver format for npm (^1.0.0, ~1.0.0) or Python version specifiers (>=1.0.0, ==1.0.0). Check ecosystem-specific documentation for correct syntax.",
+			},
+			{
+				Problem:  "Docker registry not found errors",
+				Solution: "Specify the registry parameter ('dockerhub', 'ghcr') or ensure the image name includes the registry prefix for custom registries.",
+			},
+			{
+				Problem:  "Bedrock models not accessible",
+				Solution: "Bedrock models may be region-specific or require specific AWS permissions. The tool shows available models but access depends on your AWS configuration.",
+			},
+			{
+				Problem:  "Java Maven/Gradle dependency format issues",
+				Solution: "For Java, provide groupId:artifactId format (e.g., 'org.springframework:spring-core') or use the data parameter with proper Maven/Gradle dependency structure.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"ecosystem":      "The package ecosystem to search. Each ecosystem has different capabilities: npm (Node.js), python (PyPI), go (modules), java-maven/gradle (JVM), swift (SPM), github-actions (workflows), docker (containers), bedrock (AI models).",
+			"query":          "Package identifier - exact names work best. For multiple packages, can use comma-separated list or better yet use the 'data' parameter for batch operations.",
+			"data":           "Ecosystem-specific bulk data structure. Much more efficient than multiple individual calls. Format varies by ecosystem - check examples for correct structure.",
+			"constraints":    "Version constraints or filters. Format depends on ecosystem (npm: semver, python: PEP 440, etc.). Use for dependency resolution and compatibility checking.",
+			"action":         "Operation type for specific ecosystems. Docker: 'tags' (list versions), 'info' (metadata). Bedrock: 'list' (all models), 'search' (by provider), 'get' (specific model).",
+			"limit":          "Maximum results to return. Useful for large package lists or when you only need recent versions. Different ecosystems have different default limits.",
+			"registry":       "Registry to use for ecosystems that support multiple registries (mainly Docker: 'dockerhub', 'ghcr'). Most ecosystems use their default official registry.",
+			"includeDetails": "Whether to include additional metadata like descriptions, download stats, etc. Increases response size but provides richer information for decision-making.",
+		},
+		WhenToUse:    "Use when adding dependencies to projects, checking for updates, comparing package versions, or researching available packages. Essential for maintaining up-to-date and secure dependencies in software projects.",
+		WhenNotToUse: "Don't use for packages not in public registries, for general software discovery (use web search instead), or when you need detailed API documentation (use get_library_docs tool for that).",
+	}
 }

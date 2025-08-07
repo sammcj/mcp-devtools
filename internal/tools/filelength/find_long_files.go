@@ -16,6 +16,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -672,4 +673,78 @@ func (t *FindLongFilesTool) getMaxFileSizeKB() int {
 // newToolResultText creates a new tool result with text content
 func (t *FindLongFilesTool) newToolResultText(content string) (*mcp.CallToolResult, error) {
 	return mcp.NewToolResultText(content), nil
+}
+
+// ProvideExtendedInfo provides detailed usage information for the find_long_files tool
+func (t *FindLongFilesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
+	return &tools.ExtendedHelp{
+		Examples: []tools.ToolExample{
+			{
+				Description: "Find files over 700 lines in a project",
+				Arguments: map[string]interface{}{
+					"path": "/Users/username/projects/my-app",
+				},
+				ExpectedResult: "Returns a checklist of files exceeding 700 lines with their line counts and file sizes, sorted by line count descending",
+			},
+			{
+				Description: "Find files over 500 lines with custom threshold",
+				Arguments: map[string]interface{}{
+					"path":           "/Users/username/projects/large-codebase",
+					"line_threshold": 500,
+				},
+				ExpectedResult: "Returns files exceeding 500 lines, useful for more aggressive refactoring targets or smaller codebases",
+			},
+			{
+				Description: "Find long files excluding additional patterns",
+				Arguments: map[string]interface{}{
+					"path":                "/Users/username/projects/web-app",
+					"line_threshold":      600,
+					"additional_excludes": []string{"**/*.generated.ts", "**/*.spec.ts", "**/migrations/**"},
+				},
+				ExpectedResult: "Finds files over 600 lines while excluding generated files, tests, and database migrations from the scan",
+			},
+			{
+				Description: "Find files over 1000 lines for major refactoring",
+				Arguments: map[string]interface{}{
+					"path":           "/Users/username/projects/legacy-system",
+					"line_threshold": 1000,
+				},
+				ExpectedResult: "Returns only files with extremely high line counts (1000+) that are prime candidates for major refactoring",
+			},
+		},
+		CommonPatterns: []string{
+			"Start with default threshold (700 lines) to get a baseline of refactoring candidates",
+			"Exclude test files, generated data, and migrations with additional_excludes",
+			"Use the checklist output to track refactoring progress over time",
+		},
+		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "Path does not exist error",
+				Solution: "Ensure the path parameter is an absolute path (starts with /) and the directory actually exists. Check for typos in the path.",
+			},
+			{
+				Problem:  "Permission denied errors during scan",
+				Solution: "The tool will skip files and directories it cannot read due to permissions. This is normal behaviour - inaccessible files are automatically excluded from results.",
+			},
+			{
+				Problem:  "Too many files being flagged as long",
+				Solution: "Increase the line_threshold parameter to focus on the most problematic files, or use additional_excludes to filter out acceptable long files like configuration or data files.",
+			},
+			{
+				Problem:  "Binary files or generated files appearing in results",
+				Solution: "The tool automatically excludes most binary files and respects .gitignore. For additional exclusions, use the additional_excludes parameter with glob patterns.",
+			},
+			{
+				Problem:  "Scan taking too long on large codebases",
+				Solution: "The tool is optimised for performance but very large codebases may take time. Consider scanning specific subdirectories first, or excluding large vendor/dependency folders.",
+			},
+		},
+		ParameterDetails: map[string]string{
+			"path":                "Absolute path to the directory to scan (required). Must start with / on Unix systems or drive letter on Windows. The tool will recursively scan all subdirectories.",
+			"line_threshold":      "Minimum line count to consider a file 'long' (default: 700). Common values: 300-500 for strict standards, 700-1000 for moderate standards, 1000+ for focusing on extreme cases.",
+			"additional_excludes": "Array of glob patterns to exclude beyond default exclusions. Examples: ['**/*.test.js', '**/generated/**', '**/*.d.ts']. Useful for excluding test files, generated code, or specific file types.",
+		},
+		WhenToUse:    "Use during code reviews, refactoring planning, technical debt assessment, or as part of continuous code quality monitoring. Ideal for identifying files that may be difficult to maintain due to their size.",
+		WhenNotToUse: "Don't use on directories you don't have read permission for, or when you need analysis of specific file contents rather than just line counts. Not suitable for binary file analysis or dependency management.",
+	}
 }
