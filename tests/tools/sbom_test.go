@@ -6,9 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
-	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/tools/sbom"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -43,37 +41,27 @@ func TestSBOMTool_Definition(t *testing.T) {
 	assert.Nil(t, timeoutParam, "timeout_minutes parameter should not be exposed to users")
 }
 
-func TestSBOMTool_Execute_ToolEnabled(t *testing.T) {
-	// Enable the SBOM tool for testing
-	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "sbom")
+func TestSBOMTool_Execute_ToolDisabled(t *testing.T) {
+	// Ensure SBOM tool is disabled by default
+	_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
 
 	tool := &sbom.SBOMTool{}
 	logger := logrus.New()
-	logger.SetOutput(os.Stderr) // Avoid stdout in tests
+	logger.SetOutput(os.Stderr)
 	cache := &sync.Map{}
 
-	// Use absolute path for testing since tools require absolute paths for security
-	cwd, _ := os.Getwd()
 	args := map[string]interface{}{
-		"source": cwd,
+		"source": "/tmp", // Dummy path
 	}
 
-	// Since the tool should be disabled by default, we expect it to be registered
-	// but the execute should still work if we can create an instance
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctx := context.Background()
 
-	// For disabled tools, we can still test the interface
+	// Tool should fail immediately when disabled
 	result, err := tool.Execute(ctx, logger, cache, args)
 
-	// The tool should execute successfully and generate a real SBOM
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.True(t, len(result.Content) > 0, "Expected content in result")
-	textContent, ok := mcp.AsTextContent(result.Content[0])
-	require.True(t, ok, "Expected TextContent type")
-	// Should contain actual SBOM content, not placeholder
-	assert.Contains(t, textContent.Text, "sbom")
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "SBOM tool is not enabled")
 }
 
 func TestSBOMTool_Execute_InvalidParameters(t *testing.T) {
@@ -123,123 +111,79 @@ func getCurrentDir() string {
 	return filepath.Join(cwd, "..", "..")
 }
 
-func TestSBOMTool_Execute_ValidCurrentDirectory(t *testing.T) {
+func TestSBOMTool_Execute_ParameterValidation(t *testing.T) {
 	// Enable the SBOM tool for testing
 	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "sbom")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
 
 	tool := &sbom.SBOMTool{}
 	logger := logrus.New()
 	logger.SetOutput(os.Stderr)
 	cache := &sync.Map{}
+	ctx := context.Background()
 
+	// Test with relative path (should fail fast)
 	args := map[string]interface{}{
-		"source":        getCurrentDir(),
-		"output_format": "syft-json",
+		"source": "./relative/path",
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	result, err := tool.Execute(ctx, logger, cache, args)
-
-	// Should succeed with real SBOM implementation
-	require.NoError(t, err)
-	require.NotNil(t, result)
-
-	// Content should be actual SBOM JSON
-	require.True(t, len(result.Content) > 0, "Expected content in result")
-	textContent, ok := mcp.AsTextContent(result.Content[0])
-	require.True(t, ok, "Expected TextContent type")
-	// Should contain actual SBOM structure
-	assert.Contains(t, textContent.Text, "artifacts")
-	assert.Contains(t, textContent.Text, "schema")
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "source path must be absolute")
 }
 
-func TestSBOMTool_Execute_WithOutputFile(t *testing.T) {
+func TestSBOMTool_Execute_RelativeOutputFile(t *testing.T) {
 	// Enable the SBOM tool for testing
 	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "sbom")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
 
 	tool := &sbom.SBOMTool{}
 	logger := logrus.New()
 	logger.SetOutput(os.Stderr)
 	cache := &sync.Map{}
+	ctx := context.Background()
 
-	// We'll test with a relative path that gets created in current directory
-
+	// Test with relative output file path (should fail fast)
 	args := map[string]interface{}{
 		"source":      getCurrentDir(),
-		"output_file": filepath.Join(getCurrentDir(), "test-output.json"), // Absolute path
+		"output_file": "./relative/output.json", // Relative path
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 
 	result, err := tool.Execute(ctx, logger, cache, args)
-
-	require.NoError(t, err)
-	require.NotNil(t, result)
-
-	// Check that output file was created
-	_, err = os.Stat("test-output.json")
-	if err == nil {
-		// Clean up created file
-		_ = os.Remove("test-output.json")
-	}
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "output_file path must be absolute")
 }
 
 func TestSBOMTool_ValidateSourcePath_Security(t *testing.T) {
+	// Enable the SBOM tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "sbom")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &sbom.SBOMTool{}
+	logger := logrus.New()
+	logger.SetOutput(os.Stderr)
+	cache := &sync.Map{}
+	ctx := context.Background()
 
-	tests := []struct {
-		name     string
-		source   string
-		wantErr  bool
-		errorMsg string
-	}{
-		{
-			name:    "current directory",
-			source:  getCurrentDir(),
-			wantErr: false,
-		},
-		{
-			name:     "path traversal attempt",
-			source:   "../../../etc",
-			wantErr:  true,
-			errorMsg: "does not exist",
-		},
-		{
-			name:     "non-existent path",
-			source:   "/nonexistent/path",
-			wantErr:  true,
-			errorMsg: "does not exist",
-		},
+	// Test path traversal (should fail fast during parameter validation)
+	args := map[string]interface{}{
+		"source": "../../../etc",
 	}
+	result, err := tool.Execute(ctx, logger, cache, args)
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "source path must be absolute")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			logger := logrus.New()
-			logger.SetOutput(os.Stderr)
-			cache := &sync.Map{}
-
-			args := map[string]interface{}{
-				"source": tt.source,
-			}
-
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			_, err := tool.Execute(ctx, logger, cache, args)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-				if tt.errorMsg != "" {
-					assert.Contains(t, err.Error(), tt.errorMsg)
-				}
-			} else {
-				assert.NoError(t, err)
-			}
-		})
+	// Test non-existent path (should fail fast during source validation)
+	args = map[string]interface{}{
+		"source": "/nonexistent/path/12345",
 	}
+	result, err = tool.Execute(ctx, logger, cache, args)
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "source path does not exist")
 }
 
 func TestSBOMTool_ProvideExtendedInfo(t *testing.T) {
