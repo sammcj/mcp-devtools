@@ -616,7 +616,7 @@ func (t *FileSystemTool) writeFile(ctx context.Context, logger *logrus.Logger, o
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(validPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -792,7 +792,7 @@ func (t *FileSystemTool) createDirectory(ctx context.Context, logger *logrus.Log
 		return nil, err
 	}
 
-	if err := os.MkdirAll(validPath, 0755); err != nil {
+	if err := os.MkdirAll(validPath, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 

@@ -275,7 +275,7 @@ func (t *SBOMTool) writeToFile(filePath, content string) error {
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(cleanPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 

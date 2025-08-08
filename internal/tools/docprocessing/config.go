@@ -215,7 +215,7 @@ func (c *Config) EnsureCacheDir() error {
 		return nil
 	}
 
-	if err := os.MkdirAll(c.CacheDir, 0755); err != nil {
+	if err := os.MkdirAll(c.CacheDir, 0700); err != nil {
 		return fmt.Errorf("failed to create cache directory %s: %w", c.CacheDir, err)
 	}
 

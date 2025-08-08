@@ -232,7 +232,7 @@ func TestGenerateChangelogTool_RepositoryValidation(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		gitDir := filepath.Join(tmpDir, ".git")
-		err = os.Mkdir(gitDir, 0755)
+		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
 		args := map[string]interface{}{
@@ -277,7 +277,7 @@ func TestGenerateChangelogTool_PlaceholderOutput(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		gitDir := filepath.Join(tmpDir, ".git")
-		err = os.Mkdir(gitDir, 0755)
+		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
 		args := map[string]interface{}{
@@ -313,7 +313,7 @@ func TestGenerateChangelogTool_PlaceholderOutput(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		gitDir := filepath.Join(tmpDir, ".git")
-		err = os.Mkdir(gitDir, 0755)
+		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
 		args := map[string]interface{}{
@@ -355,7 +355,7 @@ func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		gitDir := filepath.Join(tmpDir, ".git")
-		err = os.Mkdir(gitDir, 0755)
+		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
 		args := map[string]interface{}{
@@ -395,7 +395,7 @@ func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		gitDir := filepath.Join(tmpDir, ".git")
-		err = os.Mkdir(gitDir, 0755)
+		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
 		args := map[string]interface{}{
@@ -435,7 +435,7 @@ func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		gitDir := filepath.Join(tmpDir, ".git")
-		err = os.Mkdir(gitDir, 0755)
+		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
 		args := map[string]interface{}{

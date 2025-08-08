@@ -257,7 +257,7 @@ func (t *GenerateChangelogTool) writeToFile(filename, content string) error {
 
 	// Ensure directory exists
 	dir := filepath.Dir(absPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("failed to create directory %s (consider using absolute path): %w", dir, err)
 	}
 

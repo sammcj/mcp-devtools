@@ -195,7 +195,7 @@ func TestFileSystemTool_ListDirectory(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
-	if err := os.Mkdir(testSubDir, 0755); err != nil {
+	if err := os.Mkdir(testSubDir, 0700); err != nil {
 		t.Fatalf("Failed to create test directory: %v", err)
 	}
 
