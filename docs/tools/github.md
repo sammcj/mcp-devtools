@@ -22,7 +22,7 @@ The GitHub tool supports multiple authentication methods:
 Set the `GITHUB_TOKEN` environment variable with your personal access token:
 
 ```bash
-GITHUB_TOKEN="ghp_your_token_here"
+GITHUB_TOKEN="ghp_your_read_only_token_here"
 ```
 
 **Token Permissions**: For read-only operations, create a token with minimal permissions:

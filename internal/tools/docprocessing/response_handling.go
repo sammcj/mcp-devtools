@@ -71,7 +71,7 @@ func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *Docu
 
 	// Create directory if it doesn't exist
 	saveDir := filepath.Dir(savePath)
-	if err := os.MkdirAll(saveDir, 0755); err != nil {
+	if err := os.MkdirAll(saveDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create save directory %s: %w", saveDir, err)
 	}
 

@@ -54,7 +54,7 @@ func (s *StateFile) Save() error {
 	statePath := getStatePath()
 
 	// Ensure state directory exists
-	if err := os.MkdirAll(filepath.Dir(statePath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(statePath), 0700); err != nil {
 		return fmt.Errorf("failed to create state directory: %w", err)
 	}
 

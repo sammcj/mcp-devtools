@@ -266,7 +266,7 @@ func getMemoryBasePath() (string, error) {
 // ensureDirectoryExists creates the directory if it doesn't exist
 func ensureDirectoryExists(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return os.MkdirAll(dir, 0755)
+		return os.MkdirAll(dir, 0700)
 	}
 	return nil
 }

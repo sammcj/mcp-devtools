@@ -14,7 +14,7 @@ func rotateDebugLogs() {
 	debugLogPath := filepath.Join(debugLogDir, "debug.log")
 
 	// Create directory if it doesn't exist
-	if err := os.MkdirAll(debugLogDir, 0755); err != nil {
+	if err := os.MkdirAll(debugLogDir, 0700); err != nil {
 		return // Silently fail to avoid MCP protocol interference
 	}
 

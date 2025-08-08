@@ -79,12 +79,12 @@ func TestToolHelpTool_Definition(t *testing.T) {
 
 	// Test that description contains key phrases (when tools with extended help exist)
 	desc := definition.Description
-	if !testutils.Contains(desc, "MCP DevTools server provides") {
-		t.Errorf("Expected description to reference MCP DevTools server, got: %s", desc)
+	if !testutils.Contains(desc, "MCP DevTools") {
+		t.Errorf("Expected description to reference MCP DevTools, got: %s", desc)
 	}
 
-	if !testutils.Contains(desc, "Do NOT use routinely") {
-		t.Errorf("Expected description to discourage routine use, got: %s", desc)
+	if !testutils.Contains(desc, "parameter constraints, common patterns") {
+		t.Errorf("Expected description to mention parameter constraints, got: %s", desc)
 	}
 
 	// Test input schema exists

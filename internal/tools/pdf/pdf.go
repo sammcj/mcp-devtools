@@ -163,7 +163,7 @@ func (t *PDFTool) ParseRequest(args map[string]interface{}) (*PDFRequest, error)
 // processPDF handles the main PDF processing logic
 func (t *PDFTool) processPDF(ctx context.Context, logger *logrus.Logger, request *PDFRequest, conf *model.Configuration) (*PDFResponse, error) {
 	// Ensure output directory exists
-	if err := os.MkdirAll(request.OutputDir, 0755); err != nil {
+	if err := os.MkdirAll(request.OutputDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}
 
@@ -202,7 +202,7 @@ func (t *PDFTool) processPDF(ctx context.Context, logger *logrus.Logger, request
 	if request.ExtractImages {
 		logger.Debug("Extracting images from PDF")
 		imageDir := filepath.Join(request.OutputDir, baseName+"_images")
-		if err := os.MkdirAll(imageDir, 0755); err != nil {
+		if err := os.MkdirAll(imageDir, 0700); err != nil {
 			return nil, fmt.Errorf("failed to create image directory: %w", err)
 		}
 

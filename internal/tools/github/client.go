@@ -466,7 +466,7 @@ func (gc *GitHubClient) CloneRepository(ctx context.Context, owner, repo, localP
 	}
 
 	// Ensure the parent directory exists
-	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(localPath), 0700); err != nil {
 		return nil, fmt.Errorf("failed to create parent directory: %w", err)
 	}
 
