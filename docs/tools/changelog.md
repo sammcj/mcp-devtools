@@ -2,7 +2,7 @@
 
 The `generate_changelog` tool automatically generates changelogs from local Git repositories using commit history analysis. It analyses git repositories and creates structured changelogs based on commit patterns and semantic versioning.
 
-**Note:** This tool is disabled by default for security purposes. To enable it, set the `ENABLE_ADDITIONAL_TOOLS` environment variable to include `generate_changelog`.
+**Note:** This tool is disabled by default. To enable it, set the `ENABLE_ADDITIONAL_TOOLS` environment variable to include `generate_changelog`.
 
 ## Overview
 
