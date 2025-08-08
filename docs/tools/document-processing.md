@@ -2,6 +2,8 @@
 
 The Document Processing tool provides intelligent document conversion capabilities for PDF, DOCX, XLSX, PPTX, HTML, CSV, PNG, and JPG files using the powerful [Docling](https://docling-project.github.io/docling/) library.
 
+**Note:** This tool is disabled by default. To enable it, set the `ENABLE_ADDITIONAL_TOOLS` environment variable to include `process_document`.
+
 ## Overview
 
 Convert documents to structured Markdown while preserving formatting, extracting tables, images, and metadata. The tool offers processing profiles for different use cases, from simple text extraction to advanced diagram analysis with AI models.
@@ -26,7 +28,12 @@ Note: mcp-devtools also providers a PDF extraction tool that's not quite as smar
 
 ## Quick Start
 
-First ensure docling is installed in the environment you'll be running the MCP Server from:
+First, enable the tool by setting the environment variable:
+```bash
+ENABLE_ADDITIONAL_TOOLS="process_document"
+```
+
+Then ensure docling is installed in the environment you'll be running the MCP Server from:
 
 ```shell
 pip install -U pip docling

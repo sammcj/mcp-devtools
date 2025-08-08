@@ -161,6 +161,8 @@ func requiresEnablement(toolName string) bool {
 		"claude-agent",
 		"gemini-agent",
 		"generate_changelog",
+		"process_document",
+		"pdf",
 	}
 
 	// Normalize the tool name (lowercase, replace underscores with hyphens)

@@ -99,32 +99,32 @@ See below for various environment variables you can set to configure specific fe
 
 These tools can be disabled by adding their function name to the `DISABLED_FUNCTIONS` environment variable in your MCP configuration.
 
-| Tool                                                             | Purpose                              | Dependencies                  | Example Usage                         |
-|------------------------------------------------------------------|--------------------------------------|-------------------------------|---------------------------------------|
-| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search            | None (Provider keys optional) | Web, image, news, video search        |
-| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown     | None                          | Documentation and articles            |
-| **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data         | None (GitHub token optional)  | Issues, PRs, repos, cloning           |
-| **[Package Documentation](docs/tools/package-documentation.md)** | Library documentation lookup         | None                          | React, Django, TensorFlow docs        |
-| **[Package Search](docs/tools/package-search.md)**               | Check package versions               | None                          | NPM, Python, Go, Java, Docker         |
-| **[Think](docs/tools/think.md)**                                 | Structured reasoning space           | None                          | Complex problem analysis              |
-| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring   | None                          | Find files over 700 lines             |
-| **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs          | None                          | Store entities and relationships      |
-| **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**       | Component information                | None                          | Button, Dialog, Form components       |
-| **[Document Processing](docs/tools/document-processing.md)**     | Convert documents to Markdown        | `pip install -U docling`      | PDF, DOCX → Markdown with OCR         |
-| **[PDF Processing](docs/tools/pdf-processing.md)**               | Fast PDF text extraction             | None                          | Quick PDF to Markdown                 |
-| **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling          | None                          | Organise, colour, centre              |
-| **[DevTools Help](docs/tools/devtools_help.md)**                 | Extended info about DevTools tools   | None                          | Usage examples, troubleshooting       |
+| Tool                                                             | Purpose                            | Dependencies                  | Example Usage                    |
+|------------------------------------------------------------------|------------------------------------|-------------------------------|----------------------------------|
+| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search          | None (Provider keys optional) | Web, image, news, video search   |
+| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown   | None                          | Documentation and articles       |
+| **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data       | None (GitHub token optional)  | Issues, PRs, repos, cloning      |
+| **[Package Documentation](docs/tools/package-documentation.md)** | Library documentation lookup       | None                          | React, Django, TensorFlow docs   |
+| **[Package Search](docs/tools/package-search.md)**               | Check package versions             | None                          | NPM, Python, Go, Java, Docker    |
+| **[Think](docs/tools/think.md)**                                 | Structured reasoning space         | None                          | Complex problem analysis         |
+| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring | None                          | Find files over 700 lines        |
+| **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs        | None                          | Store entities and relationships |
+| **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**       | Component information              | None                          | Button, Dialog, Form components  |
+| **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling        | None                          | Organise, colour, centre         |
+| **[DevTools Help](docs/tools/devtools_help.md)**                 | Extended info about DevTools tools | None                          | Usage examples, troubleshooting  |
 
 These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment variable in your MCP configuration.
 
-| Tool                                                       | Purpose                              | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                         |
-|------------------------------------------------------------|--------------------------------------|---------------------------|---------------------------------------|
-| **[Filesystem](docs/tools/filesystem.md)**                 | File and directory operations        | `filesystem`              | Read, write, edit, search files       |
-| **[Claude Agent](docs/tools/claude-agent.md)**             | Claude Code CLI Agent                | `claude-agent`            | Code analysis, generation             |
-| **[Gemini Agent](docs/tools/gemini-agent.md)**             | Gemini CLI Agent                     | `gemini-agent`            | Code analysis, generation             |
-| **[SBOM Generation](docs/tools/sbom.md)**                  | Generate Software Bill of Materials  | `sbom`                    | Analyse project dependencies          |
-| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)** | Security vulnerability scanning      | `vulnerability_scan`      | Find security issues                  |
-| **[Generate Changelog](docs/tools/changelog.md)**          | Generate changelogs from git commits | `generate_changelog`      | Release notes from local/remote repos |
+| Tool                                                         | Purpose                              | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                         |
+|--------------------------------------------------------------|--------------------------------------|---------------------------|---------------------------------------|
+| **[Filesystem](docs/tools/filesystem.md)**                   | File and directory operations        | `filesystem`              | Read, write, edit, search files       |
+| **[Claude Agent](docs/tools/claude-agent.md)**               | Claude Code CLI Agent                | `claude-agent`            | Code analysis, generation             |
+| **[Gemini Agent](docs/tools/gemini-agent.md)**               | Gemini CLI Agent                     | `gemini-agent`            | Code analysis, generation             |
+| **[SBOM Generation](docs/tools/sbom.md)**                    | Generate Software Bill of Materials  | `sbom`                    | Analyse project dependencies          |
+| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)**   | Security vulnerability scanning      | `vulnerability_scan`      | Find security issues                  |
+| **[Generate Changelog](docs/tools/changelog.md)**            | Generate changelogs from git commits | `generate_changelog`      | Release notes from local/remote repos |
+| **[Document Processing](docs/tools/document-processing.md)** | Convert documents to Markdown        | `process_document`        | PDF, DOCX → Markdown with OCR         |
+| **[PDF Processing](docs/tools/pdf-processing.md)**           | Fast PDF text extraction             | `pdf`                     | Quick PDF to Markdown                 |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
@@ -268,7 +268,7 @@ All environment variables are optional, but if you want to use specific search p
 - `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
 **Security-Sensitive Tools:**
-- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,generate_changelog`)
+- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,generate_changelog,process_document,pdf`)
 - `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories (only for filesystem tool)
 
 **Document Processing:**

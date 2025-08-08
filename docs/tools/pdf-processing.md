@@ -2,6 +2,8 @@
 
 The PDF Processing tool provides fast and efficient text and image extraction from PDF files, converting them to structured Markdown with embedded image references.
 
+**Note:** This tool is disabled by default. To enable it, set the `ENABLE_ADDITIONAL_TOOLS` environment variable to include `pdf`.
+
 ## Overview
 
 A lightweight, fast alternative to the full Document Processing tool specifically optimised for PDF files. Perfect when you need quick text extraction without the overhead of advanced analysis features.
@@ -26,7 +28,7 @@ The PDF Processing tool includes comprehensive security hardening to prevent res
 - **Prevention**: Blocks processing of excessively large files that could consume system resources
 - **Error handling**: Clear error messages with current and maximum allowed sizes
 
-### Memory Limits  
+### Memory Limits
 - **Default limit**: 5GB maximum memory usage
 - **Configurable**: Set custom limits via `PDF_MAX_MEMORY_LIMIT` environment variable
 - **Protection**: Prevents memory exhaustion during PDF processing operations
@@ -37,7 +39,7 @@ The PDF Processing tool includes comprehensive security hardening to prevent res
 # Set custom file size limit (bytes)
 export PDF_MAX_FILE_SIZE=104857600  # 100MB
 
-# Set custom memory limit (bytes)  
+# Set custom memory limit (bytes)
 export PDF_MAX_MEMORY_LIMIT=2147483648  # 2GB
 ```
 
@@ -62,6 +64,13 @@ export PDF_MAX_MEMORY_LIMIT=2147483648  # 2GB
 - 🎨 Want diagram analysis and Mermaid generation
 - ⚙️ Need advanced processing profiles
 - 🧠 Require AI-powered content analysis
+
+## Quick Start
+
+First, enable the tool by setting the environment variable:
+```bash
+ENABLE_ADDITIONAL_TOOLS="pdf"
+```
 
 ## Usage Examples
 
