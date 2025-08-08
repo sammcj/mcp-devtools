@@ -20,6 +20,13 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
 3. Think → Plan integration approach
 ```
 
+#### Release Management Workflow
+```
+1. Generate Changelog → Create release documentation
+2. SBOM Generation → Analyse dependencies
+3. Vulnerability Scan → Check security issues
+```
+
 #### Research Workflow
 ```
 1. Internet Search → Find relevant information
@@ -40,6 +47,7 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
 | Internet Search (SearXNG) | `SEARXNG_BASE_URL`       | Enable SearXNG provider                                          |
 | Document Processing       | `DOCLING_*`              | Configure processing options                                     |
 | Memory                    | `MEMORY_FILE_PATH`       | Set storage location                                             |
+| Generate Changelog        | `GITHUB_TOKEN`           | GitHub API access for PR/issue data (same as GitHub tool)      |
 
 ### Optional Dependencies
 - **Python 3.10+**: Required for Document Processing tool

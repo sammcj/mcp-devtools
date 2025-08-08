@@ -23,6 +23,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/filelength"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/filesystem"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/geminiagent"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/generatechangelog"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/github"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/internetsearch/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/m2e"
