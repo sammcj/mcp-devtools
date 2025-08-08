@@ -370,4 +370,5 @@ Tools with extended help:
 - All tools should work on both macOS and Linux unless otherwise specified (we do not need to support Windows).
 - Tools should have fast, concise unit tests that do not rely on external dependencies or services.
 - No tool should ever log to stdout or stderr when the MCP server is running in stdio mode as this breaks the MCP protocol.
+- You should update docs/tools/overview.md with adding or changing a tool.
 - Follow least privilege security principles.
