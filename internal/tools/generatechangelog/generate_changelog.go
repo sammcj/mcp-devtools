@@ -28,12 +28,12 @@ func init() {
 func (t *GenerateChangelogTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"generate_changelog",
-		mcp.WithDescription("Generate changelogs from GitHub PRs and issues. Analyses git repository and creates structured changelogs based on GitHub labels and semantic versioning."),
+		mcp.WithDescription("Generate changelogs from git repositories using commit history. Requires absolute paths to local repositories (not URLs). Analyses git repository and creates structured changelogs based on commit patterns and semantic versioning. Supports optional GitHub integration for enhanced metadata and URLs."),
 
 		// Required parameters
 		mcp.WithString("repository_path",
 			mcp.Required(),
-			mcp.Description("Path to local Git repository (e.g., /path/to/repo, ., or ./my-project)"),
+			mcp.Description("Absolute path to local Git repository or subdirectory within one. Must be local filesystem path, not URL (e.g., /Users/username/project)"),
 		),
 
 		// Optional parameters with sensible defaults
@@ -57,11 +57,11 @@ func (t *GenerateChangelogTool) Definition() mcp.Tool {
 			mcp.DefaultString("Changelog"),
 		),
 		mcp.WithString("output_file",
-			mcp.Description("Optional file path to save changelog output (relative to current directory)"),
+			mcp.Description("Optional file absolute path to save changelog output"),
 		),
-		mcp.WithNumber("timeout_minutes",
-			mcp.Description("Maximum execution time in minutes"),
-			mcp.DefaultNumber(5),
+		mcp.WithBoolean("enable_github_integration",
+			mcp.Description("Enable GitHub integration for enhanced changelog generation with PR/issue data"),
+			mcp.DefaultBool(false),
 		),
 	)
 }
@@ -82,7 +82,6 @@ func (t *GenerateChangelogTool) Execute(ctx context.Context, logger *logrus.Logg
 		"until_tag":              request.UntilTag,
 		"output_format":          request.OutputFormat,
 		"speculate_next_version": request.SpeculateNextVersion,
-		"timeout_minutes":        request.TimeoutMinutes,
 	}).Debug("Generate changelog parameters")
 
 	// Create context with timeout
@@ -130,14 +129,15 @@ func (t *GenerateChangelogTool) parseRequest(args map[string]interface{}) (*Gene
 	}
 
 	request := &GenerateChangelogRequest{
-		RepositoryPath:       strings.TrimSpace(repoPath),
-		SinceTag:             "",
-		UntilTag:             "",
-		OutputFormat:         "markdown",
-		SpeculateNextVersion: false,
-		Title:                "Changelog",
-		OutputFile:           "",
-		TimeoutMinutes:       5,
+		RepositoryPath:          strings.TrimSpace(repoPath),
+		SinceTag:                "",
+		UntilTag:                "",
+		OutputFormat:            "markdown",
+		SpeculateNextVersion:    false,
+		EnableGitHubIntegration: false,
+		Title:                   "Changelog",
+		OutputFile:              "",
+		TimeoutMinutes:          2,
 	}
 
 	// Parse optional parameters
@@ -161,6 +161,10 @@ func (t *GenerateChangelogTool) parseRequest(args map[string]interface{}) (*Gene
 		request.SpeculateNextVersion = speculate
 	}
 
+	if enableGitHub, ok := args["enable_github_integration"].(bool); ok {
+		request.EnableGitHubIntegration = enableGitHub
+	}
+
 	if title, ok := args["title"].(string); ok && title != "" {
 		request.Title = strings.TrimSpace(title)
 	}
@@ -169,29 +173,19 @@ func (t *GenerateChangelogTool) parseRequest(args map[string]interface{}) (*Gene
 		request.OutputFile = strings.TrimSpace(outputFile)
 	}
 
-	if timeoutRaw, ok := args["timeout_minutes"].(float64); ok {
-		timeout := int(timeoutRaw)
-		if timeout < 1 {
-			return nil, fmt.Errorf("timeout_minutes must be at least 1")
-		}
-		if timeout > 60 {
-			return nil, fmt.Errorf("timeout_minutes cannot exceed 60")
-		}
-		request.TimeoutMinutes = timeout
-	}
-
 	return request, nil
 }
 
 // validateRepository validates that the path is a git repository
 func (t *GenerateChangelogTool) validateRepository(repoPath string) (string, error) {
-	// Handle relative paths
+	// Reject GitHub URLs and other non-local paths
+	if strings.HasPrefix(repoPath, "http://") || strings.HasPrefix(repoPath, "https://") || strings.HasPrefix(repoPath, "git@") {
+		return "", fmt.Errorf("repository_path must be a local file system path, not a URL. Use the github tool to clone repositories first, then provide the local path")
+	}
+
+	// Require absolute paths for MCP server context
 	if !filepath.IsAbs(repoPath) {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return "", fmt.Errorf("failed to get current directory: %w", err)
-		}
-		repoPath = filepath.Join(cwd, repoPath)
+		return "", fmt.Errorf("repository_path must be an absolute path (e.g., /Users/username/project), got: %s", repoPath)
 	}
 
 	// Clean the path
@@ -210,26 +204,61 @@ func (t *GenerateChangelogTool) validateRepository(repoPath string) (string, err
 		return "", fmt.Errorf("repository path is not a directory: %s", repoPath)
 	}
 
-	// Check if it's a git repository
-	gitDir := filepath.Join(repoPath, ".git")
-	if _, err := os.Stat(gitDir); err != nil {
-		return "", fmt.Errorf("path is not a git repository (no .git directory found): %s", repoPath)
+	// Walk up directory tree to find .git directory (like git does)
+	gitRepoPath, err := t.findGitRepository(repoPath)
+	if err != nil {
+		return "", fmt.Errorf("path is not within a git repository: %s (%w)", repoPath, err)
 	}
 
-	return repoPath, nil
+	return gitRepoPath, nil
+}
+
+// findGitRepository walks up the directory tree to find the git repository root
+func (t *GenerateChangelogTool) findGitRepository(startPath string) (string, error) {
+	currentPath := startPath
+
+	for {
+		gitDir := filepath.Join(currentPath, ".git")
+		if _, err := os.Stat(gitDir); err == nil {
+			return currentPath, nil
+		}
+
+		// Move up one directory
+		parentPath := filepath.Dir(currentPath)
+
+		// Check if we've reached the root
+		if parentPath == currentPath {
+			return "", fmt.Errorf("no .git directory found")
+		}
+
+		currentPath = parentPath
+	}
 }
 
 // writeToFile writes content to a file
 func (t *GenerateChangelogTool) writeToFile(filename, content string) error {
+	// Convert to absolute path if relative
+	absPath := filename
+	if !filepath.IsAbs(filename) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("cannot resolve relative path %s: failed to get working directory: %w", filename, err)
+		}
+		absPath = filepath.Join(cwd, filename)
+	}
+
+	// Clean the path
+	absPath = filepath.Clean(absPath)
+
 	// Ensure directory exists
-	dir := filepath.Dir(filename)
+	dir := filepath.Dir(absPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+		return fmt.Errorf("failed to create directory %s (consider using absolute path): %w", dir, err)
 	}
 
 	// Write file
-	if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+	if err := os.WriteFile(absPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", absPath, err)
 	}
 
 	return nil
@@ -251,15 +280,15 @@ func (t *GenerateChangelogTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Generate changelog for current repository",
-				Arguments: map[string]interface{}{
-					"repository_path": ".",
+				Arguments: map[string]any{
+					"repository_path": "/Users/username/my-project",
 				},
 				ExpectedResult: "Generates changelog from last release to HEAD in markdown format",
 			},
 			{
 				Description: "Generate changelog between specific tags",
-				Arguments: map[string]interface{}{
-					"repository_path": "./my-project",
+				Arguments: map[string]any{
+					"repository_path": "/Users/username/my-project",
 					"since_tag":       "v1.0.0",
 					"until_tag":       "v1.1.0",
 				},
@@ -267,8 +296,8 @@ func (t *GenerateChangelogTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Generate JSON changelog with version speculation",
-				Arguments: map[string]interface{}{
-					"repository_path":        ".",
+				Arguments: map[string]any{
+					"repository_path":        "/Users/username/my-project",
 					"output_format":          "json",
 					"speculate_next_version": true,
 				},
@@ -276,20 +305,20 @@ func (t *GenerateChangelogTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Save changelog to file",
-				Arguments: map[string]interface{}{
-					"repository_path": ".",
-					"output_file":     "CHANGELOG.md",
+				Arguments: map[string]any{
+					"repository_path": "/Users/username/my-project",
+					"output_file":     "/Users/username/my-project/CHANGELOG.md",
 					"title":           "Release Notes",
 				},
 				ExpectedResult: "Generates changelog and saves it to CHANGELOG.md with custom title",
 			},
 		},
 		CommonPatterns: []string{
-			"Use '.' for current directory when running from within a git repository",
+			"Use absolute paths to local repositories",
+			"Works from any subdirectory within a git repository",
 			"Combine with version speculation for automated release planning",
-			"Save to standard files like CHANGELOG.md or RELEASE_NOTES.md",
+			"Save to standard files like CHANGELOG.md",
 			"Use JSON format for programmatic processing in CI/CD pipelines",
-			"Set timeout_minutes for repositories with extensive history",
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
 			{
@@ -297,28 +326,24 @@ func (t *GenerateChangelogTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				Solution: "Ensure the path points to a directory with a .git folder. Run 'git init' if needed or check the path is correct.",
 			},
 			{
-				Problem:  "GitHub token authentication errors",
-				Solution: "Set GITHUB_TOKEN or CHRONICLE_GITHUB_TOKEN environment variable with a valid GitHub personal access token.",
-			},
-			{
 				Problem:  "No changes found between tags",
 				Solution: "Check that the specified tags exist and that there are actually commits between them. Use 'git log --oneline tag1..tag2' to verify.",
 			},
 			{
 				Problem:  "Timeout errors with large repositories",
-				Solution: "Increase timeout_minutes parameter or focus on a smaller commit range using since_tag and until_tag.",
+				Solution: "Focus on a smaller commit range using since_tag and until_tag parameters.",
 			},
 		},
 		ParameterDetails: map[string]string{
-			"repository_path":        "Path to git repository. Supports absolute paths, relative paths, and '.' for current directory. Must contain a .git directory.",
-			"since_tag":              "Starting point for changelog generation. Can be a tag, branch, or commit hash. Auto-detects last release tag if not specified.",
-			"until_tag":              "Ending point for changelog generation. Defaults to HEAD. Can be a tag, branch, or commit hash.",
-			"output_format":          "Format for generated changelog. 'markdown' creates human-readable documentation, 'json' provides structured data.",
-			"speculate_next_version": "When enabled, analyses change types (breaking, feature, bugfix) to predict the next semantic version number.",
-			"output_file":            "Optional file path to save changelog. Creates directories as needed. Path is relative to current working directory.",
-			"timeout_minutes":        "Maximum time to spend generating changelog. Increase for repositories with extensive history or slow GitHub API responses.",
+			"repository_path":           "Absolute path to git repository. Must contain a .git directory (e.g., /Users/username/project).",
+			"since_tag":                 "Starting point for changelog generation. Can be a tag, branch, or commit hash. Auto-detects last release tag if not specified.",
+			"until_tag":                 "Ending point for changelog generation. Defaults to HEAD. Can be a tag, branch, or commit hash.",
+			"output_format":             "Format for generated changelog. 'markdown' creates human-readable documentation, 'json' provides structured data.",
+			"speculate_next_version":    "When enabled, analyses change types (breaking, feature, bugfix) to predict the next semantic version number.",
+			"enable_github_integration": "Enable GitHub integration for enhanced changelog generation with PR/issue data. Requires GITHUB_TOKEN environment variable.",
+			"output_file":               "Optional file absolute path to save changelog. Creates directories as needed.",
 		},
-		WhenToUse:    "Use for automated changelog generation in release workflows, documentation updates, stakeholder communications, or when preparing release notes from GitHub PRs and issues.",
-		WhenNotToUse: "Don't use for repositories without GitHub integration, private repositories without proper tokens, or when you need changelogs from commit messages rather than PRs/issues.",
+		WhenToUse:    "Use for automated changelog generation from local git repositories, release workflows, documentation updates, or when preparing release notes from commit history.",
+		WhenNotToUse: "Don't use with URLs - only works with local filesystem paths. Avoid for repositories without commit history or when you need custom formatting beyond markdown/JSON.",
 	}
 }

@@ -4,14 +4,15 @@ import "time"
 
 // GenerateChangelogRequest represents the input parameters for changelog generation
 type GenerateChangelogRequest struct {
-	RepositoryPath       string `json:"repository_path"`
-	SinceTag             string `json:"since_tag,omitempty"`
-	UntilTag             string `json:"until_tag,omitempty"`
-	OutputFormat         string `json:"output_format"`
-	SpeculateNextVersion bool   `json:"speculate_next_version"`
-	Title                string `json:"title"`
-	OutputFile           string `json:"output_file,omitempty"`
-	TimeoutMinutes       int    `json:"timeout_minutes"`
+	RepositoryPath          string `json:"repository_path"`
+	SinceTag                string `json:"since_tag,omitempty"`
+	UntilTag                string `json:"until_tag,omitempty"`
+	OutputFormat            string `json:"output_format"`
+	SpeculateNextVersion    bool   `json:"speculate_next_version"`
+	EnableGitHubIntegration bool   `json:"enable_github_integration"`
+	Title                   string `json:"title"`
+	OutputFile              string `json:"output_file,omitempty"`
+	TimeoutMinutes          int    `json:"timeout_minutes"`
 }
 
 // GenerateChangelogResponse represents the output from changelog generation

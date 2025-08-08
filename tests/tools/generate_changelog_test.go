@@ -23,8 +23,9 @@ func TestGenerateChangelogTool_Definition(t *testing.T) {
 	assert.Equal(t, "generate_changelog", def.Name)
 
 	// Test description is present
-	assert.Contains(t, def.Description, "Generate changelogs from GitHub PRs and issues")
-	assert.Contains(t, def.Description, "Anchore Chronicle")
+	assert.Contains(t, def.Description, "Generate changelogs from")
+	assert.Contains(t, def.Description, "git repositories")
+	assert.Contains(t, def.Description, "commit history")
 
 	// Test required parameters
 	require.NotNil(t, def.InputSchema.Properties)
@@ -38,7 +39,7 @@ func TestGenerateChangelogTool_Definition(t *testing.T) {
 	repoPathMap, ok := repoPathProp.(map[string]interface{})
 	require.True(t, ok, "repository_path should be a property map")
 	assert.Equal(t, "string", repoPathMap["type"])
-	assert.Contains(t, repoPathMap["description"].(string), "Path to local Git repository")
+	assert.Contains(t, repoPathMap["description"].(string), "Absolute path to local Git repository or subdirectory")
 
 	// Test optional parameters exist with defaults
 	outputFormatProp, exists := def.InputSchema.Properties["output_format"]
@@ -63,13 +64,15 @@ func TestGenerateChangelogTool_Definition(t *testing.T) {
 	assert.Equal(t, "boolean", speculateMap["type"])
 	assert.Equal(t, false, speculateMap["default"])
 
-	// Test timeout parameter
-	timeoutProp, exists := def.InputSchema.Properties["timeout_minutes"]
-	assert.True(t, exists, "timeout_minutes parameter should exist")
-	timeoutMap, ok := timeoutProp.(map[string]interface{})
+	// Test GitHub integration parameter
+	githubProp, exists := def.InputSchema.Properties["enable_github_integration"]
+	assert.True(t, exists, "enable_github_integration parameter should exist")
+	githubMap, ok := githubProp.(map[string]interface{})
 	require.True(t, ok)
-	assert.Equal(t, "number", timeoutMap["type"])
-	assert.Equal(t, float64(5), timeoutMap["default"])
+	assert.Equal(t, "boolean", githubMap["type"])
+	assert.Equal(t, false, githubMap["default"])
+	assert.Contains(t, githubMap["description"].(string), "GitHub integration")
+
 }
 
 func TestGenerateChangelogTool_ParseRequest(t *testing.T) {
@@ -129,39 +132,6 @@ func TestGenerateChangelogTool_ParseRequest(t *testing.T) {
 		assert.Nil(t, result)
 	})
 
-	t.Run("invalid timeout", func(t *testing.T) {
-		args := map[string]interface{}{
-			"repository_path": "/path/to/repo",
-			"timeout_minutes": float64(0),
-		}
-
-		ctx := context.Background()
-		logger := logrus.New()
-		cache := &sync.Map{}
-
-		result, err := tool.Execute(ctx, logger, cache, args)
-
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "timeout_minutes must be at least 1")
-		assert.Nil(t, result)
-	})
-
-	t.Run("timeout too large", func(t *testing.T) {
-		args := map[string]interface{}{
-			"repository_path": "/path/to/repo",
-			"timeout_minutes": float64(120),
-		}
-
-		ctx := context.Background()
-		logger := logrus.New()
-		cache := &sync.Map{}
-
-		result, err := tool.Execute(ctx, logger, cache, args)
-
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "timeout_minutes cannot exceed 60")
-		assert.Nil(t, result)
-	})
 }
 
 func TestGenerateChangelogTool_RepositoryValidation(t *testing.T) {
@@ -222,7 +192,7 @@ func TestGenerateChangelogTool_RepositoryValidation(t *testing.T) {
 		result, err := tool.Execute(ctx, logger, cache, args)
 
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "path is not a git repository")
+		assert.Contains(t, err.Error(), "path is not within a git repository")
 		assert.Nil(t, result)
 	})
 
@@ -334,6 +304,173 @@ func TestGenerateChangelogTool_PlaceholderOutput(t *testing.T) {
 			assert.True(t, ok)
 			// Should contain error about changelog generation failure
 			assert.Contains(t, textContent.Text, "error")
+		}
+	})
+}
+
+func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
+	tool := &generatechangelog.GenerateChangelogTool{}
+
+	t.Run("github integration disabled by default", func(t *testing.T) {
+		// Create a temporary directory with .git subdirectory
+		tmpDir, err := os.MkdirTemp("", "test_github_disabled")
+		require.NoError(t, err)
+		defer func() { _ = os.RemoveAll(tmpDir) }()
+
+		gitDir := filepath.Join(tmpDir, ".git")
+		err = os.Mkdir(gitDir, 0755)
+		require.NoError(t, err)
+
+		args := map[string]interface{}{
+			"repository_path":           tmpDir,
+			"output_format":             "markdown",
+			"enable_github_integration": false,
+		}
+
+		ctx := context.Background()
+		logger := logrus.New()
+		cache := &sync.Map{}
+
+		result, err := tool.Execute(ctx, logger, cache, args)
+
+		// Should not error on GitHub integration parameter parsing
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+	})
+
+	t.Run("github integration enabled without token", func(t *testing.T) {
+		// Save original environment variable
+		originalToken := os.Getenv("GITHUB_TOKEN")
+		defer func() {
+			if originalToken != "" {
+				_ = os.Setenv("GITHUB_TOKEN", originalToken)
+			} else {
+				_ = os.Unsetenv("GITHUB_TOKEN")
+			}
+		}()
+
+		// Ensure no GitHub token is set
+		_ = os.Unsetenv("GITHUB_TOKEN")
+
+		// Create a temporary directory with .git subdirectory
+		tmpDir, err := os.MkdirTemp("", "test_github_no_token")
+		require.NoError(t, err)
+		defer func() { _ = os.RemoveAll(tmpDir) }()
+
+		gitDir := filepath.Join(tmpDir, ".git")
+		err = os.Mkdir(gitDir, 0755)
+		require.NoError(t, err)
+
+		args := map[string]interface{}{
+			"repository_path":           tmpDir,
+			"output_format":             "markdown",
+			"enable_github_integration": true,
+		}
+
+		ctx := context.Background()
+		logger := logrus.New()
+		cache := &sync.Map{}
+
+		result, err := tool.Execute(ctx, logger, cache, args)
+
+		// Should not error (graceful fallback to local git)
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+	})
+
+	t.Run("github integration enabled with token", func(t *testing.T) {
+		// Save original environment variable
+		originalToken := os.Getenv("GITHUB_TOKEN")
+		defer func() {
+			if originalToken != "" {
+				_ = os.Setenv("GITHUB_TOKEN", originalToken)
+			} else {
+				_ = os.Unsetenv("GITHUB_TOKEN")
+			}
+		}()
+
+		// Set a mock GitHub token (doesn't need to be valid for this test)
+		_ = os.Setenv("GITHUB_TOKEN", "mock_token_for_testing")
+
+		// Create a temporary directory with .git subdirectory
+		tmpDir, err := os.MkdirTemp("", "test_github_with_token")
+		require.NoError(t, err)
+		defer func() { _ = os.RemoveAll(tmpDir) }()
+
+		gitDir := filepath.Join(tmpDir, ".git")
+		err = os.Mkdir(gitDir, 0755)
+		require.NoError(t, err)
+
+		args := map[string]interface{}{
+			"repository_path":           tmpDir,
+			"output_format":             "markdown",
+			"enable_github_integration": true,
+		}
+
+		ctx := context.Background()
+		logger := logrus.New()
+		cache := &sync.Map{}
+
+		result, err := tool.Execute(ctx, logger, cache, args)
+
+		// Should not error (should gracefully fall back to local git even with token)
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+	})
+
+	t.Run("github integration parameter parsing", func(t *testing.T) {
+		// Test various parameter combinations
+		testCases := []struct {
+			name    string
+			args    map[string]interface{}
+			wantErr bool
+		}{
+			{
+				name: "github integration true",
+				args: map[string]interface{}{
+					"repository_path":           "/tmp/test",
+					"enable_github_integration": true,
+				},
+				wantErr: false, // Should not error on parameter parsing
+			},
+			{
+				name: "github integration false",
+				args: map[string]interface{}{
+					"repository_path":           "/tmp/test",
+					"enable_github_integration": false,
+				},
+				wantErr: false,
+			},
+			{
+				name: "github integration omitted (defaults to false)",
+				args: map[string]interface{}{
+					"repository_path": "/tmp/test",
+				},
+				wantErr: false,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				ctx := context.Background()
+				logger := logrus.New()
+				cache := &sync.Map{}
+
+				result, err := tool.Execute(ctx, logger, cache, tc.args)
+
+				if tc.wantErr {
+					assert.Error(t, err)
+					assert.Nil(t, result)
+				} else {
+					// We expect repository validation to fail, not parameter parsing
+					if err != nil {
+						assert.Contains(t, err.Error(), "invalid repository")
+					}
+					// The result might be nil due to repository validation failure,
+					// but we don't assert on it since it depends on whether validation passes
+					_ = result
+				}
+			})
 		}
 	})
 }

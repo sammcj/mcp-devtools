@@ -1,30 +1,26 @@
 # Generate Changelog Tool
 
-The `generate_changelog` tool automatically generates changelogs from GitHub pull requests and issues using [Anchore Chronicle](https://github.com/anchore/chronicle). It analyses git repositories and creates structured changelogs based on GitHub labels and semantic versioning.
+The `generate_changelog` tool automatically generates changelogs from local Git repositories using commit history analysis. It analyses git repositories and creates structured changelogs based on commit patterns and semantic versioning.
 
 ## Overview
 
 This tool provides AI agents with the ability to:
-- Generate changelogs from GitHub PRs and issues between git tags/commits
-- Automatically categorise changes based on GitHub labels (features, bugs, breaking changes)
+- Generate changelogs from local git commit history between tags/commits
+- Automatically categorise changes based on conventional commit patterns
 - Support automatic semver version speculation based on change types
 - Export changelogs in markdown and JSON formats
-- Work with both public and private GitHub repositories
+- Work with any local git repository
+- Optional GitHub integration for enhanced metadata and URLs
 
 ## Quick Start
 
-```bash
-# Generate changelog for current repository
-mcp-devtools generate_changelog --repository_path=.
-
-# Generate changelog between specific tags
-mcp-devtools generate_changelog --repository_path=./my-project --since_tag=v1.0.0 --until_tag=v1.1.0
-
-# Generate JSON changelog with version speculation
-mcp-devtools generate_changelog --repository_path=. --output_format=json --speculate_next_version=true
-
-# Save changelog to file
-mcp-devtools generate_changelog --repository_path=. --output_file=CHANGELOG.md --title="Release Notes"
+```json
+{
+  "name": "generate_changelog",
+  "arguments": {
+    "repository_path": "/Users/username/my-project"
+  }
+}
 ```
 
 ## Parameters
@@ -33,31 +29,31 @@ mcp-devtools generate_changelog --repository_path=. --output_file=CHANGELOG.md -
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `repository_path` | string | Path to local Git repository (e.g., `/path/to/repo`, `.`, or `./my-project`) |
+| `repository_path` | string | Absolute path to local Git repository (e.g., `/Users/username/project`) |
 
 ### Optional Parameters
 
-| Parameter                | Type    | Default       | Description                                             |
-|--------------------------|---------|---------------|---------------------------------------------------------|
-| `since_tag`              | string  | *auto-detect* | Starting git tag/commit for changelog range             |
-| `until_tag`              | string  | `HEAD`        | Ending git tag/commit for changelog range               |
-| `output_format`          | enum    | `markdown`    | Changelog output format (`markdown` or `json`)          |
-| `speculate_next_version` | boolean | `false`       | Predict the next semantic version based on change types |
-| `title`                  | string  | `Changelog`   | Title for the changelog document                        |
-| `output_file`            | string  | *none*        | Optional file path to save changelog output             |
-| `timeout_minutes`        | number  | `5`           | Maximum execution time in minutes                       |
+| Parameter                   | Type    | Default       | Description                                                                    |
+|-----------------------------|---------|---------------|--------------------------------------------------------------------------------|
+| `since_tag`                 | string  | *auto-detect* | Starting git tag/commit for changelog range                                    |
+| `until_tag`                 | string  | `HEAD`        | Ending git tag/commit for changelog range                                      |
+| `output_format`             | enum    | `markdown`    | Changelog output format (`markdown` or `json`)                                 |
+| `speculate_next_version`    | boolean | `false`       | Predict the next semantic version based on change types                        |
+| `enable_github_integration` | boolean | `false`       | Enable GitHub integration for enhanced changelog generation with PR/issue data |
+| `title`                     | string  | `Changelog`   | Title for the changelog document                                               |
+| `output_file`               | string  | *none*        | Optional file path to save changelog output                                    |
 
 ## Examples
 
 ### Basic Usage
 
-Generate a changelog for the current repository:
+Generate a changelog for a repository:
 
 ```json
 {
   "name": "generate_changelog",
   "arguments": {
-    "repository_path": "."
+    "repository_path": "/Users/username/my-project"
   }
 }
 ```
@@ -70,7 +66,7 @@ Generate changelog between specific versions:
 {
   "name": "generate_changelog",
   "arguments": {
-    "repository_path": "./my-project",
+    "repository_path": "/Users/username/my-project",
     "since_tag": "v2.0.0",
     "until_tag": "v2.1.0",
     "title": "What's New in v2.1.0"
@@ -86,7 +82,7 @@ Get structured JSON output with next version prediction:
 {
   "name": "generate_changelog",
   "arguments": {
-    "repository_path": ".",
+    "repository_path": "/Users/username/my-project",
     "output_format": "json",
     "speculate_next_version": true
   }
@@ -101,13 +97,31 @@ Generate and save changelog to a file:
 {
   "name": "generate_changelog",
   "arguments": {
-    "repository_path": ".",
-    "output_file": "RELEASE_NOTES.md",
+    "repository_path": "/Users/username/my-project",
+    "output_file": "/Users/username/my-project/CHANGELOG.md",
     "title": "Release Notes",
     "since_tag": "v1.0.0"
   }
 }
 ```
+
+### GitHub Integration
+
+Generate an enhanced changelog with GitHub URLs and metadata:
+
+```json
+{
+  "name": "generate_changelog",
+  "arguments": {
+    "repository_path": "/Users/username/my-project",
+    "enable_github_integration": true,
+    "output_format": "markdown",
+    "title": "Release Notes"
+  }
+}
+```
+
+**Note**: GitHub integration requires the `GITHUB_TOKEN` environment variable to be set.
 
 ## Output Formats
 
@@ -116,8 +130,7 @@ Generate and save changelog to a file:
 The markdown format creates human-readable documentation with:
 - Hierarchical structure with version and date information
 - Changes grouped by type (Breaking Changes, Features, Bug Fixes, etc.)
-- Links to PRs and commit information
-- Author attribution
+- Commit information and author attribution
 
 Example output:
 ```markdown
@@ -125,17 +138,14 @@ Example output:
 
 ## v1.1.0 - 2024-01-15
 
-**Repository**: https://github.com/owner/repo
-**Changes**: https://github.com/owner/repo/compare/v1.0.0...v1.1.0
-
 ### Added Features
 
-- Add dark mode support (by @user, [#42](https://github.com/owner/repo/pull/42))
-- Implement user preferences (by @developer, commit a1b2c3d)
+- Add dark mode support (commit a1b2c3d by @user)
+- Implement user preferences (commit e5f6g7h by @developer)
 
 ### Bug Fixes
 
-- Fix login redirect issue (by @maintainer, [#38](https://github.com/owner/repo/pull/38))
+- Fix login redirect issue (commit i9j0k1l by @maintainer)
 
 ---
 *Generated by MCP DevTools generate_changelog tool*
@@ -147,76 +157,39 @@ The JSON format provides structured data for programmatic processing:
 
 ```json
 {
-  "title": "Changelog",
-  "version": "v1.1.0",
-  "date": "2024-01-15",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "repository": "https://github.com/owner/repo",
-  "changes_url": "https://github.com/owner/repo/compare/v1.0.0...v1.1.0",
-  "summary": {
-    "total_changes": 15
-  },
-  "sections": [
-    {
-      "type": "added-feature",
-      "title": "Added Features",
-      "count": 8,
-      "changes": [
-        {
-          "text": "Add dark mode support",
-          "type": "added-feature",
-          "commit": "a1b2c3d4e5f6",
-          "author": "user",
-          "pr_url": "https://github.com/owner/repo/pull/42",
-          "issue_url": null
-        }
-      ]
-    }
-  ],
-  "metadata": {
-    "generator": "MCP DevTools generate_changelog",
-    "generated": "2024-01-15T10:30:00Z"
-  }
+  "content": "# Changelog\n\n## v1.1.0...",
+  "format": "markdown",
+  "version_range": "v1.0.0..v1.1.0",
+  "change_count": 15,
+  "current_version": "v1.1.0",
+  "next_version": "v1.2.0",
+  "repository_url": "",
+  "changes_url": "",
+  "output_file": "/path/to/CHANGELOG.md",
+  "generation_time": "2024-01-15T10:30:00Z",
+  "repository_path": "/Users/username/my-project"
 }
 ```
 
-## GitHub Integration
-
-### Authentication
-
-The tool uses the same GitHub authentication pattern as the existing GitHub tool:
-
-- `GITHUB_TOKEN`: GitHub personal access token (automatically detected)
-- `GITHUB_AUTH_METHOD`: Optional authentication method preference (`token`, `ssh`, or `none`)
-
-**Token Permissions Required:**
-- Public repositories: `public_repo` scope (optional, improves rate limits)
-- Private repositories: `repo` scope (required)
-
-**Authentication Methods:**
-- **Token**: Uses `GITHUB_TOKEN` environment variable (recommended)
-- **SSH**: Uses SSH keys for git operations (API calls use unauthenticated access)
-- **None**: Unauthenticated access (public repositories only, subject to rate limits)
-
-### Repository Requirements
+## Repository Requirements
 
 - Must be a valid git repository (contains `.git` directory)
-- Must have GitHub as the origin remote
-- Must have pull requests and/or issues for changelog generation
+- Must have commit history for changelog generation
+- Works from any subdirectory within a git repository
 
-### Label-Based Categorisation
+## Commit Pattern Recognition
 
-The tool categorises changes based on GitHub labels:
+The tool categorises changes based on commit message patterns:
 
-| Change Type             | GitHub Labels                                 | Semver Impact | Description               |
-|-------------------------|-----------------------------------------------|---------------|---------------------------|
-| **Breaking Changes**    | `breaking`, `backwards-incompatible`, `major` | Major         | API breaking changes      |
-| **Security Fixes**      | `security`, `vulnerability`                   | Patch         | Security-related fixes    |
-| **Added Features**      | `enhancement`, `feature`, `minor`             | Minor         | New functionality         |
-| **Bug Fixes**           | `bug`, `fix`, `bug-fix`, `patch`              | Patch         | Bug fixes and corrections |
-| **Deprecated Features** | `deprecated`                                  | Minor         | Feature deprecations      |
-| **Removed Features**    | `removed`                                     | Major         | Removed functionality     |
-| **Additional Changes**  | *(unlabelled)*                                | None          | Other changes             |
+| Change Type             | Commit Patterns                           | Semver Impact | Description               |
+|-------------------------|-------------------------------------------|---------------|---------------------------|
+| **Breaking Changes**    | `breaking:`, `feat!`, `fix!`, `BREAKING:` | Major         | API breaking changes      |
+| **Security Fixes**      | `security:`, `sec:`, `vulnerability`      | Patch         | Security-related fixes    |
+| **Added Features**      | `feat:`, `feature:`, `add:`, `new:`       | Minor         | New functionality         |
+| **Bug Fixes**           | `fix:`, `bug:`, `repair:`, `hotfix:`      | Patch         | Bug fixes and corrections |
+| **Deprecated Features** | `deprecate:`, `deprecated:`               | Minor         | Feature deprecations      |
+| **Removed Features**    | `remove:`, `delete:`, `drop:`             | Major         | Removed functionality     |
+| **Other Changes**       | *(any other format)*                      | None          | General changes           |
 
 ## Version Speculation
 
@@ -234,9 +207,9 @@ When `speculate_next_version` is enabled, the tool analyses change types to pred
 {
   "name": "generate_changelog",
   "arguments": {
-    "repository_path": ".",
+    "repository_path": "/Users/username/my-project",
     "speculate_next_version": true,
-    "output_file": "CHANGELOG.md"
+    "output_file": "/Users/username/my-project/CHANGELOG.md"
   }
 }
 ```
@@ -247,7 +220,7 @@ When `speculate_next_version` is enabled, the tool analyses change types to pred
 {
   "name": "generate_changelog",
   "arguments": {
-    "repository_path": ".",
+    "repository_path": "/Users/username/my-project",
     "since_tag": "v2.0.0",
     "until_tag": "v2.1.0",
     "output_format": "markdown",
@@ -262,9 +235,9 @@ When `speculate_next_version` is enabled, the tool analyses change types to pred
 {
   "name": "generate_changelog",
   "arguments": {
-    "repository_path": ".",
+    "repository_path": "/Users/username/my-project",
     "output_format": "json",
-    "output_file": "changelog.json",
+    "output_file": "/Users/username/my-project/changelog.json",
     "timeout_minutes": 10
   }
 }
@@ -278,69 +251,76 @@ When `speculate_next_version` is enabled, the tool analyses change types to pred
 - Ensure the path points to a directory containing a `.git` folder
 - Run `git init` if needed or verify the path is correct
 
-**"Failed to extract GitHub info"**
-- Verify the repository has a GitHub remote (`git remote -v`)
-- Ensure the remote URL follows GitHub URL format
-
-**"GitHub token authentication errors"**
-- Set `GITHUB_TOKEN` environment variable
-- Verify token has appropriate permissions for the repository
+**"Repository path does not exist"**
+- Verify the absolute path is correct
+- Ensure the directory exists and is accessible
 
 **"No changes found between tags"**
 - Check that specified tags exist (`git tag -l`)
 - Verify there are commits between the tags (`git log tag1..tag2`)
 
 **"Timeout errors with large repositories"**
-- Increase `timeout_minutes` parameter
-- Focus on smaller commit ranges using `since_tag` and `until_tag`
-
-### Rate Limiting
-
-- Without a GitHub token: 60 requests/hour per IP
-- With a GitHub token: 5,000 requests/hour
-- Private repositories require authentication
+- Focus on smaller commit ranges using `since_tag` and `until_tag` parameters
+- The tool has a 2-minute timeout limit for performance
 
 ## Configuration
 
-### Environment Variables
-
-| Variable                    | Purpose                          | Example                   |
-|-----------------------------|----------------------------------|---------------------------|
-| `GITHUB_TOKEN`              | GitHub API authentication        | `ghp_xxxxxxxxxxxx`        |
-| `GITHUB_AUTH_METHOD`        | Authentication method preference | `token`, `ssh`, or `none` |
-| `CHANGELOG_DEFAULT_TIMEOUT` | Default timeout in minutes       | `10`                      |
-
 ### Repository Setup
 
-For best results, ensure your GitHub repository follows these practices:
+For best results, ensure your git repository follows these practices:
 
-1. **Consistent Labelling**: Use consistent labels on PRs and issues
-2. **Descriptive PR Titles**: Clear, concise pull request titles
+1. **Conventional Commits**: Use conventional commit message format
+2. **Descriptive Messages**: Clear, concise commit messages
 3. **Semantic Versioning**: Use semantic version tags (`v1.2.3`)
 4. **Regular Tagging**: Tag releases consistently for better range detection
 
+### GitHub Integration
+
+To enable GitHub integration features, set the following environment variable:
+
+| Environment Variable | Required | Description | Default |
+|---------------------|----------|-------------|---------|
+| `GITHUB_TOKEN` | Yes | GitHub personal access token with repo access | - |
+
+#### GitHub Token Setup
+
+1. Go to GitHub Settings → Developer settings → Personal access tokens
+2. Generate a new token with `repo` scope
+3. Set the token as an environment variable:
+   ```bash
+   export GITHUB_TOKEN=your_token_here
+   ```
+
+#### GitHub Integration Features
+
+When enabled, GitHub integration provides:
+- Automatic GitHub URLs for tags and commit ranges in changelog output
+- Enhanced repository metadata for better documentation
+- Future: Enhanced commit messages with PR/issue links (planned)
+- Future: Better change categorisation based on GitHub labels (planned)
+
 ## Limitations
 
-- **GitHub Dependency**: Requires GitHub-hosted repositories
-- **Label Dependency**: Effectiveness depends on consistent labelling
-- **Network Dependency**: Requires internet access for GitHub API
-- **Git Repository**: Must be run within or pointed to a git repository
+- **Local Only**: Works only with local filesystem paths, not URLs
+- **Git Dependency**: Must be run on a git repository
+- **Commit Quality**: Effectiveness depends on commit message quality
+- **Pattern Matching**: Uses heuristic pattern matching for change categorisation
+- **GitHub Integration**: Currently provides URL enhancement, full PR/issue metadata enhancement is planned for future releases
 
 ## Integration with Other Tools
 
 The changelog tool works well with other MCP DevTools in release workflows:
 
-```bash
-# Complete release pipeline
-generate_changelog . --output-file CHANGELOG.md --speculate-next-version
-sbom /path/to/image --output-file sbom.json
-vulnerability_scan sbom:sbom.json --output-file vulns.json
-```
+1. Generate changelog from local repository
+2. Generate SBOM for security analysis
+3. Scan for vulnerabilities
+4. Prepare release documentation
 
 ## Best Practices
 
-1. **Start Simple**: Use default parameters before customising
-2. **Regular Generation**: Generate changelogs regularly, not just at release time
-3. **Consistent Labels**: Maintain consistent GitHub labelling practices
+1. **Use Absolute Paths**: Always provide absolute paths for reliability
+2. **Conventional Commits**: Use conventional commit format for better categorisation
+3. **Regular Generation**: Generate changelogs regularly, not just at release time
 4. **Version Control**: Commit generated changelogs to version control
 5. **Automation**: Integrate into CI/CD pipelines for automated documentation
+6. **Tag Consistently**: Use consistent tagging strategy for version ranges

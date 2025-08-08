@@ -30,9 +30,10 @@ func (t *ToolHelpTool) Definition() mcp.Tool {
 	var description string
 	if len(toolsWithExtendedHelp) > 0 {
 		description = fmt.Sprintf(
-			"Use to get detailed usage information if you fail to correctly use tools that the MCP DevTools server provides. "+
-				"This tool only provides extended help for: [ %s ]. "+
-				"Do NOT use routinely - only when you encounter errors using the above mentioned tools and no other tools.",
+			"Get detailed usage information, examples, and troubleshooting for tools provided by MCP DevTools. "+
+				"Provides comprehensive guidance including parameter constraints, common patterns, and error solutions. "+
+				"Use when you are encountering unexpected errors with these specific tools:"+
+				"Extended help available for: [ %s ]. ",
 			toolList,
 		)
 	} else {

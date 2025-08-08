@@ -79,13 +79,21 @@ func (s *LocalGitSummarizer) Changes(sinceRef, untilRef string) ([]change.Change
 	return changes, nil
 }
 
-// ReferenceURL returns empty string since we don't have a web interface
+// ReferenceURL returns GitHub URL if the remote is GitHub, otherwise empty
 func (s *LocalGitSummarizer) ReferenceURL(tag string) string {
+	url := getGitHubRepositoryURL(s.repoPath)
+	if url != "" && tag != "" {
+		return fmt.Sprintf("%s/releases/tag/%s", url, tag)
+	}
 	return ""
 }
 
-// ChangesURL returns empty string since we don't have a web interface
+// ChangesURL returns GitHub comparison URL if the remote is GitHub, otherwise empty
 func (s *LocalGitSummarizer) ChangesURL(sinceRef, untilRef string) string {
+	url := getGitHubRepositoryURL(s.repoPath)
+	if url != "" && sinceRef != "" && untilRef != "" {
+		return fmt.Sprintf("%s/compare/%s...%s", url, sinceRef, untilRef)
+	}
 	return ""
 }
 
@@ -237,4 +245,264 @@ func (t *GenerateChangelogTool) getLastGitTag(repoPath string) (string, error) {
 		return "", fmt.Errorf("failed to get last git tag: %w", err)
 	}
 	return strings.TrimSpace(string(output)), nil
+}
+
+// getGitHubRepositoryURL returns the GitHub repository URL if the remote origin is GitHub
+func getGitHubRepositoryURL(repoPath string) string {
+	cmd := exec.Command("git", "-C", repoPath, "remote", "get-url", "origin")
+	output, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+
+	url := strings.TrimSpace(string(output))
+	return normaliseGitHubURL(url)
+}
+
+// normaliseGitHubURL converts various GitHub URL formats to the standard web URL
+func normaliseGitHubURL(url string) string {
+	// Handle SSH format: git@github.com:owner/repo.git
+	if strings.HasPrefix(url, "git@github.com:") {
+		url = strings.TrimPrefix(url, "git@github.com:")
+		url = "https://github.com/" + url
+	}
+
+	// Handle HTTPS format: https://github.com/owner/repo.git
+	if strings.HasPrefix(url, "https://github.com/") {
+		// Already correct format
+	} else {
+		return "" // Not a GitHub URL
+	}
+
+	// Remove .git suffix
+	return strings.TrimSuffix(url, ".git")
+}
+
+// EnhancedLocalSummarizer is a local git summarizer with optional GitHub metadata enhancement
+type EnhancedLocalSummarizer struct {
+	repoPath    string
+	logger      *logrus.Logger
+	githubToken string
+}
+
+// LastRelease returns the last git tag as a release
+func (s *EnhancedLocalSummarizer) LastRelease() (*release.Release, error) {
+	tag, err := s.getLastGitTag()
+	if err != nil || tag == "" {
+		return nil, nil // No releases found
+	}
+
+	return &release.Release{
+		Version: tag,
+		Date:    time.Now(),
+	}, nil
+}
+
+// Release returns a specific release for the given tag
+func (s *EnhancedLocalSummarizer) Release(ref string) (*release.Release, error) {
+	if ref == "" {
+		return s.LastRelease()
+	}
+
+	// Check if the tag exists
+	cmd := exec.Command("git", "-C", s.repoPath, "show-ref", "--tags", "--verify", "--quiet", "refs/tags/"+ref)
+	if err := cmd.Run(); err != nil {
+		return nil, nil // Tag doesn't exist
+	}
+
+	return &release.Release{
+		Version: ref,
+		Date:    time.Now(),
+	}, nil
+}
+
+// Changes returns all changes between two references using git log with optional GitHub enhancement
+func (s *EnhancedLocalSummarizer) Changes(sinceRef, untilRef string) ([]change.Change, error) {
+	commits, err := s.getGitCommitsBetween(sinceRef, untilRef)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get git commits: %w", err)
+	}
+
+	// Process commits with deduplication and enhancement
+	changes := s.processCommitsToChanges(commits)
+
+	return changes, nil
+}
+
+// ReferenceURL returns the GitHub URL for the reference if available
+func (s *EnhancedLocalSummarizer) ReferenceURL(tag string) string {
+	url := getGitHubRepositoryURL(s.repoPath)
+	if url != "" && tag != "" {
+		return fmt.Sprintf("%s/releases/tag/%s", url, tag)
+	}
+	return ""
+}
+
+// ChangesURL returns the GitHub comparison URL if available
+func (s *EnhancedLocalSummarizer) ChangesURL(sinceRef, untilRef string) string {
+	url := getGitHubRepositoryURL(s.repoPath)
+	if url != "" && sinceRef != "" && untilRef != "" {
+		return fmt.Sprintf("%s/compare/%s...%s", url, sinceRef, untilRef)
+	}
+	return ""
+}
+
+// Helper methods that delegate to the original LocalGitSummarizer logic
+func (s *EnhancedLocalSummarizer) getGitCommitsBetween(sinceRef, untilRef string) ([]GitCommit, error) {
+	localSummarizer := &LocalGitSummarizer{
+		repoPath: s.repoPath,
+		logger:   s.logger,
+	}
+	return localSummarizer.getGitCommitsBetween(sinceRef, untilRef)
+}
+
+func (s *EnhancedLocalSummarizer) inferChangeTypeFromCommit(commit GitCommit) string {
+	localSummarizer := &LocalGitSummarizer{
+		logger: s.logger,
+	}
+	return localSummarizer.inferChangeTypeFromCommit(commit)
+}
+
+func (s *EnhancedLocalSummarizer) getLastGitTag() (string, error) {
+	cmd := exec.Command("git", "-C", s.repoPath, "describe", "--tags", "--abbrev=0")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get last git tag: %w", err)
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+// processCommitsToChanges processes commits into changes with deduplication and enhancement
+func (s *EnhancedLocalSummarizer) processCommitsToChanges(commits []GitCommit) []change.Change {
+	// Track seen messages for deduplication
+	seenMessages := make(map[string]*change.Change)
+	var changes []change.Change
+
+	githubURL := getGitHubRepositoryURL(s.repoPath)
+	hasGitHubIntegration := s.githubToken != "" && githubURL != ""
+
+	for _, commit := range commits {
+		// Normalise commit message for deduplication
+		normalised := s.normaliseCommitMessage(commit.Subject)
+
+		// Check if we've seen this message before
+		if existingChange, exists := seenMessages[normalised]; exists {
+			// Update the timestamp to the most recent
+			if commit.Date.After(existingChange.Timestamp) {
+				existingChange.Timestamp = s.standardiseTimestamp(commit.Date)
+			}
+			continue // Skip duplicate
+		}
+
+		changeType := change.NewType(s.inferChangeTypeFromCommit(commit), s.getSemanticVersionImpact(commit))
+
+		// Enhance commit text with GitHub links if available
+		changeText := s.enhanceCommitText(commit, hasGitHubIntegration, githubURL)
+
+		newChange := change.Change{
+			Text:        changeText,
+			ChangeTypes: []change.Type{changeType},
+			Timestamp:   s.standardiseTimestamp(commit.Date),
+		}
+
+		seenMessages[normalised] = &newChange
+		changes = append(changes, newChange)
+	}
+
+	return changes
+}
+
+// normaliseCommitMessage normalises commit messages for deduplication
+func (s *EnhancedLocalSummarizer) normaliseCommitMessage(message string) string {
+	// Convert to lowercase and trim whitespace
+	normalised := strings.ToLower(strings.TrimSpace(message))
+
+	// Remove common prefixes that might cause false duplicates
+	prefixes := []string{
+		"fix:", "feat:", "chore:", "docs:", "style:", "refactor:", "test:",
+		"build:", "ci:", "perf:", "revert:", "merge:", "wip:", "hotfix:",
+	}
+
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(normalised, prefix) {
+			normalised = strings.TrimSpace(strings.TrimPrefix(normalised, prefix))
+			break
+		}
+	}
+
+	// Remove trailing punctuation and common suffixes
+	normalised = strings.TrimRight(normalised, ".!?")
+	normalised = strings.TrimSuffix(normalised, " (patch)")
+	normalised = strings.TrimSuffix(normalised, " (minor)")
+	normalised = strings.TrimSuffix(normalised, " (major)")
+
+	return normalised
+}
+
+// standardiseTimestamp converts timestamp to UTC and rounds to minute precision
+func (s *EnhancedLocalSummarizer) standardiseTimestamp(t time.Time) time.Time {
+	// Convert to UTC and truncate to minute precision for consistency
+	return t.UTC().Truncate(time.Minute)
+}
+
+// getSemanticVersionImpact determines the semantic version impact based on commit
+func (s *EnhancedLocalSummarizer) getSemanticVersionImpact(commit GitCommit) change.SemVerKind {
+	subject := strings.ToLower(commit.Subject)
+
+	// Breaking changes (major bump)
+	if strings.Contains(subject, "breaking:") || strings.Contains(subject, "breaking change") ||
+		strings.Contains(subject, "!:") || strings.Contains(subject, "feat!") || strings.Contains(subject, "fix!") {
+		return change.SemVerMajor
+	}
+
+	// Security fixes (patch bump)
+	if strings.Contains(subject, "security:") || strings.Contains(subject, "vulnerability") ||
+		strings.Contains(subject, "cve-") {
+		return change.SemVerPatch
+	}
+
+	// New features (minor bump)
+	if strings.Contains(subject, "feat:") || strings.Contains(subject, "feature:") ||
+		strings.Contains(subject, "add:") || strings.Contains(subject, "new:") {
+		return change.SemVerMinor
+	}
+
+	// Bug fixes (patch bump)
+	if strings.Contains(subject, "fix:") || strings.Contains(subject, "bug:") ||
+		strings.Contains(subject, "hotfix:") || strings.Contains(subject, "repair:") {
+		return change.SemVerPatch
+	}
+
+	// Removed features (major bump)
+	if strings.Contains(subject, "remove:") || strings.Contains(subject, "delete:") ||
+		strings.Contains(subject, "drop:") {
+		return change.SemVerMajor
+	}
+
+	// Deprecated features (minor bump)
+	if strings.Contains(subject, "deprecate:") || strings.Contains(subject, "deprecated:") {
+		return change.SemVerMinor
+	}
+
+	return change.SemVerUnknown
+}
+
+// enhanceCommitText enhances commit text with GitHub links when available
+func (s *EnhancedLocalSummarizer) enhanceCommitText(commit GitCommit, hasGitHubIntegration bool, githubURL string) string {
+	baseText := commit.Subject
+
+	if !hasGitHubIntegration || githubURL == "" {
+		return baseText
+	}
+
+	// Add GitHub commit link
+	shortHash := commit.Hash
+	if len(shortHash) > 7 {
+		shortHash = shortHash[:7]
+	}
+
+	commitURL := fmt.Sprintf("%s/commit/%s", githubURL, commit.Hash)
+
+	// Format: "commit message ([shortHash](commitURL))"
+	return fmt.Sprintf("%s ([%s](%s))", baseText, shortHash, commitURL)
 }
