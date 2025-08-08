@@ -75,7 +75,32 @@ func TestGenerateChangelogTool_Definition(t *testing.T) {
 
 }
 
+func TestGenerateChangelogTool_ToolDisabled(t *testing.T) {
+	// Ensure generate_changelog tool is disabled by default
+	_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+
+	tool := &generatechangelog.GenerateChangelogTool{}
+	ctx := context.Background()
+	logger := logrus.New()
+	cache := &sync.Map{}
+
+	args := map[string]interface{}{
+		"repository_path": "/path/to/repo",
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "generate_changelog tool is not enabled")
+	assert.Contains(t, err.Error(), "Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'generate_changelog'")
+	assert.Nil(t, result)
+}
+
 func TestGenerateChangelogTool_ParseRequest(t *testing.T) {
+	// Enable the generate_changelog tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "generate_changelog")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &generatechangelog.GenerateChangelogTool{}
 
 	t.Run("valid minimal request", func(t *testing.T) {
@@ -135,6 +160,10 @@ func TestGenerateChangelogTool_ParseRequest(t *testing.T) {
 }
 
 func TestGenerateChangelogTool_RepositoryValidation(t *testing.T) {
+	// Enable the generate_changelog tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "generate_changelog")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &generatechangelog.GenerateChangelogTool{}
 
 	t.Run("non-existent directory", func(t *testing.T) {
@@ -232,6 +261,10 @@ func TestGenerateChangelogTool_RepositoryValidation(t *testing.T) {
 }
 
 func TestGenerateChangelogTool_PlaceholderOutput(t *testing.T) {
+	// Enable the generate_changelog tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "generate_changelog")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &generatechangelog.GenerateChangelogTool{}
 
 	// Since we can't easily test the full Chronicle integration without a real GitHub repo,
@@ -309,6 +342,10 @@ func TestGenerateChangelogTool_PlaceholderOutput(t *testing.T) {
 }
 
 func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
+	// Enable the generate_changelog tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "generate_changelog")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &generatechangelog.GenerateChangelogTool{}
 
 	t.Run("github integration disabled by default", func(t *testing.T) {

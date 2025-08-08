@@ -109,7 +109,6 @@ These tools can be disabled by adding their function name to the `DISABLED_FUNCT
 | **[Think](docs/tools/think.md)**                                 | Structured reasoning space           | None                          | Complex problem analysis              |
 | **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring   | None                          | Find files over 700 lines             |
 | **[Memory](docs/tools/memory.md)**                               | Persistent knowledge graphs          | None                          | Store entities and relationships      |
-| **[Generate Changelog](docs/tools/changelog.md)**                | Generate changelogs from git commits | None (GitHub token optional)  | Release notes from local/remote repos |
 | **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**       | Component information                | None                          | Button, Dialog, Form components       |
 | **[Document Processing](docs/tools/document-processing.md)**     | Convert documents to Markdown        | `pip install -U docling`      | PDF, DOCX → Markdown with OCR         |
 | **[PDF Processing](docs/tools/pdf-processing.md)**               | Fast PDF text extraction             | None                          | Quick PDF to Markdown                 |
@@ -118,13 +117,14 @@ These tools can be disabled by adding their function name to the `DISABLED_FUNCT
 
 These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment variable in your MCP configuration.
 
-| Tool                                                       | Purpose                             | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                   |
-|------------------------------------------------------------|-------------------------------------|---------------------------|---------------------------------|
-| **[Filesystem](docs/tools/filesystem.md)**                 | File and directory operations       | `filesystem`              | Read, write, edit, search files |
-| **[Claude Agent](docs/tools/claude-agent.md)**             | Claude Code CLI Agent               | `claude-agent`            | Code analysis, generation       |
-| **[Gemini Agent](docs/tools/gemini-agent.md)**             | Gemini CLI Agent                    | `gemini-agent`            | Code analysis, generation       |
-| **[SBOM Generation](docs/tools/sbom.md)**                  | Generate Software Bill of Materials | `sbom`                    | Analyse project dependencies    |
-| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)** | Security vulnerability scanning     | `vulnerability_scan`      | Find security issues            |
+| Tool                                                       | Purpose                              | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                         |
+|------------------------------------------------------------|--------------------------------------|---------------------------|---------------------------------------|
+| **[Filesystem](docs/tools/filesystem.md)**                 | File and directory operations        | `filesystem`              | Read, write, edit, search files       |
+| **[Claude Agent](docs/tools/claude-agent.md)**             | Claude Code CLI Agent                | `claude-agent`            | Code analysis, generation             |
+| **[Gemini Agent](docs/tools/gemini-agent.md)**             | Gemini CLI Agent                     | `gemini-agent`            | Code analysis, generation             |
+| **[SBOM Generation](docs/tools/sbom.md)**                  | Generate Software Bill of Materials  | `sbom`                    | Analyse project dependencies          |
+| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)** | Security vulnerability scanning      | `vulnerability_scan`      | Find security issues                  |
+| **[Generate Changelog](docs/tools/changelog.md)**          | Generate changelogs from git commits | `generate_changelog`      | Release notes from local/remote repos |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
@@ -132,7 +132,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 
 ### Installation
 
-**Option 1: Go Install**
+**Option 1: Go Install** (recommended)
 ```bash
 go install github.com/sammcj/mcp-devtools@HEAD
 ```
@@ -158,7 +158,7 @@ Download the latest binary from [releases](https://github.com/sammcj/mcp-devtool
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "BRAVE_API_KEY": "This is optional - remove if not needed",
+        "BRAVE_API_KEY": "This is optional ",
       }
     }
   }
@@ -268,7 +268,7 @@ All environment variables are optional, but if you want to use specific search p
 - `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
 **Security-Sensitive Tools:**
-- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent`)
+- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,generate_changelog`)
 - `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories (only for filesystem tool)
 
 **Document Processing:**

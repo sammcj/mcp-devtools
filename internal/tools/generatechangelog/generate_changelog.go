@@ -70,6 +70,11 @@ func (t *GenerateChangelogTool) Definition() mcp.Tool {
 func (t *GenerateChangelogTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
 	logger.Info("Executing generate_changelog tool")
 
+	// Check if generate_changelog tool is enabled (disabled by default)
+	if !tools.IsToolEnabled("generate_changelog") {
+		return nil, fmt.Errorf("generate_changelog tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'generate_changelog'")
+	}
+
 	// Parse and validate parameters
 	request, err := t.parseRequest(args)
 	if err != nil {
