@@ -346,6 +346,10 @@ make build
 # Run security checks, see make help
 ```
 
+## Disclaimer
+
+No warranty is provided for this software. Use at your own risk. The author is not responsible for any damages or issues arising from its use.
+
 ## License
 
 Apache Public License 2.0 - Copyright 2025 Sam McLeod
