@@ -57,6 +57,10 @@ Use this tool as a structured thinking space during complex workflows, especiall
 			mcp.MaxLength(getMaxThoughtLength()),
 			mcp.Description("A thought to think about."),
 		),
+		mcp.WithString("how_hard",
+			mcp.Description("How hard to think about the problem. Options: 'hard' (default), 'harder', 'ultra'."),
+			mcp.Enum("hard", "harder", "ultra"),
+		),
 	)
 }
 
@@ -74,7 +78,7 @@ func (t *ThinkTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 		Timestamp: time.Now(),
 	}
 
-	return t.newToolResultText(response.Thought)
+	return t.newToolResultText(request.HowHard, response.Thought)
 }
 
 // parseRequest parses and validates the tool arguments
@@ -91,12 +95,35 @@ func (t *ThinkTool) parseRequest(args map[string]interface{}) (*ThinkRequest, er
 		return nil, fmt.Errorf("thought exceeds maximum length of %d characters (got %d)", maxLength, len(thought))
 	}
 
+	// Parse how_hard (optional, defaults to "hard")
+	howHard := "hard"
+	if howHardValue, exists := args["how_hard"]; exists {
+		if howHardStr, ok := howHardValue.(string); ok {
+			switch howHardStr {
+			case "hard", "harder", "ultra":
+				howHard = howHardStr
+			default:
+				return nil, fmt.Errorf("invalid how_hard parameter: must be 'hard', 'harder', or 'ultra', got '%s'", howHardStr)
+			}
+		} else {
+			return nil, fmt.Errorf("invalid how_hard parameter: must be a string")
+		}
+	}
+
 	return &ThinkRequest{
 		Thought: thought,
+		HowHard: howHard,
 	}, nil
 }
 
 // newToolResultText creates a new tool result with text content
-func (t *ThinkTool) newToolResultText(thought string) (*mcp.CallToolResult, error) {
-	return mcp.NewToolResultText(thought), nil
+func (t *ThinkTool) newToolResultText(howHard, thought string) (*mcp.CallToolResult, error) {
+	var toolName string
+	if howHard == "ultra" {
+		toolName = "ultrathink"
+	} else {
+		toolName = fmt.Sprintf("think %s", howHard)
+	}
+	formattedThought := fmt.Sprintf("I should use the %s tool on this problem: %s", toolName, thought)
+	return mcp.NewToolResultText(formattedThought), nil
 }

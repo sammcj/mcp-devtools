@@ -48,7 +48,7 @@ func TestThinkTool_Execute_ValidInput(t *testing.T) {
 		t.Fatal("Expected content in result")
 	}
 
-	// The content should be text type and contain our thought
+	// The content should be text type and contain our thought with default "hard" prefix
 	content := result.Content[0]
 	textContent, ok := mcp.AsTextContent(content)
 	if !ok {
@@ -59,8 +59,9 @@ func TestThinkTool_Execute_ValidInput(t *testing.T) {
 		t.Errorf("Expected content type 'text', got: %s", textContent.Type)
 	}
 
-	if !testutils.Contains(textContent.Text, "This is a test thought") {
-		t.Errorf("Expected result to contain thought text, got: %s", textContent.Text)
+	expectedText := "I should use the think hard tool on this problem: This is a test thought"
+	if textContent.Text != expectedText {
+		t.Errorf("Expected result to be '%s', got: %s", expectedText, textContent.Text)
 	}
 }
 
@@ -212,4 +213,106 @@ func TestThinkTool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
 
 	testutils.AssertNoError(t, err)
 	testutils.AssertNotNil(t, result)
+}
+
+func TestThinkTool_Execute_HowHardParameter(t *testing.T) {
+	tool := &think.ThinkTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Test with "harder" parameter
+	args := map[string]interface{}{
+		"thought":  "This is a complex problem",
+		"how_hard": "harder",
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
+
+	content := result.Content[0]
+	textContent, ok := mcp.AsTextContent(content)
+	if !ok {
+		t.Fatal("Expected TextContent, got different type")
+	}
+
+	expectedText := "I should use the think harder tool on this problem: This is a complex problem"
+	if textContent.Text != expectedText {
+		t.Errorf("Expected result to be '%s', got: %s", expectedText, textContent.Text)
+	}
+
+	// Test with "ultra" parameter
+	args = map[string]interface{}{
+		"thought":  "This is an extremely complex problem",
+		"how_hard": "ultra",
+	}
+
+	result, err = tool.Execute(ctx, logger, cache, args)
+
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
+
+	content = result.Content[0]
+	textContent, ok = mcp.AsTextContent(content)
+	if !ok {
+		t.Fatal("Expected TextContent, got different type")
+	}
+
+	expectedText = "I should use the ultrathink tool on this problem: This is an extremely complex problem"
+	if textContent.Text != expectedText {
+		t.Errorf("Expected result to be '%s', got: %s", expectedText, textContent.Text)
+	}
+
+	// Test with explicit "hard" parameter
+	args = map[string]interface{}{
+		"thought":  "This is a standard problem",
+		"how_hard": "hard",
+	}
+
+	result, err = tool.Execute(ctx, logger, cache, args)
+
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
+
+	content = result.Content[0]
+	textContent, ok = mcp.AsTextContent(content)
+	if !ok {
+		t.Fatal("Expected TextContent, got different type")
+	}
+
+	expectedText = "I should use the think hard tool on this problem: This is a standard problem"
+	if textContent.Text != expectedText {
+		t.Errorf("Expected result to be '%s', got: %s", expectedText, textContent.Text)
+	}
+}
+
+func TestThinkTool_Execute_InvalidHowHardParameter(t *testing.T) {
+	tool := &think.ThinkTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Test with invalid string value
+	args := map[string]interface{}{
+		"thought":  "This is a test thought",
+		"how_hard": "invalid",
+	}
+
+	_, err := tool.Execute(ctx, logger, cache, args)
+
+	testutils.AssertError(t, err)
+	testutils.AssertErrorContains(t, err, "invalid how_hard parameter: must be 'hard', 'harder', or 'ultra', got 'invalid'")
+
+	// Test with invalid type
+	args = map[string]interface{}{
+		"thought":  "This is a test thought",
+		"how_hard": 123,
+	}
+
+	_, err = tool.Execute(ctx, logger, cache, args)
+
+	testutils.AssertError(t, err)
+	testutils.AssertErrorContains(t, err, "invalid how_hard parameter: must be a string")
 }

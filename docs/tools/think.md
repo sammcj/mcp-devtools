@@ -21,6 +21,21 @@ According to Anthropic's research, the Think tool provides:
 - **Better consistency** across multiple trials
 - **Enhanced handling** of edge cases and unusual scenarios
 
+## Parameters
+
+### Required Parameters
+
+- **`thought`** (string): The thought content to process
+  - **Maximum length**: Configurable via `THINK_MAX_LENGTH` environment variable (default: 2000 characters)
+  - **Description**: The actual thought or reasoning to be recorded
+
+### Optional Parameters
+
+- **`how_hard`** (string): Intensity level for thinking about the problem
+  - **Options**: `"hard"` (default), `"harder"`, `"ultra"`
+  - **Description**: Indicates the complexity level of the thinking required
+  - **Default**: `"hard"` if not specified
+
 ## When to Use the Think Tool
 
 ### Analysing Tool Outputs
@@ -29,7 +44,8 @@ Before acting on complex tool results:
 {
   "name": "think",
   "arguments": {
-    "thought": "I need to analyse this API response before deciding which action to take next. The response contains multiple error codes and I should determine which is the primary issue to address first."
+    "thought": "I need to analyse this API response before deciding which action to take next. The response contains multiple error codes and I should determine which is the primary issue to address first.",
+    "how_hard": "hard"
   }
 }
 ```
@@ -74,6 +90,44 @@ After gathering data:
   "name": "think",
   "arguments": {
     "thought": "I've collected performance metrics from three different monitoring tools. Now I need to correlate the data to identify patterns: the CPU spikes at 14:30 correspond with the database slow queries, suggesting a connection pool issue."
+  }
+}
+```
+
+### Using Different Thinking Intensities
+
+#### Standard Problems (`how_hard: "hard"`)
+For routine analysis and straightforward problem-solving:
+```json
+{
+  "name": "think",
+  "arguments": {
+    "thought": "The user wants to add a new API endpoint. I need to consider the request/response format, validation rules, and database queries required.",
+    "how_hard": "hard"
+  }
+}
+```
+
+#### Complex Problems (`how_hard: "harder"`)
+For multi-faceted issues requiring deeper analysis:
+```json
+{
+  "name": "think",
+  "arguments": {
+    "thought": "This microservices architecture change affects authentication, data consistency, service discovery, and deployment pipelines. I need to map out all the interdependencies and potential failure points before recommending an approach.",
+    "how_hard": "harder"
+  }
+}
+```
+
+#### Extremely Complex Problems (`how_hard: "ultra"`)
+For the most challenging scenarios requiring maximum cognitive effort:
+```json
+{
+  "name": "think",
+  "arguments": {
+    "thought": "The system is experiencing cascading failures across multiple regions, with database replication lag, CDN cache invalidation issues, and third-party service degradation all occurring simultaneously. I need to prioritise which issues to address first while maintaining system stability and user experience.",
+    "how_hard": "ultra"
   }
 }
 ```
@@ -262,16 +316,26 @@ The Think tool has minimal performance overhead:
 
 ## Response Format
 
-The Think tool returns a simple confirmation:
-```json
-{
-  "thought_recorded": true,
-  "content": "Your thought has been recorded for reference",
-  "timestamp": "2025-01-14T10:30:45Z"
-}
+The Think tool returns the thought with a prefix indicating the thinking intensity level:
+
+### Example Responses
+
+**Default (`how_hard: "hard"`):**
+```
+I should use the think hard tool on this problem: The user wants to add a new API endpoint. I need to consider the request/response format, validation rules, and database queries required.
 ```
 
-The value comes from the cognitive process, not the response data.
+**Complex (`how_hard: "harder"`):**
+```
+I should use the think harder tool on this problem: This microservices architecture change affects authentication, data consistency, service discovery, and deployment pipelines. I need to map out all the interdependencies and potential failure points.
+```
+
+**Extremely Complex (`how_hard: "ultra"`):**
+```
+I should use the ultrathink tool on this problem: The system is experiencing cascading failures across multiple regions with database replication lag, CDN cache invalidation issues, and third-party service degradation all occurring simultaneously.
+```
+
+The prefix helps indicate the cognitive effort level applied to the problem, while the value comes from the structured thinking process itself.
 
 ---
 
