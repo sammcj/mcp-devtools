@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/google/go-github/v73/github"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
@@ -59,6 +60,11 @@ func NewGitHubClientWrapper(ctx context.Context, logger *logrus.Logger) (*GitHub
 
 // SearchRepositories searches for repositories
 func (gc *GitHubClient) SearchRepositories(ctx context.Context, query string, limit int) (*SearchResult, error) {
+	// Check domain access for GitHub API
+	if err := security.CheckDomainAccess("api.github.com"); err != nil {
+		return nil, err
+	}
+
 	// Apply search API rate limiting
 	if err := gc.waitForSearchAPIRateLimit(ctx); err != nil {
 		return nil, fmt.Errorf("search API rate limit wait failed: %w", err)
@@ -95,6 +101,11 @@ func (gc *GitHubClient) SearchRepositories(ctx context.Context, query string, li
 
 // SearchIssues searches for issues in a repository
 func (gc *GitHubClient) SearchIssues(ctx context.Context, owner, repo, query string, limit int, includeClosed bool) (*SearchResult, error) {
+	// Check domain access for GitHub API
+	if err := security.CheckDomainAccess("api.github.com"); err != nil {
+		return nil, err
+	}
+
 	// Apply search API rate limiting
 	if err := gc.waitForSearchAPIRateLimit(ctx); err != nil {
 		return nil, fmt.Errorf("search API rate limit wait failed: %w", err)
@@ -144,6 +155,11 @@ func (gc *GitHubClient) SearchIssues(ctx context.Context, owner, repo, query str
 
 // SearchPullRequests searches for pull requests in a repository
 func (gc *GitHubClient) SearchPullRequests(ctx context.Context, owner, repo, query string, limit int, includeClosed bool) (*SearchResult, error) {
+	// Check domain access for GitHub API
+	if err := security.CheckDomainAccess("api.github.com"); err != nil {
+		return nil, err
+	}
+
 	// Apply search API rate limiting
 	if err := gc.waitForSearchAPIRateLimit(ctx); err != nil {
 		return nil, fmt.Errorf("search API rate limit wait failed: %w", err)
@@ -193,6 +209,11 @@ func (gc *GitHubClient) SearchPullRequests(ctx context.Context, owner, repo, que
 
 // GetIssue gets a specific issue with optional comments
 func (gc *GitHubClient) GetIssue(ctx context.Context, owner, repo string, number int, includeComments bool) (*FilteredIssueDetails, []Comment, error) {
+	// Check domain access for GitHub API
+	if err := security.CheckDomainAccess("api.github.com"); err != nil {
+		return nil, nil, err
+	}
+
 	// Apply core API rate limiting
 	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
 		return nil, nil, fmt.Errorf("core API rate limit wait failed: %w", err)
@@ -247,6 +268,11 @@ func (gc *GitHubClient) GetIssue(ctx context.Context, owner, repo string, number
 
 // GetPullRequest gets a specific pull request with optional comments
 func (gc *GitHubClient) GetPullRequest(ctx context.Context, owner, repo string, number int, includeComments bool) (*FilteredPullRequestDetails, []Comment, error) {
+	// Check domain access for GitHub API
+	if err := security.CheckDomainAccess("api.github.com"); err != nil {
+		return nil, nil, err
+	}
+
 	// Apply core API rate limiting
 	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
 		return nil, nil, fmt.Errorf("core API rate limit wait failed: %w", err)
@@ -308,6 +334,11 @@ func (gc *GitHubClient) GetPullRequest(ctx context.Context, owner, repo string, 
 
 // GetFileContents gets the contents of one or more files from a repository with graceful error handling
 func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string, paths []string, ref string) ([]FileResult, error) {
+	// Check domain access for GitHub API
+	if err := security.CheckDomainAccess("api.github.com"); err != nil {
+		return nil, err
+	}
+
 	var results []FileResult
 
 	for _, originalPath := range paths {
@@ -416,6 +447,11 @@ func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string,
 
 // ListDirectory lists the contents of a directory in a repository
 func (gc *GitHubClient) ListDirectory(ctx context.Context, owner, repo, path, ref string) (*DirectoryListing, error) {
+	// Check domain access for GitHub API
+	if err := security.CheckDomainAccess("api.github.com"); err != nil {
+		return nil, err
+	}
+
 	// Apply core API rate limiting
 	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
 		return nil, fmt.Errorf("core API rate limit wait failed: %w", err)
@@ -457,12 +493,22 @@ func (gc *GitHubClient) ListDirectory(ctx context.Context, owner, repo, path, re
 
 // CloneRepository clones a repository to a local directory
 func (gc *GitHubClient) CloneRepository(ctx context.Context, owner, repo, localPath string) (*CloneResult, error) {
+	// Check domain access for GitHub
+	if err := security.CheckDomainAccess("github.com"); err != nil {
+		return nil, err
+	}
+
 	if localPath == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get home directory: %w", err)
 		}
 		localPath = filepath.Join(homeDir, "github-repos", repo)
+	}
+
+	// Check file access security for the target directory
+	if err := security.CheckFileAccess(localPath); err != nil {
+		return nil, err
 	}
 
 	// Ensure the parent directory exists
@@ -522,6 +568,11 @@ func (gc *GitHubClient) CloneRepository(ctx context.Context, owner, repo, localP
 
 // GetWorkflowRun gets GitHub Actions workflow run status and optionally logs
 func (gc *GitHubClient) GetWorkflowRun(ctx context.Context, owner, repo string, runID int64, includeLogs bool) (*WorkflowRun, string, error) {
+	// Check domain access for GitHub API
+	if err := security.CheckDomainAccess("api.github.com"); err != nil {
+		return nil, "", err
+	}
+
 	// Apply core API rate limiting
 	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
 		return nil, "", fmt.Errorf("core API rate limit wait failed: %w", err)
@@ -565,7 +616,8 @@ func (gc *GitHubClient) GetWorkflowRun(ctx context.Context, owner, repo string, 
 						gc.logger.Warnf("Failed to close response body: %v", closeErr)
 					}
 				}()
-				logBytes, err := io.ReadAll(resp.Body)
+				limitedReader := io.LimitReader(resp.Body, 10*1024*1024) // 10MB limit for workflow logs
+				logBytes, err := io.ReadAll(limitedReader)
 				if err != nil {
 					gc.logger.Warnf("Failed to read workflow run logs: %v", err)
 				} else {

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sirupsen/logrus"
 )
@@ -75,6 +76,16 @@ func (p *SearXNGProvider) GetSupportedTypes() []string {
 // Search executes a search using the SearXNG provider
 func (p *SearXNGProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
+
+	// Check domain access security for SearXNG instance
+	if p.baseURL != "" {
+		parsedURL, err := url.Parse(p.baseURL)
+		if err == nil && parsedURL.Host != "" {
+			if err := security.CheckDomainAccess(parsedURL.Host); err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	logger.WithFields(logrus.Fields{
 		"provider": "searxng",

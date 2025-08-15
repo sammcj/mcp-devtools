@@ -15,6 +15,7 @@ import (
 
 	"golang.org/x/time/rate"
 
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sirupsen/logrus"
 )
 
@@ -258,6 +259,11 @@ func (c *Client) GetLibraryDocs(ctx context.Context, libraryID string, params *S
 
 // makeRequest makes an HTTP request to the Context7 API
 func (c *Client) makeRequest(ctx context.Context, method, path string, params map[string]string, body io.Reader, result interface{}) error {
+	// Check domain access control via security system
+	if err := security.CheckDomainAccess("context7.com"); err != nil {
+		return err
+	}
+
 	req, err := http.NewRequestWithContext(ctx, method, context7BaseURL+path, body)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -299,17 +305,37 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 	}).Debug("Context7 API request completed")
 
 	if resp.StatusCode >= 400 {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		limitedReader := io.LimitReader(resp.Body, 1024*1024) // 1MB limit for error responses
+		bodyBytes, _ := io.ReadAll(limitedReader)
 		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	// Handle string response type
 	if _, ok := result.(*string); ok {
-		bodyBytes, err := io.ReadAll(resp.Body)
+		limitedReader := io.LimitReader(resp.Body, 50*1024*1024) // 50MB limit for documentation content
+		bodyBytes, err := io.ReadAll(limitedReader)
 		if err != nil {
 			return fmt.Errorf("failed to read response body: %w", err)
 		}
-		*(result.(*string)) = string(bodyBytes)
+		content := string(bodyBytes)
+
+		// Analyse content for security threats
+		sourceContext := security.SourceContext{
+			URL:         req.URL.String(),
+			Domain:      "context7.com",
+			ContentType: "api_response",
+			Tool:        "packagedocs",
+		}
+		if secResult, err := security.AnalyseContent(content, sourceContext); err == nil {
+			switch secResult.Action {
+			case security.ActionBlock:
+				return fmt.Errorf("content blocked by security policy [ID: %s]: %s", secResult.ID, secResult.Message)
+			case security.ActionWarn:
+				c.logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+			}
+		}
+
+		*(result.(*string)) = content
 		return nil
 	}
 

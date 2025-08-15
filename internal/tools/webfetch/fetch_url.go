@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
@@ -96,8 +98,87 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		processedContent = response.Content
 	}
 
+	// Security content analysis (if enabled)
+	var securityNotice string
+	if security.IsEnabled() {
+		// Extract domain from URL for source context
+		parsedURL, _ := url.Parse(request.URL)
+		domain := parsedURL.Hostname()
+
+		sourceContext := security.SourceContext{
+			URL:         request.URL,
+			Domain:      domain,
+			ContentType: response.ContentType,
+			Tool:        "webfetch",
+		}
+
+		result, err := security.AnalyseContent(processedContent, sourceContext)
+		if err != nil {
+			logger.WithError(err).Warn("Security analysis failed")
+		} else {
+			// Handle different security actions using two-tier approach
+			switch result.Action {
+			case security.ActionBlock:
+				// Hard Block: Replace tool response entirely (no content returned)
+				security.LogSecurityEvent(result.ID, "block", result.Analysis, request.URL, "webfetch")
+				return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s and justification", result.ID, result.Message, result.ID)
+
+			case security.ActionWarn:
+				// Response Augmentation: Return content WITH security analysis
+				security.LogSecurityEvent(result.ID, "warn", result.Analysis, request.URL, "webfetch")
+				securityNotice = fmt.Sprintf("Security Warning [ID: %s]: %s Use security_override tool with ID %s if this is intentional.", result.ID, result.Message, result.ID)
+
+			case security.ActionAllow:
+				// No action needed for safe content
+			}
+		}
+	}
+
 	// Apply pagination
 	paginatedResponse := t.applyPagination(response, processedContent, request)
+
+	// Add security notice to response if needed
+	if securityNotice != "" {
+		// Convert response to map for adding security field
+		responseMap := map[string]interface{}{
+			"url":             paginatedResponse.URL,
+			"content":         paginatedResponse.Content,
+			"truncated":       paginatedResponse.Truncated,
+			"start_index":     paginatedResponse.StartIndex,
+			"end_index":       paginatedResponse.EndIndex,
+			"total_length":    paginatedResponse.TotalLength,
+			"total_lines":     paginatedResponse.TotalLines,
+			"start_line":      paginatedResponse.StartLine,
+			"end_line":        paginatedResponse.EndLine,
+			"remaining_lines": paginatedResponse.RemainingLines,
+			"security_notice": securityNotice,
+		}
+
+		if paginatedResponse.NextChunkPreview != "" {
+			responseMap["next_chunk_preview"] = paginatedResponse.NextChunkPreview
+		}
+		if paginatedResponse.Message != "" {
+			responseMap["message"] = paginatedResponse.Message
+		}
+		if paginatedResponse.ContentType != "" {
+			responseMap["content_type"] = paginatedResponse.ContentType
+		}
+		if paginatedResponse.StatusCode != 200 {
+			responseMap["status_code"] = paginatedResponse.StatusCode
+		}
+
+		logger.WithFields(logrus.Fields{
+			"url":              request.URL,
+			"content_type":     response.ContentType,
+			"status_code":      response.StatusCode,
+			"total_length":     paginatedResponse.TotalLength,
+			"returned":         len(paginatedResponse.Content),
+			"truncated":        paginatedResponse.Truncated,
+			"security_warning": true,
+		}).Info("Fetch URL completed with security warning")
+
+		return t.newToolResultJSON(responseMap)
+	}
 
 	logger.WithFields(logrus.Fields{
 		"url":          request.URL,

@@ -14,8 +14,10 @@ import (
 	oauthserver "github.com/sammcj/mcp-devtools/internal/oauth/server"
 	"github.com/sammcj/mcp-devtools/internal/oauth/types"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"gopkg.in/yaml.v3"
 
 	// Import all tool packages to register them
 	_ "github.com/sammcj/mcp-devtools/internal/tools/claudeagent"
@@ -32,6 +34,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/pdf"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/sbom"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/securityoverride"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/think"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/utilities/toolhelp"
@@ -56,6 +59,11 @@ func main() {
 
 	// Initialise the registry
 	registry.Init(logger)
+
+	// Initialise security system (if enabled)
+	if err := security.InitGlobalSecurityManager(); err != nil {
+		logger.WithError(err).Warn("Failed to initialise security system")
+	}
 
 	// Ensure cleanup of embedded scripts on exit
 	defer func() {
@@ -186,6 +194,36 @@ func main() {
 					fmt.Printf("Commit: %s\n", Commit)
 					fmt.Printf("Built: %s\n", BuildDate)
 					return nil
+				},
+			},
+			{
+				Name:  "security-config-diff",
+				Usage: "Show differences between user security config and default config",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "update",
+						Usage: "Update user config with new default rules (preserves user customizations)",
+					},
+					&cli.StringFlag{
+						Name:  "config-path",
+						Usage: "Path to security configuration file (default: ~/.mcp-devtools/security.yaml)",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					return handleSecurityConfigDiff(c, logger)
+				},
+			},
+			{
+				Name:  "security-config-validate",
+				Usage: "Validate security configuration file for errors",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "config-path",
+						Usage: "Path to security configuration file (default: ~/.mcp-devtools/security.yaml)",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					return handleSecurityConfigValidate(c, logger)
 				},
 			},
 		},
@@ -663,5 +701,197 @@ func handleBrowserAuthentication(c *cli.Context, transport string, logger *logru
 	}
 
 	logger.Info("MCP DevTools is now authenticated and ready to start")
+	return nil
+}
+
+// handleSecurityConfigDiff compares user config against default config and optionally updates it
+func handleSecurityConfigDiff(c *cli.Context, logger *logrus.Logger) error {
+	// Get config path
+	configPath := c.String("config-path")
+	if configPath == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %w", err)
+		}
+		configPath = fmt.Sprintf("%s/.mcp-devtools/security.yaml", homeDir)
+	}
+
+	// Check if user config exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		fmt.Printf("User config file does not exist at: %s\n", configPath)
+		fmt.Println("A default configuration will be created when the security system is first used.")
+		return nil
+	}
+
+	// Generate default config
+	defaultConfig := security.GenerateDefaultConfig()
+
+	// Read user config
+	userConfigData, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read user config: %w", err)
+	}
+
+	// Compare configs
+	userConfigStr := string(userConfigData)
+	if userConfigStr == defaultConfig {
+		fmt.Println("✅ User configuration matches the current default configuration")
+		return nil
+	}
+
+	fmt.Println("📋 Configuration Differences Found")
+	fmt.Println("==================================")
+	fmt.Printf("User config: %s\n", configPath)
+	fmt.Println("Default config: (generated)")
+	fmt.Println()
+
+	// Show basic comparison
+	fmt.Println("User config size:", len(userConfigStr), "bytes")
+	fmt.Println("Default config size:", len(defaultConfig), "bytes")
+	fmt.Println()
+
+	// Parse both configs to show structural differences
+	var userRules security.SecurityRules
+	var defaultRules security.SecurityRules
+
+	if err := yaml.Unmarshal(userConfigData, &userRules); err != nil {
+		fmt.Printf("⚠️  Warning: User config has parsing errors: %v\n", err)
+		fmt.Println("Run 'security-config-validate' command for detailed error information")
+	} else {
+		if err := yaml.Unmarshal([]byte(defaultConfig), &defaultRules); err != nil {
+			return fmt.Errorf("failed to parse default config: %w", err)
+		}
+
+		// Compare versions
+		if userRules.Version != defaultRules.Version {
+			fmt.Printf("📄 Version difference: user=%s, default=%s\n", userRules.Version, defaultRules.Version)
+		}
+
+		// Compare rule counts
+		fmt.Printf("📊 Rules: user=%d, default=%d\n", len(userRules.Rules), len(defaultRules.Rules))
+
+		// Show new rules available in default
+		newRules := []string{}
+		for ruleName := range defaultRules.Rules {
+			if _, exists := userRules.Rules[ruleName]; !exists {
+				newRules = append(newRules, ruleName)
+			}
+		}
+
+		if len(newRules) > 0 {
+			fmt.Printf("🆕 New rules available in default config: %v\n", newRules)
+		}
+
+		// Check for new settings
+		if userRules.Settings.SizeExceededBehaviour == "" && defaultRules.Settings.SizeExceededBehaviour != "" {
+			fmt.Printf("🆕 New setting available: size_exceeded_behaviour (default: %s)\n", defaultRules.Settings.SizeExceededBehaviour)
+		}
+	}
+
+	// Offer to update if requested
+	if c.Bool("update") {
+
+		fmt.Println("\n🔄 Updating user configuration...")
+
+		// Create backup
+		backupPath := configPath + ".backup." + fmt.Sprintf("%d", time.Now().Unix())
+		if err := os.WriteFile(backupPath, userConfigData, 0600); err != nil {
+			return fmt.Errorf("failed to create backup: %w", err)
+		}
+		fmt.Printf("📦 Backup created: %s\n", backupPath)
+
+		// Write the default config (user will need to manually merge customizations)
+		if err := os.WriteFile(configPath, []byte(defaultConfig), 0600); err != nil {
+			return fmt.Errorf("failed to update config: %w", err)
+		}
+
+		fmt.Printf("✅ Configuration updated: %s\n", configPath)
+		fmt.Println("⚠️  Note: Any custom rules have been backed up. Please review and re-add them manually if needed.")
+	} else {
+		fmt.Println("\n💡 To update your configuration with new defaults, run:")
+		fmt.Printf("   mcp-devtools security-config-diff --update\n")
+		fmt.Println("   (This will create a backup of your current config)")
+	}
+
+	return nil
+}
+
+// handleSecurityConfigValidate validates the security configuration file
+func handleSecurityConfigValidate(c *cli.Context, logger *logrus.Logger) error {
+	// Get config path
+	configPath := c.String("config-path")
+	if configPath == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %w", err)
+		}
+		configPath = fmt.Sprintf("%s/.mcp-devtools/security.yaml", homeDir)
+	}
+
+	// Check if config exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		fmt.Printf("❌ Configuration file not found: %s\n", configPath)
+		fmt.Println("💡 The file will be created automatically when the security system is first used.")
+		return nil
+	}
+
+	fmt.Printf("🔍 Validating security configuration: %s\n", configPath)
+	fmt.Println("=" + strings.Repeat("=", len(configPath)+35))
+
+	// Read config file
+	configData, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	// Try to parse and validate the config
+	rules, yamlErr := security.ValidateSecurityConfig(configData)
+	if yamlErr != nil {
+		fmt.Printf("❌ YAML parsing failed: %v\n", yamlErr)
+
+		// Try to provide more detailed error information
+		lines := strings.Split(string(configData), "\n")
+		fmt.Printf("\n📄 File has %d lines, %d bytes\n", len(lines), len(configData))
+
+		// Check for common YAML issues
+		for i, line := range lines {
+			lineNum := i + 1
+			trimmed := strings.TrimSpace(line)
+
+			// Check for tabs (common YAML issue)
+			if strings.Contains(line, "\t") {
+				fmt.Printf("⚠️  Line %d contains tabs (use spaces instead): %s\n", lineNum, trimmed)
+			}
+
+			// Check for basic syntax issues
+			if strings.Contains(trimmed, ":") && !strings.HasPrefix(trimmed, "#") {
+				parts := strings.SplitN(trimmed, ":", 2)
+				if len(parts) == 2 && strings.TrimSpace(parts[1]) == "" && !strings.HasSuffix(trimmed, ":") {
+					fmt.Printf("⚠️  Line %d may have missing value: %s\n", lineNum, trimmed)
+				}
+			}
+		}
+
+		return fmt.Errorf("configuration file has YAML syntax errors")
+	}
+
+	fmt.Println("✅ Configuration is valid")
+
+	// Show configuration summary
+	fmt.Println("\n📊 Configuration Summary")
+	fmt.Println("========================")
+	fmt.Printf("Version: %s\n", rules.Version)
+	fmt.Printf("Security enabled: %t\n", rules.Settings.Enabled)
+	fmt.Printf("Default action: %s\n", rules.Settings.DefaultAction)
+	fmt.Printf("Auto reload: %t\n", rules.Settings.AutoReload)
+	fmt.Printf("Max content size: %d KB\n", rules.Settings.MaxContentSize)
+	fmt.Printf("Max scan size: %d KB\n", rules.Settings.MaxScanSize)
+	fmt.Printf("Size exceeded behaviour: %s\n", rules.Settings.SizeExceededBehaviour)
+	fmt.Printf("Rules defined: %d\n", len(rules.Rules))
+	fmt.Printf("Trusted domains: %d\n", len(rules.TrustedDomains))
+	fmt.Printf("Denied files: %d\n", len(rules.AccessControl.DenyFiles))
+	fmt.Printf("Denied domains: %d\n", len(rules.AccessControl.DenyDomains))
+
+	fmt.Println("\n✅ Configuration is valid and ready for use")
 	return nil
 }

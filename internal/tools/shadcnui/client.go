@@ -3,12 +3,15 @@ package shadcnui
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
+
+	"github.com/sammcj/mcp-devtools/internal/security"
 )
 
 const (
@@ -57,9 +60,16 @@ func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 }
 
 // Get implements the HTTPClient interface with rate limiting
-func (c *RateLimitedHTTPClient) Get(url string) (*http.Response, error) {
+func (c *RateLimitedHTTPClient) Get(reqURL string) (*http.Response, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	// Check domain access control via security system
+	if parsedURL, err := url.Parse(reqURL); err == nil {
+		if err := security.CheckDomainAccess(parsedURL.Hostname()); err != nil {
+			return nil, err
+		}
+	}
 
 	// Wait for rate limiter to allow the request
 	err := c.limiter.Wait(context.Background())
@@ -67,7 +77,7 @@ func (c *RateLimitedHTTPClient) Get(url string) (*http.Response, error) {
 		return nil, err
 	}
 
-	return c.client.Get(url)
+	return c.client.Get(reqURL)
 }
 
 // DefaultHTTPClient is the default HTTP client implementation with rate limiting.

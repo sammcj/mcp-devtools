@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sirupsen/logrus"
 )
 
@@ -84,20 +86,27 @@ func MakeRequest(client HTTPClient, method, url string, headers map[string]strin
 }
 
 // MakeRequestWithLogger makes an HTTP request with logging and returns the response body
-func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, url string, headers map[string]string) ([]byte, error) {
+func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, reqURL string, headers map[string]string) ([]byte, error) {
 	if logger != nil {
 		logger.WithFields(logrus.Fields{
 			"method": method,
-			"url":    url,
+			"url":    reqURL,
 		}).Debug("Making HTTP request")
 	}
 
-	req, err := http.NewRequest(method, url, nil)
+	// Check domain access control via security system
+	if parsedURL, err := url.Parse(reqURL); err == nil {
+		if err := security.CheckDomainAccess(parsedURL.Hostname()); err != nil {
+			return nil, err
+		}
+	}
+
+	req, err := http.NewRequest(method, reqURL, nil)
 	if err != nil {
 		if logger != nil {
 			logger.WithFields(logrus.Fields{
 				"method": method,
-				"url":    url,
+				"url":    reqURL,
 				"error":  err.Error(),
 			}).Error("Failed to create request")
 		}
@@ -123,7 +132,7 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, url
 		if logger != nil {
 			logger.WithFields(logrus.Fields{
 				"method": method,
-				"url":    url,
+				"url":    reqURL,
 				"error":  err.Error(),
 			}).Error("Failed to send request")
 		}
@@ -138,17 +147,38 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, url
 		}
 	}()
 
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
+	// Read response body with size limit to prevent memory exhaustion
+	limitedReader := io.LimitReader(resp.Body, 10*1024*1024) // 10MB limit for package API responses
+	body, err := io.ReadAll(limitedReader)
 	if err != nil {
 		if logger != nil {
 			logger.WithFields(logrus.Fields{
 				"method": method,
-				"url":    url,
+				"url":    reqURL,
 				"error":  err.Error(),
 			}).Error("Failed to read response body")
 		}
 		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Analyse content for security threats
+	if parsedURL, err := url.Parse(reqURL); err == nil {
+		sourceContext := security.SourceContext{
+			URL:         reqURL,
+			Domain:      parsedURL.Hostname(),
+			ContentType: "api_response",
+			Tool:        "packageversions",
+		}
+		if secResult, err := security.AnalyseContent(string(body), sourceContext); err == nil {
+			switch secResult.Action {
+			case security.ActionBlock:
+				return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s", secResult.ID, secResult.Message)
+			case security.ActionWarn:
+				if logger != nil {
+					logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+				}
+			}
+		}
 	}
 
 	// Check for errors
@@ -156,7 +186,7 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, url
 		if logger != nil {
 			logger.WithFields(logrus.Fields{
 				"method":     method,
-				"url":        url,
+				"url":        reqURL,
 				"statusCode": resp.StatusCode,
 				"body":       string(body),
 			}).Error("Unexpected status code")
@@ -167,7 +197,7 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, url
 	if logger != nil {
 		logger.WithFields(logrus.Fields{
 			"method":     method,
-			"url":        url,
+			"url":        reqURL,
 			"statusCode": resp.StatusCode,
 		}).Debug("HTTP request completed successfully")
 	}

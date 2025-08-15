@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/security"
 )
 
 // executeBatch processes multiple documents concurrently
@@ -77,6 +78,25 @@ func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[strin
 						Error:  err.Error(),
 					}
 					continue
+				}
+
+				// Security: Analyse processed content for batch processing
+				if security.IsEnabled() && response.Error == "" {
+					sourceContext := security.SourceContext{
+						Tool: "document_processing",
+						URL:  source,
+					}
+
+					result, err := security.AnalyseContent(response.Content, sourceContext)
+					if err == nil {
+						switch result.Action {
+						case security.ActionBlock:
+							response.Error = fmt.Sprintf("content blocked by security policy: %s", result.Message)
+						case security.ActionWarn:
+							// Note: In batch processing, security warnings are noted but don't fail the processing
+							// Individual responses will include the security information
+						}
+					}
 				}
 
 				// Cache result if successful

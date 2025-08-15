@@ -17,6 +17,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
@@ -296,6 +297,11 @@ func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cac
 func (t *FileSystemTool) validatePath(requestedPath string) (string, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
+
+	// Check security system file access control first
+	if err := security.CheckFileAccess(requestedPath); err != nil {
+		return "", err
+	}
 
 	// Expand home directory
 	if strings.HasPrefix(requestedPath, "~/") {

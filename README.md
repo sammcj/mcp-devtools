@@ -17,7 +17,7 @@ graph LR
 
     C --> C_Tools[📄 Document Processing<br>📑 PDF Processing]
 
-    D --> D_Tools[📋 SBOM Generation<br>🛡️ Vulnerability Scan]
+    D --> D_Tools[📋 SBOM Generation<br>🛡️ Vulnerability Scan<br>🔒 Security Framework<br>🛠️ Security Override]
 
     E --> E_Tools[🧠 Think Tool<br>🕸️ Memory Graph]
 
@@ -86,7 +86,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "command": "/path/to/mcp-devtools",
       "env": {
         "DISABLED_FUNCTIONS": "brave_local_search,brave_video_search", // Optional, disable specific tools if not needed
-        "ENABLE_ADDITIONAL_TOOLS": "sbom,vulnerability_scan" // Optional, enable security analysis tools
+        "ENABLE_ADDITIONAL_TOOLS": "security,security_override,sbom,vulnerability_scan" // Optional, enable security and analysis tools
       }
     }
   }
@@ -115,16 +115,18 @@ These tools can be disabled by adding their function name to the `DISABLED_FUNCT
 
 These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment variable in your MCP configuration.
 
-| Tool                                                         | Purpose                              | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                         |
-|--------------------------------------------------------------|--------------------------------------|---------------------------|---------------------------------------|
-| **[Filesystem](docs/tools/filesystem.md)**                   | File and directory operations        | `filesystem`              | Read, write, edit, search files       |
-| **[Claude Agent](docs/tools/claude-agent.md)**               | Claude Code CLI Agent                | `claude-agent`            | Code analysis, generation             |
-| **[Gemini Agent](docs/tools/gemini-agent.md)**               | Gemini CLI Agent                     | `gemini-agent`            | Code analysis, generation             |
-| **[SBOM Generation](docs/tools/sbom.md)**                    | Generate Software Bill of Materials  | `sbom`                    | Analyse project dependencies          |
-| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)**   | Security vulnerability scanning      | `vulnerability_scan`      | Find security issues                  |
-| **[Generate Changelog](docs/tools/changelog.md)**            | Generate changelogs from git commits | `generate_changelog`      | Release notes from local/remote repos |
-| **[Document Processing](docs/tools/document-processing.md)** | Convert documents to Markdown        | `process_document`        | PDF, DOCX → Markdown with OCR         |
-| **[PDF Processing](docs/tools/pdf-processing.md)**           | Fast PDF text extraction             | `pdf`                     | Quick PDF to Markdown                 |
+| Tool                                                         | Purpose                                  | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                         |
+|--------------------------------------------------------------|------------------------------------------|---------------------------|---------------------------------------|
+| **[Filesystem](docs/tools/filesystem.md)**                   | File and directory operations            | `filesystem`              | Read, write, edit, search files       |
+| **[Claude Agent](docs/tools/claude-agent.md)**               | Claude Code CLI Agent                    | `claude-agent`            | Code analysis, generation             |
+| **[Gemini Agent](docs/tools/gemini-agent.md)**               | Gemini CLI Agent                         | `gemini-agent`            | Code analysis, generation             |
+| **[SBOM Generation](docs/tools/sbom.md)**                    | Generate Software Bill of Materials      | `sbom`                    | Analyse project dependencies          |
+| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)**   | Security vulnerability scanning          | `vulnerability_scan`      | Find security issues                  |
+| **[Generate Changelog](docs/tools/changelog.md)**            | Generate changelogs from git commits     | `generate_changelog`      | Release notes from local/remote repos |
+| **[Document Processing](docs/tools/document-processing.md)** | Convert documents to Markdown            | `process_document`        | PDF, DOCX → Markdown with OCR         |
+| **[PDF Processing](docs/tools/pdf-processing.md)**           | Fast PDF text extraction                 | `pdf`                     | Quick PDF to Markdown                 |
+| **[Security Framework](docs/security.md)**                      | Context injection security protections   | `security`                | Content analysis, access control      |
+| **[Security Override](docs/security.md)**                    | Agent managed security warning overrides | `security_override`       | Bypass false positives                |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
@@ -268,7 +270,7 @@ All environment variables are optional, but if you want to use specific search p
 - `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
 **Security-Sensitive Tools:**
-- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,generate_changelog,process_document,pdf`)
+- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,generate_changelog,process_document,pdf`)
 - `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories (only for filesystem tool)
 
 **Document Processing:**
@@ -296,6 +298,35 @@ MCP DevTools uses a modular architecture:
 Each tool is self-contained and registers automatically when the binary starts.
 
 ![](./screenshots/mcp-devtools-1.jpeg)
+
+## Security Framework
+
+MCP DevTools includes a comprehensive, configurable security system that provides multi-layered protection for all tools that access files or make HTTP requests.
+
+### Key Features
+- **Access Control**: Prevents tools from accessing sensitive files and domains
+- **Content Analysis**: Scans returned content for security threats using pattern matching
+- **YAML-Based Configuration**: Easy-to-manage rules with automatic reloading
+- **Security Overrides**: Allow bypassing false positives with audit logging
+- **Performance Optimised**: Minimal impact when disabled, efficient when enabled
+
+### Built-in Protection
+- **Shell Injection Detection**: Command injection, eval execution, backtick commands
+- **Data Exfiltration Prevention**: DNS exfiltration, credential theft, keychain access
+- **Prompt Injection Mitigation**: "Ignore instructions" attacks, conversation extraction
+- **Persistence Mechanism Detection**: Launchctl, systemd, crontab modifications
+- **Sensitive File Protection**: SSH keys, AWS credentials, certificates
+
+### Quick Setup
+```bash
+# Enable security framework and override tool
+# You may optionally also add 'security_override' if you want a tool the agent can use to override security warnings
+ENABLE_ADDITIONAL_TOOLS="security"
+```
+
+Configuration is managed through `~/.mcp-devtools/security.yaml` with sensible defaults.
+
+👉 **[Complete Security Documentation](docs/security.md)**
 
 ## Advanced Features
 
@@ -330,8 +361,9 @@ Want to add your own tools? See the **[Development Guide](docs/creating-new-tool
 ## Getting Help
 
 - **Tool Documentation**: [docs/tools/overview.md](docs/tools/overview.md)
+- **Security Framework**: [docs/security.md](docs/security.md)
 - **OAuth Setup**: [docs/oauth/README.md](docs/oauth/README.md)
-- **Development**: [docs/development/creating-new-tools.md](docs/creating-new-tools.md)
+- **Development**: [docs/creating-new-tools.md](docs/creating-new-tools.md)
 - **Issues**: [GitHub Issues](https://github.com/sammcj/mcp-devtools/issues), please note that I built this tool for my own use and it is not a commercially supported product, so if you can - please raise a PR instead of an issue.
 
 ## Contributing

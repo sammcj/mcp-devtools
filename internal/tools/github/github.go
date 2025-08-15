@@ -9,6 +9,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
@@ -118,6 +119,11 @@ func (t *GitHubTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		return nil, fmt.Errorf("invalid parameters: %w", err)
 	}
 
+	// Check domain access for GitHub API
+	if err := security.CheckDomainAccess("api.github.com"); err != nil {
+		return nil, err
+	}
+
 	// Create GitHub client
 	client, err := NewGitHubClientWrapper(ctx, logger)
 	if err != nil {
@@ -203,6 +209,22 @@ func (t *GitHubTool) handleSearchRepositories(ctx context.Context, client *GitHu
 	if err != nil {
 		return nil, err
 	}
+
+	// Analyse content for security risks
+	source := security.SourceContext{
+		Tool:        "github",
+		Domain:      "github.com",
+		ContentType: "repository_search",
+	}
+	if result, err := security.AnalyseContent(jsonString, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+		}
+	}
+
 	return mcp.NewToolResultText(jsonString), nil
 }
 
@@ -251,6 +273,22 @@ func (t *GitHubTool) handleSearchIssues(ctx context.Context, client *GitHubClien
 	if err != nil {
 		return nil, err
 	}
+
+	// Analyse content for security risks
+	source := security.SourceContext{
+		Tool:        "github",
+		Domain:      "github.com",
+		ContentType: "issue_search",
+	}
+	if result, err := security.AnalyseContent(jsonString, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+		}
+	}
+
 	return mcp.NewToolResultText(jsonString), nil
 }
 
@@ -299,6 +337,22 @@ func (t *GitHubTool) handleSearchPullRequests(ctx context.Context, client *GitHu
 	if err != nil {
 		return nil, err
 	}
+
+	// Analyse content for security risks
+	source := security.SourceContext{
+		Tool:        "github",
+		Domain:      "github.com",
+		ContentType: "pull_request_search",
+	}
+	if result, err := security.AnalyseContent(jsonString, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+		}
+	}
+
 	return mcp.NewToolResultText(jsonString), nil
 }
 
@@ -359,6 +413,22 @@ func (t *GitHubTool) handleGetIssue(ctx context.Context, client *GitHubClient, r
 	if err != nil {
 		return nil, err
 	}
+
+	// Analyse content for security risks
+	source := security.SourceContext{
+		Tool:        "github",
+		Domain:      "github.com",
+		ContentType: "issue_details",
+	}
+	if result, err := security.AnalyseContent(jsonString, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+		}
+	}
+
 	return mcp.NewToolResultText(jsonString), nil
 }
 
@@ -419,6 +489,22 @@ func (t *GitHubTool) handleGetPullRequest(ctx context.Context, client *GitHubCli
 	if err != nil {
 		return nil, err
 	}
+
+	// Analyse content for security risks
+	source := security.SourceContext{
+		Tool:        "github",
+		Domain:      "github.com",
+		ContentType: "pull_request_details",
+	}
+	if result, err := security.AnalyseContent(jsonString, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+		}
+	}
+
 	return mcp.NewToolResultText(jsonString), nil
 }
 
@@ -479,6 +565,22 @@ func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubCl
 	if err != nil {
 		return nil, err
 	}
+
+	// Analyse content for security risks
+	source := security.SourceContext{
+		Tool:        "github",
+		Domain:      "github.com",
+		ContentType: "file_contents",
+	}
+	if result, err := security.AnalyseContent(jsonString, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+		}
+	}
+
 	return mcp.NewToolResultText(jsonString), nil
 }
 
@@ -519,6 +621,22 @@ func (t *GitHubTool) handleListDirectory(ctx context.Context, client *GitHubClie
 	if err != nil {
 		return nil, err
 	}
+
+	// Analyse content for security risks
+	source := security.SourceContext{
+		Tool:        "github",
+		Domain:      "github.com",
+		ContentType: "directory_listing",
+	}
+	if result, err := security.AnalyseContent(jsonString, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+		}
+	}
+
 	return mcp.NewToolResultText(jsonString), nil
 }
 
@@ -538,6 +656,13 @@ func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubCl
 		localPath = lp
 	}
 
+	// Check file access security for clone operation
+	if localPath != "" {
+		if err := security.CheckFileAccess(localPath); err != nil {
+			return nil, err
+		}
+	}
+
 	result, err := client.CloneRepository(ctx, owner, repo, localPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to clone repository: %w", err)
@@ -552,6 +677,22 @@ func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubCl
 	if err != nil {
 		return nil, err
 	}
+
+	// Analyse content for security risks
+	source := security.SourceContext{
+		Tool:        "github",
+		Domain:      "github.com",
+		ContentType: "clone_result",
+	}
+	if result, err := security.AnalyseContent(jsonString, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+		}
+	}
+
 	return mcp.NewToolResultText(jsonString), nil
 }
 
@@ -612,6 +753,22 @@ func (t *GitHubTool) handleGetWorkflowRun(ctx context.Context, client *GitHubCli
 	if err != nil {
 		return nil, err
 	}
+
+	// Analyse content for security risks
+	source := security.SourceContext{
+		Tool:        "github",
+		Domain:      "github.com",
+		ContentType: "workflow_run",
+	}
+	if result, err := security.AnalyseContent(jsonString, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+		}
+	}
+
 	return mcp.NewToolResultText(jsonString), nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
@@ -183,7 +185,33 @@ func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.L
 		return nil, fmt.Errorf("failed to fetch component page %s: status %d", componentURL, resp.StatusCode)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	// Read response body for security analysis with size limit
+	limitedReader := io.LimitReader(resp.Body, 5*1024*1024) // 5MB limit for component details
+	bodyBytes, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Analyse content for security threats
+	if parsedURL, err := url.Parse(componentURL); err == nil {
+		sourceContext := security.SourceContext{
+			URL:         componentURL,
+			Domain:      parsedURL.Hostname(),
+			ContentType: "html",
+			Tool:        "shadcnui",
+		}
+		if secResult, err := security.AnalyseContent(string(bodyBytes), sourceContext); err == nil {
+			switch secResult.Action {
+			case security.ActionBlock:
+				return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s", secResult.ID, secResult.Message)
+			case security.ActionWarn:
+				logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+			}
+		}
+	}
+
+	// Parse the HTML document
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse component page %s: %w", componentURL, err)
 	}
@@ -258,22 +286,49 @@ func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.
 			}
 		}()
 		if resp.StatusCode == http.StatusOK {
-			doc, docErr := goquery.NewDocumentFromReader(resp.Body)
-			if docErr != nil {
-				logger.Warnf("Failed to parse component page %s for examples: %v", componentURL, docErr)
+			// Read response body for security analysis
+			bodyBytes, bodyErr := io.ReadAll(resp.Body)
+			if bodyErr != nil {
+				logger.Warnf("Failed to read response body for %s: %v", componentURL, bodyErr)
 			} else {
-				doc.Find("h2, h3").Each(func(i int, heading *goquery.Selection) {
-					headingText := strings.TrimSpace(heading.Text())
-					if strings.Contains(strings.ToLower(headingText), "example") || strings.Contains(strings.ToLower(headingText), "usage") {
-						heading.NextUntil("h2, h3").Find("pre code").Each(func(j int, codeBlock *goquery.Selection) {
-							example := ComponentExample{
-								Title: headingText + fmt.Sprintf(" Example %d", j+1),
-								Code:  strings.TrimSpace(codeBlock.Text()),
+				// Analyse content for security threats
+				if parsedURL, err := url.Parse(componentURL); err == nil {
+					sourceContext := security.SourceContext{
+						URL:         componentURL,
+						Domain:      parsedURL.Hostname(),
+						ContentType: "html",
+						Tool:        "shadcnui",
+					}
+					if secResult, err := security.AnalyseContent(string(bodyBytes), sourceContext); err == nil {
+						switch secResult.Action {
+						case security.ActionBlock:
+							logger.Warnf("Content blocked by security policy for %s [ID: %s]: %s", componentURL, secResult.ID, secResult.Message)
+							bodyBytes = nil // Clear content to prevent processing
+						case security.ActionWarn:
+							logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+						}
+					}
+				}
+
+				if bodyBytes != nil {
+					doc, docErr := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
+					if docErr != nil {
+						logger.Warnf("Failed to parse component page %s for examples: %v", componentURL, docErr)
+					} else {
+						doc.Find("h2, h3").Each(func(i int, heading *goquery.Selection) {
+							headingText := strings.TrimSpace(heading.Text())
+							if strings.Contains(strings.ToLower(headingText), "example") || strings.Contains(strings.ToLower(headingText), "usage") {
+								heading.NextUntil("h2, h3").Find("pre code").Each(func(j int, codeBlock *goquery.Selection) {
+									example := ComponentExample{
+										Title: headingText + fmt.Sprintf(" Example %d", j+1),
+										Code:  strings.TrimSpace(codeBlock.Text()),
+									}
+									examples = append(examples, example)
+								})
 							}
-							examples = append(examples, example)
 						})
 					}
-				})
+				}
 			}
 		} else {
 			logger.Warnf("Failed to fetch component page %s: status %d", componentURL, resp.StatusCode)
@@ -293,7 +348,8 @@ func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.
 			}
 		}()
 		if respDemo.StatusCode == http.StatusOK {
-			bodyBytes, readErr := io.ReadAll(respDemo.Body)
+			limitedReader := io.LimitReader(respDemo.Body, 5*1024*1024) // 5MB limit for demo files
+			bodyBytes, readErr := io.ReadAll(limitedReader)
 			if readErr != nil {
 				logger.Warnf("Failed to read demo file %s: %v", demoURL, readErr)
 			} else {
@@ -339,7 +395,32 @@ func (t *UnifiedShadcnTool) fetchComponentsList(logger *logrus.Logger, cache *sy
 		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", resp.StatusCode)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	// Read response body for security analysis with size limit
+	limitedReader := io.LimitReader(resp.Body, 5*1024*1024) // 5MB limit for component list
+	bodyBytes, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Analyse content for security threats
+	if parsedURL, err := url.Parse(ShadcnDocsComponents); err == nil {
+		sourceContext := security.SourceContext{
+			URL:         ShadcnDocsComponents,
+			Domain:      parsedURL.Hostname(),
+			ContentType: "html",
+			Tool:        "shadcnui",
+		}
+		if secResult, err := security.AnalyseContent(string(bodyBytes), sourceContext); err == nil {
+			switch secResult.Action {
+			case security.ActionBlock:
+				return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s", secResult.ID, secResult.Message)
+			case security.ActionWarn:
+				logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+			}
+		}
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse shadcn components page: %w", err)
 	}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sirupsen/logrus"
 )
@@ -45,6 +46,11 @@ func (p *BraveProvider) GetSupportedTypes() []string {
 // Search executes a search using the Brave provider
 func (p *BraveProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
+
+	// Check domain access security for Brave API
+	if err := security.CheckDomainAccess("api.search.brave.com"); err != nil {
+		return nil, err
+	}
 
 	logger.WithFields(logrus.Fields{
 		"provider": "brave",

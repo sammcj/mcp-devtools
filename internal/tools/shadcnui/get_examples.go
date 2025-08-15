@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io" // Add io import
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
@@ -64,29 +66,56 @@ func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.L
 			}
 		}()
 		if resp.StatusCode == http.StatusOK {
-			doc, docErr := goquery.NewDocumentFromReader(resp.Body)
-			if docErr != nil {
-				logger.Warnf("Failed to parse component page %s for examples: %v", componentURL, docErr)
+			// Read response body for security analysis
+			bodyBytes, bodyErr := io.ReadAll(resp.Body)
+			if bodyErr != nil {
+				logger.Warnf("Failed to read response body for %s: %v", componentURL, bodyErr)
 			} else {
-				doc.Find("h2, h3").Each(func(i int, heading *goquery.Selection) {
-					headingText := strings.TrimSpace(heading.Text())
-					if strings.Contains(strings.ToLower(headingText), "example") || strings.Contains(strings.ToLower(headingText), "usage") {
-						heading.NextUntil("h2, h3").Find("pre code").Each(func(j int, codeBlock *goquery.Selection) {
-							example := ComponentExample{
-								Title: headingText + fmt.Sprintf(" Example %d", j+1),
-								Code:  strings.TrimSpace(codeBlock.Text()),
+				// Analyse content for security threats
+				if parsedURL, err := url.Parse(componentURL); err == nil {
+					sourceContext := security.SourceContext{
+						URL:         componentURL,
+						Domain:      parsedURL.Hostname(),
+						ContentType: "html",
+						Tool:        "shadcnui",
+					}
+					if secResult, err := security.AnalyseContent(string(bodyBytes), sourceContext); err == nil {
+						switch secResult.Action {
+						case security.ActionBlock:
+							logger.Warnf("Content blocked by security policy for %s [ID: %s]: %s", componentURL, secResult.ID, secResult.Message)
+							bodyBytes = nil // Clear content to prevent processing
+						case security.ActionWarn:
+							logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+						}
+					}
+				}
+
+				if bodyBytes != nil {
+					doc, docErr := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
+					if docErr != nil {
+						logger.Warnf("Failed to parse component page %s for examples: %v", componentURL, docErr)
+					} else {
+						doc.Find("h2, h3").Each(func(i int, heading *goquery.Selection) {
+							headingText := strings.TrimSpace(heading.Text())
+							if strings.Contains(strings.ToLower(headingText), "example") || strings.Contains(strings.ToLower(headingText), "usage") {
+								heading.NextUntil("h2, h3").Find("pre code").Each(func(j int, codeBlock *goquery.Selection) {
+									example := ComponentExample{
+										Title: headingText + fmt.Sprintf(" Example %d", j+1),
+										Code:  strings.TrimSpace(codeBlock.Text()),
+									}
+									examples = append(examples, example)
+								})
+								heading.NextFiltered("pre").Find("code").Each(func(j int, codeBlock *goquery.Selection) {
+									example := ComponentExample{
+										Title: headingText + fmt.Sprintf(" Sibling Example %d", j+1),
+										Code:  strings.TrimSpace(codeBlock.Text()),
+									}
+									examples = append(examples, example)
+								})
 							}
-							examples = append(examples, example)
-						})
-						heading.NextFiltered("pre").Find("code").Each(func(j int, codeBlock *goquery.Selection) {
-							example := ComponentExample{
-								Title: headingText + fmt.Sprintf(" Sibling Example %d", j+1),
-								Code:  strings.TrimSpace(codeBlock.Text()),
-							}
-							examples = append(examples, example)
 						})
 					}
-				})
+				}
 			}
 		} else {
 			logger.Warnf("Failed to fetch component page %s: status %d", componentURL, resp.StatusCode)

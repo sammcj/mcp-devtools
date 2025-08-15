@@ -140,6 +140,11 @@ sec-safedep-vet:
 	fi
 	vet scan -D .
 
+.PHONY: sec-performance
+sec-performance:
+	@echo "Running security utility performance tests..."
+	TEST_SECURITY_PERFORMANCE=true $(GOTEST) -v ./tests/tools/ -run="TestSecurityPerformanceComparison" -timeout=30s
+
 # Build Docker image
 .PHONY: docker-build
 docker-build:

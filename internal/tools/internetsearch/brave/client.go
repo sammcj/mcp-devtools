@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sirupsen/logrus"
 )
@@ -47,6 +48,13 @@ func (c *BraveClient) makeRequest(ctx context.Context, logger *logrus.Logger, en
 	reqURL, err := url.Parse(c.baseURL + endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	// Check domain access security for API endpoint
+	if reqURL.Host != "" {
+		if err := security.CheckDomainAccess(reqURL.Host); err != nil {
+			return nil, err
+		}
 	}
 
 	// Add query parameters

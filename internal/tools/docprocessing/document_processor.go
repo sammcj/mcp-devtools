@@ -11,6 +11,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
@@ -117,8 +118,13 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 		return nil, fmt.Errorf("invalid request: %w", err)
 	}
 
-	// Validate file type and size for local file paths
+	// Security: Check file access control for local file paths
 	if !strings.HasPrefix(req.Source, "http://") && !strings.HasPrefix(req.Source, "https://") {
+		// Check security system file access control first
+		if err := security.CheckFileAccess(req.Source); err != nil {
+			return nil, err
+		}
+
 		// Validate file type
 		if err := t.config.ValidateFileType(req.Source); err != nil {
 			return nil, fmt.Errorf("file type validation failed: %w", err)
@@ -164,7 +170,7 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 		if cached, found := t.cacheManager.Get(cacheKey); found {
 			// Handle file saving for cached results
 			if t.shouldSaveToFile(req) && cached.Error == "" {
-				return t.handleSaveToFile(req.SaveTo, cached)
+				return t.handleSaveToFile(req.SaveTo, cached, "")
 			}
 			return t.newToolResultJSON(t.formatResponse(cached))
 		}
@@ -185,12 +191,40 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 		_ = t.cacheManager.Set(cacheKey, response)
 	}
 
-	// Handle file saving if specified
-	if t.shouldSaveToFile(req) && response.Error == "" {
-		return t.handleSaveToFile(req.SaveTo, response)
+	// Security: Analyse processed content
+	var securityNotice string
+	if security.IsEnabled() && response.Error == "" {
+		sourceContext := security.SourceContext{
+			Tool: "document_processing",
+			URL:  req.Source,
+		}
+
+		result, err := security.AnalyseContent(response.Content, sourceContext)
+		if err != nil {
+			logrus.WithError(err).Warn("Security analysis failed")
+		} else {
+			switch result.Action {
+			case security.ActionBlock:
+				return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+			case security.ActionWarn:
+				securityNotice = fmt.Sprintf("Security Warning [ID: %s]: %s", result.ID, result.Message)
+				logrus.WithField("security_id", result.ID).Warn(result.Message)
+			}
+		}
 	}
 
-	return t.newToolResultJSON(t.formatResponse(response))
+	// Handle file saving if specified
+	if t.shouldSaveToFile(req) && response.Error == "" {
+		return t.handleSaveToFile(req.SaveTo, response, securityNotice)
+	}
+
+	// Add security notice to response if needed
+	formattedResponse := t.formatResponse(response)
+	if securityNotice != "" {
+		formattedResponse["security_notice"] = securityNotice
+	}
+
+	return t.newToolResultJSON(formattedResponse)
 }
 
 // shouldUseCache determines if caching should be used for this request

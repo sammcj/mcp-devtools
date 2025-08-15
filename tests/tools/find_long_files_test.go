@@ -42,17 +42,17 @@ func TestFindLongFilesTool(t *testing.T) {
 			content = string([]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05})
 		}
 
-		err := os.WriteFile(filepath.Join(tempDir, filename), []byte(content), 0644)
+		err := os.WriteFile(filepath.Join(tempDir, filename), []byte(content), 0600)
 		require.NoError(t, err)
 	}
 
 	// Create .gitignore file
 	gitignoreContent := "*.tmp\n*.log\n"
-	err = os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte(gitignoreContent), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte(gitignoreContent), 0600)
 	require.NoError(t, err)
 
 	// Create a .tmp file that should be ignored
-	err = os.WriteFile(filepath.Join(tempDir, "ignored.tmp"), []byte(strings.Repeat("line\n", 900)), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "ignored.tmp"), []byte(strings.Repeat("line\n", 900)), 0600)
 	require.NoError(t, err)
 
 	// Initialize the tool
@@ -239,7 +239,7 @@ func TestFindLongFilesTool_EnvironmentVariables(t *testing.T) {
 
 	// Create a test file that should be found with threshold 500
 	content := strings.Repeat("// Test line\n", 600)
-	err = os.WriteFile(filepath.Join(tempDir, "test.go"), []byte(content), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "test.go"), []byte(content), 0600)
 	require.NoError(t, err)
 
 	tool := &filelength.FindLongFilesTool{}
@@ -290,12 +290,12 @@ func TestFindLongFilesTool_MaxFileSize(t *testing.T) {
 
 	// Create a small file that will be under any reasonable limit
 	smallContent := strings.Repeat("// Small file line\n", 50) // ~1KB
-	err = os.WriteFile(filepath.Join(tempDir, "small.go"), []byte(smallContent), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "small.go"), []byte(smallContent), 0600)
 	require.NoError(t, err)
 
 	// Create a 3KB file
 	largeContent := strings.Repeat("// Large file line\n", 150) // ~3KB
-	err = os.WriteFile(filepath.Join(tempDir, "large.go"), []byte(largeContent), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "large.go"), []byte(largeContent), 0600)
 	require.NoError(t, err)
 
 	tool := &filelength.FindLongFilesTool{}

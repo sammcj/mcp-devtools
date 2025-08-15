@@ -3,13 +3,16 @@ package shadcnui
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
@@ -47,7 +50,32 @@ func (t *SearchShadcnComponentsTool) fetchAndCacheComponentList(logger *logrus.L
 		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", resp.StatusCode)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	// Read response body for security analysis with size limit
+	limitedReader := io.LimitReader(resp.Body, 5*1024*1024) // 5MB limit for component search
+	bodyBytes, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Analyse content for security threats
+	if parsedURL, err := url.Parse(ShadcnDocsComponents); err == nil {
+		sourceContext := security.SourceContext{
+			URL:         ShadcnDocsComponents,
+			Domain:      parsedURL.Hostname(),
+			ContentType: "html",
+			Tool:        "shadcnui",
+		}
+		if secResult, err := security.AnalyseContent(string(bodyBytes), sourceContext); err == nil {
+			switch secResult.Action {
+			case security.ActionBlock:
+				return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s", secResult.ID, secResult.Message)
+			case security.ActionWarn:
+				logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+			}
+		}
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse shadcn components page: %w", err)
 	}

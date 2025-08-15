@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sirupsen/logrus"
 )
@@ -48,6 +49,11 @@ func (p *DuckDuckGoProvider) GetSupportedTypes() []string {
 // Search executes a search using the DuckDuckGo provider
 func (p *DuckDuckGoProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
+
+	// Check domain access security for DuckDuckGo
+	if err := security.CheckDomainAccess("html.duckduckgo.com"); err != nil {
+		return nil, err
+	}
 
 	logger.WithFields(logrus.Fields{
 		"provider": "duckduckgo",

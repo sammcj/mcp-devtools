@@ -8,11 +8,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,9 +25,6 @@ const (
 
 	// MaxContentSize to prevent memory issues (20MB)
 	MaxContentSize = 20 * 1024 * 1024
-
-	// FetchDomainAllowlistEnvVar is the environment variable for configuring domain allowlist
-	FetchDomainAllowlistEnvVar = "FETCH_DOMAIN_ALLOWLIST"
 )
 
 // WebClient handles HTTP requests for fetching web content
@@ -77,39 +74,6 @@ func decompressGzip(data []byte) ([]byte, error) {
 	return decompressed, nil
 }
 
-// isDomainAllowed checks if a domain is allowed based on the FETCH_DOMAIN_ALLOWLIST environment variable
-func isDomainAllowed(hostname string) bool {
-	allowlist := os.Getenv(FetchDomainAllowlistEnvVar)
-	if allowlist == "" {
-		// If no allowlist is configured, allow all domains
-		return true
-	}
-
-	// Parse comma-separated domain list
-	allowedDomains := strings.Split(allowlist, ",")
-	for _, domain := range allowedDomains {
-		domain = strings.TrimSpace(domain)
-		if domain == "" {
-			continue
-		}
-
-		// Support wildcard subdomains (e.g., "*.example.com")
-		if strings.HasPrefix(domain, "*.") {
-			baseDomain := strings.TrimPrefix(domain, "*.")
-			if hostname == baseDomain || strings.HasSuffix(hostname, "."+baseDomain) {
-				return true
-			}
-		} else {
-			// Exact domain match
-			if hostname == domain {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
 // FetchContent fetches content from a URL with context support
 func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, targetURL string) (*FetchURLResponse, error) {
 	// Validate URL
@@ -128,9 +92,9 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 		return nil, fmt.Errorf("unsupported URL scheme: %s (only http and https are supported)", parsedURL.Scheme)
 	}
 
-	// Check domain allowlist if configured
-	if !isDomainAllowed(parsedURL.Hostname()) {
-		return nil, fmt.Errorf("domain not allowed: %s (check FETCH_DOMAIN_ALLOWLIST environment variable)", parsedURL.Hostname())
+	// Check domain access control via security system
+	if err := security.CheckDomainAccess(parsedURL.Hostname()); err != nil {
+		return nil, err
 	}
 
 	logger.WithField("url", targetURL).Debug("Fetching URL content")
