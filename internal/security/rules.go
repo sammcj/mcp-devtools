@@ -749,10 +749,10 @@ func (r *YAMLRuleEngine) evaluateRuleWithConfig(ruleName string, rule Rule, cont
 		logic = "any"
 	}
 
-	// Check if base64 decode_and_scan is enabled for this rule
+	// Check if base64 decode_base64 is enabled for this rule
 	decodeAndScan := false
 	if rule.Options != nil {
-		if val, exists := rule.Options["decode_and_scan"]; exists {
+		if val, exists := rule.Options["decode_base64"]; exists {
 			if boolVal, ok := val.(bool); ok {
 				decodeAndScan = boolVal
 			}

@@ -843,8 +843,7 @@ func (c *Config) ValidateCertificates() error {
 			return fmt.Errorf("certificate directory contains no certificate files: %s", c.ExtraCACerts)
 		}
 	} else {
-		// If it's a file, check if it's readable
-		// Security access was already checked above
+		// If it's a file, check if it's readable (security access was already checked above)
 		file, err := os.Open(c.ExtraCACerts)
 		if err != nil {
 			return fmt.Errorf("cannot read certificate file: %s", c.ExtraCACerts)

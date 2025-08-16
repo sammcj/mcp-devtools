@@ -188,4 +188,4 @@ rules:
       - entropy: 6.5
     action: warn
     options:
-      decode_and_scan: true
+      decode_base64: true

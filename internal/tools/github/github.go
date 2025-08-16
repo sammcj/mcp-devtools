@@ -119,9 +119,6 @@ func (t *GitHubTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		return nil, fmt.Errorf("invalid parameters: %w", err)
 	}
 
-	// Security is handled by individual operations and the GitHub SDK
-	// Domain access and content analysis are performed where needed
-
 	// Create GitHub client
 	client, err := NewGitHubClientWrapper(ctx, logger)
 	if err != nil {
@@ -208,8 +205,6 @@ func (t *GitHubTool) handleSearchRepositories(ctx context.Context, client *GitHu
 		return nil, err
 	}
 
-	// Security analysis is now handled automatically by the security helper functions
-	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -273,8 +268,6 @@ func (t *GitHubTool) handleSearchIssues(ctx context.Context, client *GitHubClien
 		return nil, err
 	}
 
-	// Security analysis is now handled automatically by the security helper functions
-	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -338,8 +331,6 @@ func (t *GitHubTool) handleSearchPullRequests(ctx context.Context, client *GitHu
 		return nil, err
 	}
 
-	// Security analysis is now handled automatically by the security helper functions
-	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -415,8 +406,6 @@ func (t *GitHubTool) handleGetIssue(ctx context.Context, client *GitHubClient, r
 		return nil, err
 	}
 
-	// Security analysis is now handled automatically by the security helper functions
-	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -492,8 +481,6 @@ func (t *GitHubTool) handleGetPullRequest(ctx context.Context, client *GitHubCli
 		return nil, err
 	}
 
-	// Security analysis is now handled automatically by the security helper functions
-	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -569,8 +556,6 @@ func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubCl
 		return nil, err
 	}
 
-	// Security analysis is now handled automatically by the security helper functions
-	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -626,8 +611,6 @@ func (t *GitHubTool) handleListDirectory(ctx context.Context, client *GitHubClie
 		return nil, err
 	}
 
-	// Security analysis is now handled automatically by the security helper functions
-	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -679,8 +662,6 @@ func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubCl
 		return nil, err
 	}
 
-	// Security analysis is now handled automatically by the security helper functions
-	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -756,8 +737,6 @@ func (t *GitHubTool) handleGetWorkflowRun(ctx context.Context, client *GitHubCli
 		return nil, err
 	}
 
-	// Security analysis is now handled automatically by the security helper functions
-	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",

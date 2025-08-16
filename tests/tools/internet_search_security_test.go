@@ -106,10 +106,6 @@ func TestInternetSearchSecurityIntegration(t *testing.T) {
 		assert.Equal(t, "internet_search", definition.Name)
 		assert.NotEmpty(t, definition.Description)
 	})
-
-	// Note: We don't test actual search execution here as it would require
-	// external API calls and could be affected by rate limiting or network issues.
-	// The security integration is tested through the individual components above.
 }
 
 func TestInternetSearchSecurityDisabled(t *testing.T) {

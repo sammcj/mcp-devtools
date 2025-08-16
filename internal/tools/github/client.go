@@ -58,8 +58,6 @@ func NewGitHubClientWrapper(ctx context.Context, logger *logrus.Logger) (*GitHub
 
 // SearchRepositories searches for repositories
 func (gc *GitHubClient) SearchRepositories(ctx context.Context, query string, limit int) (*SearchResult, error) {
-	// Domain access is handled by the GitHub SDK and our existing security infrastructure
-
 	// Apply search API rate limiting
 	if err := gc.waitForSearchAPIRateLimit(ctx); err != nil {
 		return nil, fmt.Errorf("search API rate limit wait failed: %w", err)
@@ -96,8 +94,6 @@ func (gc *GitHubClient) SearchRepositories(ctx context.Context, query string, li
 
 // SearchIssues searches for issues in a repository
 func (gc *GitHubClient) SearchIssues(ctx context.Context, owner, repo, query string, limit int, includeClosed bool) (*SearchResult, error) {
-	// Domain access is handled by the GitHub SDK and our existing security infrastructure
-
 	// Apply search API rate limiting
 	if err := gc.waitForSearchAPIRateLimit(ctx); err != nil {
 		return nil, fmt.Errorf("search API rate limit wait failed: %w", err)
@@ -147,8 +143,6 @@ func (gc *GitHubClient) SearchIssues(ctx context.Context, owner, repo, query str
 
 // SearchPullRequests searches for pull requests in a repository
 func (gc *GitHubClient) SearchPullRequests(ctx context.Context, owner, repo, query string, limit int, includeClosed bool) (*SearchResult, error) {
-	// Domain access is handled by the GitHub SDK and our existing security infrastructure
-
 	// Apply search API rate limiting
 	if err := gc.waitForSearchAPIRateLimit(ctx); err != nil {
 		return nil, fmt.Errorf("search API rate limit wait failed: %w", err)
@@ -198,8 +192,6 @@ func (gc *GitHubClient) SearchPullRequests(ctx context.Context, owner, repo, que
 
 // GetIssue gets a specific issue with optional comments
 func (gc *GitHubClient) GetIssue(ctx context.Context, owner, repo string, number int, includeComments bool) (*FilteredIssueDetails, []Comment, error) {
-	// Domain access is handled by the GitHub SDK and our existing security infrastructure
-
 	// Apply core API rate limiting
 	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
 		return nil, nil, fmt.Errorf("core API rate limit wait failed: %w", err)
@@ -254,8 +246,6 @@ func (gc *GitHubClient) GetIssue(ctx context.Context, owner, repo string, number
 
 // GetPullRequest gets a specific pull request with optional comments
 func (gc *GitHubClient) GetPullRequest(ctx context.Context, owner, repo string, number int, includeComments bool) (*FilteredPullRequestDetails, []Comment, error) {
-	// Domain access is handled by the GitHub SDK and our existing security infrastructure
-
 	// Apply core API rate limiting
 	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
 		return nil, nil, fmt.Errorf("core API rate limit wait failed: %w", err)
@@ -317,8 +307,6 @@ func (gc *GitHubClient) GetPullRequest(ctx context.Context, owner, repo string, 
 
 // GetFileContents gets the contents of one or more files from a repository with graceful error handling
 func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string, paths []string, ref string) ([]FileResult, error) {
-	// Domain access is handled by the GitHub SDK and our existing security infrastructure
-
 	var results []FileResult
 
 	for _, originalPath := range paths {
@@ -427,8 +415,6 @@ func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string,
 
 // ListDirectory lists the contents of a directory in a repository
 func (gc *GitHubClient) ListDirectory(ctx context.Context, owner, repo, path, ref string) (*DirectoryListing, error) {
-	// Domain access is handled by the GitHub SDK and our existing security infrastructure
-
 	// Apply core API rate limiting
 	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
 		return nil, fmt.Errorf("core API rate limit wait failed: %w", err)
@@ -545,8 +531,6 @@ func (gc *GitHubClient) CloneRepository(ctx context.Context, owner, repo, localP
 func (gc *GitHubClient) GetWorkflowRun(ctx context.Context, owner, repo string, runID int64, includeLogs bool) (*WorkflowRun, string, error) {
 	// Create security operations instance for logs download
 	ops := security.NewOperations("github")
-
-	// Domain access is handled by the GitHub SDK for most operations
 
 	// Apply core API rate limiting
 	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
