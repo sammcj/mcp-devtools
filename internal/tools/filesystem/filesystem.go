@@ -3,8 +3,6 @@ package filesystem
 import (
 	"bufio"
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -248,6 +246,9 @@ func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cac
 		return nil, fmt.Errorf("filesystem tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'filesystem'")
 	}
 
+	// Create security operations instance
+	ops := security.NewOperations("filesystem")
+
 	// Parse function parameter
 	function, ok := args["function"].(string)
 	if !ok {
@@ -265,29 +266,29 @@ func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cac
 	// Execute the requested function
 	switch function {
 	case "read_file":
-		return t.readFile(ctx, logger, options)
+		return t.readFile(ctx, logger, ops, options)
 	case "read_multiple_files":
-		return t.readMultipleFiles(ctx, logger, options)
+		return t.readMultipleFiles(ctx, logger, ops, options)
 	case "write_file":
-		return t.writeFile(ctx, logger, options)
+		return t.writeFile(ctx, logger, ops, options)
 	case "edit_file":
-		return t.editFile(ctx, logger, options)
+		return t.editFile(ctx, logger, ops, options)
 	case "create_directory":
-		return t.createDirectory(ctx, logger, options)
+		return t.createDirectory(ctx, logger, ops, options)
 	case "list_directory":
-		return t.listDirectory(ctx, logger, options)
+		return t.listDirectory(ctx, logger, ops, options)
 	case "list_directory_with_sizes":
-		return t.listDirectoryWithSizes(ctx, logger, options)
+		return t.listDirectoryWithSizes(ctx, logger, ops, options)
 	case "directory_tree":
-		return t.directoryTree(ctx, logger, options)
+		return t.directoryTree(ctx, logger, ops, options)
 	case "move_file":
-		return t.moveFile(ctx, logger, options)
+		return t.moveFile(ctx, logger, ops, options)
 	case "search_files":
-		return t.searchFiles(ctx, logger, options)
+		return t.searchFiles(ctx, logger, ops, options)
 	case "get_file_info":
-		return t.getFileInfo(ctx, logger, options)
+		return t.getFileInfo(ctx, logger, ops, options)
 	case "list_allowed_directories":
-		return t.listAllowedDirectories(ctx, logger, options)
+		return t.listAllowedDirectories(ctx, logger, ops, options)
 	default:
 		return nil, fmt.Errorf("unknown function: %s", function)
 	}
@@ -298,10 +299,7 @@ func (t *FileSystemTool) validatePath(requestedPath string) (string, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	// Check security system file access control first
-	if err := security.CheckFileAccess(requestedPath); err != nil {
-		return "", err
-	}
+	// Note: Security file access control is now handled by helper functions
 
 	// Expand home directory
 	if strings.HasPrefix(requestedPath, "~/") {
@@ -381,7 +379,7 @@ func (t *FileSystemTool) isPathWithinAllowedReal(realPath, allowedClean string) 
 }
 
 // readFile reads the contents of a file
-func (t *FileSystemTool) readFile(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) readFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -390,15 +388,6 @@ func (t *FileSystemTool) readFile(ctx context.Context, logger *logrus.Logger, op
 	validPath, err := t.validatePath(path)
 	if err != nil {
 		return nil, err
-	}
-
-	// Check file size if file exists
-	if fileInfo, err := os.Stat(validPath); err == nil {
-		if err := t.validateFileSize(fileInfo.Size()); err != nil {
-			return nil, fmt.Errorf("file size validation failed: %w", err)
-		}
-	} else if !os.IsNotExist(err) {
-		return nil, fmt.Errorf("file access error: %w", err)
 	}
 
 	// Check for head/tail options
@@ -423,18 +412,38 @@ func (t *FileSystemTool) readFile(ctx context.Context, logger *logrus.Logger, op
 	var content string
 	if head != nil {
 		content, err = t.readFileHead(validPath, *head)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read file: %w", err)
+		}
 	} else if tail != nil {
 		content, err = t.readFileTail(validPath, *tail)
-	} else {
-		contentBytes, readErr := os.ReadFile(validPath)
-		if readErr != nil {
-			return nil, fmt.Errorf("failed to read file: %w", readErr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read file: %w", err)
 		}
-		content = string(contentBytes)
-	}
+	} else {
+		// Use security helper for full file reading
+		safeFile, err := ops.SafeFileRead(validPath)
+		if err != nil {
+			// Handle security errors properly
+			if secErr, ok := err.(*security.SecurityError); ok {
+				return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+					secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+			}
+			return nil, fmt.Errorf("failed to read file: %w", err)
+		}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		// Check file size validation
+		if err := t.validateFileSize(int64(len(safeFile.Content))); err != nil {
+			return nil, fmt.Errorf("file size validation failed: %w", err)
+		}
+
+		content = string(safeFile.Content)
+
+		// Log security warning if present
+		if safeFile.SecurityResult != nil && logger != nil {
+			logger.WithField("security_id", safeFile.SecurityResult.ID).
+				Warn("Security warning for file content: " + safeFile.SecurityResult.Message)
+		}
 	}
 
 	return mcp.NewToolResultText(content), nil
@@ -544,7 +553,7 @@ func (t *FileSystemTool) readFileTail(path string, numLines int) (string, error)
 }
 
 // readMultipleFiles reads multiple files simultaneously
-func (t *FileSystemTool) readMultipleFiles(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) readMultipleFiles(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	pathsRaw, ok := options["paths"]
 	if !ok {
 		return nil, fmt.Errorf("missing required parameter: paths")
@@ -574,31 +583,40 @@ func (t *FileSystemTool) readMultipleFiles(ctx context.Context, logger *logrus.L
 			continue
 		}
 
-		// Check file size before reading
-		if fileInfo, err := os.Stat(validPath); err == nil {
-			if err := t.validateFileSize(fileInfo.Size()); err != nil {
-				results = append(results, fmt.Sprintf("%s: Error - file size validation failed: %s", path, err.Error()))
+		// Use security helper for file reading
+		safeFile, err := ops.SafeFileRead(validPath)
+		if err != nil {
+			// Handle security errors properly
+			if secErr, ok := err.(*security.SecurityError); ok {
+				results = append(results, fmt.Sprintf("%s: Security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+					path, secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID()))
 				continue
 			}
-		} else if !os.IsNotExist(err) {
-			results = append(results, fmt.Sprintf("%s: Error - file access error: %s", path, err.Error()))
-			continue
-		}
-
-		content, err := os.ReadFile(validPath)
-		if err != nil {
 			results = append(results, fmt.Sprintf("%s: Error - %s", path, err.Error()))
 			continue
 		}
 
-		results = append(results, fmt.Sprintf("%s:\n%s", path, string(content)))
+		// Check file size validation
+		if err := t.validateFileSize(int64(len(safeFile.Content))); err != nil {
+			results = append(results, fmt.Sprintf("%s: Error - file size validation failed: %s", path, err.Error()))
+			continue
+		}
+
+		// Log security warning if present
+		if safeFile.SecurityResult != nil && logger != nil {
+			logger.WithField("security_id", safeFile.SecurityResult.ID).
+				WithField("file", path).
+				Warn("Security warning for file content: " + safeFile.SecurityResult.Message)
+		}
+
+		results = append(results, fmt.Sprintf("%s:\n%s", path, string(safeFile.Content)))
 	}
 
 	return mcp.NewToolResultText(strings.Join(results, "\n---\n")), nil
 }
 
 // writeFile creates or overwrites a file
-func (t *FileSystemTool) writeFile(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) writeFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -626,30 +644,26 @@ func (t *FileSystemTool) writeFile(ctx context.Context, logger *logrus.Logger, o
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	// Use atomic write with temporary file
-	tempPath := validPath + ".tmp." + t.generateRandomString(8)
-
-	if err := os.WriteFile(tempPath, []byte(content), t.secureFileMode); err != nil {
-		return nil, fmt.Errorf("failed to write temporary file: %w", err)
+	// Use security helper for access control but maintain custom permissions
+	// First check security access control
+	if err := security.CheckFileAccess(validPath); err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+		}
+		return nil, fmt.Errorf("security check failed: %w", err)
 	}
 
-	if err := os.Rename(tempPath, validPath); err != nil {
-		_ = os.Remove(tempPath) // Clean up temp file, ignore error
-		return nil, fmt.Errorf("failed to rename temporary file: %w", err)
+	// Write file with filesystem tool's configured permissions
+	if err := os.WriteFile(validPath, []byte(content), t.secureFileMode); err != nil {
+		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
 
 	return mcp.NewToolResultText(fmt.Sprintf("Successfully wrote to %s", path)), nil
 }
 
-// generateRandomString generates a random string for temporary files
-func (t *FileSystemTool) generateRandomString(length int) string {
-	bytes := make([]byte, length/2)
-	_, _ = rand.Read(bytes) // Ignore error as rand.Read from crypto/rand never fails
-	return hex.EncodeToString(bytes)
-}
-
 // editFile performs line-based edits on a file
-func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -672,14 +686,7 @@ func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, op
 		return nil, err
 	}
 
-	// Check existing file size if file exists
-	if fileInfo, err := os.Stat(validPath); err == nil {
-		if err := t.validateFileSize(fileInfo.Size()); err != nil {
-			return nil, fmt.Errorf("existing file size validation failed: %w", err)
-		}
-	} else if !os.IsNotExist(err) {
-		return nil, fmt.Errorf("file access error: %w", err)
-	}
+	// File size validation will be done during read operation
 
 	// Parse edits
 	var edits []EditOperation
@@ -702,13 +709,30 @@ func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, op
 		return nil, fmt.Errorf("no valid edits provided")
 	}
 
-	// Read file content
-	content, err := os.ReadFile(validPath)
+	// Use security helper for file reading
+	safeFile, err := ops.SafeFileRead(validPath)
 	if err != nil {
+		// Handle security errors properly
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+		}
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	originalContent := string(content)
+	// Check file size validation
+	if err := t.validateFileSize(int64(len(safeFile.Content))); err != nil {
+		return nil, fmt.Errorf("existing file size validation failed: %w", err)
+	}
+
+	// Log security warning if present
+	if safeFile.SecurityResult != nil && logger != nil {
+		logger.WithField("security_id", safeFile.SecurityResult.ID).
+			WithField("file", path).
+			Warn("Security warning for file content: " + safeFile.SecurityResult.Message)
+	}
+
+	originalContent := string(safeFile.Content)
 	modifiedContent := originalContent
 
 	// Apply edits
@@ -729,16 +753,19 @@ func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, op
 	diff := t.createDiff(originalContent, modifiedContent, path)
 
 	if !dryRun {
-		// Write the modified content atomically
-		tempPath := validPath + ".tmp." + t.generateRandomString(8)
-
-		if err := os.WriteFile(tempPath, []byte(modifiedContent), t.secureFileMode); err != nil {
-			return nil, fmt.Errorf("failed to write temporary file: %w", err)
+		// Use security helper for access control but maintain custom permissions
+		// First check security access control
+		if err := security.CheckFileAccess(validPath); err != nil {
+			if secErr, ok := err.(*security.SecurityError); ok {
+				return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+					secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+			}
+			return nil, fmt.Errorf("security check failed: %w", err)
 		}
 
-		if err := os.Rename(tempPath, validPath); err != nil {
-			_ = os.Remove(tempPath) // Clean up temp file, ignore error
-			return nil, fmt.Errorf("failed to rename temporary file: %w", err)
+		// Write file with filesystem tool's configured permissions
+		if err := os.WriteFile(validPath, []byte(modifiedContent), t.secureFileMode); err != nil {
+			return nil, fmt.Errorf("failed to write file: %w", err)
 		}
 	}
 
@@ -787,7 +814,7 @@ func (t *FileSystemTool) createDiff(original, modified, filename string) string 
 }
 
 // createDirectory creates a directory
-func (t *FileSystemTool) createDirectory(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) createDirectory(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -806,7 +833,7 @@ func (t *FileSystemTool) createDirectory(ctx context.Context, logger *logrus.Log
 }
 
 // listDirectory lists directory contents
-func (t *FileSystemTool) listDirectory(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listDirectory(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -835,7 +862,7 @@ func (t *FileSystemTool) listDirectory(ctx context.Context, logger *logrus.Logge
 }
 
 // listDirectoryWithSizes lists directory contents with sizes
-func (t *FileSystemTool) listDirectoryWithSizes(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listDirectoryWithSizes(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -930,7 +957,7 @@ func (t *FileSystemTool) formatSize(bytes int64) string {
 }
 
 // directoryTree creates a recursive tree view of directories
-func (t *FileSystemTool) directoryTree(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) directoryTree(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1031,7 +1058,7 @@ func (t *FileSystemTool) formatDirectoryTree(entries []DirectoryEntry, indent in
 }
 
 // moveFile moves or renames files and directories
-func (t *FileSystemTool) moveFile(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) moveFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	source, ok := options["source"].(string)
 	if !ok || source == "" {
 		return nil, fmt.Errorf("missing required parameter: source")
@@ -1065,7 +1092,7 @@ func (t *FileSystemTool) moveFile(ctx context.Context, logger *logrus.Logger, op
 }
 
 // searchFiles recursively searches for files matching a pattern
-func (t *FileSystemTool) searchFiles(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) searchFiles(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1150,7 +1177,7 @@ func (t *FileSystemTool) performSearch(rootPath, pattern string, excludePatterns
 }
 
 // getFileInfo retrieves detailed file information
-func (t *FileSystemTool) getFileInfo(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) getFileInfo(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1199,7 +1226,7 @@ func (t *FileSystemTool) getFileInfo(ctx context.Context, logger *logrus.Logger,
 }
 
 // listAllowedDirectories returns the list of allowed directories
-func (t *FileSystemTool) listAllowedDirectories(ctx context.Context, logger *logrus.Logger, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listAllowedDirectories(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 

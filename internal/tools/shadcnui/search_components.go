@@ -3,9 +3,7 @@ package shadcnui
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -19,7 +17,6 @@ import (
 
 // SearchShadcnComponentsTool defines the tool for searching shadcn ui components.
 type SearchShadcnComponentsTool struct {
-	client HTTPClient
 	// No direct dependency on ListShadcnComponentsTool, but uses its cache key and similar logic.
 }
 
@@ -36,44 +33,26 @@ func (t *SearchShadcnComponentsTool) Definition() mcp.Tool {
 // It fetches, parses, and caches the component list.
 // This is duplicated logic but avoids direct tool-to-tool calls or complex dependencies.
 func (t *SearchShadcnComponentsTool) fetchAndCacheComponentList(logger *logrus.Logger, cache *sync.Map) ([]ComponentInfo, error) {
-	resp, err := t.client.Get(ShadcnDocsComponents)
+	// Use security helper for consistent security handling
+	ops := security.NewOperations("shadcnui")
+	safeResp, err := ops.SafeHTTPGet(ShadcnDocsComponents)
 	if err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
+		}
 		return nil, fmt.Errorf("failed to fetch shadcn components page: %w", err)
 	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			logger.WithError(closeErr).Warn("Failed to close response body")
-		}
-	}()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", resp.StatusCode)
+	if safeResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", safeResp.StatusCode)
 	}
 
-	// Read response body for security analysis with size limit
-	limitedReader := io.LimitReader(resp.Body, 5*1024*1024) // 5MB limit for component search
-	bodyBytes, err := io.ReadAll(limitedReader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+	// Handle security warnings
+	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+		logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
 	}
 
-	// Analyse content for security threats
-	if parsedURL, err := url.Parse(ShadcnDocsComponents); err == nil {
-		sourceContext := security.SourceContext{
-			URL:         ShadcnDocsComponents,
-			Domain:      parsedURL.Hostname(),
-			ContentType: "html",
-			Tool:        "shadcnui",
-		}
-		if secResult, err := security.AnalyseContent(string(bodyBytes), sourceContext); err == nil {
-			switch secResult.Action {
-			case security.ActionBlock:
-				return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s", secResult.ID, secResult.Message)
-			case security.ActionWarn:
-				logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
-			}
-		}
-	}
+	bodyBytes := safeResp.Content
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -76,16 +77,6 @@ func (p *SearXNGProvider) GetSupportedTypes() []string {
 // Search executes a search using the SearXNG provider
 func (p *SearXNGProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
-
-	// Check domain access security for SearXNG instance
-	if p.baseURL != "" {
-		parsedURL, err := url.Parse(p.baseURL)
-		if err == nil && parsedURL.Host != "" {
-			if err := security.CheckDomainAccess(parsedURL.Host); err != nil {
-				return nil, err
-			}
-		}
-	}
 
 	logger.WithFields(logrus.Fields{
 		"provider": "searxng",
@@ -166,6 +157,15 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 
 	searchURL.RawQuery = params.Encode()
 
+	// Check domain access security before making request
+	if err := security.CheckDomainAccess(searchURL.Hostname()); err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+		}
+		return nil, err
+	}
+
 	// Create HTTP request
 	req, err := http.NewRequestWithContext(ctx, "GET", searchURL.String(), nil)
 	if err != nil {
@@ -192,13 +192,39 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 		}
 	}()
 
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Security analysis on content
+	if security.IsEnabled() {
+		sourceCtx := security.SourceContext{
+			URL:         searchURL.String(),
+			Domain:      searchURL.Hostname(),
+			ContentType: resp.Header.Get("Content-Type"),
+			Tool:        "internetsearch",
+		}
+
+		if secResult, err := security.AnalyseContent(string(body), sourceCtx); err == nil {
+			switch secResult.Action {
+			case security.ActionBlock:
+				return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+					secResult.ID, secResult.Message, secResult.ID)
+			case security.ActionWarn:
+				logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+			}
+		}
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("SearXNG API error: %d %s", resp.StatusCode, resp.Status)
 	}
 
 	// Parse response
 	var searxngResp SearXNGResponse
-	if err := json.NewDecoder(resp.Body).Decode(&searxngResp); err != nil {
+	if err := json.Unmarshal(body, &searxngResp); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 

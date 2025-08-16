@@ -259,88 +259,82 @@ func (c *Client) GetLibraryDocs(ctx context.Context, libraryID string, params *S
 
 // makeRequest makes an HTTP request to the Context7 API
 func (c *Client) makeRequest(ctx context.Context, method, path string, params map[string]string, body io.Reader, result interface{}) error {
-	// Check domain access control via security system
-	if err := security.CheckDomainAccess("context7.com"); err != nil {
-		return err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, context7BaseURL+path, body)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set headers to match the official client
-	req.Header.Set("User-Agent", "mcp-devtools")
-	req.Header.Set("X-Context7-Source", "mcp-server")
+	// Build full URL
+	fullURL := context7BaseURL + path
 
 	// Add query parameters
 	if params != nil {
-		query := req.URL.Query()
+		parsedURL, err := url.Parse(fullURL)
+		if err != nil {
+			return fmt.Errorf("failed to parse URL: %w", err)
+		}
+		query := parsedURL.Query()
 		for k, v := range params {
 			query.Set(k, v)
 		}
-		req.URL.RawQuery = query.Encode()
+		parsedURL.RawQuery = query.Encode()
+		fullURL = parsedURL.String()
 	}
 
 	c.logger.WithFields(logrus.Fields{
 		"method": method,
-		"url":    req.URL.String(),
+		"url":    fullURL,
 	}).Debug("Making Context7 API request")
 
 	start := time.Now()
-	resp, err := c.httpClient.Do(req)
+
+	// Use security helper for HTTP operations
+	ops := security.NewOperations("packagedocs")
+
+	var safeResp *security.SafeHTTPResponse
+	var err error
+
+	switch method {
+	case "GET":
+		safeResp, err = ops.SafeHTTPGet(fullURL)
+	case "POST":
+		safeResp, err = ops.SafeHTTPPost(fullURL, body)
+	default:
+		return fmt.Errorf("unsupported HTTP method: %s", method)
+	}
+
 	if err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return fmt.Errorf("security block [ID: %s]: %s. Check with the user if you may use security_override tool with ID %s",
+				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+		}
 		return fmt.Errorf("request failed: %w", err)
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			c.logger.WithError(err).Warn("Failed to close response body")
-		}
-	}()
 
 	duration := time.Since(start)
 	c.logger.WithFields(logrus.Fields{
-		"status":   resp.Status,
+		"status":   safeResp.StatusCode,
 		"duration": duration.Round(time.Millisecond),
 	}).Debug("Context7 API request completed")
 
-	if resp.StatusCode >= 400 {
-		limitedReader := io.LimitReader(resp.Body, 1024*1024) // 1MB limit for error responses
-		bodyBytes, _ := io.ReadAll(limitedReader)
-		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	// Handle warnings
+	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+		c.logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+	}
+
+	if safeResp.StatusCode >= 400 {
+		// Limit error response content for security
+		content := safeResp.Content
+		if len(content) > 1024*1024 { // 1MB limit for error responses
+			content = content[:1024*1024]
+		}
+		return fmt.Errorf("API request failed with status %d: %s", safeResp.StatusCode, string(content))
 	}
 
 	// Handle string response type
 	if _, ok := result.(*string); ok {
-		limitedReader := io.LimitReader(resp.Body, 50*1024*1024) // 50MB limit for documentation content
-		bodyBytes, err := io.ReadAll(limitedReader)
-		if err != nil {
-			return fmt.Errorf("failed to read response body: %w", err)
-		}
-		content := string(bodyBytes)
-
-		// Analyse content for security threats
-		sourceContext := security.SourceContext{
-			URL:         req.URL.String(),
-			Domain:      "context7.com",
-			ContentType: "api_response",
-			Tool:        "packagedocs",
-		}
-		if secResult, err := security.AnalyseContent(content, sourceContext); err == nil {
-			switch secResult.Action {
-			case security.ActionBlock:
-				return fmt.Errorf("content blocked by security policy [ID: %s]: %s", secResult.ID, secResult.Message)
-			case security.ActionWarn:
-				c.logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
-			}
-		}
-
-		*(result.(*string)) = content
+		// Use exact content from security helper (already validated)
+		*(result.(*string)) = string(safeResp.Content)
 		return nil
 	}
 
 	// Handle JSON response
-	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+	if err := json.NewDecoder(strings.NewReader(string(safeResp.Content))).Decode(result); err != nil {
 		return fmt.Errorf("failed to decode JSON response: %w", err)
 	}
 

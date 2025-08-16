@@ -235,10 +235,78 @@ if cachedValue, ok := cache.Load("key"); ok {
 
 **IMPORTANT**: All tools that access files or make HTTP requests MUST integrate with the security system. This provides protection against malicious content and unauthorized access.
 
-#### File Access Security
+#### Recommended: Security Helper Functions
 
-If your tool reads or writes files, add security checks before any file operations:
+The preferred approach is to use security helper functions that provide simplified APIs with automatic security integration and content integrity preservation.
 
+**For HTTP operations:**
+```go
+// Create operations instance for your tool
+ops := security.NewOperations("your_tool_name")
+
+// Secure HTTP GET with content integrity preservation
+safeResp, err := ops.SafeHTTPGet(urlStr)
+if err != nil {
+    // Handle security blocks or network errors
+    if secErr, ok := err.(*security.SecurityError); ok {
+        return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+            secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+    }
+    return nil, err
+}
+
+// Content is EXACT bytes from server
+content := safeResp.Content
+
+// Check for security warnings (non-blocking)
+if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+    logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+    // Content is still available despite warning
+}
+
+// Process exact content
+return processContent(content)
+```
+
+**For file operations:**
+```go
+ops := security.NewOperations("your_tool_name")
+
+// Secure file read with content integrity preservation
+safeFile, err := ops.SafeFileRead(filePath)
+if err != nil {
+    // Handle security blocks or file errors
+    if secErr, ok := err.(*security.SecurityError); ok {
+        return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+            secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+    }
+    return nil, err
+}
+
+// Content is EXACT file bytes
+content := safeFile.Content
+
+// Handle security warnings if present
+if safeFile.SecurityResult != nil && safeFile.SecurityResult.Action == security.ActionWarn {
+    logger.Warnf("Security warning [ID: %s]: %s", safeFile.SecurityResult.ID, safeFile.SecurityResult.Message)
+}
+
+return processContent(content)
+```
+
+#### Helper Functions Benefits
+
+- **80-90% Boilerplate Reduction**: From 30+ lines to 5-10 lines
+- **Content Integrity**: Guaranteed exact byte preservation
+- **Security Compliance**: Automatic integration with security framework
+- **Error Handling**: Consistent security error patterns
+- **Performance**: Same security guarantees with simpler code
+
+#### Alternative: Manual Security Integration
+
+For tools requiring fine-grained control, you can manually integrate with the security system:
+
+**File Access Security:**
 ```go
 // Before any file operation
 if err := security.CheckFileAccess(filePath); err != nil {
@@ -246,10 +314,7 @@ if err := security.CheckFileAccess(filePath); err != nil {
 }
 ```
 
-#### Domain Access Security
-
-If your tool makes HTTP requests, add security checks before making requests:
-
+**Domain Access Security:**
 ```go
 // Before making HTTP requests
 if err := security.CheckDomainAccess(domain); err != nil {
@@ -257,10 +322,7 @@ if err := security.CheckDomainAccess(domain); err != nil {
 }
 ```
 
-#### Content Analysis Security
-
-If your tool returns external content (from files or HTTP), analyse it for security risks:
-
+**Content Analysis Security:**
 ```go
 // After fetching/processing content
 source := security.SourceContext{
@@ -285,6 +347,16 @@ if result, err := security.AnalyseContent(content, source); err == nil {
 
 #### Security Integration Checklist
 
+**For Helper Functions (Recommended):**
+- [ ] Import `"github.com/sammcj/mcp-devtools/internal/security"`
+- [ ] Create Operations instance: `ops := security.NewOperations("tool_name")`
+- [ ] Use `ops.SafeHTTPGet/Post()` for HTTP operations
+- [ ] Use `ops.SafeFileRead/Write()` for file operations
+- [ ] Handle `SecurityError` in error responses
+- [ ] Log security warnings when present
+- [ ] Process exact content from response types
+
+**For Manual Integration:**
 - [ ] Import `"github.com/sammcj/mcp-devtools/internal/security"`
 - [ ] Call `security.CheckFileAccess()` before file operations
 - [ ] Call `security.CheckDomainAccess()` before HTTP requests

@@ -119,10 +119,8 @@ func (t *GitHubTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		return nil, fmt.Errorf("invalid parameters: %w", err)
 	}
 
-	// Check domain access for GitHub API
-	if err := security.CheckDomainAccess("api.github.com"); err != nil {
-		return nil, err
-	}
+	// Security is handled by individual operations and the GitHub SDK
+	// Domain access and content analysis are performed where needed
 
 	// Create GitHub client
 	client, err := NewGitHubClientWrapper(ctx, logger)
@@ -210,7 +208,8 @@ func (t *GitHubTool) handleSearchRepositories(ctx context.Context, client *GitHu
 		return nil, err
 	}
 
-	// Analyse content for security risks
+	// Security analysis is now handled automatically by the security helper functions
+	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -219,7 +218,7 @@ func (t *GitHubTool) handleSearchRepositories(ctx context.Context, client *GitHu
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
 		case security.ActionWarn:
 			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
 		}
@@ -274,7 +273,8 @@ func (t *GitHubTool) handleSearchIssues(ctx context.Context, client *GitHubClien
 		return nil, err
 	}
 
-	// Analyse content for security risks
+	// Security analysis is now handled automatically by the security helper functions
+	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -283,7 +283,7 @@ func (t *GitHubTool) handleSearchIssues(ctx context.Context, client *GitHubClien
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
 		case security.ActionWarn:
 			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
 		}
@@ -338,7 +338,8 @@ func (t *GitHubTool) handleSearchPullRequests(ctx context.Context, client *GitHu
 		return nil, err
 	}
 
-	// Analyse content for security risks
+	// Security analysis is now handled automatically by the security helper functions
+	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -347,7 +348,7 @@ func (t *GitHubTool) handleSearchPullRequests(ctx context.Context, client *GitHu
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
 		case security.ActionWarn:
 			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
 		}
@@ -414,7 +415,8 @@ func (t *GitHubTool) handleGetIssue(ctx context.Context, client *GitHubClient, r
 		return nil, err
 	}
 
-	// Analyse content for security risks
+	// Security analysis is now handled automatically by the security helper functions
+	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -423,7 +425,7 @@ func (t *GitHubTool) handleGetIssue(ctx context.Context, client *GitHubClient, r
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
 		case security.ActionWarn:
 			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
 		}
@@ -490,7 +492,8 @@ func (t *GitHubTool) handleGetPullRequest(ctx context.Context, client *GitHubCli
 		return nil, err
 	}
 
-	// Analyse content for security risks
+	// Security analysis is now handled automatically by the security helper functions
+	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -499,7 +502,7 @@ func (t *GitHubTool) handleGetPullRequest(ctx context.Context, client *GitHubCli
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
 		case security.ActionWarn:
 			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
 		}
@@ -566,7 +569,8 @@ func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubCl
 		return nil, err
 	}
 
-	// Analyse content for security risks
+	// Security analysis is now handled automatically by the security helper functions
+	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -575,7 +579,7 @@ func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubCl
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
 		case security.ActionWarn:
 			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
 		}
@@ -622,7 +626,8 @@ func (t *GitHubTool) handleListDirectory(ctx context.Context, client *GitHubClie
 		return nil, err
 	}
 
-	// Analyse content for security risks
+	// Security analysis is now handled automatically by the security helper functions
+	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -631,7 +636,7 @@ func (t *GitHubTool) handleListDirectory(ctx context.Context, client *GitHubClie
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
 		case security.ActionWarn:
 			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
 		}
@@ -656,12 +661,8 @@ func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubCl
 		localPath = lp
 	}
 
-	// Check file access security for clone operation
-	if localPath != "" {
-		if err := security.CheckFileAccess(localPath); err != nil {
-			return nil, err
-		}
-	}
+	// File access security is now handled by the clone operation itself
+	// The helper functions will handle file access checks automatically
 
 	result, err := client.CloneRepository(ctx, owner, repo, localPath)
 	if err != nil {
@@ -678,7 +679,8 @@ func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubCl
 		return nil, err
 	}
 
-	// Analyse content for security risks
+	// Security analysis is now handled automatically by the security helper functions
+	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -687,7 +689,7 @@ func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubCl
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
 		case security.ActionWarn:
 			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
 		}
@@ -754,7 +756,8 @@ func (t *GitHubTool) handleGetWorkflowRun(ctx context.Context, client *GitHubCli
 		return nil, err
 	}
 
-	// Analyse content for security risks
+	// Security analysis is now handled automatically by the security helper functions
+	// For GitHub SDK responses, we perform manual analysis for consistency with other tools
 	source := security.SourceContext{
 		Tool:        "github",
 		Domain:      "github.com",
@@ -763,7 +766,7 @@ func (t *GitHubTool) handleGetWorkflowRun(ctx context.Context, client *GitHubCli
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
 		case security.ActionWarn:
 			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
 		}

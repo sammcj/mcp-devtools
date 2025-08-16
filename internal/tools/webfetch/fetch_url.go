@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -17,15 +16,11 @@ import (
 )
 
 // FetchURLTool implements URL fetching with HTML-to-markdown conversion
-type FetchURLTool struct {
-	client *WebClient
-}
+type FetchURLTool struct{}
 
 // init registers the fetch-url tool
 func init() {
-	registry.Register(&FetchURLTool{
-		client: NewWebClient(),
-	})
+	registry.Register(&FetchURLTool{})
 }
 
 // Definition returns the tool's definition for MCP registration
@@ -79,9 +74,15 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		"raw":         request.Raw,
 	}).Debug("Fetch URL parameters")
 
-	// Fetch the content
-	response, err := t.client.FetchContent(ctx, logger, request.URL)
+	// Use security helper for safe HTTP GET
+	ops := security.NewOperations("webfetch")
+	safeResp, err := ops.SafeHTTPGet(request.URL)
 	if err != nil {
+		// Handle security errors properly
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+		}
 		// Return error information in a structured way
 		errorResponse := map[string]interface{}{
 			"url":       request.URL,
@@ -91,6 +92,18 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		return t.newToolResultJSON(errorResponse)
 	}
 
+	// Convert SafeHTTPResponse to FetchURLResponse format
+	response := &FetchURLResponse{
+		URL:         request.URL,
+		Content:     string(safeResp.Content),
+		ContentType: safeResp.ContentType,
+		StatusCode:  safeResp.StatusCode,
+		TotalLength: len(safeResp.Content),
+		TotalLines:  len(strings.Split(string(safeResp.Content), "\n")),
+		StartLine:   1,
+		EndLine:     len(strings.Split(string(safeResp.Content), "\n")),
+	}
+
 	// Process the content (convert HTML to markdown, handle different content types)
 	processedContent, err := ProcessContent(logger, response, request.Raw)
 	if err != nil {
@@ -98,40 +111,11 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		processedContent = response.Content
 	}
 
-	// Security content analysis (if enabled)
+	// Handle security warnings from the helper
 	var securityNotice string
-	if security.IsEnabled() {
-		// Extract domain from URL for source context
-		parsedURL, _ := url.Parse(request.URL)
-		domain := parsedURL.Hostname()
-
-		sourceContext := security.SourceContext{
-			URL:         request.URL,
-			Domain:      domain,
-			ContentType: response.ContentType,
-			Tool:        "webfetch",
-		}
-
-		result, err := security.AnalyseContent(processedContent, sourceContext)
-		if err != nil {
-			logger.WithError(err).Warn("Security analysis failed")
-		} else {
-			// Handle different security actions using two-tier approach
-			switch result.Action {
-			case security.ActionBlock:
-				// Hard Block: Replace tool response entirely (no content returned)
-				security.LogSecurityEvent(result.ID, "block", result.Analysis, request.URL, "webfetch")
-				return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s and justification", result.ID, result.Message, result.ID)
-
-			case security.ActionWarn:
-				// Response Augmentation: Return content WITH security analysis
-				security.LogSecurityEvent(result.ID, "warn", result.Analysis, request.URL, "webfetch")
-				securityNotice = fmt.Sprintf("Security Warning [ID: %s]: %s Use security_override tool with ID %s if this is intentional.", result.ID, result.Message, result.ID)
-
-			case security.ActionAllow:
-				// No action needed for safe content
-			}
-		}
+	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+		securityNotice = fmt.Sprintf("Security Warning [ID: %s]: %s Use security_override tool with ID %s if this is intentional.",
+			safeResp.SecurityResult.ID, safeResp.SecurityResult.Message, safeResp.SecurityResult.ID)
 	}
 
 	// Apply pagination
@@ -169,8 +153,8 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 
 		logger.WithFields(logrus.Fields{
 			"url":              request.URL,
-			"content_type":     response.ContentType,
-			"status_code":      response.StatusCode,
+			"content_type":     safeResp.ContentType,
+			"status_code":      safeResp.StatusCode,
 			"total_length":     paginatedResponse.TotalLength,
 			"returned":         len(paginatedResponse.Content),
 			"truncated":        paginatedResponse.Truncated,
@@ -182,8 +166,8 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 
 	logger.WithFields(logrus.Fields{
 		"url":          request.URL,
-		"content_type": response.ContentType,
-		"status_code":  response.StatusCode,
+		"content_type": safeResp.ContentType,
+		"status_code":  safeResp.StatusCode,
 		"total_length": paginatedResponse.TotalLength,
 		"returned":     len(paginatedResponse.Content),
 		"truncated":    paginatedResponse.Truncated,

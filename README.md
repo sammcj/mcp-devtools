@@ -85,7 +85,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "DISABLED_FUNCTIONS": "brave_local_search,brave_video_search", // Optional, disable specific tools if not needed
+        "DISABLED_FUNCTIONS": "brave_local_search,brave_video_search,security", // Optional, disable specific tools if not needed
         "ENABLE_ADDITIONAL_TOOLS": "security,security_override,sbom,vulnerability_scan" // Optional, enable security and analysis tools
       }
     }
@@ -125,7 +125,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[Generate Changelog](docs/tools/changelog.md)**            | Generate changelogs from git commits     | `generate_changelog`      | Release notes from local/remote repos |
 | **[Document Processing](docs/tools/document-processing.md)** | Convert documents to Markdown            | `process_document`        | PDF, DOCX → Markdown with OCR         |
 | **[PDF Processing](docs/tools/pdf-processing.md)**           | Fast PDF text extraction                 | `pdf`                     | Quick PDF to Markdown                 |
-| **[Security Framework](docs/security.md)**                      | Context injection security protections   | `security`                | Content analysis, access control      |
+| **[Security Framework](docs/security.md)**                   | Context injection security protections   | `security`                | Content analysis, access control      |
 | **[Security Override](docs/security.md)**                    | Agent managed security warning overrides | `security_override`       | Bypass false positives                |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
@@ -301,7 +301,7 @@ Each tool is self-contained and registers automatically when the binary starts.
 
 ## Security Framework
 
-MCP DevTools includes a comprehensive, configurable security system that provides multi-layered protection for all tools that access files or make HTTP requests.
+MCP DevTools includes a configurable security system that provides multi-layered protection for tools that access files or make HTTP requests.
 
 ### Key Features
 - **Access Control**: Prevents tools from accessing sensitive files and domains

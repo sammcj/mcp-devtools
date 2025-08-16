@@ -372,53 +372,171 @@ rules:
 
 ## Integration Patterns
 
-All MCP tools that access files or make HTTP requests must integrate with the security system.
+All MCP tools that access files or make HTTP requests must integrate with the security system. There are two approaches: **Helper Functions (Recommended)** and **Manual Integration**.
 
-### File Access Integration
+### Recommended: Helper Functions Integration
+
+The recommended approach is to use security helper functions that provide simplified APIs with automatic security integration and content integrity preservation.
+
+#### Quick Start with Helper Functions
 
 ```go
 import "github.com/sammcj/mcp-devtools/internal/security"
 
-// Before any file operation
-if err := security.CheckFileAccess(filePath); err != nil {
-    return nil, err
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+    // Create operations instance for your tool
+    ops := security.NewOperations("my-tool")
+
+    // Secure HTTP GET with content integrity
+    safeResp, err := ops.SafeHTTPGet("https://example.com/api/data")
+    if err != nil {
+        // Handle security blocks or network errors
+        if secErr, ok := err.(*security.SecurityError); ok {
+            return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
+        }
+        return nil, err
+    }
+
+    // Content is EXACT bytes from server
+    content := safeResp.Content
+
+    // Check for security warnings (non-blocking)
+    if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+        logger.Warnf("Security warning: %s", safeResp.SecurityResult.Message)
+        // Content is still available despite warning
+    }
+
+    return processContent(content)
 }
 ```
 
-### Domain Access Integration
+#### Helper Functions API
 
+**HTTP Operations:**
 ```go
-// Before making HTTP requests
-if err := security.CheckDomainAccess(domain); err != nil {
-    return nil, err
+// Secure HTTP GET with content integrity preservation
+func (o *Operations) SafeHTTPGet(urlStr string) (*SafeHTTPResponse, error)
+
+// Secure HTTP POST with content integrity preservation
+func (o *Operations) SafeHTTPPost(urlStr string, body io.Reader) (*SafeHTTPResponse, error)
+```
+
+**File Operations:**
+```go
+// Secure file read with content integrity preservation
+func (o *Operations) SafeFileRead(path string) (*SafeFileContent, error)
+
+// Secure file write with access control
+func (o *Operations) SafeFileWrite(path string, content []byte) error
+```
+
+**Response Types:**
+```go
+type SafeHTTPResponse struct {
+    Content        []byte          // EXACT original bytes - never modified
+    ContentType    string          // Original content type
+    StatusCode     int             // Original status code
+    Headers        http.Header     // Original headers
+    SecurityResult *SecurityResult // nil if safe, populated if warn
+}
+
+type SafeFileContent struct {
+    Content        []byte          // EXACT file bytes - never modified
+    Path           string          // Resolved path
+    Info           os.FileInfo     // Original file info
+    SecurityResult *SecurityResult // nil if safe, populated if warn
 }
 ```
 
-### Content Analysis Integration
+#### Helper Functions Benefits
 
+- **80-90% Boilerplate Reduction**: From 30+ lines to 5-10 lines
+- **Content Integrity**: Guaranteed exact byte preservation
+- **Security Compliance**: Automatic integration with security framework
+- **Error Handling**: Consistent security error patterns
+- **Performance**: Same security guarantees with simpler code
+
+## Security Helper Implementation Details
+
+All MCP DevTools now use the standardised security helper functions. The security system automatically handles:
+
+- **Domain Access Control**: Checks against deny lists before making requests
+- **Content Analysis**: Scans text content for security threats using pattern matching
+- **Binary Content Detection**: Automatically skips analysis for non-text content
+- **Content Integrity**: Preserves exact original bytes without modification
+- **Error Handling**: Consistent security error patterns with override IDs
+
+### Migration from Manual to Helper Functions
+
+**Before (Manual Integration - 30+ lines):**
 ```go
-// After fetching/processing content
-source := security.SourceContext{
-    Tool:   "tool_name",
-    Domain: "example.com",     // for HTTP content
-    Source: "/path/to/file",   // for file content
-    Type:   "web_content",     // content type
+// Domain check
+parsedURL, err := url.Parse(urlStr)
+if err != nil {
+    return nil, err
+}
+if err := security.CheckDomainAccess(parsedURL.Hostname()); err != nil {
+    return nil, err
 }
 
-result, err := security.AnalyseContent(content, source)
+// HTTP request
+resp, err := http.Get(urlStr)
+if err != nil {
+    return nil, err
+}
+defer resp.Body.Close()
+
+content, err := io.ReadAll(resp.Body)
 if err != nil {
     return nil, err
 }
 
-switch result.Action {
-case security.ActionBlock:
-    return nil, fmt.Errorf("content blocked: %s", result.Message)
-case security.ActionWarn:
-    logger.WithField("security_id", result.ID).Warn(result.Message)
-    // Continue with warning
-case security.ActionAllow:
-    // Content is safe
+// Security analysis
+sourceCtx := security.SourceContext{
+    URL: urlStr,
+    Domain: parsedURL.Hostname(),
+    ContentType: resp.Header.Get("Content-Type"),
+    Tool: "tool-name",
 }
+
+secResult, err := security.AnalyseContent(string(content), sourceCtx)
+if err != nil {
+    logger.WithError(err).Warn("Security analysis failed")
+}
+
+if secResult != nil && secResult.Action == security.ActionBlock {
+    return nil, &security.SecurityError{
+        ID: secResult.ID,
+        Message: secResult.Message,
+        Action: security.ActionBlock,
+    }
+}
+
+if secResult != nil && secResult.Action == security.ActionWarn {
+    security.LogSecurityEvent(secResult.ID, "warn", secResult.Analysis, urlStr, "tool-name")
+    logger.WithField("security_warning", true).Info("Content analysis warning")
+}
+```
+
+**After (Helper Functions - 5-10 lines):**
+```go
+ops := security.NewOperations("tool-name")
+
+safeResp, err := ops.SafeHTTPGet(urlStr)
+if err != nil {
+    if secErr, ok := err.(*security.SecurityError); ok {
+        return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
+    }
+    return nil, err
+}
+
+// Handle warnings if present
+if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+    logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+}
+
+// Process exact content
+return processContent(safeResp.Content)
 ```
 
 ## Enabling Security

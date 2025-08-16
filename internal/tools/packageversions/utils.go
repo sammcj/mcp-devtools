@@ -94,11 +94,19 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 		}).Debug("Making HTTP request")
 	}
 
+	// Parse URL for security checks
+	parsedURL, err := url.Parse(reqURL)
+	if err != nil {
+		return nil, err
+	}
+
 	// Check domain access control via security system
-	if parsedURL, err := url.Parse(reqURL); err == nil {
-		if err := security.CheckDomainAccess(parsedURL.Hostname()); err != nil {
-			return nil, err
+	if err := security.CheckDomainAccess(parsedURL.Hostname()); err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s. Check with the user if you may use security_override tool with ID %s",
+				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
 		}
+		return nil, err
 	}
 
 	req, err := http.NewRequest(method, reqURL, nil)
@@ -126,7 +134,7 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 		req.Header.Set("User-Agent", "MCP-DevTools/1.0.0")
 	}
 
-	// Send request
+	// Send request with rate-limited client
 	resp, err := client.Do(req)
 	if err != nil {
 		if logger != nil {
@@ -147,6 +155,18 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 		}
 	}()
 
+	// Check for HTTP errors
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if logger != nil {
+			logger.WithFields(logrus.Fields{
+				"method":     method,
+				"url":        reqURL,
+				"statusCode": resp.StatusCode,
+			}).Error("Unexpected status code")
+		}
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
 	// Read response body with size limit to prevent memory exhaustion
 	limitedReader := io.LimitReader(resp.Body, 10*1024*1024) // 10MB limit for package API responses
 	body, err := io.ReadAll(limitedReader)
@@ -161,37 +181,23 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// Analyse content for security threats
-	if parsedURL, err := url.Parse(reqURL); err == nil {
-		sourceContext := security.SourceContext{
-			URL:         reqURL,
-			Domain:      parsedURL.Hostname(),
-			ContentType: "api_response",
-			Tool:        "packageversions",
-		}
-		if secResult, err := security.AnalyseContent(string(body), sourceContext); err == nil {
-			switch secResult.Action {
-			case security.ActionBlock:
-				return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s", secResult.ID, secResult.Message)
-			case security.ActionWarn:
-				if logger != nil {
-					logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
-				}
+	// Analyse content for security threats using security helper
+	sourceContext := security.SourceContext{
+		URL:         reqURL,
+		Domain:      parsedURL.Hostname(),
+		ContentType: resp.Header.Get("Content-Type"),
+		Tool:        "packageversions",
+	}
+	if secResult, err := security.AnalyseContent(string(body), sourceContext); err == nil {
+		switch secResult.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("security block [ID: %s]: %s. Check with the user if you may use security_override tool with ID %s",
+				secResult.ID, secResult.Message, secResult.ID)
+		case security.ActionWarn:
+			if logger != nil {
+				logger.Warnf("Security warning [ID: %s]: %s", secResult.ID, secResult.Message)
 			}
 		}
-	}
-
-	// Check for errors
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		if logger != nil {
-			logger.WithFields(logrus.Fields{
-				"method":     method,
-				"url":        reqURL,
-				"statusCode": resp.StatusCode,
-				"body":       string(body),
-			}).Error("Unexpected status code")
-		}
-		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, body)
 	}
 
 	if logger != nil {
