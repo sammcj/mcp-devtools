@@ -36,6 +36,10 @@ The intent with the security framework is that the tool (software) fetches the c
 - **Performance Optimised**: Minimal impact when disabled, efficient when enabled
 - **Graceful Degradation**: Tools work normally when security is disabled
 
+Example of the security framework blocking the tools from fetching and returning potentially malicious content to the LLM / Agent:
+
+![example](security-example.png)
+
 ## Architecture
 
 ```mermaid
