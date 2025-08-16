@@ -231,10 +231,61 @@ func (m *SecurityManager) CheckDomainAccess(domain string) error {
 // AnalyseContent performs security analysis on content
 func (m *SecurityManager) AnalyseContent(content string, source SourceContext) (*SecurityResult, error) {
 	if !m.IsEnabled() {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithFields(logrus.Fields{
+				"content_length": len(content),
+				"source_domain":  source.Domain,
+				"source_tool":    source.Tool,
+			}).Debug("Security manager disabled, allowing content without analysis")
+		}
 		return &SecurityResult{Safe: true, Action: ActionAllow}, nil
 	}
 
-	return m.advisor.AnalyseContent(content, source)
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"content_length":  len(content),
+			"source_domain":   source.Domain,
+			"source_url":      source.URL,
+			"source_tool":     source.Tool,
+			"content_type":    source.ContentType,
+			"content_preview": content[:min(100, len(content))],
+		}).Debug("Starting security analysis of content")
+	}
+
+	result, err := m.advisor.AnalyseContent(content, source)
+
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"error":          err.Error(),
+				"content_length": len(content),
+				"source_domain":  source.Domain,
+			}).Debug("Security analysis failed with error")
+		} else {
+			fields := logrus.Fields{
+				"result_safe":    result.Safe,
+				"result_action":  result.Action,
+				"result_message": result.Message,
+				"result_id":      result.ID,
+			}
+
+			if result.Analysis != nil {
+				fields["risk_score"] = result.Analysis.RiskScore
+				fields["source_trust"] = result.Analysis.SourceTrust
+				fields["commands_detected"] = len(result.Analysis.Commands)
+				fields["risk_factors"] = len(result.Analysis.RiskFactors)
+			} else {
+				fields["risk_score"] = 0.0
+				fields["source_trust"] = 0.0
+				fields["commands_detected"] = 0
+				fields["risk_factors"] = 0
+			}
+
+			logrus.WithFields(fields).Debug("Security analysis completed")
+		}
+	}
+
+	return result, err
 }
 
 // loadSecurityConfig loads configuration from YAML rules file
@@ -291,6 +342,8 @@ func loadSecurityConfig() (*SecurityConfig, error) {
 		CacheMaxAge:            cacheMaxAge,
 		CacheMaxSize:           settings.CacheMaxSize,
 		EnableNotifications:    settings.EnableNotifications,
+		EnableBase64Scanning:   settings.EnableBase64Scanning,
+		MaxBase64DecodedSize:   settings.MaxBase64DecodedSize,
 		TrustedDomains:         rules.TrustedDomains,
 		SuspiciousDomains:      []string{}, // Not configurable via YAML currently
 		DenyFiles:              rules.AccessControl.DenyFiles,

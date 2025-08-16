@@ -36,6 +36,8 @@ type Settings struct {
 	CacheEnabled          bool    `yaml:"cache_enabled"`           // Enable security result caching
 	CacheMaxAge           string  `yaml:"cache_max_age"`           // Maximum cache age (duration string)
 	CacheMaxSize          int     `yaml:"cache_max_size"`          // Maximum cache entries
+	EnableBase64Scanning  bool    `yaml:"enable_base64_scanning"`  // Enable base64 content decoding and analysis
+	MaxBase64DecodedSize  int     `yaml:"max_base64_decoded_size"` // Maximum size of decoded base64 content (KB)
 }
 
 // AccessControl defines file and domain access restrictions

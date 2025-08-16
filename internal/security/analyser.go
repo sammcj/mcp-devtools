@@ -1,7 +1,6 @@
 package security
 
 import (
-	"encoding/base64"
 	"fmt"
 	"math"
 	"regexp"
@@ -10,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/shlex"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -27,31 +27,90 @@ func (a *SecurityAdvisor) AnalyseContent(content string, source SourceContext) (
 
 // performAnalysis performs the actual security analysis
 func (a *SecurityAdvisor) performAnalysis(content string, source SourceContext) (*SecurityResult, error) {
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"content_length":         len(content),
+			"source_domain":          source.Domain,
+			"max_scan_size":          a.config.MaxScanSize,
+			"threat_threshold":       a.config.ThreatThreshold,
+			"enable_base64_scanning": a.config.EnableBase64Scanning,
+		}).Debug("Beginning performAnalysis on content")
+	}
+
 	// Skip analysis for obviously safe content types
 	if !a.shouldAnalyseContent(content, source) {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithFields(logrus.Fields{
+				"content_length": len(content),
+				"source_domain":  source.Domain,
+				"content_type":   source.ContentType,
+			}).Debug("Content skipped as obviously safe")
+		}
 		return &SecurityResult{Safe: true, Action: ActionAllow}, nil
 	}
 
+	originalContentLength := len(content)
 	// Check size limits
 	if len(content) > a.config.MaxScanSize {
 		// For large content, only scan the first portion
 		content = content[:a.config.MaxScanSize]
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithFields(logrus.Fields{
+				"original_length": originalContentLength,
+				"truncated_to":    len(content),
+				"max_scan_size":   a.config.MaxScanSize,
+			}).Debug("Content truncated due to size limits")
+		}
 	}
 
 	// Apply encoding detection and normalisation to prevent pattern evasion
 	processedContent := a.applyEncodingDetection(content)
+	contentWasModified := processedContent != content
+
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"original_content_length":  len(content),
+			"processed_content_length": len(processedContent),
+			"content_was_modified":     contentWasModified,
+			"processed_preview":        processedContent[:min(100, len(processedContent))],
+		}).Debug("Content encoding detection and processing completed")
+	}
 
 	// Perform threat analysis on both original and processed content
 	analysis := a.analyser.AnalyseContent(content, source, a.ruleEngine)
 
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"original_commands_detected":  len(analysis.Commands),
+			"original_risk_factors_count": len(analysis.RiskFactors),
+			"original_risk_factors":       analysis.RiskFactors,
+		}).Debug("Original content threat analysis completed")
+	}
+
 	// If original content was clean, also check processed content
-	if len(analysis.Commands) == 0 && len(analysis.RiskFactors) == 0 && processedContent != content {
+	if len(analysis.Commands) == 0 && len(analysis.RiskFactors) == 0 && contentWasModified {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.Debug("Original content clean, analysing processed content for encoded threats")
+		}
+
 		processedAnalysis := a.analyser.AnalyseContent(processedContent, source, a.ruleEngine)
 		if len(processedAnalysis.Commands) > 0 || len(processedAnalysis.RiskFactors) > 0 {
+			if logrus.GetLevel() <= logrus.DebugLevel {
+				logrus.WithFields(logrus.Fields{
+					"processed_commands_detected": len(processedAnalysis.Commands),
+					"processed_risk_factors":      processedAnalysis.RiskFactors,
+					"original_was_clean":          true,
+				}).Debug("Encoded content evasion detected - threats found in processed content")
+			}
+
 			// Found threats in processed content - merge results
 			analysis.Commands = append(analysis.Commands, processedAnalysis.Commands...)
 			analysis.RiskFactors = append(analysis.RiskFactors, processedAnalysis.RiskFactors...)
 			analysis.RiskFactors = append(analysis.RiskFactors, "encoded content evasion")
+		} else {
+			if logrus.GetLevel() <= logrus.DebugLevel {
+				logrus.Debug("Processed content also clean - no encoded threats detected")
+			}
 		}
 	}
 
@@ -62,9 +121,23 @@ func (a *SecurityAdvisor) performAnalysis(content string, source SourceContext) 
 	// Calculate overall risk
 	analysis.RiskScore = a.calculateRisk(analysis)
 
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"source_trust":       analysis.SourceTrust,
+			"source_context":     analysis.Context,
+			"calculated_risk":    analysis.RiskScore,
+			"threat_threshold":   a.config.ThreatThreshold,
+			"total_commands":     len(analysis.Commands),
+			"total_risk_factors": len(analysis.RiskFactors),
+		}).Debug("Risk calculation completed")
+	}
+
 	// Use rule engine for pattern-based analysis on original content
-	ruleResult, err := a.ruleEngine.EvaluateContent(content, source)
+	ruleResult, err := a.ruleEngine.EvaluateContentWithConfig(content, source, a.config)
 	if err != nil {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithError(err).Debug("Rule engine evaluation failed, proceeding with basic analysis")
+		}
 		// Log error but continue with basic analysis
 		return &SecurityResult{
 			Safe:      analysis.RiskScore < a.config.ThreatThreshold,
@@ -75,32 +148,69 @@ func (a *SecurityAdvisor) performAnalysis(content string, source SourceContext) 
 		}, nil
 	}
 
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"rule_result_safe":    ruleResult.Safe,
+			"rule_result_action":  ruleResult.Action,
+			"rule_result_message": ruleResult.Message,
+		}).Debug("Rule engine evaluation of original content completed")
+	}
+
 	// If original content passed but we have processed content, check that too
-	if ruleResult.Safe && processedContent != content {
-		processedRuleResult, err := a.ruleEngine.EvaluateContent(processedContent, source)
+	if ruleResult.Safe && contentWasModified {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.Debug("Original content passed rules, evaluating processed content")
+		}
+
+		processedRuleResult, err := a.ruleEngine.EvaluateContentWithConfig(processedContent, source, a.config)
 		if err == nil && !processedRuleResult.Safe {
+			if logrus.GetLevel() <= logrus.DebugLevel {
+				logrus.WithFields(logrus.Fields{
+					"processed_rule_safe":    processedRuleResult.Safe,
+					"processed_rule_action":  processedRuleResult.Action,
+					"processed_rule_message": processedRuleResult.Message,
+				}).Debug("Processed content failed rules - encoded content evasion detected")
+			}
+
 			// Processed content triggered rules - this indicates encoding evasion
 			processedRuleResult.Analysis = analysis
 			processedRuleResult.Message = "Encoded content evasion detected: " + processedRuleResult.Message
 			return processedRuleResult, nil
+		} else if err == nil {
+			if logrus.GetLevel() <= logrus.DebugLevel {
+				logrus.Debug("Processed content also passed rules")
+			}
 		}
 	}
 
 	// Combine rule-based and analysis-based results
 	if !ruleResult.Safe {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithField("rule_triggered", true).Debug("Rule engine found specific threats")
+		}
 		// Rule engine found specific threats
 		ruleResult.Analysis = analysis
 		return ruleResult, nil
 	}
 
 	// Return analysis-based result
-	return &SecurityResult{
+	finalResult := &SecurityResult{
 		Safe:      analysis.RiskScore < a.config.ThreatThreshold,
 		Action:    a.determineAction(analysis.RiskScore),
 		Message:   a.formatAnalysisMessage(analysis),
 		Analysis:  analysis,
 		Timestamp: ruleResult.Timestamp,
-	}, nil
+	}
+
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"final_safe":    finalResult.Safe,
+			"final_action":  finalResult.Action,
+			"final_message": finalResult.Message,
+		}).Debug("Security analysis completed successfully")
+	}
+
+	return finalResult, nil
 }
 
 // AnalyseContent performs threat analysis on content
@@ -600,8 +710,8 @@ func (a *SecurityAdvisor) hasDestructivePatterns(content string) bool {
 	// Use rule engine to check for obvious_malware patterns
 	if a.ruleEngine != nil && a.ruleEngine.rules != nil {
 		if rule, exists := a.ruleEngine.rules.Rules["obvious_malware"]; exists {
-			// Use the private evaluateRule method
-			matches, _ := a.ruleEngine.evaluateRule("obvious_malware", rule, content, SourceContext{})
+			// Use the evaluateRuleWithConfig method to enable base64 processing
+			matches, _ := a.ruleEngine.evaluateRuleWithConfig("obvious_malware", rule, content, SourceContext{}, a.config)
 			return matches
 		}
 	}
@@ -694,32 +804,114 @@ func (a *SecurityAdvisor) normalizeUnicode(content string) string {
 
 // detectAndDecodeBase64 detects and decodes base64 content to reveal hidden commands
 func (a *SecurityAdvisor) detectAndDecodeBase64(content string) string {
-	// Pattern to match potential base64 strings (at least 20 characters for meaningful content)
-	base64Pattern := regexp.MustCompile(`[A-Za-z0-9+/]{20,}={0,2}`)
-
-	result := base64Pattern.ReplaceAllStringFunc(content, func(match string) string {
-		// Try to decode the base64 string
-		decoded, err := base64.StdEncoding.DecodeString(match)
-		if err != nil {
-			// If standard encoding fails, try URL encoding
-			decoded, err = base64.URLEncoding.DecodeString(match)
-			if err != nil {
-				// If both fail, return original
-				return match
-			}
+	// Skip if base64 scanning is disabled
+	if !a.config.EnableBase64Scanning {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithField("content_length", len(content)).Debug("Base64 scanning disabled, skipping detection")
 		}
+		return content
+	}
+
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"content_length":         len(content),
+			"max_base64_size_kb":     a.config.MaxBase64DecodedSize,
+			"enable_base64_scanning": a.config.EnableBase64Scanning,
+		}).Debug("Starting base64 detection and decoding")
+	}
+
+	// Use our safe heuristic detection first
+	lines := strings.Split(content, "\n")
+	var resultLines []string
+	totalLinesProcessed := 0
+	base64LinesDetected := 0
+	base64LinesDecoded := 0
+
+	for lineNum, line := range lines {
+		line = strings.TrimSpace(line)
+		totalLinesProcessed++
+
+		// Skip empty lines or lines that don't look like base64
+		if len(line) == 0 {
+			resultLines = append(resultLines, line)
+			continue
+		}
+
+		isBase64Candidate := isLikelyBase64(line)
+		if logrus.GetLevel() <= logrus.DebugLevel && len(line) > 16 {
+			logrus.WithFields(logrus.Fields{
+				"line_number":         lineNum + 1,
+				"line_length":         len(line),
+				"line_preview":        line[:min(50, len(line))],
+				"is_base64_candidate": isBase64Candidate,
+			}).Debug("Evaluating line for base64 detection")
+		}
+
+		if !isBase64Candidate {
+			resultLines = append(resultLines, line)
+			continue
+		}
+
+		base64LinesDetected++
+
+		// Use safe decoding with configured size limits
+		maxSize := a.config.MaxBase64DecodedSize * 1024 // Convert KB to bytes
+		decoded, success := safeBase64Decode(line, maxSize)
+
+		if !success {
+			if logrus.GetLevel() <= logrus.DebugLevel {
+				logrus.WithFields(logrus.Fields{
+					"line_number":  lineNum + 1,
+					"line_length":  len(line),
+					"line_preview": line[:min(50, len(line))],
+					"max_size_kb":  a.config.MaxBase64DecodedSize,
+				}).Debug("Base64 decoding failed or size limit exceeded")
+			}
+			// Decoding failed or size limit exceeded, keep original
+			resultLines = append(resultLines, line)
+			continue
+		}
+
+		base64LinesDecoded++
 
 		// Check if decoded content is printable text
 		decodedStr := string(decoded)
-		if a.isPrintableText(decodedStr) {
-			// Return both original and decoded for analysis
-			return match + " " + decodedStr
+		isPrintable := a.isPrintableText(decodedStr)
+
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithFields(logrus.Fields{
+				"line_number":      lineNum + 1,
+				"original_length":  len(line),
+				"decoded_length":   len(decodedStr),
+				"decoded_preview":  decodedStr[:min(50, len(decodedStr))],
+				"is_printable":     isPrintable,
+				"original_preview": line[:min(50, len(line))],
+			}).Debug("Base64 content successfully decoded")
 		}
 
-		return match
-	})
+		if isPrintable {
+			// Return both original and decoded for analysis
+			resultLines = append(resultLines, line+" "+decodedStr)
+		} else {
+			// Non-printable decoded content, keep original only
+			resultLines = append(resultLines, line)
+		}
+	}
 
-	return result
+	resultContent := strings.Join(resultLines, "\n")
+
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"total_lines_processed":    totalLinesProcessed,
+			"base64_lines_detected":    base64LinesDetected,
+			"base64_lines_decoded":     base64LinesDecoded,
+			"original_content_length":  len(content),
+			"processed_content_length": len(resultContent),
+			"content_modified":         len(resultContent) != len(content),
+		}).Debug("Base64 detection and decoding completed")
+	}
+
+	return resultContent
 }
 
 // decodeURLEncoding decodes URL-encoded content
@@ -810,4 +1002,12 @@ func parseHexByte(hex string) (byte, error) {
 	}
 
 	return result, nil
+}
+
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

@@ -759,6 +759,14 @@ echo "test content" | grep -E "your_regex_pattern"
 # https://regex101.com/
 ```
 
+## Examples
+
+For a very simple test to demonstrate the security system in action, ask the AI agent to use the web_fetch tool on any of these URLs:
+1. https://gist.githubusercontent.com/sammcj/a37fb6d5f2aa53993281b365496adcef/raw/98e6f8e5d9238a278a3350a94c0b250afc6ef5de/test-bad-content.txt - Contains a bad command
+2. https://gist.githubusercontent.com/sammcj/a37fb6d5f2aa53993281b365496adcef/raw/c154135289c5c2bf802bc02a454f160ae29940f0/test-bad-content.txt - Contains a base64 encoded string, but it's not long and doesn't contain anything malicious
+3. https://gist.githubusercontent.com/sammcj/a37fb6d5f2aa53993281b365496adcef/raw/1ded814929f40e157a9650688242ca86a927594a/test-bad-content.txt - Contains a base64 encoded string that decodes to a short malicious command
+4. https://gist.githubusercontent.com/sammcj/a37fb6d5f2aa53993281b365496adcef/raw/25c5df220e47b40b7f918e3479da29435cd0d794/test-bad-content.txt - Contains a base64 encoded prompt injection example
+
 ## Security Caveats
 
 ### Important Limitations
@@ -783,21 +791,6 @@ echo "test content" | grep -E "your_regex_pattern"
 - **Direct File Access**: Local file system access outside MCP tools bypasses security
 - **Alternative Tools**: Non-MCP tools not subject to security controls
 - **Configuration Changes**: Security can be disabled via environment variables
-
-### Security Recommendations
-
-#### For Production Use
-1. **Restrict Configuration Access**: Protect security rules files and environment variables
-2. **Monitor Override Usage**: Track and audit security override usage
-3. **Regular Rule Updates**: Keep security patterns updated for new threats
-4. **Performance Testing**: Monitor performance impact of security rules
-5. **Incident Response**: Establish procedures for security alert handling
-
-#### For Development Use
-1. **Test Security Rules**: Verify rules work as expected before deployment
-2. **Document Exceptions**: Clearly document why trusted domains are needed
-3. **Review Override Justifications**: Ensure overrides have legitimate business reasons
-4. **Monitor Security Logs**: Regularly review security event logs
 
 ### Defence in Depth
 

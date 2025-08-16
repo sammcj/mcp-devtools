@@ -160,6 +160,8 @@ type SecurityConfig struct {
 	CacheMaxAge            time.Duration `json:"cache_max_age"`
 	CacheMaxSize           int           `json:"cache_max_size"`
 	EnableNotifications    bool          `json:"enable_notifications"`
+	EnableBase64Scanning   bool          `json:"enable_base64_scanning"`
+	MaxBase64DecodedSize   int           `json:"max_base64_decoded_size"`
 	TrustedDomains         []string      `json:"trusted_domains"`
 	SuspiciousDomains      []string      `json:"suspicious_domains"`
 	DenyFiles              []string      `json:"deny_files"`

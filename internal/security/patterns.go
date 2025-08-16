@@ -2,12 +2,15 @@ package security
 
 import (
 	"context"
+	"encoding/base64"
 	"math"
 	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // LiteralMatcher matches exact strings
@@ -457,4 +460,162 @@ func (m *GlobMatcher) Match(content string) bool {
 
 func (m *GlobMatcher) String() string {
 	return "glob:" + m.pattern
+}
+
+// isLikelyBase64 performs fast heuristic checks to identify potential base64 content
+// Uses character analysis and length requirements to avoid expensive operations on non-base64 data
+func isLikelyBase64(content string) bool {
+	// Trim whitespace for analysis
+	originalLength := len(content)
+	content = strings.TrimSpace(content)
+
+	// Quick length checks - base64 minimum viable size and reasonable maximum
+	if len(content) < 16 || len(content) > 1048576 { // 1MB max for heuristic check
+		if logrus.GetLevel() <= logrus.DebugLevel && originalLength > 16 {
+			logrus.WithFields(logrus.Fields{
+				"content_length": len(content),
+				"reason":         "length_check_failed",
+				"min_length":     16,
+				"max_length":     1048576,
+			}).Debug("isLikelyBase64: failed length check")
+		}
+		return false
+	}
+
+	// Base64 strings are typically multiples of 4 characters
+	if len(content)%4 != 0 {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithFields(logrus.Fields{
+				"content_length": len(content),
+				"modulo_4":       len(content) % 4,
+				"reason":         "not_multiple_of_4",
+			}).Debug("isLikelyBase64: failed modulo check")
+		}
+		return false
+	}
+
+	// Fast character set validation - cheaper than regex
+	validChars := 0
+	paddingChars := 0
+
+	for i, r := range content {
+		if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') ||
+			(r >= '0' && r <= '9') || r == '+' || r == '/' {
+			validChars++
+		} else if r == '=' {
+			// Padding characters should only be at the end
+			if i < len(content)-2 {
+				if logrus.GetLevel() <= logrus.DebugLevel {
+					logrus.WithFields(logrus.Fields{
+						"content_length":    len(content),
+						"padding_position":  i,
+						"expected_position": len(content) - 2,
+						"reason":            "padding_not_at_end",
+					}).Debug("isLikelyBase64: failed padding position check")
+				}
+				return false
+			}
+			paddingChars++
+		} else {
+			if logrus.GetLevel() <= logrus.DebugLevel {
+				logrus.WithFields(logrus.Fields{
+					"content_length": len(content),
+					"invalid_char":   string(r),
+					"char_position":  i,
+					"reason":         "invalid_character",
+				}).Debug("isLikelyBase64: failed character validation")
+			}
+			return false
+		}
+	}
+
+	// At least 90% valid base64 characters, max 2 padding chars
+	validPercentage := float64(validChars) / float64(len(content))
+	isLikely := validPercentage >= 0.90 && paddingChars <= 2
+
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"content_length":   len(content),
+			"valid_chars":      validChars,
+			"padding_chars":    paddingChars,
+			"valid_percentage": validPercentage,
+			"threshold":        0.90,
+			"is_likely_base64": isLikely,
+			"content_preview":  content[:min(50, len(content))],
+		}).Debug("isLikelyBase64: heuristic check completed")
+	}
+
+	return isLikely
+}
+
+// safeBase64Decode safely decodes base64 content with strict size limits
+// Returns decoded content and success flag, prevents memory bombs and malformed input attacks
+func safeBase64Decode(content string, maxDecodedSize int) ([]byte, bool) {
+	// Trim whitespace
+	originalLength := len(content)
+	content = strings.TrimSpace(content)
+
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"original_length":  originalLength,
+			"trimmed_length":   len(content),
+			"max_decoded_size": maxDecodedSize,
+			"content_preview":  content[:min(50, len(content))],
+		}).Debug("safeBase64Decode: starting decode attempt")
+	}
+
+	// Pre-flight size check - base64 decoded size is roughly 3/4 of encoded size
+	estimatedSize := (len(content) * 3) / 4
+	if estimatedSize > maxDecodedSize {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithFields(logrus.Fields{
+				"estimated_size":   estimatedSize,
+				"max_decoded_size": maxDecodedSize,
+				"reason":           "estimated_size_exceeds_limit",
+			}).Debug("safeBase64Decode: pre-flight size check failed")
+		}
+		return nil, false
+	}
+
+	// Attempt decode with Go's standard library (which has built-in safety checks)
+	decoded, err := base64.StdEncoding.DecodeString(content)
+	encodingUsed := "standard"
+	if err != nil {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithError(err).Debug("safeBase64Decode: standard encoding failed, trying URL-safe")
+		}
+		// Try URL-safe base64 as fallback
+		decoded, err = base64.URLEncoding.DecodeString(content)
+		encodingUsed = "url-safe"
+		if err != nil {
+			if logrus.GetLevel() <= logrus.DebugLevel {
+				logrus.WithError(err).Debug("safeBase64Decode: both standard and URL-safe decoding failed")
+			}
+			return nil, false
+		}
+	}
+
+	// Final size check on actual decoded content
+	if len(decoded) > maxDecodedSize {
+		if logrus.GetLevel() <= logrus.DebugLevel {
+			logrus.WithFields(logrus.Fields{
+				"actual_decoded_size": len(decoded),
+				"max_decoded_size":    maxDecodedSize,
+				"reason":              "actual_size_exceeds_limit",
+			}).Debug("safeBase64Decode: final size check failed")
+		}
+		return nil, false
+	}
+
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		logrus.WithFields(logrus.Fields{
+			"encoding_used":     encodingUsed,
+			"original_length":   len(content),
+			"decoded_length":    len(decoded),
+			"decoded_preview":   string(decoded[:min(50, len(decoded))]),
+			"decode_successful": true,
+		}).Debug("safeBase64Decode: decoding completed successfully")
+	}
+
+	return decoded, true
 }

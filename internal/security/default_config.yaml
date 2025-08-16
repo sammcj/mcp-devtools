@@ -23,6 +23,8 @@ settings:
   cache_enabled: true # Enable security result caching
   cache_max_age: "1h" # Maximum cache age
   cache_max_size: 1000 # Maximum cache entries
+  enable_base64_scanning: true # Enable base64 content decoding and analysis
+  max_base64_decoded_size: 512 # Maximum size of decoded base64 content (KB)
 
 # File Access Control: Files and domains that MCP tools are DENIED ACCESS to
 # These prevent tools from accessing files/domains directly
@@ -78,7 +80,7 @@ trusted_domains:
 #
 # Rule Priority: Rules are evaluated in priority order to allow allowlist patterns to override deny/warn rules:
 # 1. allow (highest priority) - explicitly allow content, overrides all other rules
-# 2. ignore - skip security checks, also overrides warnings/blocks  
+# 2. ignore - skip security checks, also overrides warnings/blocks
 # 3. block - prevent access to content
 # 4. warn_high - high priority warnings
 # 5. warn - standard warnings
@@ -99,6 +101,7 @@ rules:
       - literal: "rm -rf /"
       - literal: ":(){ :|:& };:"
       - literal: "dd if="
+      - literal: "BASE64_TEST_PATTERN_DETECTED" # Safe test pattern for debugging base64 detection
     action: block
     severity: critical
 
@@ -146,6 +149,7 @@ rules:
       - regex: "(?i).*concatenate.*all.*conversation.*history.*" # Conversation history concatenation
       - regex: "(?i).*export.*all.*environment.*variables.*" # Environment variable export
       - regex: "(?i).*export.*all.*secrets.*" # Secrets export
+      - regex: "(?i).*you*are*going*to*act*as*(ADMIN|DAN|DEBUG|MAINTENANCE)" # Generic prompt injection example
       - regex: ".*invisible.*unicode.*(\\\\u200B|\\\\u200C|\\\\u200D|\\\\u200E|\\\\u200F).*" # Invisible unicode characters
     action: block
     severity: critical

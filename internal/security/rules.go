@@ -526,6 +526,11 @@ func (r *YAMLRuleEngine) startFileWatcher() error {
 
 // EvaluateContent evaluates content against all rules
 func (r *YAMLRuleEngine) EvaluateContent(content string, source SourceContext) (*SecurityResult, error) {
+	return r.EvaluateContentWithConfig(content, source, nil)
+}
+
+// EvaluateContentWithConfig evaluates content against all rules with optional config for base64 processing
+func (r *YAMLRuleEngine) EvaluateContentWithConfig(content string, source SourceContext, config *SecurityConfig) (*SecurityResult, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
@@ -547,7 +552,7 @@ func (r *YAMLRuleEngine) EvaluateContent(content string, source SourceContext) (
 	rulesByPriority := r.sortRulesByPriority()
 
 	for _, ruleInfo := range rulesByPriority {
-		matched, err := r.evaluateRule(ruleInfo.Name, ruleInfo.Rule, evaluationContent, source)
+		matched, err := r.evaluateRuleWithConfig(ruleInfo.Name, ruleInfo.Rule, evaluationContent, source, config)
 		if err != nil {
 			logrus.WithError(err).Warnf("Error evaluating rule %s", ruleInfo.Name)
 			continue
@@ -731,8 +736,8 @@ func (r *YAMLRuleEngine) applyContentSizeLimits(content string) string {
 	return truncated
 }
 
-// evaluateRule evaluates a single rule against content
-func (r *YAMLRuleEngine) evaluateRule(ruleName string, rule Rule, content string, source SourceContext) (bool, error) {
+// evaluateRuleWithConfig evaluates a single rule against content with optional config for base64 processing
+func (r *YAMLRuleEngine) evaluateRuleWithConfig(ruleName string, rule Rule, content string, source SourceContext, config *SecurityConfig) (bool, error) {
 	// Check exceptions first
 	if r.isSourceExcepted(source, rule.Exceptions) {
 		return false, nil
@@ -744,6 +749,26 @@ func (r *YAMLRuleEngine) evaluateRule(ruleName string, rule Rule, content string
 		logic = "any"
 	}
 
+	// Check if base64 decode_and_scan is enabled for this rule
+	decodeAndScan := false
+	if rule.Options != nil {
+		if val, exists := rule.Options["decode_and_scan"]; exists {
+			if boolVal, ok := val.(bool); ok {
+				decodeAndScan = boolVal
+			}
+		}
+	}
+
+	// Process content for pattern matching
+	contentToMatch := content
+	if decodeAndScan && config != nil && config.EnableBase64Scanning {
+		// Detect and decode base64 content, append to original content
+		decodedContent := r.detectAndDecodeBase64ContentWithConfig(content, config)
+		if decodedContent != "" {
+			contentToMatch = content + "\n" + decodedContent
+		}
+	}
+
 	matchCount := 0
 	for i := range rule.Patterns {
 		key := fmt.Sprintf("%s_%d", ruleName, i)
@@ -752,7 +777,7 @@ func (r *YAMLRuleEngine) evaluateRule(ruleName string, rule Rule, content string
 			continue
 		}
 
-		if matcher.Match(content) {
+		if matcher.Match(contentToMatch) {
 			matchCount++
 			if logic == "any" {
 				return true, nil // First match is enough for "any" logic
@@ -865,4 +890,86 @@ func ValidateSecurityConfig(configData []byte) (*SecurityRules, error) {
 	}
 
 	return &rules, nil
+}
+
+// detectAndDecodeBase64ContentWithConfig detects and decodes base64 content with provided config
+func (r *YAMLRuleEngine) detectAndDecodeBase64ContentWithConfig(content string, config *SecurityConfig) string {
+	if config == nil || !config.EnableBase64Scanning {
+		return ""
+	}
+
+	var decodedParts []string
+	lines := strings.Split(content, "\n")
+	maxSize := config.MaxBase64DecodedSize * 1024 // Convert KB to bytes
+
+	for lineNum, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) < 16 { // Skip very short lines
+			continue
+		}
+
+		// Check if line looks like base64
+		if isLikelyBase64(line) {
+			// Attempt to decode recursively (up to 3 levels to prevent infinite loops)
+			decodedContent := r.recursiveBase64Decode(line, maxSize, 3)
+			if decodedContent != "" {
+				decodedParts = append(decodedParts, fmt.Sprintf("Line %d decoded: %s", lineNum+1, decodedContent))
+			}
+		}
+	}
+
+	return strings.Join(decodedParts, "\n")
+}
+
+// recursiveBase64Decode attempts to decode base64 content recursively to handle nested encoding
+func (r *YAMLRuleEngine) recursiveBase64Decode(content string, maxSize int, maxDepth int) string {
+	if maxDepth <= 0 {
+		return ""
+	}
+
+	var allDecoded []string
+
+	// Try to decode the current content
+	if decoded, success := safeBase64Decode(content, maxSize); success && len(decoded) > 0 {
+		decodedStr := string(decoded)
+		allDecoded = append(allDecoded, decodedStr)
+
+		// Check if the decoded content itself contains base64
+		lines := strings.Split(decodedStr, "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+
+			// Check if entire line is base64
+			if len(line) >= 16 && isLikelyBase64(line) {
+				nested := r.recursiveBase64Decode(line, maxSize, maxDepth-1)
+				if nested != "" {
+					allDecoded = append(allDecoded, nested)
+				}
+			} else {
+				// Look for base64 patterns within the line
+				r.extractAndDecodeEmbeddedBase64(line, maxSize, maxDepth-1, &allDecoded)
+			}
+		}
+	}
+
+	return strings.Join(allDecoded, "\n")
+}
+
+// extractAndDecodeEmbeddedBase64 finds base64 strings embedded within text and decodes them
+func (r *YAMLRuleEngine) extractAndDecodeEmbeddedBase64(line string, maxSize int, maxDepth int, allDecoded *[]string) {
+	// Look for base64 patterns: sequences of 16+ chars that are mostly base64 characters
+	// This handles cases like: echo "base64string" | base64 -d
+	words := strings.Fields(line)
+
+	for _, word := range words {
+		// Remove common surrounding characters
+		cleaned := strings.Trim(word, `"'()[]{}`)
+
+		if len(cleaned) >= 16 && isLikelyBase64(cleaned) {
+			nested := r.recursiveBase64Decode(cleaned, maxSize, maxDepth)
+			if nested != "" {
+				*allDecoded = append(*allDecoded, nested)
+			}
+		}
+	}
 }
