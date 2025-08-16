@@ -48,10 +48,19 @@ graph TB
         OT[Other Tools...]
     end
 
+    subgraph "Security Helper Functions"
+        OPS[Operations Instance]
+        SHG[SafeHTTPGet/Post]
+        SFR[SafeFileRead/Write]
+        SHR[SafeHTTPResponse]
+        SFC[SafeFileContent]
+    end
+
     subgraph "Security Integration Layer"
         CFA[CheckFileAccess]
         CDA[CheckDomainAccess]
         AC[AnalyseContent]
+        ITC[isTextContent]
     end
 
     subgraph "Security Core"
@@ -82,23 +91,32 @@ graph TB
         GM[Glob Matcher]
     end
 
-    %% Tool Integration
-    FT --> CFA
-    WT --> CDA
-    WT --> AC
-    GT --> CDA
-    GT --> CFA
-    GT --> AC
-    IT --> CDA
-    IT --> AC
-    OT --> CFA
-    OT --> CDA
-    OT --> AC
+    %% Tool to Helper Functions Integration
+    FT --> OPS
+    WT --> OPS
+    GT --> OPS
+    IT --> OPS
+    OT --> OPS
+
+    %% Helper Functions Operations
+    OPS --> SHG
+    OPS --> SFR
+    SHG --> SHR
+    SFR --> SFC
+
+    %% Helper Functions to Security Integration
+    SHG --> CDA
+    SHG --> AC
+    SHG --> ITC
+    SFR --> CFA
+    SFR --> AC
+    SFR --> ITC
 
     %% Security Integration to Core
     CFA --> SM
     CDA --> SM
     AC --> SM
+    ITC --> SM
 
     %% Security Manager Components
     SM --> RE
@@ -123,14 +141,16 @@ graph TB
 
     %% Styling
     classDef toolLayer fill:#E6E6FA,stroke:#756BB1,color:#756BB1
-    classDef integrationLayer fill:#E5F5E0,stroke:#31A354,color:#31A354
-    classDef coreLayer fill:#FEE0D2,stroke:#E6550D,color:#E6550D
-    classDef configLayer fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
-    classDef componentLayer fill:#FFF5EB,stroke:#FD8D3C,color:#E6550D
-    classDef patternLayer fill:#F2F0F7,stroke:#BCBDDC,color:#756BB1
+    classDef helperLayer fill:#E5F5E0,stroke:#31A354,color:#31A354
+    classDef integrationLayer fill:#FEE0D2,stroke:#E6550D,color:#E6550D
+    classDef coreLayer fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
+    classDef configLayer fill:#FFF5EB,stroke:#FD8D3C,color:#E6550D
+    classDef componentLayer fill:#F2F0F7,stroke:#BCBDDC,color:#756BB1
+    classDef patternLayer fill:#FCE4EC,stroke:#E91E63,color:#E91E63
 
     class FT,WT,GT,IT,OT toolLayer
-    class CFA,CDA,AC integrationLayer
+    class OPS,SHG,SFR,SHR,SFC helperLayer
+    class CFA,CDA,AC,ITC integrationLayer
     class SM,RE,DLC,CA coreLayer
     class YR,PC,PM configLayer
     class ST,TA,OM,CACHE componentLayer
