@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -235,19 +236,57 @@ func main() {
 				logger.SetLevel(logrus.ErrorLevel) // Only log errors to stderr
 				logrus.SetLevel(logrus.ErrorLevel) // Also set global logrus level for security module
 			} else {
-				// For non-stdio modes, normal logging is fine
+				// For non-stdio modes, set up file logging if debug is enabled
 				if c.Bool("debug") {
-					logger.SetLevel(logrus.DebugLevel)
-					logrus.SetLevel(logrus.DebugLevel) // Also set global logrus level
-					logger.Debug("Debug logging enabled")
+					// Set up debug logging to file
+					homeDir, err := os.UserHomeDir()
+					if err == nil {
+						logDir := filepath.Join(homeDir, ".mcp-devtools", "logs")
+						if err := os.MkdirAll(logDir, 0700); err == nil {
+							logFile := filepath.Join(logDir, "mcp-devtools.log")
+							if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
+								// Configure both instance and global loggers for file output
+								logger.SetOutput(file)
+								logrus.SetOutput(file)
+								logger.SetLevel(logrus.DebugLevel)
+								logrus.SetLevel(logrus.DebugLevel)
+								logger.Debug("Debug logging enabled - writing to file")
+							} else {
+								// Fallback to stderr if file creation fails
+								logger.SetOutput(os.Stderr)
+								logrus.SetOutput(os.Stderr)
+								logger.SetLevel(logrus.DebugLevel)
+								logrus.SetLevel(logrus.DebugLevel)
+								logger.WithError(err).Warn("Failed to open log file, using stderr")
+							}
+						} else {
+							// Fallback to stderr if directory creation fails
+							logger.SetOutput(os.Stderr)
+							logrus.SetOutput(os.Stderr)
+							logger.SetLevel(logrus.DebugLevel)
+							logrus.SetLevel(logrus.DebugLevel)
+							logger.WithError(err).Warn("Failed to create log directory, using stderr")
+						}
+					} else {
+						// Fallback to stderr if home directory detection fails
+						logger.SetOutput(os.Stderr)
+						logrus.SetOutput(os.Stderr)
+						logger.SetLevel(logrus.DebugLevel)
+						logrus.SetLevel(logrus.DebugLevel)
+						logger.WithError(err).Warn("Failed to get home directory, using stderr")
+					}
 				}
 			}
 
 			// Initialise security system (if enabled) - after logging is configured
+			logger.Debug("Initializing security system")
 			if err := security.InitGlobalSecurityManager(); err != nil {
+				logger.WithError(err).Debug("Security initialization failed")
 				if transport != "stdio" {
 					logger.WithError(err).Warn("Failed to initialise security system")
 				}
+			} else {
+				logger.Debug("Security system initialized successfully")
 			}
 
 			// Only log startup info for non-stdio transports
@@ -257,10 +296,14 @@ func main() {
 			}
 
 			// Create MCP server
+			logger.Debug("Creating MCP server")
 			mcpSrv := mcpserver.NewMCPServer("mcp-devtools", "MCP DevTools Server")
 
+			enabledTools := registry.GetEnabledTools()
+			logger.WithField("tool_count", len(enabledTools)).Debug("MCP server created, registering tools")
+
 			// Register tools - fix race condition by capturing variables properly
-			for toolName, toolImpl := range registry.GetEnabledTools() {
+			for toolName, toolImpl := range enabledTools {
 				// Capture variables to avoid closure race condition
 				name := toolName
 				tool := toolImpl
@@ -304,13 +347,17 @@ func main() {
 			}
 
 			// Start the server
+			logger.WithField("transport", transport).Debug("Starting server")
 			switch transport {
 			case "stdio":
+				logger.Debug("Starting stdio server")
 				return mcpserver.ServeStdio(mcpSrv)
 			case "sse":
+				logger.WithField("port", port).Debug("Starting SSE server")
 				sseServer := mcpserver.NewSSEServer(mcpSrv, mcpserver.WithBaseURL(baseURL+"/sse"))
 				return sseServer.Start(":" + port)
 			case "http":
+				logger.WithField("port", port).Debug("Starting HTTP server")
 				return startStreamableHTTPServer(c, mcpSrv, logger)
 			default:
 				return fmt.Errorf("unsupported transport: %s", transport)

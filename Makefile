@@ -166,7 +166,7 @@ release:
 .PHONY: inspect
 inspect:
 	@echo "Running MCP inspector tool..."
-	DANGEROUSLY_OMIT_AUTH=true npx -y @modelcontextprotocol/inspector -e ENABLE_ADDITIONAL_TOOLS="claude-agent,gemini-agent,security,sbom"
+	DANGEROUSLY_OMIT_AUTH=true npx -y @modelcontextprotocol/inspector --config mcp.json
 
 # Help target
 .PHONY: help

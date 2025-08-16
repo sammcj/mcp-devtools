@@ -20,28 +20,39 @@ var defaultConfigTemplate string
 
 // NewYAMLRuleEngine creates a new YAML rule engine
 func NewYAMLRuleEngine(rulesPath string) (*YAMLRuleEngine, error) {
+	logrus.WithField("rules_path", rulesPath).Debug("Creating YAML rule engine")
 	engine := &YAMLRuleEngine{
 		rulesPath: rulesPath,
 		compiled:  make(map[string]PatternMatcher),
 	}
 
 	// Ensure rules file exists
+	logrus.Debug("Ensuring security rules file exists")
 	if err := engine.ensureRulesFile(); err != nil {
 		return nil, fmt.Errorf("failed to ensure rules file: %w", err)
 	}
+	logrus.Debug("Security rules file exists")
 
 	// Load initial rules
+	logrus.Debug("Loading initial security rules")
 	if err := engine.LoadRules(); err != nil {
 		return nil, fmt.Errorf("failed to load rules: %w", err)
 	}
+	logrus.Debug("Security rules loaded successfully")
 
-	// Start file watcher for auto-reload
+	// Start file watcher for auto-reload (non-blocking)
 	if engine.rules.Settings.AutoReload {
-		if err := engine.startFileWatcher(); err != nil {
-			logrus.WithError(err).Warn("Failed to start rule file watcher, auto-reload disabled")
-		}
+		logrus.Debug("Starting file watcher for auto-reload (non-blocking)")
+		go func() {
+			if err := engine.startFileWatcher(); err != nil {
+				logrus.WithError(err).Warn("Failed to start rule file watcher, auto-reload disabled")
+			}
+		}()
+	} else {
+		logrus.Debug("Auto-reload disabled, skipping file watcher")
 	}
 
+	logrus.Debug("YAML rule engine creation complete")
 	return engine, nil
 }
 
@@ -132,29 +143,38 @@ func (r *YAMLRuleEngine) getDefaultConfigPath() string {
 
 // LoadRules loads rules from the YAML file
 func (r *YAMLRuleEngine) LoadRules() error {
+	logrus.Debug("Acquiring rules mutex lock")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
+	logrus.Debug("Rules mutex acquired")
 
 	// Read rules file
+	logrus.WithField("rules_path", r.rulesPath).Debug("Reading security rules file")
 	data, err := os.ReadFile(r.rulesPath)
 	if err != nil {
 		return fmt.Errorf("failed to read rules file: %w", err)
 	}
+	logrus.WithField("bytes", len(data)).Debug("Security rules file read successfully")
 
 	// Parse YAML
+	logrus.Debug("Parsing security rules YAML")
 	var rules SecurityRules
 	if err := yaml.Unmarshal(data, &rules); err != nil {
 		return fmt.Errorf("failed to parse YAML rules: %w", err)
 	}
+	logrus.Debug("Security rules YAML parsed successfully")
 
 	// Validate rules and auto-fix invalid regex patterns
+	logrus.Debug("Validating and fixing security rules")
 	modified, err := r.validateAndFixRules(&rules, string(data))
 	if err != nil {
 		return fmt.Errorf("rule validation failed: %w", err)
 	}
+	logrus.WithField("modified", modified).Debug("Security rules validation completed")
 
 	// If file was modified due to invalid regex, reload from the corrected file
 	if modified {
+		logrus.Debug("Security rules were modified, reloading corrected file")
 		// Only log if not in stdio mode (stdio mode sets ErrorLevel to prevent MCP protocol pollution)
 		if logrus.GetLevel() >= logrus.InfoLevel {
 			logrus.Info("Security rules file was automatically corrected due to invalid regex patterns")
@@ -175,28 +195,52 @@ func (r *YAMLRuleEngine) LoadRules() error {
 		if _, err := r.validateAndFixRules(&rules, string(data)); err != nil {
 			return fmt.Errorf("corrected rule validation failed: %w", err)
 		}
+		logrus.Debug("Corrected security rules reloaded successfully")
 	}
 
 	// Compile patterns
+	logrus.Debug("Compiling security rule patterns")
 	if err := r.compilePatterns(&rules); err != nil {
 		return fmt.Errorf("pattern compilation failed: %w", err)
 	}
+	logrus.Debug("Security rule patterns compiled successfully")
 
 	// Update rule engine state
+	logrus.Debug("Updating rule engine state")
 	r.rules = &rules
 	r.lastModified = time.Now()
 
 	// Clear security cache when rules are reloaded to ensure new rules take effect immediately
-	globalManagerMutex.RLock()
-	manager := GlobalSecurityManager
-	globalManagerMutex.RUnlock()
+	// Skip cache clearing during initial setup to avoid deadlock with globalManagerMutex
+	logrus.Debug("Checking if cache clearing is safe")
 
-	if manager != nil && manager.cache != nil {
-		oldSize := manager.cache.Size()
-		manager.cache.Clear()
-		if oldSize > 0 {
-			logrus.WithField("cache_entries_cleared", oldSize).Debug("Cleared security cache due to rule reload")
+	// Try to acquire the lock with a timeout to avoid deadlock during initialization
+	done := make(chan bool, 1)
+	var manager *SecurityManager
+
+	go func() {
+		globalManagerMutex.RLock()
+		manager = GlobalSecurityManager
+		globalManagerMutex.RUnlock()
+		done <- true
+	}()
+
+	select {
+	case <-done:
+		logrus.Debug("Successfully checked global security manager")
+		if manager != nil && manager.cache != nil {
+			oldSize := manager.cache.Size()
+			manager.cache.Clear()
+			if oldSize > 0 {
+				logrus.WithField("cache_entries_cleared", oldSize).Debug("Cleared security cache due to rule reload")
+			}
+			logrus.WithField("entries_cleared", oldSize).Debug("Security cache cleared")
+		} else {
+			logrus.Debug("No security cache to clear (manager not ready)")
 		}
+	case <-time.After(100 * time.Millisecond):
+		// Timeout - likely during initialization, skip cache clearing
+		logrus.Debug("Skipping cache clear due to mutex timeout (likely during initialization)")
 	}
 
 	logrus.Debug("Security rules loaded successfully")
@@ -427,6 +471,28 @@ func (r *YAMLRuleEngine) startFileWatcher() error {
 		return fmt.Errorf("failed to create file watcher: %w", err)
 	}
 
+	// Use a channel to handle watcher.Add with timeout
+	done := make(chan error, 1)
+	go func() {
+		done <- watcher.Add(r.rulesPath)
+	}()
+
+	// Wait for watcher.Add to complete with timeout
+	select {
+	case err := <-done:
+		if err != nil {
+			if closeErr := watcher.Close(); closeErr != nil {
+				logrus.WithError(closeErr).Warn("Failed to close watcher after add error")
+			}
+			return fmt.Errorf("failed to watch rules file: %w", err)
+		}
+	case <-time.After(5 * time.Second):
+		if closeErr := watcher.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close watcher after timeout")
+		}
+		return fmt.Errorf("timeout adding rules file to watcher")
+	}
+
 	go func() {
 		defer func() {
 			if closeErr := watcher.Close(); closeErr != nil {
@@ -454,11 +520,6 @@ func (r *YAMLRuleEngine) startFileWatcher() error {
 			}
 		}
 	}()
-
-	// Watch the rules file
-	if err := watcher.Add(r.rulesPath); err != nil {
-		return fmt.Errorf("failed to watch rules file: %w", err)
-	}
 
 	return nil
 }

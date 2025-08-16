@@ -99,24 +99,30 @@ func NewSecurityManagerWithRules(rules *SecurityRules) (*SecurityManager, error)
 }
 
 func NewSecurityManager() (*SecurityManager, error) {
+	logrus.Debug("Loading security configuration")
 	config, err := loadSecurityConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load security config: %w", err)
 	}
+	logrus.Debug("Security configuration loaded successfully")
 
 	// Create cache
+	logrus.Debug("Creating security cache")
 	cache := &Cache{
 		maxSize: config.CacheMaxSize,
 		maxAge:  config.CacheMaxAge,
 	}
 
 	// Create rule engine
+	logrus.WithField("rules_path", config.RulesPath).Debug("Creating YAML rule engine")
 	ruleEngine, err := NewYAMLRuleEngine(config.RulesPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create rule engine: %w", err)
 	}
+	logrus.Debug("YAML rule engine created successfully")
 
 	// Create override manager
+	logrus.Debug("Creating override manager")
 	overrideManager, err := NewOverrideManager(
 		filepath.Join(filepath.Dir(config.RulesPath), "overrides.yaml"),
 		config.LogPath,
@@ -124,8 +130,10 @@ func NewSecurityManager() (*SecurityManager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create override manager: %w", err)
 	}
+	logrus.Debug("Override manager created successfully")
 
 	// Create source trust manager
+	logrus.Debug("Creating source trust manager")
 	sourceTrust := &SourceTrust{
 		trustedDomains:    config.TrustedDomains,
 		suspiciousDomains: config.SuspiciousDomains,
@@ -133,12 +141,14 @@ func NewSecurityManager() (*SecurityManager, error) {
 	}
 
 	// Create threat analyser
+	logrus.Debug("Creating threat analyser")
 	threatAnalyser := &ThreatAnalyser{
 		patterns:    make(map[string]PatternMatcher),
 		shellParser: &ShellParser{},
 	}
 
 	// Create security advisor
+	logrus.Debug("Creating security advisor")
 	advisor := &SecurityAdvisor{
 		config:     config,
 		ruleEngine: ruleEngine,
@@ -149,6 +159,7 @@ func NewSecurityManager() (*SecurityManager, error) {
 	}
 
 	// Create deny list checker
+	logrus.Debug("Creating deny list checker")
 	denyChecker := &DenyListChecker{
 		filePatterns:   config.DenyFiles,
 		domainPatterns: config.DenyDomains,
@@ -156,7 +167,9 @@ func NewSecurityManager() (*SecurityManager, error) {
 	if err := denyChecker.compilePatterns(); err != nil {
 		return nil, fmt.Errorf("failed to compile deny patterns: %w", err)
 	}
+	logrus.Debug("Deny list checker created successfully")
 
+	logrus.Debug("Assembling security manager")
 	manager := &SecurityManager{
 		enabled:     config.Enabled,
 		advisor:     advisor,
@@ -169,9 +182,11 @@ func NewSecurityManager() (*SecurityManager, error) {
 
 	// Start cleanup routine if caching is enabled
 	if config.CacheEnabled {
+		logrus.Debug("Starting cache cleanup routine")
 		cache.StartCleanup()
 	}
 
+	logrus.Debug("Security manager creation complete")
 	return manager, nil
 }
 
@@ -287,27 +302,35 @@ func loadSecurityConfig() (*SecurityConfig, error) {
 
 // InitGlobalSecurityManager initialises the global security manager
 func InitGlobalSecurityManager() error {
+	logrus.Debug("InitGlobalSecurityManager called")
+
 	globalManagerMutex.Lock()
 	defer globalManagerMutex.Unlock()
 
 	// Check if already initialized to avoid double initialization
 	if GlobalSecurityManager != nil {
-		logrus.Debug("Security system already initialized")
+		logrus.Debug("Security system already initialized, skipping")
 		return nil
 	}
 
 	// Only initialise if security is enabled via ENABLE_ADDITIONAL_TOOLS
-	if !tools.IsToolEnabled("security") {
+	securityEnabled := tools.IsToolEnabled("security")
+	logrus.WithField("enabled", securityEnabled).Debug("Checking security tool enablement")
+
+	if !securityEnabled {
 		logrus.Debug("Security system not enabled in ENABLE_ADDITIONAL_TOOLS")
 		return nil
 	}
 
+	logrus.Debug("Creating new security manager")
 	manager, err := NewSecurityManager()
 	if err != nil {
+		logrus.WithError(err).Debug("Failed to create security manager")
 		logrus.WithError(err).Warn("Failed to initialise security manager, continuing without security")
 		return nil // Don't fail startup
 	}
 
+	logrus.Debug("Security manager created successfully")
 	GlobalSecurityManager = manager
 	// Only log if not in stdio mode (stdio mode sets ErrorLevel to prevent MCP protocol pollution)
 	if logrus.GetLevel() >= logrus.InfoLevel {

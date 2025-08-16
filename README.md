@@ -378,6 +378,7 @@ make deps
 make test
 make build
 # Run security checks, see make help
+make inspect # launches the MCP inspector tool
 ```
 
 ## Disclaimer
