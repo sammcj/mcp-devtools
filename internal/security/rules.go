@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -471,22 +472,25 @@ func (r *YAMLRuleEngine) EvaluateContent(content string, source SourceContext) (
 	// Apply content size limits before evaluation (for "allow" behavior)
 	evaluationContent := r.applyContentSizeLimits(content)
 
-	// Check each rule
-	for ruleName, rule := range r.rules.Rules {
-		matched, err := r.evaluateRule(ruleName, rule, evaluationContent, source)
+	// Check rules in priority order: allow/ignore first, then others
+	// This ensures allowlist patterns can override deny/warn rules
+	rulesByPriority := r.sortRulesByPriority()
+
+	for _, ruleInfo := range rulesByPriority {
+		matched, err := r.evaluateRule(ruleInfo.Name, ruleInfo.Rule, evaluationContent, source)
 		if err != nil {
-			logrus.WithError(err).Warnf("Error evaluating rule %s", ruleName)
+			logrus.WithError(err).Warnf("Error evaluating rule %s", ruleInfo.Name)
 			continue
 		}
 
 		if matched {
 			// Generate security result
-			securityID := GenerateSecurityID(rule.Action)
+			securityID := GenerateSecurityID(ruleInfo.Rule.Action)
 
 			return &SecurityResult{
-				Safe:      rule.Action == "allow" || rule.Action == "ignore",
-				Action:    mapRuleActionToSecurityAction(rule.Action),
-				Message:   r.formatSecurityMessage(rule, ruleName, securityID),
+				Safe:      ruleInfo.Rule.Action == "allow" || ruleInfo.Rule.Action == "ignore",
+				Action:    mapRuleActionToSecurityAction(ruleInfo.Rule.Action),
+				Message:   r.formatSecurityMessage(ruleInfo.Rule, ruleInfo.Name, securityID),
 				ID:        securityID,
 				Timestamp: time.Now(),
 			}, nil
@@ -495,6 +499,61 @@ func (r *YAMLRuleEngine) EvaluateContent(content string, source SourceContext) (
 
 	// No rules matched, content is safe
 	return &SecurityResult{Safe: true, Action: ActionAllow}, nil
+}
+
+// RuleInfo holds rule information for priority-based processing
+type RuleInfo struct {
+	Name     string
+	Rule     Rule
+	Priority int
+}
+
+// sortRulesByPriority sorts rules by priority to ensure allowlist patterns are evaluated first
+func (r *YAMLRuleEngine) sortRulesByPriority() []RuleInfo {
+	var ruleInfos []RuleInfo
+
+	// Convert map to slice and assign priorities
+	for ruleName, rule := range r.rules.Rules {
+		priority := r.getActionPriority(rule.Action)
+		ruleInfos = append(ruleInfos, RuleInfo{
+			Name:     ruleName,
+			Rule:     rule,
+			Priority: priority,
+		})
+	}
+
+	// Sort by priority (lower numbers = higher priority = evaluated first)
+	sort.Slice(ruleInfos, func(i, j int) bool {
+		// First sort by priority
+		if ruleInfos[i].Priority != ruleInfos[j].Priority {
+			return ruleInfos[i].Priority < ruleInfos[j].Priority
+		}
+		// Then sort by name for consistent ordering
+		return ruleInfos[i].Name < ruleInfos[j].Name
+	})
+
+	return ruleInfos
+}
+
+// getActionPriority returns the priority level for different rule actions
+// Lower numbers = higher priority = evaluated first
+func (r *YAMLRuleEngine) getActionPriority(action string) int {
+	switch action {
+	case "allow":
+		return 1 // Highest priority - allowlist patterns override everything
+	case "ignore":
+		return 2 // Second highest - also overrides warnings/blocks
+	case "block":
+		return 3 // High priority - blocks override warnings
+	case "warn_high":
+		return 4 // Medium-high priority
+	case "warn":
+		return 5 // Medium priority
+	case "notify":
+		return 6 // Low priority - just notifications
+	default:
+		return 7 // Lowest priority - unknown actions
+	}
 }
 
 // checkSizeLimits checks content against size limits and returns appropriate security result

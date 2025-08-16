@@ -1,12 +1,16 @@
 package security
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math"
 	"regexp"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/google/shlex"
+	"golang.org/x/text/unicode/norm"
 )
 
 // AnalyseContent performs Intent-Context-Destination analysis on content
@@ -34,8 +38,22 @@ func (a *SecurityAdvisor) performAnalysis(content string, source SourceContext) 
 		content = content[:a.config.MaxScanSize]
 	}
 
-	// Perform threat analysis
+	// Apply encoding detection and normalisation to prevent pattern evasion
+	processedContent := a.applyEncodingDetection(content)
+
+	// Perform threat analysis on both original and processed content
 	analysis := a.analyser.AnalyseContent(content, source, a.ruleEngine)
+
+	// If original content was clean, also check processed content
+	if len(analysis.Commands) == 0 && len(analysis.RiskFactors) == 0 && processedContent != content {
+		processedAnalysis := a.analyser.AnalyseContent(processedContent, source, a.ruleEngine)
+		if len(processedAnalysis.Commands) > 0 || len(processedAnalysis.RiskFactors) > 0 {
+			// Found threats in processed content - merge results
+			analysis.Commands = append(analysis.Commands, processedAnalysis.Commands...)
+			analysis.RiskFactors = append(analysis.RiskFactors, processedAnalysis.RiskFactors...)
+			analysis.RiskFactors = append(analysis.RiskFactors, "encoded content evasion")
+		}
+	}
 
 	// Get source trust score
 	analysis.SourceTrust = a.trust.GetTrustScore(source.Domain)
@@ -44,7 +62,7 @@ func (a *SecurityAdvisor) performAnalysis(content string, source SourceContext) 
 	// Calculate overall risk
 	analysis.RiskScore = a.calculateRisk(analysis)
 
-	// Use rule engine for pattern-based analysis
+	// Use rule engine for pattern-based analysis on original content
 	ruleResult, err := a.ruleEngine.EvaluateContent(content, source)
 	if err != nil {
 		// Log error but continue with basic analysis
@@ -55,6 +73,17 @@ func (a *SecurityAdvisor) performAnalysis(content string, source SourceContext) 
 			Analysis:  analysis,
 			Timestamp: ruleResult.Timestamp,
 		}, nil
+	}
+
+	// If original content passed but we have processed content, check that too
+	if ruleResult.Safe && processedContent != content {
+		processedRuleResult, err := a.ruleEngine.EvaluateContent(processedContent, source)
+		if err == nil && !processedRuleResult.Safe {
+			// Processed content triggered rules - this indicates encoding evasion
+			processedRuleResult.Analysis = analysis
+			processedRuleResult.Message = "Encoded content evasion detected: " + processedRuleResult.Message
+			return processedRuleResult, nil
+		}
 	}
 
 	// Combine rule-based and analysis-based results
@@ -611,4 +640,174 @@ func (a *SecurityAdvisor) formatAnalysisMessage(analysis *ThreatAnalysis) string
 
 	factors := strings.Join(analysis.RiskFactors, ", ")
 	return fmt.Sprintf("Security concerns detected: %s", factors)
+}
+
+// applyEncodingDetection applies encoding detection and normalisation to prevent pattern evasion
+func (a *SecurityAdvisor) applyEncodingDetection(content string) string {
+	// Start with Unicode normalisation
+	normalized := a.normalizeUnicode(content)
+
+	// Apply base64 detection and decoding
+	decoded := a.detectAndDecodeBase64(normalized)
+
+	// Apply URL decoding for common URL encoding evasion
+	urlDecoded := a.decodeURLEncoding(decoded)
+
+	// Apply hex decoding for hex-encoded content
+	hexDecoded := a.decodeHexEncoding(urlDecoded)
+
+	return hexDecoded
+}
+
+// normalizeUnicode normalizes Unicode content to prevent evasion through different Unicode forms
+func (a *SecurityAdvisor) normalizeUnicode(content string) string {
+	// Apply NFC (Canonical Decomposition followed by Canonical Composition)
+	// This converts visually identical Unicode characters to the same representation
+	normalized := norm.NFC.String(content)
+
+	// Remove/replace invisible and confusing Unicode characters
+	var result strings.Builder
+	for _, r := range normalized {
+		switch {
+		case r == '\u200B': // Zero-width space
+			// Skip zero-width spaces as they can hide malicious content
+			continue
+		case r == '\u200C' || r == '\u200D': // Zero-width non-joiner/joiner
+			// Skip these as well
+			continue
+		case r == '\uFEFF': // Byte order mark
+			// Skip BOM characters
+			continue
+		case unicode.Is(unicode.Cf, r): // Format characters
+			// Skip most format characters that could be used for evasion
+			continue
+		case !utf8.ValidRune(r):
+			// Replace invalid runes with replacement character
+			result.WriteRune('\uFFFD')
+		default:
+			result.WriteRune(r)
+		}
+	}
+
+	return result.String()
+}
+
+// detectAndDecodeBase64 detects and decodes base64 content to reveal hidden commands
+func (a *SecurityAdvisor) detectAndDecodeBase64(content string) string {
+	// Pattern to match potential base64 strings (at least 20 characters for meaningful content)
+	base64Pattern := regexp.MustCompile(`[A-Za-z0-9+/]{20,}={0,2}`)
+
+	result := base64Pattern.ReplaceAllStringFunc(content, func(match string) string {
+		// Try to decode the base64 string
+		decoded, err := base64.StdEncoding.DecodeString(match)
+		if err != nil {
+			// If standard encoding fails, try URL encoding
+			decoded, err = base64.URLEncoding.DecodeString(match)
+			if err != nil {
+				// If both fail, return original
+				return match
+			}
+		}
+
+		// Check if decoded content is printable text
+		decodedStr := string(decoded)
+		if a.isPrintableText(decodedStr) {
+			// Return both original and decoded for analysis
+			return match + " " + decodedStr
+		}
+
+		return match
+	})
+
+	return result
+}
+
+// decodeURLEncoding decodes URL-encoded content
+func (a *SecurityAdvisor) decodeURLEncoding(content string) string {
+	// Pattern for URL encoding (%XX format)
+	urlPattern := regexp.MustCompile(`%[0-9A-Fa-f]{2}`)
+
+	if !urlPattern.MatchString(content) {
+		return content // No URL encoding found
+	}
+
+	result := urlPattern.ReplaceAllStringFunc(content, func(match string) string {
+		// Decode the hex value
+		if len(match) == 3 && match[0] == '%' {
+			hex := match[1:3]
+			if val, err := parseHexByte(hex); err == nil {
+				return string(rune(val))
+			}
+		}
+		return match
+	})
+
+	return result
+}
+
+// decodeHexEncoding decodes hex-encoded content (0x format or plain hex)
+func (a *SecurityAdvisor) decodeHexEncoding(content string) string {
+	// Pattern for hex encoding (0x followed by hex digits, or \x format)
+	hexPattern := regexp.MustCompile(`(?:0x|\\x)([0-9A-Fa-f]{2})`)
+
+	result := hexPattern.ReplaceAllStringFunc(content, func(match string) string {
+		// Extract the hex part
+		var hex string
+		if strings.HasPrefix(match, "0x") {
+			hex = match[2:]
+		} else if strings.HasPrefix(match, "\\x") {
+			hex = match[2:]
+		} else {
+			return match
+		}
+
+		if val, err := parseHexByte(hex); err == nil {
+			return string(rune(val))
+		}
+		return match
+	})
+
+	return result
+}
+
+// isPrintableText checks if decoded content consists mainly of printable text
+func (a *SecurityAdvisor) isPrintableText(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
+	printableCount := 0
+	for _, r := range s {
+		if unicode.IsPrint(r) || unicode.IsSpace(r) {
+			printableCount++
+		}
+	}
+
+	// Consider it printable if at least 80% of characters are printable
+	return float64(printableCount)/float64(utf8.RuneCountInString(s)) >= 0.8
+}
+
+// parseHexByte parses a 2-character hex string into a byte value
+func parseHexByte(hex string) (byte, error) {
+	if len(hex) != 2 {
+		return 0, fmt.Errorf("invalid hex length")
+	}
+
+	var result byte
+	for _, char := range hex {
+		var val byte
+		switch {
+		case char >= '0' && char <= '9':
+			val = byte(char - '0')
+		case char >= 'A' && char <= 'F':
+			val = byte(char - 'A' + 10)
+		case char >= 'a' && char <= 'f':
+			val = byte(char - 'a' + 10)
+		default:
+			return 0, fmt.Errorf("invalid hex character: %c", char)
+		}
+		result = result*16 + val
+	}
+
+	return result, nil
 }

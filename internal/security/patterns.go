@@ -1,11 +1,13 @@
 package security
 
 import (
+	"context"
 	"math"
 	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // LiteralMatcher matches exact strings
@@ -259,9 +261,32 @@ func (m *URLMatcher) Match(content string) bool {
 }
 
 func (m *URLMatcher) extractURLs(content string) []string {
-	// Simple URL extraction using regex
+	// Simple URL extraction using regex with timeout protection
 	urlRegex := regexp.MustCompile(`https?://[^\s<>"]+`)
-	return urlRegex.FindAllString(content, -1)
+
+	// Use timeout protection for URL extraction
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	resultChan := make(chan []string, 1)
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// If regex panics, return empty slice
+				resultChan <- []string{}
+			}
+		}()
+		resultChan <- urlRegex.FindAllString(content, -1)
+	}()
+
+	select {
+	case result := <-resultChan:
+		return result
+	case <-ctx.Done():
+		// Timeout occurred - return empty slice to fail safe
+		return []string{}
+	}
 }
 
 func (m *URLMatcher) String() string {
@@ -335,10 +360,11 @@ func (m *EntropyMatcher) String() string {
 	return "entropy:" + string(rune(m.threshold))
 }
 
-// RegexMatcher matches using regular expressions
+// RegexMatcher matches using regular expressions with timeout protection
 type RegexMatcher struct {
 	pattern string
 	regex   *regexp.Regexp
+	timeout time.Duration
 }
 
 func NewRegexMatcher(pattern string) (*RegexMatcher, error) {
@@ -350,11 +376,50 @@ func NewRegexMatcher(pattern string) (*RegexMatcher, error) {
 	return &RegexMatcher{
 		pattern: pattern,
 		regex:   regex,
+		timeout: 100 * time.Millisecond, // Default 100ms timeout to prevent ReDoS
+	}, nil
+}
+
+func NewRegexMatcherWithTimeout(pattern string, timeout time.Duration) (*RegexMatcher, error) {
+	regex, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RegexMatcher{
+		pattern: pattern,
+		regex:   regex,
+		timeout: timeout,
 	}, nil
 }
 
 func (m *RegexMatcher) Match(content string) bool {
-	return m.regex.MatchString(content)
+	return m.MatchWithTimeout(content, m.timeout)
+}
+
+func (m *RegexMatcher) MatchWithTimeout(content string, timeout time.Duration) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resultChan := make(chan bool, 1)
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// If regex panics, consider it a non-match
+				resultChan <- false
+			}
+		}()
+		resultChan <- m.regex.MatchString(content)
+	}()
+
+	select {
+	case result := <-resultChan:
+		return result
+	case <-ctx.Done():
+		// Timeout occurred - consider it a non-match to fail safe
+		return false
+	}
 }
 
 func (m *RegexMatcher) String() string {

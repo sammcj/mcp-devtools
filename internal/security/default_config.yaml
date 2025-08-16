@@ -75,7 +75,24 @@ trusted_domains:
 
 # Content Analysis Rules: Warn about risky content patterns in returned data
 # These analyse content that MCP tools have already fetched/accessed
+#
+# Rule Priority: Rules are evaluated in priority order to allow allowlist patterns to override deny/warn rules:
+# 1. allow (highest priority) - explicitly allow content, overrides all other rules
+# 2. ignore - skip security checks, also overrides warnings/blocks  
+# 3. block - prevent access to content
+# 4. warn_high - high priority warnings
+# 5. warn - standard warnings
+# 6. notify - low priority notifications
+#
 rules:
+  # Example allowlist patterns - these override warnings/blocks for specific trusted content
+  trusted_curl_examples:
+    description: "Allow safe curl examples from documentation sites"
+    patterns:
+      - regex: "curl.*\\|.*sh"  # Normally would trigger shell injection warning
+    action: allow  # Explicitly allow this pattern, overriding warnings
+    # Only applies to these trusted domains
+    exceptions: [trusted_domains]
   content_badware_block:
     description: "Default malicious patterns"
     patterns:
