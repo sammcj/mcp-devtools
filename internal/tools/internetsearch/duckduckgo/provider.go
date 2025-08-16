@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sirupsen/logrus"
 )
@@ -78,33 +79,28 @@ func (p *DuckDuckGoProvider) executeWebSearch(ctx context.Context, logger *logru
 	formData.Set("b", "")
 	formData.Set("kl", "")
 
-	// Create POST request to DuckDuckGo HTML interface
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://html.duckduckgo.com/html", strings.NewReader(formData.Encode()))
+	// Use security helper for safe HTTP POST
+	ops := security.NewOperations("internetsearch")
+	safeResp, err := ops.SafeHTTPPost("https://html.duckduckgo.com/html", strings.NewReader(formData.Encode()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set headers to mimic a real browser
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-
-	// Execute request
-	resp, err := p.client.Do(req)
-	if err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+		}
 		return nil, fmt.Errorf("search request failed: %w", err)
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logger.WithError(err).Warn("Failed to close response body")
-		}
-	}()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("DuckDuckGo search error: %d %s", resp.StatusCode, resp.Status)
+	// Handle security warnings
+	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+		logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+	}
+
+	if safeResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("DuckDuckGo search error: %d", safeResp.StatusCode)
 	}
 
 	// Parse HTML response using goquery
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(safeResp.Content)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML response: %w", err)
 	}

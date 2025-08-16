@@ -74,13 +74,13 @@ func TestIsToolEnabled(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "underscore vs hyphen normalization - env var has underscore",
+			name:     "underscore vs hyphen normalisation - env var has underscore",
 			envValue: "vulnerability_scan",
 			toolName: "vulnerability-scan",
 			expected: true,
 		},
 		{
-			name:     "underscore vs hyphen normalization - env var has hyphen",
+			name:     "underscore vs hyphen normalisation - env var has hyphen",
 			envValue: "vulnerability-scan",
 			toolName: "vulnerability_scan",
 			expected: true,

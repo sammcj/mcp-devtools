@@ -10,7 +10,8 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
     - [2. Implement the Tool Interface](#2-implement-the-tool-interface)
     - [4. Result Schema](#4-result-schema)
     - [5. Caching](#5-caching)
-    - [6. Import the Tool Package](#6-import-the-tool-package)
+    - [6. Security Integration](#6-security-integration)
+    - [7. Import the Tool Package](#7-import-the-tool-package)
   - [Example: Hello World Tool](#example-hello-world-tool)
     - [Testing Your Tool](#testing-your-tool)
   - [Testing](#testing)
@@ -69,6 +70,7 @@ import (
 
     "github.com/mark3labs/mcp-go/mcp"
     "github.com/sammcj/mcp-devtools/internal/registry"
+    "github.com/sammcj/mcp-devtools/internal/security"
     "github.com/sirupsen/logrus"
 )
 
@@ -118,9 +120,42 @@ func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
         param2 = param2Raw
     }
 
+    // SECURITY INTEGRATION: Check file access if your tool reads files
+    if needsFileAccess {
+        if err := security.CheckFileAccess(filePath); err != nil {
+            return nil, err
+        }
+    }
+
+    // SECURITY INTEGRATION: Check domain access if your tool makes HTTP requests
+    if needsDomainAccess {
+        if err := security.CheckDomainAccess(domain); err != nil {
+            return nil, err
+        }
+    }
+
     // Implement your tool's logic here
+    content := "fetched or processed content"
+
+    // SECURITY INTEGRATION: Analyse content for security risks
+    source := security.SourceContext{
+        Tool:   "your_tool_name",
+        Domain: domain,        // for HTTP content
+        Source: filePath,      // for file content
+        Type:   "content_type",
+    }
+    if result, err := security.AnalyseContent(content, source); err == nil {
+        switch result.Action {
+        case security.ActionBlock:
+            return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+        case security.ActionWarn:
+            logger.WithField("security_id", result.ID).Warn(result.Message)
+        }
+    }
+
     result := map[string]interface{}{
         "message": fmt.Sprintf("Tool executed with param1=%s, param2=%f", param1, param2),
+        "content": content,
         // Add more result fields as needed
     }
 
@@ -196,7 +231,148 @@ if cachedValue, ok := cache.Load("key"); ok {
 }
 ```
 
-### 6. Import the Tool Package
+### 6. Security Integration
+
+**IMPORTANT**: All tools that access files or make HTTP requests MUST integrate with the security system. This provides protection against malicious content and unauthorized access.
+
+#### Recommended: Security Helper Functions
+
+The preferred approach is to use security helper functions that provide simplified APIs with automatic security integration and content integrity preservation.
+
+**For HTTP operations:**
+```go
+// Create operations instance for your tool
+ops := security.NewOperations("your_tool_name")
+
+// Secure HTTP GET with content integrity preservation
+safeResp, err := ops.SafeHTTPGet(urlStr)
+if err != nil {
+    // Handle security blocks or network errors
+    if secErr, ok := err.(*security.SecurityError); ok {
+        return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+            secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+    }
+    return nil, err
+}
+
+// Content is EXACT bytes from server
+content := safeResp.Content
+
+// Check for security warnings (non-blocking)
+if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+    logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+    // Content is still available despite warning
+}
+
+// Process exact content
+return processContent(content)
+```
+
+**For file operations:**
+```go
+ops := security.NewOperations("your_tool_name")
+
+// Secure file read with content integrity preservation
+safeFile, err := ops.SafeFileRead(filePath)
+if err != nil {
+    // Handle security blocks or file errors
+    if secErr, ok := err.(*security.SecurityError); ok {
+        return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+            secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+    }
+    return nil, err
+}
+
+// Content is EXACT file bytes
+content := safeFile.Content
+
+// Handle security warnings if present
+if safeFile.SecurityResult != nil && safeFile.SecurityResult.Action == security.ActionWarn {
+    logger.Warnf("Security warning [ID: %s]: %s", safeFile.SecurityResult.ID, safeFile.SecurityResult.Message)
+}
+
+return processContent(content)
+```
+
+#### Helper Functions Benefits
+
+- **80-90% Boilerplate Reduction**: From 30+ lines to 5-10 lines
+- **Content Integrity**: Guaranteed exact byte preservation
+- **Security Compliance**: Automatic integration with security framework
+- **Error Handling**: Consistent security error patterns
+- **Performance**: Same security guarantees with simpler code
+
+#### Alternative: Manual Security Integration
+
+For tools requiring fine-grained control, you can manually integrate with the security system:
+
+**File Access Security:**
+```go
+// Before any file operation
+if err := security.CheckFileAccess(filePath); err != nil {
+    return nil, err  // Access denied by security policy
+}
+```
+
+**Domain Access Security:**
+```go
+// Before making HTTP requests
+if err := security.CheckDomainAccess(domain); err != nil {
+    return nil, err  // Domain blocked by security policy
+}
+```
+
+**Content Analysis Security:**
+```go
+// After fetching/processing content
+source := security.SourceContext{
+    Tool:   "your_tool_name",
+    Domain: domain,        // for HTTP content
+    Source: filePath,      // for file content
+    Type:   "content_type", // e.g., "web_content", "file_content", "api_response"
+}
+
+if result, err := security.AnalyseContent(content, source); err == nil {
+    switch result.Action {
+    case security.ActionBlock:
+        return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+    case security.ActionWarn:
+        logger.WithField("security_id", result.ID).Warn(result.Message)
+        // Continue processing but log the warning
+    case security.ActionAllow:
+        // Content is safe, continue normally
+    }
+}
+```
+
+#### Security Integration Checklist
+
+**For Helper Functions (Recommended):**
+- [ ] Import `"github.com/sammcj/mcp-devtools/internal/security"`
+- [ ] Create Operations instance: `ops := security.NewOperations("tool_name")`
+- [ ] Use `ops.SafeHTTPGet/Post()` for HTTP operations
+- [ ] Use `ops.SafeFileRead/Write()` for file operations
+- [ ] Handle `SecurityError` in error responses
+- [ ] Log security warnings when present
+- [ ] Process exact content from response types
+
+**For Manual Integration:**
+- [ ] Import `"github.com/sammcj/mcp-devtools/internal/security"`
+- [ ] Call `security.CheckFileAccess()` before file operations
+- [ ] Call `security.CheckDomainAccess()` before HTTP requests
+- [ ] Call `security.AnalyseContent()` for returned content
+- [ ] Handle `ActionBlock` by returning an error
+- [ ] Handle `ActionWarn` by logging with security ID
+- [ ] Provide appropriate `SourceContext` for content analysis
+
+#### Security System Behaviour
+
+- **Disabled by default**: Security checks are no-ops when security is not enabled
+- **Graceful degradation**: Tools work normally when security is disabled
+- **Override capability**: Blocked content includes security IDs for potential overrides
+- **Audit logging**: All security events are logged for review
+
+### 7. Import the Tool Package
 
 Finally, import your tool package in `main.go` to ensure it's registered:
 
@@ -371,4 +547,5 @@ Tools with extended help:
 - Tools should have fast, concise unit tests that do not rely on external dependencies or services.
 - No tool should ever log to stdout or stderr when the MCP server is running in stdio mode as this breaks the MCP protocol.
 - You should update docs/tools/overview.md with adding or changing a tool.
+- **SECURITY**: All tools that access files or make HTTP requests MUST integrate with the security system. See [Security Integration](#6-security-integration) above and [Security System Documentation](security.md) for details.
 - Follow least privilege security principles.

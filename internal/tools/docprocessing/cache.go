@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/sammcj/mcp-devtools/internal/security"
 )
 
 // CacheManager handles caching of document processing results
@@ -71,6 +73,11 @@ func (cm *CacheManager) Get(cacheKey string) (*DocumentProcessingResponse, bool)
 	}
 
 	filePath := cm.GetCacheFilePath(cacheKey)
+
+	// Security: Check file access for cache file
+	if err := security.CheckFileAccess(filePath); err != nil {
+		return nil, false
+	}
 
 	// Check if cache file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -138,6 +145,10 @@ func (cm *CacheManager) Set(cacheKey string, response *DocumentProcessingRespons
 
 	// Write to cache file
 	filePath := cm.GetCacheFilePath(cacheKey)
+	// Security: Check file access for cache write
+	if err := security.CheckFileAccess(filePath); err != nil {
+		return fmt.Errorf("cache file access denied: %w", err)
+	}
 	if err := os.WriteFile(filePath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
@@ -152,6 +163,10 @@ func (cm *CacheManager) Delete(cacheKey string) error {
 	}
 
 	filePath := cm.GetCacheFilePath(cacheKey)
+	// Security: Check file access for cache deletion
+	if err := security.CheckFileAccess(filePath); err != nil {
+		return fmt.Errorf("cache file access denied: %w", err)
+	}
 	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to delete cache file: %w", err)
 	}
@@ -174,6 +189,10 @@ func (cm *CacheManager) ClearFileCache(source string) error {
 
 	var removedCount int
 	for _, match := range matches {
+		// Security: Check file access for cache file
+		if err := security.CheckFileAccess(match); err != nil {
+			continue // Skip inaccessible files
+		}
 		// Read cache file to check if it matches the source
 		if data, err := os.ReadFile(match); err == nil {
 			var cachedResponse CachedResponse
@@ -205,6 +224,10 @@ func (cm *CacheManager) Clear() error {
 	}
 
 	for _, match := range matches {
+		// Security: Check file access for cache deletion
+		if err := security.CheckFileAccess(match); err != nil {
+			continue // Skip inaccessible files
+		}
 		if err := os.Remove(match); err != nil {
 			return fmt.Errorf("failed to remove cache file %s: %w", match, err)
 		}
@@ -238,6 +261,10 @@ func (cm *CacheManager) GetStats() (*CacheStats, error) {
 	var expiredCount int
 
 	for _, match := range matches {
+		// Security: Check file access for cache stats
+		if err := security.CheckFileAccess(match); err != nil {
+			continue // Skip inaccessible files
+		}
 		// Get file size
 		if info, err := os.Stat(match); err == nil {
 			totalSize += info.Size()
@@ -274,6 +301,10 @@ func (cm *CacheManager) CleanExpired() error {
 
 	var removedCount int
 	for _, match := range matches {
+		// Security: Check file access for cache cleanup
+		if err := security.CheckFileAccess(match); err != nil {
+			continue // Skip inaccessible files
+		}
 		// Read and check if expired
 		if data, err := os.ReadFile(match); err == nil {
 			var cachedResponse CachedResponse
@@ -307,6 +338,10 @@ func (cm *CacheManager) CleanOldFiles(maxAge time.Duration) error {
 	var removedCount int
 
 	for _, match := range matches {
+		// Security: Check file access for age-based cleanup
+		if err := security.CheckFileAccess(match); err != nil {
+			continue // Skip inaccessible files
+		}
 		// Check file modification time
 		if info, err := os.Stat(match); err == nil {
 			if info.ModTime().Before(cutoffTime) {
@@ -362,6 +397,10 @@ func (cm *CacheManager) validateReferencedFiles(response *DocumentProcessingResp
 	// Check if any images are referenced and validate they exist
 	for _, image := range response.Images {
 		if image.FilePath != "" {
+			// Security: Check file access for referenced image
+			if err := security.CheckFileAccess(image.FilePath); err != nil {
+				return false // Image file access denied
+			}
 			if _, err := os.Stat(image.FilePath); os.IsNotExist(err) {
 				return false // Image file is missing
 			}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/brave"
@@ -245,6 +246,35 @@ func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 	response, err := provider.Search(ctx, logger, searchType, args)
 	if err != nil {
 		return nil, fmt.Errorf("search failed with provider %s: %w", providerName, err)
+	}
+
+	// Analyse search results for security threats
+	if security.IsEnabled() && response != nil {
+		for i, result := range response.Results {
+			source := security.SourceContext{
+				Tool:        "internet_search",
+				Domain:      providerName,
+				ContentType: "search_results",
+			}
+			// Analyse the search result content
+			content := result.Title + " " + result.Description
+			if secResult, err := security.AnalyseContent(content, source); err == nil {
+				switch secResult.Action {
+				case security.ActionBlock:
+					return nil, fmt.Errorf("search result blocked by security policy: %s", secResult.Message)
+				case security.ActionWarn:
+					// Add security notice to result metadata
+					if result.Metadata == nil {
+						result.Metadata = make(map[string]interface{})
+					}
+					result.Metadata["security_warning"] = secResult.Message
+					result.Metadata["security_id"] = secResult.ID
+					logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+				}
+				// Update the result in the response
+				response.Results[i] = result
+			}
+		}
 	}
 
 	return internetsearch.NewToolResultJSON(response)

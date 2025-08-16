@@ -11,6 +11,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/m2e/pkg/converter"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
@@ -93,6 +94,22 @@ func (m *M2ETool) executeInlineMode(conv *converter.Converter, request *ConvertR
 	normaliseSmartQuotes := !request.KeepSmartQuotes
 	convertedText := conv.ConvertToBritish(request.Text, normaliseSmartQuotes)
 
+	// Security content analysis for converted text
+	source := security.SourceContext{
+		Tool:        "murican_to_english",
+		URL:         "inline_text",
+		ContentType: "converted_text",
+	}
+	if result, err := security.AnalyseContent(convertedText, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			// Add security warning to logs
+			logger.WithField("security_id", result.ID).Warn(result.Message)
+		}
+	}
+
 	// Count changes by comparing original and converted text
 	changesCount := m.countChanges(request.Text, convertedText)
 
@@ -110,6 +127,11 @@ func (m *M2ETool) executeInlineMode(conv *converter.Converter, request *ConvertR
 
 // executeUpdateFileMode handles file update operations
 func (m *M2ETool) executeUpdateFileMode(conv *converter.Converter, request *ConvertRequest, logger *logrus.Logger) (*mcp.CallToolResult, error) {
+	// Security check for file access (both read and write)
+	if err := security.CheckFileAccess(request.FilePath); err != nil {
+		return nil, err
+	}
+
 	// Read the file
 	originalContent, err := os.ReadFile(request.FilePath)
 	if err != nil {
@@ -127,6 +149,22 @@ func (m *M2ETool) executeUpdateFileMode(conv *converter.Converter, request *Conv
 	// Convert the text (note: !KeepSmartQuotes because the converter expects normaliseSmartQuotes bool)
 	normaliseSmartQuotes := !request.KeepSmartQuotes
 	convertedText := conv.ConvertToBritish(originalText, normaliseSmartQuotes)
+
+	// Security content analysis for converted text
+	source := security.SourceContext{
+		Tool:        "murican_to_english",
+		URL:         request.FilePath,
+		ContentType: "converted_text",
+	}
+	if result, err := security.AnalyseContent(convertedText, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			// Add security warning to logs
+			logger.WithField("security_id", result.ID).Warn(result.Message)
+		}
+	}
 
 	// Count changes by comparing original and converted text
 	changesCount := m.countChanges(originalText, convertedText)

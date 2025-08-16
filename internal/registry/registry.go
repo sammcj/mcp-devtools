@@ -156,6 +156,8 @@ func GetToolNamesWithExtendedHelp() []string {
 func requiresEnablement(toolName string) bool {
 	additionalTools := []string{
 		"filesystem",
+		"security",
+		"security_override",
 		"sbom",
 		"vulnerability_scan",
 		"claude-agent",

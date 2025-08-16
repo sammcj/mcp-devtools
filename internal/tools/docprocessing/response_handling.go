@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/security"
 )
 
 // formatResponse formats the response for MCP output
@@ -54,7 +55,7 @@ func (t *DocumentProcessorTool) shouldSaveToFile(req *DocumentProcessingRequest)
 }
 
 // handleSaveToFile saves the converted content to the specified file and returns a success message
-func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *DocumentProcessingResponse) (*mcp.CallToolResult, error) {
+func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *DocumentProcessingResponse, securityNotice string) (*mcp.CallToolResult, error) {
 	// Auto-generate save path if not provided
 	if savePath == "" {
 		generatedPath, err := t.generateSavePath(response.Source)
@@ -67,6 +68,11 @@ func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *Docu
 	// Validate save path is absolute
 	if !filepath.IsAbs(savePath) {
 		return nil, fmt.Errorf("save_to must be a fully qualified absolute path, got: %s", savePath)
+	}
+
+	// Security: Check file access for save path
+	if err := security.CheckFileAccess(savePath); err != nil {
+		return nil, fmt.Errorf("save file access denied: %w", err)
 	}
 
 	// Create directory if it doesn't exist
@@ -103,6 +109,11 @@ func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *Docu
 		}
 	}
 
+	// Add security notice if present
+	if securityNotice != "" {
+		result["security_notice"] = securityNotice
+	}
+
 	return t.newToolResultJSON(result)
 }
 
@@ -135,6 +146,11 @@ func (t *DocumentProcessorTool) generateSavePath(source string) (string, error) 
 			return "", fmt.Errorf("failed to get current working directory: %w", err)
 		}
 		source = filepath.Join(cwd, source)
+	}
+
+	// Security: Check file access for source when generating save path
+	if err := security.CheckFileAccess(source); err != nil {
+		return "", fmt.Errorf("source file access denied: %w", err)
 	}
 
 	// Get directory and filename

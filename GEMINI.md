@@ -1,6 +1,6 @@
 # GEMINI.md
 
-This file provides guidance to Gemini when working with code in this repository.
+This file provides guidance to Gemini CLI when working with code in this repository.
 
 ## Commands
 
@@ -11,7 +11,6 @@ This file provides guidance to Gemini when working with code in this repository.
 
 ### Testing
 - `make test` - Run all tests including external dependencies
-- `make test-fast` - Run fast tests without external dependencies
 - `go test -short -v ./tests/...` - Run specific test suites
 
 ### Code Quality
@@ -61,7 +60,7 @@ Tools automatically get:
 The server supports three transport modes:
 - **stdio** (default) - Standard input/output for MCP clients
 - **http** - Streamable HTTP with optional authentication, optional upgrade to SSE if needed
-- **sse** - Server-Sent Events for web clients (deprecated in favour of streamable HTTP)
+- **sse** - Legacy Server-Sent Events for web clients (deprecated in favour of streamable HTTP), will be removed in future versions
 
 ## Important Files
 
@@ -98,8 +97,11 @@ All tools follow this pattern:
 - Any tools we create must work on both macOS and Linux unless the user states otherwise (we don't care about MS Windows).
 - CRITICAL: Ensure that when running in stdio mode that we NEVER log to stdout or stderr, as this will break the MCP protocol.
 - When testing the docprocessing tool, unless otherwise instructed always call it with "clear_file_cache": true and do not enable return_inline_only
+- If you're wanting to call a tool you've just made changes to directly (rather than using the command line approach), you have to let the user know to restart the conversation otherwise you'll only have access to the old version of the tool functions directly.
 - When adding new tools ensure they are registered in the list of available tools in the server (within their init function), ensure they have a basic unit test, and that they have docs/tools/<toolname>.md with concise, clear information about the tool and that they're mentioned in the main README.md and docs/tools/overview.md.
 - Always use British English spelling, we are not American.
+- Follow the principal of least privileged security.
+- Use 0600 and 0700 permissions for files and directories respectively, unless otherwise specified avoid using 0644 and 0755.
 - Unit tests for tools should be located within the tests/tools/ directory, and should be named <toolname>_test.go.
 - We should be mindful of the risks of code injection and other security risks when parsing any information from external sources.
 - On occasion the user may ask you to build a new tool and provide reference code or information in a provided directory such as `tmp_repo_clones/<dirname>` unless specified otherwise this should only be used for reference and learning purposes, we don't ever want to use code that directory as part of the project's codebase.

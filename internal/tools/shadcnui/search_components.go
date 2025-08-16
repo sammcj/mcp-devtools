@@ -10,13 +10,13 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
 
 // SearchShadcnComponentsTool defines the tool for searching shadcn ui components.
 type SearchShadcnComponentsTool struct {
-	client HTTPClient
 	// No direct dependency on ListShadcnComponentsTool, but uses its cache key and similar logic.
 }
 
@@ -33,21 +33,28 @@ func (t *SearchShadcnComponentsTool) Definition() mcp.Tool {
 // It fetches, parses, and caches the component list.
 // This is duplicated logic but avoids direct tool-to-tool calls or complex dependencies.
 func (t *SearchShadcnComponentsTool) fetchAndCacheComponentList(logger *logrus.Logger, cache *sync.Map) ([]ComponentInfo, error) {
-	resp, err := t.client.Get(ShadcnDocsComponents)
+	// Use security helper for consistent security handling
+	ops := security.NewOperations("shadcnui")
+	safeResp, err := ops.SafeHTTPGet(ShadcnDocsComponents)
 	if err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
+		}
 		return nil, fmt.Errorf("failed to fetch shadcn components page: %w", err)
 	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			logger.WithError(closeErr).Warn("Failed to close response body")
-		}
-	}()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", resp.StatusCode)
+	if safeResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", safeResp.StatusCode)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	// Handle security warnings
+	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+		logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+	}
+
+	bodyBytes := safeResp.Content
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse shadcn components page: %w", err)
 	}

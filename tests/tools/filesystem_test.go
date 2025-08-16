@@ -191,7 +191,7 @@ func TestFileSystemTool_ListDirectory(t *testing.T) {
 	testFile := filepath.Join(tempDir, "test.txt")
 	testSubDir := filepath.Join(tempDir, "subdir")
 
-	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
@@ -239,7 +239,7 @@ func TestFileSystemTool_GetFileInfo(t *testing.T) {
 	testFile := filepath.Join(tempDir, "test.txt")
 	testContent := "Hello, World!"
 
-	if err := os.WriteFile(testFile, []byte(testContent), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte(testContent), 0600); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
@@ -289,7 +289,7 @@ func TestFileSystemTool_ReadFileHead(t *testing.T) {
 	testFile := filepath.Join(tempDir, "test.txt")
 	testContent := "Line 1\nLine 2\nLine 3\nLine 4\nLine 5"
 
-	if err := os.WriteFile(testFile, []byte(testContent), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte(testContent), 0600); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 

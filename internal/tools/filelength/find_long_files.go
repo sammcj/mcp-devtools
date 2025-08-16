@@ -16,6 +16,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
@@ -219,6 +220,11 @@ func (t *FindLongFilesTool) parseRequest(args map[string]interface{}) (*FindLong
 	// Validate path exists
 	if _, err := os.Stat(request.Path); os.IsNotExist(err) {
 		return nil, fmt.Errorf("path does not exist: %s", request.Path)
+	}
+
+	// Security check for file access
+	if err := security.CheckFileAccess(request.Path); err != nil {
+		return nil, err
 	}
 
 	return request, nil

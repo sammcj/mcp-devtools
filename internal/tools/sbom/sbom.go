@@ -16,6 +16,7 @@ import (
 	"github.com/anchore/syft/syft/format"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
@@ -180,6 +181,14 @@ func (t *SBOMTool) parseRequest(args map[string]interface{}) (*SBOMRequest, erro
 		return nil, err
 	}
 
+	// Security checks for file access
+	if err := security.CheckFileAccess(request.Source); err != nil {
+		return nil, err
+	}
+	if err := security.CheckFileAccess(request.OutputFile); err != nil {
+		return nil, err
+	}
+
 	return request, nil
 }
 
@@ -245,7 +254,24 @@ func (t *SBOMTool) executeSyft(ctx context.Context, request *SBOMRequest, logger
 		return nil, fmt.Errorf("failed to format SBOM: %w", err)
 	}
 
-	if err := t.writeToFile(request.OutputFile, string(content)); err != nil {
+	// Security content analysis for generated SBOM
+	contentStr := string(content)
+	source := security.SourceContext{
+		Tool:        "sbom",
+		URL:         request.Source,
+		ContentType: "generated_sbom",
+	}
+	if result, err := security.AnalyseContent(contentStr, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			// Add security warning to logs
+			logger.WithField("security_id", result.ID).Warn(result.Message)
+		}
+	}
+
+	if err := t.writeToFile(request.OutputFile, contentStr); err != nil {
 		return nil, fmt.Errorf("failed to write to file: %w", err)
 	}
 
@@ -280,7 +306,7 @@ func (t *SBOMTool) writeToFile(filePath, content string) error {
 	}
 
 	// Write content to file
-	if err := os.WriteFile(cleanPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(cleanPath, []byte(content), 0600); err != nil {
 		return fmt.Errorf("failed to write file %s: %w", cleanPath, err)
 	}
 

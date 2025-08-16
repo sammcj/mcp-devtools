@@ -144,8 +144,8 @@ func TestFilesystem_CustomFilePermissions(t *testing.T) {
 		}
 	}()
 
-	// Set custom file permissions (0644 - read/write for owner, read for others)
-	err := os.Setenv("FILESYSTEM_SECURE_PERMISSIONS", "644")
+	// Set custom file permissions (0600 - read/write for owner, read for others)
+	err := os.Setenv("FILESYSTEM_SECURE_PERMISSIONS", "600")
 	testutils.AssertNoError(t, err)
 
 	// Create test directory
@@ -174,10 +174,10 @@ func TestFilesystem_CustomFilePermissions(t *testing.T) {
 	testutils.AssertNoError(t, err)
 	testutils.AssertNotNil(t, result)
 
-	// Verify file was created with custom permissions (0644)
+	// Verify file was created with custom permissions (0600)
 	info, err := os.Stat(filepath.Join(testDir, "custom_perms.txt"))
 	testutils.AssertNoError(t, err)
-	testutils.AssertEqual(t, os.FileMode(0644), info.Mode().Perm())
+	testutils.AssertEqual(t, os.FileMode(0600), info.Mode().Perm())
 }
 
 func TestFilesystem_ReadFileSizeValidation(t *testing.T) {
@@ -208,7 +208,7 @@ func TestFilesystem_ReadFileSizeValidation(t *testing.T) {
 	// Create a large file manually (bypassing our size limits)
 	largeFilePath := filepath.Join(testDir, "large_file.txt")
 	largeContent := strings.Repeat("a", 100) // 100 bytes, exceeds 50 byte limit
-	err = os.WriteFile(largeFilePath, []byte(largeContent), 0644)
+	err = os.WriteFile(largeFilePath, []byte(largeContent), 0600)
 	testutils.AssertNoError(t, err)
 
 	ctx := context.Background()
@@ -255,7 +255,7 @@ func TestFilesystem_EditFileSizeValidation(t *testing.T) {
 	// Create a file with content
 	testFilePath := filepath.Join(testDir, "edit_test.txt")
 	originalContent := "short content"
-	err = os.WriteFile(testFilePath, []byte(originalContent), 0644)
+	err = os.WriteFile(testFilePath, []byte(originalContent), 0600)
 	testutils.AssertNoError(t, err)
 
 	ctx := context.Background()
@@ -428,10 +428,10 @@ func TestFilesystem_MultipleFilesSizeValidation(t *testing.T) {
 	smallFilePath := filepath.Join(testDir, "small.txt")
 	largeFilePath := filepath.Join(testDir, "large.txt")
 
-	err = os.WriteFile(smallFilePath, []byte("small"), 0644)
+	err = os.WriteFile(smallFilePath, []byte("small"), 0600)
 	testutils.AssertNoError(t, err)
 
-	err = os.WriteFile(largeFilePath, []byte(strings.Repeat("a", 100)), 0644)
+	err = os.WriteFile(largeFilePath, []byte(strings.Repeat("a", 100)), 0600)
 	testutils.AssertNoError(t, err)
 
 	ctx := context.Background()

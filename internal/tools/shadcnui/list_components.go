@@ -10,15 +10,14 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
 
 // ListShadcnComponentsTool defines the tool for listing shadcn ui components.
 // listComponentsCacheKey and listComponentsCacheTTL are now in utils.go
-type ListShadcnComponentsTool struct {
-	client HTTPClient
-}
+type ListShadcnComponentsTool struct{}
 
 // Definition returns the tool's definition.
 func (t *ListShadcnComponentsTool) Definition() mcp.Tool {
@@ -41,21 +40,28 @@ func (t *ListShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.L
 		}
 	}
 
-	resp, err := t.client.Get(ShadcnDocsComponents)
+	// Use security helper for consistent security handling
+	ops := security.NewOperations("shadcnui")
+	safeResp, err := ops.SafeHTTPGet(ShadcnDocsComponents)
 	if err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
+		}
 		return nil, fmt.Errorf("failed to fetch shadcn components page: %w", err)
 	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			logger.WithError(closeErr).Warn("Failed to close response body")
-		}
-	}()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", resp.StatusCode)
+	if safeResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", safeResp.StatusCode)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	// Handle security warnings
+	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+		logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+	}
+
+	bodyBytes := safeResp.Content
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse shadcn components page: %w", err)
 	}
