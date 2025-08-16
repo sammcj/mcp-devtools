@@ -60,11 +60,6 @@ func main() {
 	// Initialise the registry
 	registry.Init(logger)
 
-	// Initialise security system (if enabled)
-	if err := security.InitGlobalSecurityManager(); err != nil {
-		logger.WithError(err).Warn("Failed to initialise security system")
-	}
-
 	// Ensure cleanup of embedded scripts on exit
 	defer func() {
 		// Import the docprocessing package to access cleanup function
@@ -238,11 +233,20 @@ func main() {
 				// For stdio mode, disable logging to prevent conflicts with MCP protocol
 				logger.SetOutput(os.Stderr)        // Use stderr instead of stdout
 				logger.SetLevel(logrus.ErrorLevel) // Only log errors to stderr
+				logrus.SetLevel(logrus.ErrorLevel) // Also set global logrus level for security module
 			} else {
 				// For non-stdio modes, normal logging is fine
 				if c.Bool("debug") {
 					logger.SetLevel(logrus.DebugLevel)
+					logrus.SetLevel(logrus.DebugLevel) // Also set global logrus level
 					logger.Debug("Debug logging enabled")
+				}
+			}
+
+			// Initialise security system (if enabled) - after logging is configured
+			if err := security.InitGlobalSecurityManager(); err != nil {
+				if transport != "stdio" {
+					logger.WithError(err).Warn("Failed to initialise security system")
 				}
 			}
 

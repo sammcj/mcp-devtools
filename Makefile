@@ -162,6 +162,12 @@ release:
 	git tag -a v$(VERSION) -m "Release v$(VERSION)"
 	git push origin v$(VERSION)
 
+# MCP's inspector tool
+.PHONY: inspect
+inspect:
+	@echo "Running MCP inspector tool..."
+	DANGEROUSLY_OMIT_AUTH=true npx -y @modelcontextprotocol/inspector -e ENABLE_ADDITIONAL_TOOLS="claude-agent,gemini-agent,security,sbom"
+
 # Help target
 .PHONY: help
 help:
@@ -188,4 +194,6 @@ help:
 	@echo "  sec-mcp-scan		: Run security scan with mcp-scan"
 	@echo "  sec-semgrep		: Run security scan with semgrep"
 	@echo "  sec-safedep-vet	: Run security scan with safedep vet"
+	@ecoh "  sec-performance	: Run security utility performance tests"
+	@echo "  inspect		: Run MCP's inspector tool"
 	@echo "  help			: Show this help message"

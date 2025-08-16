@@ -309,7 +309,10 @@ func InitGlobalSecurityManager() error {
 	}
 
 	GlobalSecurityManager = manager
-	logrus.Info("Security system initialised successfully")
+	// Only log if not in stdio mode (stdio mode sets ErrorLevel to prevent MCP protocol pollution)
+	if logrus.GetLevel() >= logrus.InfoLevel {
+		logrus.Info("Security system initialised successfully")
+	}
 	return nil
 }
 

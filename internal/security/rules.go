@@ -61,7 +61,10 @@ func (r *YAMLRuleEngine) ensureRulesFile() error {
 			return fmt.Errorf("failed to create default rules: %w", err)
 		}
 
-		logrus.Infof("Created default security rules at %s", r.rulesPath)
+		// Only log if not in stdio mode (stdio mode sets ErrorLevel to prevent MCP protocol pollution)
+		if logrus.GetLevel() >= logrus.InfoLevel {
+			logrus.Infof("Created default security rules at %s", r.rulesPath)
+		}
 	} else {
 		// Rules file exists, manage default configuration file
 		if err := r.manageDefaultConfigFile(); err != nil {
@@ -114,7 +117,10 @@ func (r *YAMLRuleEngine) manageDefaultConfigFile() error {
 		return fmt.Errorf("failed to write default config: %w", err)
 	}
 
-	logrus.Infof("Updated default security configuration at %s", defaultConfigPath)
+	// Only log if not in stdio mode (stdio mode sets ErrorLevel to prevent MCP protocol pollution)
+	if logrus.GetLevel() >= logrus.InfoLevel {
+		logrus.Infof("Updated default security configuration at %s", defaultConfigPath)
+	}
 	return nil
 }
 
@@ -149,7 +155,10 @@ func (r *YAMLRuleEngine) LoadRules() error {
 
 	// If file was modified due to invalid regex, reload from the corrected file
 	if modified {
-		logrus.Info("Security rules file was automatically corrected due to invalid regex patterns")
+		// Only log if not in stdio mode (stdio mode sets ErrorLevel to prevent MCP protocol pollution)
+		if logrus.GetLevel() >= logrus.InfoLevel {
+			logrus.Info("Security rules file was automatically corrected due to invalid regex patterns")
+		}
 
 		// Re-read the corrected file
 		data, err = os.ReadFile(r.rulesPath)
