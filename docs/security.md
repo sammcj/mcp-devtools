@@ -2,6 +2,8 @@
 
 The MCP DevTools security framework provides a layer protection to help protect against malicious content, unauthorised file access, and dangerous network requests. It operates as a configurable, multi-layered security framework that can be enabled or disabled as needed.
 
+Important: This feature should be considered in **BETA**, if you find bugs and have solutions please feel free to raise a PR.
+
 ## Table of Contents
 
 - [Overview](#overview)
