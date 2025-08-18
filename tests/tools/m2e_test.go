@@ -174,7 +174,7 @@ func TestM2ETool_Execute_FileMode_ValidFile(t *testing.T) {
 	tempFile := filepath.Join(tempDir, "test.txt")
 
 	americanText := "The color of the organization's behavior was analyzed with great care."
-	err := os.WriteFile(tempFile, []byte(americanText), 0644)
+	err := os.WriteFile(tempFile, []byte(americanText), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
@@ -223,7 +223,7 @@ func TestM2ETool_Execute_FileMode_ExcessivelyLargeFile(t *testing.T) {
 		largeText += baseText
 	}
 
-	err := os.WriteFile(tempFile, []byte(largeText), 0644)
+	err := os.WriteFile(tempFile, []byte(largeText), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}

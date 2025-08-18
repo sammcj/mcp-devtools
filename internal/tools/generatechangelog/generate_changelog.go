@@ -12,6 +12,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
@@ -176,6 +177,10 @@ func (t *GenerateChangelogTool) parseRequest(args map[string]interface{}) (*Gene
 
 	if outputFile, ok := args["output_file"].(string); ok && outputFile != "" {
 		request.OutputFile = strings.TrimSpace(outputFile)
+		// Security check for output file access
+		if err := security.CheckFileAccess(request.OutputFile); err != nil {
+			return nil, err
+		}
 	}
 
 	return request, nil
@@ -255,6 +260,27 @@ func (t *GenerateChangelogTool) writeToFile(filename, content string) error {
 	// Clean the path
 	absPath = filepath.Clean(absPath)
 
+	// Security check for file access
+	if err := security.CheckFileAccess(absPath); err != nil {
+		return err
+	}
+
+	// Security content analysis for generated changelog
+	source := security.SourceContext{
+		Tool:        "generate_changelog",
+		URL:         absPath,
+		ContentType: "generated_changelog",
+	}
+	if result, err := security.AnalyseContent(content, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			// Add security warning to logs
+			logrus.WithField("security_id", result.ID).Warn(result.Message)
+		}
+	}
+
 	// Ensure directory exists
 	dir := filepath.Dir(absPath)
 	if err := os.MkdirAll(dir, 0700); err != nil {
@@ -262,7 +288,7 @@ func (t *GenerateChangelogTool) writeToFile(filename, content string) error {
 	}
 
 	// Write file
-	if err := os.WriteFile(absPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(absPath, []byte(content), 0600); err != nil {
 		return fmt.Errorf("failed to write file %s: %w", absPath, err)
 	}
 

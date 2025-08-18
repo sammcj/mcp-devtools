@@ -10,20 +10,17 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
 // FetchURLTool implements URL fetching with HTML-to-markdown conversion
-type FetchURLTool struct {
-	client *WebClient
-}
+type FetchURLTool struct{}
 
 // init registers the fetch-url tool
 func init() {
-	registry.Register(&FetchURLTool{
-		client: NewWebClient(),
-	})
+	registry.Register(&FetchURLTool{})
 }
 
 // Definition returns the tool's definition for MCP registration
@@ -77,9 +74,15 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		"raw":         request.Raw,
 	}).Debug("Fetch URL parameters")
 
-	// Fetch the content
-	response, err := t.client.FetchContent(ctx, logger, request.URL)
+	// Use security helper for safe HTTP GET
+	ops := security.NewOperations("webfetch")
+	safeResp, err := ops.SafeHTTPGet(request.URL)
 	if err != nil {
+		// Handle security errors properly
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+		}
 		// Return error information in a structured way
 		errorResponse := map[string]interface{}{
 			"url":       request.URL,
@@ -89,6 +92,18 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		return t.newToolResultJSON(errorResponse)
 	}
 
+	// Convert SafeHTTPResponse to FetchURLResponse format
+	response := &FetchURLResponse{
+		URL:         request.URL,
+		Content:     string(safeResp.Content),
+		ContentType: safeResp.ContentType,
+		StatusCode:  safeResp.StatusCode,
+		TotalLength: len(safeResp.Content),
+		TotalLines:  len(strings.Split(string(safeResp.Content), "\n")),
+		StartLine:   1,
+		EndLine:     len(strings.Split(string(safeResp.Content), "\n")),
+	}
+
 	// Process the content (convert HTML to markdown, handle different content types)
 	processedContent, err := ProcessContent(logger, response, request.Raw)
 	if err != nil {
@@ -96,13 +111,63 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		processedContent = response.Content
 	}
 
+	// Handle security warnings from the helper
+	var securityNotice string
+	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+		securityNotice = fmt.Sprintf("Security Warning [ID: %s]: %s Use security_override tool with ID %s if this is intentional.",
+			safeResp.SecurityResult.ID, safeResp.SecurityResult.Message, safeResp.SecurityResult.ID)
+	}
+
 	// Apply pagination
 	paginatedResponse := t.applyPagination(response, processedContent, request)
 
+	// Add security notice to response if needed
+	if securityNotice != "" {
+		// Convert response to map for adding security field
+		responseMap := map[string]interface{}{
+			"url":             paginatedResponse.URL,
+			"content":         paginatedResponse.Content,
+			"truncated":       paginatedResponse.Truncated,
+			"start_index":     paginatedResponse.StartIndex,
+			"end_index":       paginatedResponse.EndIndex,
+			"total_length":    paginatedResponse.TotalLength,
+			"total_lines":     paginatedResponse.TotalLines,
+			"start_line":      paginatedResponse.StartLine,
+			"end_line":        paginatedResponse.EndLine,
+			"remaining_lines": paginatedResponse.RemainingLines,
+			"security_notice": securityNotice,
+		}
+
+		if paginatedResponse.NextChunkPreview != "" {
+			responseMap["next_chunk_preview"] = paginatedResponse.NextChunkPreview
+		}
+		if paginatedResponse.Message != "" {
+			responseMap["message"] = paginatedResponse.Message
+		}
+		if paginatedResponse.ContentType != "" {
+			responseMap["content_type"] = paginatedResponse.ContentType
+		}
+		if paginatedResponse.StatusCode != 200 {
+			responseMap["status_code"] = paginatedResponse.StatusCode
+		}
+
+		logger.WithFields(logrus.Fields{
+			"url":              request.URL,
+			"content_type":     safeResp.ContentType,
+			"status_code":      safeResp.StatusCode,
+			"total_length":     paginatedResponse.TotalLength,
+			"returned":         len(paginatedResponse.Content),
+			"truncated":        paginatedResponse.Truncated,
+			"security_warning": true,
+		}).Info("Fetch URL completed with security warning")
+
+		return t.newToolResultJSON(responseMap)
+	}
+
 	logger.WithFields(logrus.Fields{
 		"url":          request.URL,
-		"content_type": response.ContentType,
-		"status_code":  response.StatusCode,
+		"content_type": safeResp.ContentType,
+		"status_code":  safeResp.StatusCode,
 		"total_length": paginatedResponse.TotalLength,
 		"returned":     len(paginatedResponse.Content),
 		"truncated":    paginatedResponse.Truncated,

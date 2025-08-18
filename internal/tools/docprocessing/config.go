@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/sammcj/mcp-devtools/internal/config"
+	"github.com/sammcj/mcp-devtools/internal/security"
 )
 
 const (
@@ -213,6 +214,11 @@ func (c *Config) Validate() error {
 func (c *Config) EnsureCacheDir() error {
 	if !c.CacheEnabled {
 		return nil
+	}
+
+	// Security: Check file access for cache directory
+	if err := security.CheckFileAccess(c.CacheDir); err != nil {
+		return fmt.Errorf("cache directory access denied: %w", err)
 	}
 
 	if err := os.MkdirAll(c.CacheDir, 0700); err != nil {
@@ -801,6 +807,11 @@ func (c *Config) ValidateCertificates() error {
 		return nil // No certificates configured, which is fine
 	}
 
+	// Security: Check file access for certificate path
+	if err := security.CheckFileAccess(c.ExtraCACerts); err != nil {
+		return fmt.Errorf("certificate path access denied: %w", err)
+	}
+
 	// Check if the certificate path exists
 	info, err := os.Stat(c.ExtraCACerts)
 	if err != nil {
@@ -832,7 +843,7 @@ func (c *Config) ValidateCertificates() error {
 			return fmt.Errorf("certificate directory contains no certificate files: %s", c.ExtraCACerts)
 		}
 	} else {
-		// If it's a file, check if it's readable
+		// If it's a file, check if it's readable (security access was already checked above)
 		file, err := os.Open(c.ExtraCACerts)
 		if err != nil {
 			return fmt.Errorf("cannot read certificate file: %s", c.ExtraCACerts)

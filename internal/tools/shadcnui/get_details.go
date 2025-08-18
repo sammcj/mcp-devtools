@@ -10,14 +10,13 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
 
 // GetComponentDetailsTool defines the tool for getting shadcn ui component details.
-type GetComponentDetailsTool struct {
-	client HTTPClient
-}
+type GetComponentDetailsTool struct{}
 
 // Definition returns the tool's definition.
 func (t *GetComponentDetailsTool) Definition() mcp.Tool {
@@ -46,21 +45,29 @@ func (t *GetComponentDetailsTool) Execute(ctx context.Context, logger *logrus.Lo
 	}
 
 	componentURL := fmt.Sprintf("%s/%s", ShadcnDocsComponents, componentName)
-	resp, err := t.client.Get(componentURL)
+
+	// Use security helper for consistent security handling
+	ops := security.NewOperations("shadcnui")
+	safeResp, err := ops.SafeHTTPGet(componentURL)
 	if err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
+		}
 		return nil, fmt.Errorf("failed to fetch component page %s: %w", componentURL, err)
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logger.WithError(err).Errorf("Failed to close response body for %s", componentURL)
-		}
-	}()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch component page %s: status %d", componentURL, resp.StatusCode)
+	if safeResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch component page %s: status %d", componentURL, safeResp.StatusCode)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	// Handle security warnings
+	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+		logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+	}
+
+	bodyBytes := safeResp.Content
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse component page %s: %w", componentURL, err)
 	}

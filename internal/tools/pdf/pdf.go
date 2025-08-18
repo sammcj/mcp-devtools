@@ -15,6 +15,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
@@ -79,6 +80,16 @@ func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 		"extract_images": request.ExtractImages,
 		"pages":          request.Pages,
 	}).Debug("PDF processing parameters")
+
+	// Security check for input file access
+	if err := security.CheckFileAccess(request.FilePath); err != nil {
+		return nil, err
+	}
+
+	// Security check for output directory access
+	if err := security.CheckFileAccess(request.OutputDir); err != nil {
+		return nil, err
+	}
 
 	// Validate input file exists and check file size
 	fileInfo, err := os.Stat(request.FilePath)
@@ -252,8 +263,25 @@ func (t *PDFTool) processPDF(ctx context.Context, logger *logrus.Logger, request
 		}
 	}
 
+	// Security content analysis for extracted text
+	markdownContentStr := markdownContent.String()
+	source := security.SourceContext{
+		Tool:        "pdf",
+		URL:         request.FilePath,
+		ContentType: "extracted_text",
+	}
+	if result, err := security.AnalyseContent(markdownContentStr, source); err == nil {
+		switch result.Action {
+		case security.ActionBlock:
+			return nil, fmt.Errorf("content blocked by security policy: %s", result.Message)
+		case security.ActionWarn:
+			// Add security warning to logs
+			logger.WithField("security_id", result.ID).Warn(result.Message)
+		}
+	}
+
 	// Write markdown file
-	err = os.WriteFile(markdownFile, []byte(markdownContent.String()), 0600)
+	err = os.WriteFile(markdownFile, []byte(markdownContentStr), 0600)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write markdown file: %w", err)
 	}

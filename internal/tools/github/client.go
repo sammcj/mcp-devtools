@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/google/go-github/v73/github"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
@@ -457,12 +456,20 @@ func (gc *GitHubClient) ListDirectory(ctx context.Context, owner, repo, path, re
 
 // CloneRepository clones a repository to a local directory
 func (gc *GitHubClient) CloneRepository(ctx context.Context, owner, repo, localPath string) (*CloneResult, error) {
+	// Domain access and file access are handled by existing security infrastructure
+
 	if localPath == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get home directory: %w", err)
 		}
 		localPath = filepath.Join(homeDir, "github-repos", repo)
+	}
+
+	// Check file access security using helper function
+	// Note: SafeFileWrite will handle file access checks internally
+	if err := security.CheckFileAccess(localPath); err != nil {
+		return nil, err
 	}
 
 	// Ensure the parent directory exists
@@ -522,6 +529,9 @@ func (gc *GitHubClient) CloneRepository(ctx context.Context, owner, repo, localP
 
 // GetWorkflowRun gets GitHub Actions workflow run status and optionally logs
 func (gc *GitHubClient) GetWorkflowRun(ctx context.Context, owner, repo string, runID int64, includeLogs bool) (*WorkflowRun, string, error) {
+	// Create security operations instance for logs download
+	ops := security.NewOperations("github")
+
 	// Apply core API rate limiting
 	if err := gc.waitForCoreAPIRateLimit(ctx); err != nil {
 		return nil, "", fmt.Errorf("core API rate limit wait failed: %w", err)
@@ -555,25 +565,25 @@ func (gc *GitHubClient) GetWorkflowRun(ctx context.Context, owner, repo string, 
 		if err != nil {
 			gc.logger.Warnf("Failed to get workflow run logs: %v", err)
 		} else if logsURL != nil {
-			// Download and read logs
-			resp, err := http.Get(logsURL.String())
+			// Download and read logs using security helper
+			safeResp, err := ops.SafeHTTPGet(logsURL.String())
 			if err != nil {
-				gc.logger.Warnf("Failed to download workflow run logs: %v", err)
-			} else {
-				defer func() {
-					if closeErr := resp.Body.Close(); closeErr != nil {
-						gc.logger.Warnf("Failed to close response body: %v", closeErr)
-					}
-				}()
-				logBytes, err := io.ReadAll(resp.Body)
-				if err != nil {
-					gc.logger.Warnf("Failed to read workflow run logs: %v", err)
+				if secErr, ok := err.(*security.SecurityError); ok {
+					gc.logger.Warnf("Security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
 				} else {
-					logs = string(logBytes)
-					// Limit log size to prevent overwhelming the response
-					if len(logs) > 50000 { // 50KB limit
-						logs = logs[:50000] + "\n... (logs truncated)"
-					}
+					gc.logger.Warnf("Failed to download workflow run logs: %v", err)
+				}
+			} else {
+				// Handle security warnings
+				if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+					gc.logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+				}
+
+				// Content is exact bytes from SafeHTTPGet
+				logs = string(safeResp.Content)
+				// Limit log size to prevent overwhelming the response
+				if len(logs) > 50000 { // 50KB limit
+					logs = logs[:50000] + "\n... (logs truncated)"
 				}
 			}
 		}

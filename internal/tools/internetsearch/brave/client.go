@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sirupsen/logrus"
 )
@@ -41,12 +42,21 @@ func NewBraveClient(apiKey string) *BraveClient {
 	}
 }
 
-// makeRequest performs an HTTP request to the Brave API with retry logic
+// makeRequest performs an HTTP request to the Brave API with security checking
 func (c *BraveClient) makeRequest(ctx context.Context, logger *logrus.Logger, endpoint string, params map[string]string) ([]byte, error) {
 	// Build URL with parameters
 	reqURL, err := url.Parse(c.baseURL + endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	// Check domain access security for API endpoint using security helper
+	if err := security.CheckDomainAccess(reqURL.Host); err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+		}
+		return nil, err
 	}
 
 	// Add query parameters
@@ -118,15 +128,15 @@ func (c *BraveClient) makeRequest(ctx context.Context, logger *logrus.Logger, en
 			return nil, fmt.Errorf("failed to make request after %d attempts: %w", maxRetries, err)
 		}
 
-		// Process successful response
-		return c.processResponse(ctx, logger, resp, attempt+1)
+		// Process successful response with security analysis
+		return c.processResponseWithSecurity(ctx, logger, resp, attempt+1, reqURL.String())
 	}
 
 	return nil, fmt.Errorf("unexpected end of retry loop")
 }
 
-// processResponse handles the HTTP response processing with proper resource cleanup
-func (c *BraveClient) processResponse(ctx context.Context, logger *logrus.Logger, resp *http.Response, attempt int) ([]byte, error) {
+// processResponseWithSecurity handles the HTTP response processing with security analysis
+func (c *BraveClient) processResponseWithSecurity(ctx context.Context, logger *logrus.Logger, resp *http.Response, attempt int, requestURL string) ([]byte, error) {
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
 			logger.WithError(closeErr).Warn("Failed to close response body")
@@ -152,6 +162,27 @@ func (c *BraveClient) processResponse(ctx context.Context, logger *logrus.Logger
 	body, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Security analysis on content
+	if security.IsEnabled() {
+		parsedURL, _ := url.Parse(requestURL)
+		sourceCtx := security.SourceContext{
+			URL:         requestURL,
+			Domain:      parsedURL.Hostname(),
+			ContentType: resp.Header.Get("Content-Type"),
+			Tool:        "internetsearch",
+		}
+
+		if secResult, err := security.AnalyseContent(string(body), sourceCtx); err == nil {
+			switch secResult.Action {
+			case security.ActionBlock:
+				return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
+					secResult.ID, secResult.Message, secResult.ID)
+			case security.ActionWarn:
+				logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+			}
+		}
 	}
 
 	// Check for HTTP errors

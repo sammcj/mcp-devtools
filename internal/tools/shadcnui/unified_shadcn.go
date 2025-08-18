@@ -3,7 +3,6 @@ package shadcnui
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -15,6 +14,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
@@ -169,21 +169,30 @@ func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.L
 	}
 
 	componentURL := fmt.Sprintf("%s/%s", ShadcnDocsComponents, componentName)
-	resp, err := t.client.Get(componentURL)
+
+	// Use security helper for consistent security handling
+	ops := security.NewOperations("shadcnui")
+	safeResp, err := ops.SafeHTTPGet(componentURL)
 	if err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
+		}
 		return nil, fmt.Errorf("failed to fetch component page %s: %w", componentURL, err)
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logger.WithError(err).Errorf("Failed to close response body for %s", componentURL)
-		}
-	}()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch component page %s: status %d", componentURL, resp.StatusCode)
+	if safeResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch component page %s: status %d", componentURL, safeResp.StatusCode)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	// Handle security warnings
+	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+		logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+	}
+
+	bodyBytes := safeResp.Content
+
+	// Parse the HTML document
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse component page %s: %w", componentURL, err)
 	}
@@ -248,17 +257,21 @@ func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.
 
 	// 1. Scrape from component's doc page
 	componentURL := fmt.Sprintf("%s/%s", ShadcnDocsComponents, componentName)
-	resp, err := t.client.Get(componentURL)
+
+	// Use security helper for consistent security handling
+	ops := security.NewOperations("shadcnui")
+	safeResp, err := ops.SafeHTTPGet(componentURL)
 	if err != nil {
 		logger.Warnf("Failed to fetch component page %s for examples: %v", componentURL, err)
 	} else {
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				logger.WithError(err).Errorf("Failed to close response body for component page %s", componentURL)
+		if safeResp.StatusCode == http.StatusOK {
+			// Handle security warnings
+			if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+				logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
 			}
-		}()
-		if resp.StatusCode == http.StatusOK {
-			doc, docErr := goquery.NewDocumentFromReader(resp.Body)
+
+			bodyBytes := safeResp.Content
+			doc, docErr := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 			if docErr != nil {
 				logger.Warnf("Failed to parse component page %s for examples: %v", componentURL, docErr)
 			} else {
@@ -276,37 +289,30 @@ func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.
 				})
 			}
 		} else {
-			logger.Warnf("Failed to fetch component page %s: status %d", componentURL, resp.StatusCode)
+			logger.Warnf("Failed to fetch component page %s: status %d", componentURL, safeResp.StatusCode)
 		}
 	}
 
 	// 2. Attempt to fetch the demo file from GitHub
 	demoURL := fmt.Sprintf("%s/apps/www/registry/default/example/%s-demo.tsx", ShadcnRawGitHubURL, componentName)
-	respDemo, errDemo := t.client.Get(demoURL)
+	safeDemoResp, errDemo := ops.SafeHTTPGet(demoURL)
 
 	if errDemo != nil {
 		logger.Warnf("Failed to fetch demo file %s: %v. Proceeding without it.", demoURL, errDemo)
-	} else if respDemo != nil {
-		defer func() {
-			if err := respDemo.Body.Close(); err != nil {
-				logger.WithError(err).Errorf("Failed to close response body for demo file %s", demoURL)
-			}
-		}()
-		if respDemo.StatusCode == http.StatusOK {
-			bodyBytes, readErr := io.ReadAll(respDemo.Body)
-			if readErr != nil {
-				logger.Warnf("Failed to read demo file %s: %v", demoURL, readErr)
-			} else {
-				titleCaser := cases.Title(language.AmericanEnglish, cases.NoLower)
-				examples = append(examples, ComponentExample{
-					Title:       fmt.Sprintf("%s Demo from GitHub", titleCaser.String(componentName)),
-					Code:        string(bodyBytes),
-					Description: "Example .tsx demo file from the official shadcn ui GitHub repository.",
-				})
-			}
-		} else {
-			logger.Warnf("Failed to fetch demo file %s: status %d", demoURL, respDemo.StatusCode)
+	} else if safeDemoResp.StatusCode == http.StatusOK {
+		// Handle security warnings for demo file
+		if safeDemoResp.SecurityResult != nil && safeDemoResp.SecurityResult.Action == security.ActionWarn {
+			logger.Warnf("Security warning for demo file [ID: %s]: %s", safeDemoResp.SecurityResult.ID, safeDemoResp.SecurityResult.Message)
 		}
+
+		titleCaser := cases.Title(language.AmericanEnglish, cases.NoLower)
+		examples = append(examples, ComponentExample{
+			Title:       fmt.Sprintf("%s Demo from GitHub", titleCaser.String(componentName)),
+			Code:        string(safeDemoResp.Content),
+			Description: "Example .tsx demo file from the official shadcn ui GitHub repository.",
+		})
+	} else if safeDemoResp != nil {
+		logger.Warnf("Failed to fetch demo file %s: status %d", demoURL, safeDemoResp.StatusCode)
 	}
 
 	if len(examples) == 0 {
@@ -325,21 +331,28 @@ func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.
 
 // fetchComponentsList fetches and caches the component list
 func (t *UnifiedShadcnTool) fetchComponentsList(logger *logrus.Logger, cache *sync.Map) ([]ComponentInfo, error) {
-	resp, err := t.client.Get(ShadcnDocsComponents)
+	// Use security helper for consistent security handling
+	ops := security.NewOperations("shadcnui")
+	safeResp, err := ops.SafeHTTPGet(ShadcnDocsComponents)
 	if err != nil {
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
+		}
 		return nil, fmt.Errorf("failed to fetch shadcn components page: %w", err)
 	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			logger.WithError(closeErr).Warn("Failed to close response body")
-		}
-	}()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", resp.StatusCode)
+	if safeResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch shadcn components page: status %d", safeResp.StatusCode)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	// Handle security warnings
+	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+		logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+	}
+
+	bodyBytes := safeResp.Content
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse shadcn components page: %w", err)
 	}

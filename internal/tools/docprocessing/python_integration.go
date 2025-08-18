@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/sammcj/mcp-devtools/internal/security"
 )
 
 // processDocument processes the document using the Python wrapper
@@ -22,6 +24,10 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 
 	// Get and validate script path
 	scriptPath := t.config.GetScriptPath()
+	// Security: Check file access for script path
+	if err := security.CheckFileAccess(scriptPath); err != nil {
+		return nil, fmt.Errorf("script access denied: %w", err)
+	}
 	if _, err := os.Stat(scriptPath); err != nil {
 		return nil, fmt.Errorf("python script not found at %s: %w", scriptPath, err)
 	}
@@ -669,6 +675,10 @@ func (t *DocumentProcessorTool) resolveSourcePath(source string) (string, error)
 
 	// Check if it's already an absolute path
 	if filepath.IsAbs(source) {
+		// Security: Check file access control
+		if err := security.CheckFileAccess(source); err != nil {
+			return "", err
+		}
 		// Verify the file exists
 		if _, err := os.Stat(source); err != nil {
 			return "", fmt.Errorf("file not found: %s", source)
@@ -684,6 +694,10 @@ func (t *DocumentProcessorTool) resolveSourcePath(source string) (string, error)
 
 	absolutePath := filepath.Join(cwd, source)
 
+	// Security: Check file access control for resolved path
+	if err := security.CheckFileAccess(absolutePath); err != nil {
+		return "", err
+	}
 	// Verify the file exists
 	if _, err := os.Stat(absolutePath); err != nil {
 		return "", fmt.Errorf("file not found: %s (resolved to %s)", source, absolutePath)

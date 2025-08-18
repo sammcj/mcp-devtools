@@ -3,7 +3,6 @@ package shadcnui
 import (
 	"context"
 	"fmt"
-	"io" // Add io import
 	"net/http"
 	"strings"
 	"sync"
@@ -14,14 +13,13 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
 )
 
 // GetComponentExamplesTool defines the tool for getting shadcn ui component examples.
-type GetComponentExamplesTool struct {
-	client HTTPClient
-}
+type GetComponentExamplesTool struct{}
 
 // Definition returns the tool's definition.
 func (t *GetComponentExamplesTool) Definition() mcp.Tool {
@@ -53,18 +51,22 @@ func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.L
 
 	// 1. Scrape from component's doc page
 	componentURL := fmt.Sprintf("%s/%s", ShadcnDocsComponents, componentName)
-	resp, err := t.client.Get(componentURL)
+
+	// Use security helper for consistent security handling
+	ops := security.NewOperations("shadcnui")
+	safeResp, err := ops.SafeHTTPGet(componentURL)
 	if err != nil {
 		logger.Warnf("Failed to fetch component page %s for examples: %v", componentURL, err)
 		// Continue to try fetching from GitHub demo file
 	} else {
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				logger.WithError(err).Errorf("Failed to close response body for component page %s", componentURL)
+		if safeResp.StatusCode == http.StatusOK {
+			// Handle security warnings
+			if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
+				logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
 			}
-		}()
-		if resp.StatusCode == http.StatusOK {
-			doc, docErr := goquery.NewDocumentFromReader(resp.Body)
+
+			bodyBytes := safeResp.Content
+			doc, docErr := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 			if docErr != nil {
 				logger.Warnf("Failed to parse component page %s for examples: %v", componentURL, docErr)
 			} else {
@@ -89,38 +91,31 @@ func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.L
 				})
 			}
 		} else {
-			logger.Warnf("Failed to fetch component page %s: status %d", componentURL, resp.StatusCode)
+			logger.Warnf("Failed to fetch component page %s: status %d", componentURL, safeResp.StatusCode)
 		}
 	}
 
 	// 2. Attempt to fetch the demo file from GitHub
 	demoURL := fmt.Sprintf("%s/apps/www/registry/default/example/%s-demo.tsx", ShadcnRawGitHubURL, componentName)
-	respDemo, errDemo := t.client.Get(demoURL)
+	safeDemoResp, errDemo := ops.SafeHTTPGet(demoURL)
 
 	if errDemo != nil {
 		logger.Warnf("Failed to fetch demo file %s: %v. Proceeding without it.", demoURL, errDemo)
-	} else if respDemo != nil { // Only proceed if errDemo is nil AND respDemo is not nil
-		defer func() {
-			if err := respDemo.Body.Close(); err != nil {
-				logger.WithError(err).Errorf("Failed to close response body for demo file %s", demoURL)
-			}
-		}()
-		if respDemo.StatusCode == http.StatusOK {
-			bodyBytes, readErr := io.ReadAll(respDemo.Body)
-			if readErr != nil {
-				logger.Warnf("Failed to read demo file %s: %v", demoURL, readErr)
-			} else {
-				titleCaser := cases.Title(language.AmericanEnglish, cases.NoLower)
-				examples = append(examples, ComponentExample{
-					Title:       fmt.Sprintf("%s Demo from GitHub", titleCaser.String(componentName)),
-					Code:        string(bodyBytes),
-					Description: "Example .tsx demo file from the official shadcn ui GitHub repository.",
-				})
-			}
-		} else {
-			logger.Warnf("Failed to fetch demo file %s: status %d", demoURL, respDemo.StatusCode)
+	} else if safeDemoResp.StatusCode == http.StatusOK {
+		// Handle security warnings for demo file
+		if safeDemoResp.SecurityResult != nil && safeDemoResp.SecurityResult.Action == security.ActionWarn {
+			logger.Warnf("Security warning for demo file [ID: %s]: %s", safeDemoResp.SecurityResult.ID, safeDemoResp.SecurityResult.Message)
 		}
-	} // End of block for successful GET request (errDemo == nil and respDemo != nil)
+
+		titleCaser := cases.Title(language.AmericanEnglish, cases.NoLower)
+		examples = append(examples, ComponentExample{
+			Title:       fmt.Sprintf("%s Demo from GitHub", titleCaser.String(componentName)),
+			Code:        string(safeDemoResp.Content),
+			Description: "Example .tsx demo file from the official shadcn ui GitHub repository.",
+		})
+	} else if safeDemoResp != nil {
+		logger.Warnf("Failed to fetch demo file %s: status %d", demoURL, safeDemoResp.StatusCode)
+	}
 
 	if len(examples) == 0 {
 		logger.Warnf("No examples found for component: %s", componentName)
