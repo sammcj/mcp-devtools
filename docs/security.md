@@ -2,6 +2,8 @@
 
 The MCP DevTools security framework provides a layer protection to help protect against malicious content, unauthorised file access, and dangerous network requests. It operates as a configurable, multi-layered security framework that can be enabled or disabled as needed.
 
+You should never trust the security framework alone to protect you, it is designed to be a first line of defence and should be used in conjunction with other security measures and secure agentic coding practices.
+
 Important: This feature should be considered in **BETA**, if you find bugs and have solutions please feel free to raise a PR.
 
 ## Table of Contents
@@ -24,7 +26,7 @@ The security framework provides three main layers of protection:
 
 1. **Access Control**: Prevents tools from accessing sensitive files and domains
 2. **Content Analysis**: Scans returned content for security threats
-3. **Lightweight Audit Logging**: Tracks all security events for review
+3. **Lightweight Event Audit Logging**: Tracks all security events for review
 
 The intent with the security framework is that the tool (software) fetches the content and checks there are not warn/block rules that match it and then it returns it to the AI model / AI agent so that the agent does not end up with potentially malicious content in it's context.
 
@@ -163,7 +165,7 @@ graph TB
     class LM,RM,CM,EM,GM patternLayer
 ```
 
-### Component Description
+Components:
 
 - **Security Manager**: Central coordinator that manages all security operations
 - **Rule Engine**: Loads and compiles YAML security rules into efficient matchers
@@ -172,6 +174,15 @@ graph TB
 - **Source Trust**: Manages trusted domains and exception handling
 - **Override Manager**: Handles security bypasses when authorised
 - **Pattern Matchers**: Efficient pattern matching implementations for different content types
+
+## Enabling Security
+
+The security system is controlled by the `ENABLE_ADDITIONAL_TOOLS` environment variable and requires the `security` tool to be included.
+
+```bash
+# Enable security system and override tool
+ENABLE_ADDITIONAL_TOOLS="security,security_override"
+```
 
 ## Configuration
 
@@ -282,11 +293,11 @@ The security system enforces size limits on content to prevent processing of ext
 
 #### Size Exceeded Behaviours
 
-| Behaviour | Description | Use Case |
-|-----------|-------------|----------|
-| `allow` | Log debug message and continue processing (may truncate content) | Default - backward compatible, permissive |
-| `warn` | Log warning but allow processing to continue | Monitor size violations without blocking |
-| `block` | Prevent processing entirely and return security block | Strict size enforcement |
+| Behaviour | Description                                                      | Use Case                                  |
+|-----------|------------------------------------------------------------------|-------------------------------------------|
+| `allow`   | Log debug message and continue processing (may truncate content) | Default - backward compatible, permissive |
+| `warn`    | Log warning but allow processing to continue                     | Monitor size violations without blocking  |
+| `block`   | Prevent processing entirely and return security block            | Strict size enforcement                   |
 
 #### Example Configuration
 
@@ -395,6 +406,140 @@ rules:
     severity: medium
     exceptions: [trusted_domains]
 ```
+
+## Security Actions
+
+The security system supports different action types for handling detected threats:
+
+| Action      | Behaviour                        | Use Case                                 |
+|-------------|----------------------------------|------------------------------------------|
+| `allow`     | Allow content unconditionally    | Whitelist trusted content                |
+| `block`     | Block content completely         | Prevent access to malicious content      |
+| `ignore`    | Skip security checks             | Performance optimisation                 |
+| `notify`    | Send notification, allow content | Alert on specific patterns               |
+| `warn_high` | Log high-priority warning        | Flag dangerous but not malicious content |
+| `warn`      | Log warning, allow content       | Monitor suspicious content               |
+
+### Action Processing
+
+```mermaid
+flowchart TD
+    A[Content Input] --> B{Security Check}
+    B -->|Match Found| C{Action Type}
+    B -->|No Match| D[Allow Content]
+
+    C -->|allow/ignore| D
+    C -->|warn/warn_high| E[Log Warning]
+    C -->|block| F[Block Content]
+    C -->|notify| G[Send Notification]
+
+    E --> H[Return Content + Warning]
+    F --> I[Return Error]
+    G --> J[Return Content + Notice]
+
+    classDef allow fill:#99DE90
+    classDef warn fill:#FFD700
+    classDef block fill:#FF6B6B
+    classDef notify fill:#87CEEB
+
+    class D,H,J allow
+    class E warn
+    class F,I block
+    class G notify
+```
+
+## Override System
+
+The security system provides an override mechanism for bypassing security blocks when necessary.
+
+### Using Security Overrides
+
+When content is blocked, users can override the decision using the `security_override` tool:
+
+```json
+{
+  "name": "security_override",
+  "arguments": {
+    "security_id": "sec_block_1625234567_abc123",
+    "justification": "This content is safe for my use case",
+    "duration": "1h"
+  }
+}
+```
+
+### Override Parameters
+
+- `security_id`: Unique ID from the security block message
+- `justification`: Human-readable reason for override
+- `duration`: How long the override is valid (e.g., "1h", "24h", "permanent")
+
+Override Management
+
+- **Temporary Overrides**: Expire after specified duration
+- **Audit Trail**: All overrides are logged with justification
+- **Revocation**: Overrides can be manually revoked
+- **Scope**: Overrides apply to specific content patterns, not global bypasses
+
+## Performance Considerations
+
+The security system is designed for minimal performance impact:
+
+### Performance Optimisations
+
+- **Lazy Loading**: Security components loaded only when needed
+- **Pattern Compilation**: Regex patterns compiled once at startup
+- **Content Size Limits**: Large content truncated before analysis
+- **Caching**: Security analysis results cached for repeated content
+- **Early Termination**: Stop scanning at first match for block rules
+
+### Performance Metrics
+
+Based on performance testing:
+
+- **File Access Checks**: ~1µs per check
+- **Domain Access Checks**: ~1µs per check
+- **Content Analysis**: 10-650µs depending on content size and complexity
+- **Memory Usage**: <10MB for typical rule sets
+- **Startup Overhead**: <100ms for rule compilation
+
+### Tuning Performance
+
+```yaml
+settings:
+  max_content_size: 512        # Reduce for faster scanning
+  max_entropy_size: 32         # Reduce entropy analysis size
+  case_sensitive: false        # Faster case-insensitive matching
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Security Rules Not Loading
+
+**Symptoms**: Security checks not working, no security logs
+**Solution**:
+1. Verify `security` is in `ENABLE_ADDITIONAL_TOOLS`
+2. Check rules file path and permissions
+3. Review security logs for errors, if you don't see logs, try running the mcp server with `-d` to enable debug logging
+
+#### False Positives
+
+**Symptoms**: Legitimate content being blocked
+**Solution**:
+1. Add content source to `trusted_domains`
+2. Create exception patterns in rules
+3. Use security override for immediate access
+4. Adjust rule sensitivity
+
+#### Performance Issues
+
+**Symptoms**: Tools responding slowly
+**Solution**:
+1. Reduce `max_content_size` in settings
+2. Disable entropy analysis for large content
+3. Optimise regex patterns
+4. Enable result caching
 
 ## Integration Patterns
 
@@ -564,180 +709,6 @@ if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.
 // Process exact content
 return processContent(safeResp.Content)
 ```
-
-## Enabling Security
-
-The security system is controlled by the `ENABLE_ADDITIONAL_TOOLS` environment variable and requires the `security` tool to be included.
-
-### Enabling Security
-
-```bash
-# Enable security system and override tool
-ENABLE_ADDITIONAL_TOOLS="security,security_override"
-```
-
-### Checking Security Status
-
-```bash
-# Check if security is enabled
-./bin/mcp-devtools --help | grep security
-
-# View current security configuration
-echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}' | ./bin/mcp-devtools stdio
-```
-
-### Disabling Security
-
-```bash
-# Disable security by excluding from enabled tools
-ENABLE_ADDITIONAL_TOOLS="filesystem,webfetch"  # security not included
-
-# Or disable in rules file settings.enabled: false
-```
-
-## Security Actions
-
-The security system supports different action types for handling detected threats:
-
-| Action      | Behaviour                        | Use Case                                 |
-|-------------|----------------------------------|------------------------------------------|
-| `allow`     | Allow content unconditionally    | Whitelist trusted content                |
-| `block`     | Block content completely         | Prevent access to malicious content      |
-| `ignore`    | Skip security checks             | Performance optimisation                 |
-| `notify`    | Send notification, allow content | Alert on specific patterns               |
-| `warn_high` | Log high-priority warning        | Flag dangerous but not malicious content |
-| `warn`      | Log warning, allow content       | Monitor suspicious content               |
-
-### Action Processing
-
-```mermaid
-flowchart TD
-    A[Content Input] --> B{Security Check}
-    B -->|Match Found| C{Action Type}
-    B -->|No Match| D[Allow Content]
-
-    C -->|allow/ignore| D
-    C -->|warn/warn_high| E[Log Warning]
-    C -->|block| F[Block Content]
-    C -->|notify| G[Send Notification]
-
-    E --> H[Return Content + Warning]
-    F --> I[Return Error]
-    G --> J[Return Content + Notice]
-
-    classDef allow fill:#99DE90
-    classDef warn fill:#FFD700
-    classDef block fill:#FF6B6B
-    classDef notify fill:#87CEEB
-
-    class D,H,J allow
-    class E warn
-    class F,I block
-    class G notify
-```
-
-## Override System
-
-The security system provides an override mechanism for bypassing security blocks when necessary.
-
-### Using Security Overrides
-
-When content is blocked, users can override the decision using the `security_override` tool:
-
-```json
-{
-  "name": "security_override",
-  "arguments": {
-    "security_id": "sec_block_1625234567_abc123",
-    "justification": "This content is safe for my use case",
-    "duration": "1h"
-  }
-}
-```
-
-### Override Parameters
-
-- `security_id`: Unique ID from the security block message
-- `justification`: Human-readable reason for override
-- `duration`: How long the override is valid (e.g., "1h", "24h", "permanent")
-
-### Override Management
-
-- **Temporary Overrides**: Expire after specified duration
-- **Audit Trail**: All overrides are logged with justification
-- **Revocation**: Overrides can be manually revoked
-- **Scope**: Overrides apply to specific content patterns, not global bypasses
-
-## Performance Considerations
-
-The security system is designed for minimal performance impact:
-
-### Performance Optimisations
-
-- **Lazy Loading**: Security components loaded only when needed
-- **Pattern Compilation**: Regex patterns compiled once at startup
-- **Content Size Limits**: Large content truncated before analysis
-- **Caching**: Security analysis results cached for repeated content
-- **Early Termination**: Stop scanning at first match for block rules
-
-### Performance Metrics
-
-Based on performance testing:
-
-- **File Access Checks**: ~1µs per check
-- **Domain Access Checks**: ~1µs per check
-- **Content Analysis**: 10-650µs depending on content size and complexity
-- **Memory Usage**: <10MB for typical rule sets
-- **Startup Overhead**: <100ms for rule compilation
-
-### Tuning Performance
-
-```yaml
-settings:
-  max_content_size: 512        # Reduce for faster scanning
-  max_entropy_size: 32         # Reduce entropy analysis size
-  case_sensitive: false        # Faster case-insensitive matching
-```
-
-## Troubleshooting
-
-### Common Issues
-
-#### Security Rules Not Loading
-
-**Symptoms**: Security checks not working, no security logs
-**Solution**:
-1. Check `MCP_SECURITY_ENABLED` environment variable
-2. Verify `security` is in `ENABLE_ADDITIONAL_TOOLS`
-3. Check rules file path and permissions
-4. Review security logs for errors
-
-#### False Positives
-
-**Symptoms**: Legitimate content being blocked
-**Solution**:
-1. Add content source to `trusted_domains`
-2. Create exception patterns in rules
-3. Use security override for immediate access
-4. Adjust rule sensitivity
-
-#### Performance Issues
-
-**Symptoms**: Tools responding slowly
-**Solution**:
-1. Reduce `max_content_size` in settings
-2. Disable entropy analysis for large content
-3. Optimise regex patterns
-4. Enable result caching
-
-#### Permission Errors
-
-**Symptoms**: Cannot read security rules file
-**Solution**:
-1. Check file permissions: `chmod 600 ~/.mcp-devtools/security.yaml`
-2. Verify directory permissions: `chmod 700 ~/.mcp-devtools`
-3. Check file ownership
-4. Use custom path with proper permissions
 
 ### Debug Mode
 
