@@ -44,6 +44,15 @@ Example of the security framework blocking the tools from fetching and returning
 
 ![example](security-example.png)
 
+## Enabling Security
+
+The security system is controlled by the `ENABLE_ADDITIONAL_TOOLS` environment variable and requires the `security` tool to be included.
+
+```bash
+# Enable security system and override tool
+ENABLE_ADDITIONAL_TOOLS="security,security_override"
+```
+
 ## Architecture
 
 ```mermaid
@@ -175,13 +184,32 @@ Components:
 - **Override Manager**: Handles security bypasses when authorised
 - **Pattern Matchers**: Efficient pattern matching implementations for different content types
 
-## Enabling Security
+### Action Processing
 
-The security system is controlled by the `ENABLE_ADDITIONAL_TOOLS` environment variable and requires the `security` tool to be included.
+```mermaid
+flowchart TD
+    A[Content Input] --> B{Security Check}
+    B -->|Match Found| C{Action Type}
+    B -->|No Match| D[Allow Content]
 
-```bash
-# Enable security system and override tool
-ENABLE_ADDITIONAL_TOOLS="security,security_override"
+    C -->|allow/ignore| D
+    C -->|warn/warn_high| E[Log Warning]
+    C -->|block| F[Block Content]
+    C -->|notify| G[Send Notification]
+
+    E --> H[Return Content + Warning]
+    F --> I[Return Error]
+    G --> J[Return Content + Notice]
+
+    classDef allow fill:#31A354
+    classDef warn fill:#E6550D
+    classDef block fill:#EE2E2E
+    classDef notify fill:#756BB1
+
+    class D,H,J allow
+    class E warn
+    class F,I block
+    class G notify
 ```
 
 ## Configuration
@@ -350,39 +378,37 @@ rule_name:
 
 ### Built-in Security Rules
 
-The system includes comprehensive built-in rules for:
+The system includes some basic built-in rules:
 
-#### Shell Injection Detection
-- Command injection via pipes (`curl | bash`)
-- Command substitution (`$(command)`)
-- Backtick execution (`` `command` ``)
-- Base64 encoded commands
+- **Shell Injection**
+  - Command injection via pipes (`curl | bash`)
+  - Command substitution (`$(command)`)
+  - Backtick execution (`` `command` ``)
+  - Base64 encoded commands
+- **Data Exfiltration**
+  - DNS exfiltration attempts
+  - Raw socket operations
+  - SSH command execution
+  - Browser credential theft
+  - Keychain/keyring access
+- **Prompt Injection**
+  - "Ignore previous instructions" attacks
+  - API key/password enumeration requests
+  - Conversation history extraction
+  - Environment variable exports
+  - Invisible Unicode character attacks
+- **Persistence Mechanisms**
+  - Launchctl persistence (macOS)
+  - Systemd service persistence (Linux)
+  - Crontab modifications
+  - RC script modifications
+- **Sensitive File References**
+  - SSH private keys
+  - AWS credentials
+  - Database passwords
+  - Certificate files
 
-#### Data Exfiltration Detection
-- DNS exfiltration attempts
-- Raw socket operations
-- SSH command execution
-- Browser credential theft
-- Keychain/keyring access
-
-#### Prompt Injection Detection
-- "Ignore previous instructions" attacks
-- API key/password enumeration requests
-- Conversation history extraction
-- Environment variable exports
-- Invisible Unicode character attacks
-
-#### Persistence Mechanism Detection
-- Launchctl persistence (macOS)
-- Systemd service persistence (Linux)
-- Crontab modifications
-- RC script modifications
-
-#### Sensitive File References
-- SSH private keys
-- AWS credentials
-- Database passwords
-- Certificate files
+These should only be seen as a starting point, you should add your own rules to cover your specific use cases and threats.
 
 ### Custom Rules
 
@@ -419,34 +445,6 @@ The security system supports different action types for handling detected threat
 | `notify`    | Send notification, allow content | Alert on specific patterns               |
 | `warn_high` | Log high-priority warning        | Flag dangerous but not malicious content |
 | `warn`      | Log warning, allow content       | Monitor suspicious content               |
-
-### Action Processing
-
-```mermaid
-flowchart TD
-    A[Content Input] --> B{Security Check}
-    B -->|Match Found| C{Action Type}
-    B -->|No Match| D[Allow Content]
-
-    C -->|allow/ignore| D
-    C -->|warn/warn_high| E[Log Warning]
-    C -->|block| F[Block Content]
-    C -->|notify| G[Send Notification]
-
-    E --> H[Return Content + Warning]
-    F --> I[Return Error]
-    G --> J[Return Content + Notice]
-
-    classDef allow fill:#99DE90
-    classDef warn fill:#FFD700
-    classDef block fill:#FF6B6B
-    classDef notify fill:#87CEEB
-
-    class D,H,J allow
-    class E warn
-    class F,I block
-    class G notify
-```
 
 ## Override System
 
