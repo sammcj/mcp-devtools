@@ -2,6 +2,8 @@
 
 The Memory tool provides persistent knowledge graph storage for AI agents, allowing them to store, search, and retrieve information across sessions using a structured entity-relation model.
 
+**Note**: This tool is disabled by default and must be enabled by adding `memory` to the `ENABLE_ADDITIONAL_TOOLS` environment variable.
+
 ## Overview
 
 The Memory tool creates a persistent knowledge graph that survives across different sessions. Store entities (people, companies, projects), create relationships between them, and add observations (facts) that can be searched and retrieved later.

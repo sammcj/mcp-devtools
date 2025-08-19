@@ -165,6 +165,7 @@ func requiresEnablement(toolName string) bool {
 		"generate_changelog",
 		"process_document",
 		"pdf",
+		"memory",
 	}
 
 	// Normalize the tool name (lowercase, replace underscores with hyphens)
