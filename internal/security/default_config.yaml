@@ -26,6 +26,11 @@ settings:
   enable_base64_scanning: true # Enable base64 content decoding and analysis
   max_base64_decoded_size: 512 # Maximum size of decoded base64 content (KB)
 
+# Note on wildcards:
+# - Using '*.sock' is enough to match .sock files in any directory
+# - Using '~/.ssh/id_rsa' matches the exact file in the user's home directory (works for ~/.ssh/id_rsa as well as $HOME/.ssh/id_rsa)
+# - Glob expressions like '**/*.sock' are not supported, use '*.sock' instead
+
 # File Access Control: Files and domains that MCP tools are DENIED ACCESS to
 # These prevent tools from accessing files/domains directly
 access_control:
@@ -36,10 +41,14 @@ access_control:
     - "~/.aws/credentials"
     - "~/.aws/config"
     - "~/.gcp/credentials.json"
+    - "~/Library/Keychains"
+    - "/Network/Library/Keychains"
     - "/etc/hosts"
     - "/etc/passwd"
     - "/etc/shadow"
     - "~/.netrc"
+    - "/proc/self/environ"
+    - "*.sock"
 
   deny_domains:
     - "malicious-site.com"
@@ -179,6 +188,7 @@ rules:
       - contains: ".pem"
       - contains: ".git-credentials"
       - contains: ".pgpass"
+      - contains: "/proc/self/environ"
     action: warn_high
     exceptions: [trusted_domains]
 
