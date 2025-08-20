@@ -17,6 +17,8 @@ import (
 
 const CratesIOAPIURL = "https://crates.io/api/v1"
 
+var crateNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
 // RustTool handles Rust crate version checking
 type RustTool struct {
 	client packageversions.HTTPClient
@@ -266,6 +268,6 @@ func (t *RustTool) getCrateInfo(logger *logrus.Logger, cache *sync.Map, crateNam
 // isValidCrateName validates Rust crate names according to crates.io rules
 func isValidCrateName(name string) bool {
 	// Basic validation - crates.io names are ASCII, hyphens, underscores
-	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, name)
+	matched := crateNameRegexp.MatchString(name)
 	return matched && len(name) > 0 && len(name) <= 64
 }
