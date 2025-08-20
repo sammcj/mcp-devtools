@@ -46,7 +46,7 @@ Thumbs.db
 bin/
 dist/
 
-.claude
+.claude/settings.local.json
 
 **/*/extracted_images
 **/*/exported_output.md
