@@ -2,12 +2,42 @@ package packageversions
 
 // PackageVersion represents version information for a package
 type PackageVersion struct {
-	Name           string  `json:"name"`
-	CurrentVersion *string `json:"currentVersion,omitempty"`
-	LatestVersion  string  `json:"latestVersion"`
-	Registry       string  `json:"registry"`
-	Skipped        bool    `json:"skipped,omitempty"`
-	SkipReason     string  `json:"skipReason,omitempty"`
+	Name           string          `json:"name"`
+	CurrentVersion *string         `json:"currentVersion,omitempty"`
+	LatestVersion  string          `json:"latestVersion"`
+	Registry       string          `json:"registry"`
+	Skipped        bool            `json:"skipped,omitempty"`
+	SkipReason     string          `json:"skipReason,omitempty"`
+	Details        *PackageDetails `json:"details,omitempty"`
+}
+
+// PackageDetails contains detailed metadata about a package
+type PackageDetails struct {
+	// Common metadata fields
+	Description   *string  `json:"description,omitempty"`
+	Homepage      *string  `json:"homepage,omitempty"`
+	Repository    *string  `json:"repository,omitempty"`
+	Documentation *string  `json:"documentation,omitempty"`
+	License       *string  `json:"license,omitempty"`
+	Downloads     *int64   `json:"downloads,omitempty"`
+	CreatedAt     *string  `json:"createdAt,omitempty"`
+	UpdatedAt     *string  `json:"updatedAt,omitempty"`
+	PublishedAt   *string  `json:"publishedAt,omitempty"`
+	NumVersions   *int     `json:"numVersions,omitempty"`
+	Keywords      []string `json:"keywords,omitempty"`
+	Publisher     *string  `json:"publisher,omitempty"`
+
+	// Ecosystem-specific metadata
+	Rust *RustDetails `json:"rust,omitempty"`
+}
+
+// RustDetails contains Rust-specific package metadata
+type RustDetails struct {
+	Edition         *string  `json:"edition,omitempty"`
+	RustVersion     *string  `json:"rustVersion,omitempty"`
+	CrateSize       *int64   `json:"crateSize,omitempty"`
+	Categories      []string `json:"categories,omitempty"`
+	RecentDownloads *int64   `json:"recentDownloads,omitempty"`
 }
 
 // VersionConstraint represents constraints for package version updates
@@ -124,4 +154,18 @@ type GitHubActionVersion struct {
 	LatestVersion  string  `json:"latestVersion"`
 	PublishedAt    *string `json:"publishedAt,omitempty"`
 	URL            *string `json:"url,omitempty"`
+}
+
+// RustCrate represents a Rust crate dependency
+type RustCrate struct {
+	Name    string `json:"name"`
+	Version string `json:"version,omitempty"`
+	Source  string `json:"source,omitempty"` // e.g., "registry+https://github.com/rust-lang/crates.io-index"
+}
+
+// CargoToml represents dependencies in a Cargo.toml file
+type CargoToml struct {
+	Dependencies      map[string]interface{} `json:"dependencies,omitempty"`
+	DevDependencies   map[string]interface{} `json:"dev-dependencies,omitempty"`
+	BuildDependencies map[string]interface{} `json:"build-dependencies,omitempty"`
 }

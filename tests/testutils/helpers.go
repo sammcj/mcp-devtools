@@ -2,9 +2,12 @@ package testutils
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"testing"
 
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
 
@@ -99,4 +102,34 @@ func containsMiddle(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// ExtractPackageVersions extracts PackageVersion structs from a tool result
+func ExtractPackageVersions(t *testing.T, result interface{}) []packageversions.PackageVersion {
+	t.Helper()
+
+	// Cast to CallToolResult
+	toolResult, ok := result.(*mcp.CallToolResult)
+	if !ok {
+		t.Fatalf("Expected *mcp.CallToolResult, got %T", result)
+	}
+
+	// Extract text content
+	if len(toolResult.Content) == 0 {
+		t.Fatal("Expected content in tool result")
+	}
+
+	textContent, ok := toolResult.Content[0].(mcp.TextContent)
+	if !ok {
+		t.Fatalf("Expected TextContent, got %T", toolResult.Content[0])
+	}
+
+	// Parse JSON
+	var versions []packageversions.PackageVersion
+	err := json.Unmarshal([]byte(textContent.Text), &versions)
+	if err != nil {
+		t.Fatalf("Failed to parse package versions JSON: %v", err)
+	}
+
+	return versions
 }

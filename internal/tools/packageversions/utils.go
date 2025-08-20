@@ -324,6 +324,11 @@ func IntPtr(i int) *int {
 	return &i
 }
 
+// Int64Ptr returns a pointer to the given int64
+func Int64Ptr(i int64) *int64 {
+	return &i
+}
+
 // ExtractMajorVersion extracts the major version from a version string
 func ExtractMajorVersion(version string) (int, error) {
 	major, _, _, err := ParseVersion(version)
