@@ -544,6 +544,7 @@ Tools with extended help:
 - Tool descriptions and parameter annotations are important for the AI agents to understand how to use the tools effectively, but must be concise and clear so they don't overload the context.
   - If you want to create a function to help with debugging to testing a tool but don't want to expose it to MCP clients using the server, you can do so, just make sure you add a comment that it is a function not intended to be exposed to MCP clients.
 - All tools should work on both macOS and Linux unless otherwise specified (we do not need to support Windows).
+- Rather than creating lots of tools for one purpose / provider, instead favour creating a single tool with multiple functions and parameters.
 - Tools should have fast, concise unit tests that do not rely on external dependencies or services.
 - No tool should ever log to stdout or stderr when the MCP server is running in stdio mode as this breaks the MCP protocol.
 - You should update docs/tools/overview.md with adding or changing a tool.
