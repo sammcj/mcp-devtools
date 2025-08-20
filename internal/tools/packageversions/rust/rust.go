@@ -116,30 +116,39 @@ func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 
 		// Add detailed information if requested
 		if includeDetails {
-			result.Description = packageversions.StringPtr(info.Crate.Description)
-			result.Homepage = packageversions.StringPtr(info.Crate.Homepage)
-			result.Repository = packageversions.StringPtr(info.Crate.Repository)
-			result.Documentation = packageversions.StringPtr(info.Crate.Documentation)
-			result.Downloads = packageversions.Int64Ptr(info.Crate.Downloads)
-			result.RecentDownloads = packageversions.Int64Ptr(info.Crate.RecentDownloads)
-			result.CreatedAt = packageversions.StringPtr(info.Crate.CreatedAt)
-			result.UpdatedAt = packageversions.StringPtr(info.Crate.UpdatedAt)
-			result.NumVersions = packageversions.IntPtr(info.Crate.NumVersions)
-			result.Keywords = info.Crate.Keywords
-			result.Categories = info.Crate.Categories
+			details := &packageversions.PackageDetails{
+				Description:   packageversions.StringPtr(info.Crate.Description),
+				Homepage:      packageversions.StringPtr(info.Crate.Homepage),
+				Repository:    packageversions.StringPtr(info.Crate.Repository),
+				Documentation: packageversions.StringPtr(info.Crate.Documentation),
+				Downloads:     packageversions.Int64Ptr(info.Crate.Downloads),
+				CreatedAt:     packageversions.StringPtr(info.Crate.CreatedAt),
+				UpdatedAt:     packageversions.StringPtr(info.Crate.UpdatedAt),
+				NumVersions:   packageversions.IntPtr(info.Crate.NumVersions),
+				Keywords:      info.Crate.Keywords,
+			}
+
+			// Add Rust-specific details
+			rustDetails := &packageversions.RustDetails{
+				Categories:      info.Crate.Categories,
+				RecentDownloads: packageversions.Int64Ptr(info.Crate.RecentDownloads),
+			}
 
 			// Add latest version details if available
 			if len(info.Versions) > 0 {
 				latestVersion := info.Versions[0]
-				result.License = packageversions.StringPtr(latestVersion.License)
-				result.PublishedAt = packageversions.StringPtr(latestVersion.CreatedAt)
-				result.RustVersion = packageversions.StringPtr(latestVersion.RustVersion)
-				result.Edition = packageversions.StringPtr(latestVersion.Edition)
-				result.CrateSize = packageversions.Int64Ptr(latestVersion.CrateSize)
+				details.License = packageversions.StringPtr(latestVersion.License)
+				details.PublishedAt = packageversions.StringPtr(latestVersion.CreatedAt)
+				rustDetails.RustVersion = packageversions.StringPtr(latestVersion.RustVersion)
+				rustDetails.Edition = packageversions.StringPtr(latestVersion.Edition)
+				rustDetails.CrateSize = packageversions.Int64Ptr(latestVersion.CrateSize)
 				if latestVersion.PublishedBy.Login != "" {
-					result.Publisher = packageversions.StringPtr(fmt.Sprintf("%s (%s)", latestVersion.PublishedBy.Name, latestVersion.PublishedBy.Login))
+					details.Publisher = packageversions.StringPtr(fmt.Sprintf("%s (%s)", latestVersion.PublishedBy.Name, latestVersion.PublishedBy.Login))
 				}
 			}
+
+			details.Rust = rustDetails
+			result.Details = details
 		}
 
 		results = append(results, result)

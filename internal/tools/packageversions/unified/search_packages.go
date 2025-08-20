@@ -487,9 +487,9 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 					"ecosystem": "rust",
 					"query":     "serde",
 					"data": map[string]interface{}{
-						"serde":      "1.0",
-						"tokio":      "1.0",
-						"clap":       map[string]interface{}{"version": "4.0", "features": []string{"derive"}},
+						"serde": "1.0",
+						"tokio": "1.0",
+						"clap":  map[string]interface{}{"version": "4.0", "features": []string{"derive"}},
 					},
 				},
 				ExpectedResult: "Returns Rust crate information and latest versions from crates.io",
