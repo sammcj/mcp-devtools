@@ -7,7 +7,7 @@
       "command": "./bin/mcp-devtools",
       "env": {
         "NOTE": "See the README for information on available environment variables",
-        "ENABLE_ADDITIONAL_TOOLS": "sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,generate_changelog,security"
+        "ENABLE_ADDITIONAL_TOOLS": "sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,generate_changelog,security,aws"
       }
     }
   }

@@ -34,6 +34,15 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
 3. Memory → Store findings for later reference
 ```
 
+#### AWS Documentation Research Workflow
+```
+1. AWS Documentation (search) → Find relevant AWS guides
+2. AWS Documentation (fetch) → Get detailed AWS content  
+3. AWS Documentation (strands) → Access AWS Strands Agents SDK documentation
+4. AWS Documentation (recommend) → Discover related AWS services
+5. Memory → Store AWS configuration patterns
+```
+
 ## Tool Dependencies
 
 ### Required Environment Variables
@@ -41,6 +50,7 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
 |---------------------------|--------------------------|------------------------------------------------------------------|
 | Agents (Claude, Gemini)   | `ENABLE_AGENTS`          | Comma-separated list of agents to enable (e.g., `claude,gemini`) |
 |                           | `AGENT_TIMEOUT`          | Timeout for agent commands (default: 180s)                       |
+| AWS Documentation         | `ENABLE_ADDITIONAL_TOOLS=aws` | Enable AWS documentation tools (no API keys required)      |
 | Claude Agent              | `CLAUDE_SYSTEM_PROMPT`   | Append a system prompt to the default system prompt              |
 |                           | `CLAUDE_PERMISSION_MODE` | Permission mode for the session                                  |
 | Internet Search (Brave)   | `BRAVE_API_KEY`          | Enable Brave search provider                                     |

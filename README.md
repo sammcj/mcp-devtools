@@ -114,19 +114,20 @@ These tools can be disabled by adding their function name to the `DISABLED_FUNCT
 
 These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment variable in your MCP configuration.
 
-| Tool                                                         | Purpose                                  | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                         |
-|--------------------------------------------------------------|------------------------------------------|---------------------------|---------------------------------------|
-| **[Filesystem](docs/tools/filesystem.md)**                   | File and directory operations            | `filesystem`              | Read, write, edit, search files       |
-| **[Claude Agent](docs/tools/claude-agent.md)**               | Claude Code CLI Agent                    | `claude-agent`            | Code analysis, generation             |
-| **[Gemini Agent](docs/tools/gemini-agent.md)**               | Gemini CLI Agent                         | `gemini-agent`            | Code analysis, generation             |
-| **[Memory](docs/tools/memory.md)**                           | Persistent knowledge graphs              | `memory`                  | Store entities and relationships      |
-| **[SBOM Generation](docs/tools/sbom.md)**                    | Generate Software Bill of Materials      | `sbom`                    | Analyse project dependencies          |
-| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)**   | Security vulnerability scanning          | `vulnerability_scan`      | Find security issues                  |
-| **[Generate Changelog](docs/tools/changelog.md)**            | Generate changelogs from git commits     | `generate_changelog`      | Release notes from local/remote repos |
-| **[Document Processing](docs/tools/document-processing.md)** | Convert documents to Markdown            | `process_document`        | PDF, DOCX → Markdown with OCR         |
-| **[PDF Processing](docs/tools/pdf-processing.md)**           | Fast PDF text extraction                 | `pdf`                     | Quick PDF to Markdown                 |
-| **[Security Framework](docs/security.md)** (BETA)            | Context injection security protections   | `security`                | Content analysis, access control      |
-| **[Security Override](docs/security.md)**                    | Agent managed security warning overrides | `security_override`       | Bypass false positives                |
+| Tool                                                         | Purpose                                  | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                          |
+|--------------------------------------------------------------|------------------------------------------|---------------------------|----------------------------------------|
+| **[Filesystem](docs/tools/filesystem.md)**                   | File and directory operations            | `filesystem`              | Read, write, edit, search files        |
+| **[Claude Agent](docs/tools/claude-agent.md)**               | Claude Code CLI Agent                    | `claude-agent`            | Code analysis, generation              |
+| **[Gemini Agent](docs/tools/gemini-agent.md)**               | Gemini CLI Agent                         | `gemini-agent`            | Code analysis, generation              |
+| **[Memory](docs/tools/memory.md)**                           | Persistent knowledge graphs              | `memory`                  | Store entities and relationships       |
+| **[SBOM Generation](docs/tools/sbom.md)**                    | Generate Software Bill of Materials      | `sbom`                    | Analyse project dependencies           |
+| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)**   | Security vulnerability scanning          | `vulnerability_scan`      | Find security issues                   |
+| **[Generate Changelog](docs/tools/changelog.md)**            | Generate changelogs from git commits     | `generate_changelog`      | Release notes from local/remote repos  |
+| **[Document Processing](docs/tools/document-processing.md)** | Convert documents to Markdown            | `process_document`        | PDF, DOCX → Markdown with OCR          |
+| **[PDF Processing](docs/tools/pdf-processing.md)**           | Fast PDF text extraction                 | `pdf`                     | Quick PDF to Markdown                  |
+| **[AWS Documentation](docs/tools/aws_documentation.md)**     | AWS documentation search and retrieval   | `aws`                     | Read AWS docs, search, recommendations |
+| **[Security Framework](docs/security.md)** (BETA)            | Context injection security protections   | `security`                | Content analysis, access control       |
+| **[Security Override](docs/security.md)**                    | Agent managed security warning overrides | `security_override`       | Bypass false positives                 |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
