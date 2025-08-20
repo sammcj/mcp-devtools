@@ -104,8 +104,8 @@ func TestRustTool_Execute(t *testing.T) {
 			},
 		},
 		{
-			name: "missing dependencies",
-			args: map[string]interface{}{},
+			name:    "missing dependencies",
+			args:    map[string]interface{}{},
 			wantErr: true,
 		},
 	}
