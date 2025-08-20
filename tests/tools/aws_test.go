@@ -72,7 +72,7 @@ func TestAWSDocumentationTool_Execute_InvalidAction(t *testing.T) {
 			args: map[string]interface{}{
 				"action": "invalid",
 			},
-			expectedError: "invalid action: invalid. Must be one of: search, fetch, recommend, strands",
+			expectedError: "invalid action: invalid. Must be one of: search, fetch, recommend",
 		},
 	}
 
@@ -408,95 +408,6 @@ func TestParser_FormatDocumentationResult(t *testing.T) {
 	}
 }
 
-func TestAWSDocumentationTool_Execute_StrandsAction(t *testing.T) {
-	// Enable AWS tools for testing
-	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws")
-	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
-
-	tool := &aws.AWSDocumentationTool{}
-	logger := logrus.New()
-	logger.SetLevel(logrus.PanicLevel) // Suppress output during tests
-	cache := &sync.Map{}
-
-	testCases := []struct {
-		name          string
-		args          map[string]interface{}
-		expectedError string
-		shouldSucceed bool
-	}{
-		{
-			name: "missing strands_topic",
-			args: map[string]interface{}{
-				"action": "strands",
-			},
-			expectedError: "missing required parameter for strands action: strands_topic",
-			shouldSucceed: false,
-		},
-		{
-			name: "empty strands_topic",
-			args: map[string]interface{}{
-				"action":        "strands",
-				"strands_topic": "",
-			},
-			expectedError: "strands_topic cannot be empty",
-			shouldSucceed: false,
-		},
-		{
-			name: "invalid strands_topic",
-			args: map[string]interface{}{
-				"action":        "strands",
-				"strands_topic": "invalid",
-			},
-			expectedError: "invalid strands_topic: invalid. Must be one of: quickstart, tools, model_providers",
-			shouldSucceed: false,
-		},
-		{
-			name: "valid quickstart topic",
-			args: map[string]interface{}{
-				"action":        "strands",
-				"strands_topic": "quickstart",
-			},
-			shouldSucceed: true,
-		},
-		{
-			name: "valid tools topic",
-			args: map[string]interface{}{
-				"action":        "strands",
-				"strands_topic": "tools",
-			},
-			shouldSucceed: true,
-		},
-		{
-			name: "valid model_providers topic",
-			args: map[string]interface{}{
-				"action":        "strands",
-				"strands_topic": "model_providers",
-			},
-			shouldSucceed: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result, err := tool.Execute(context.Background(), logger, cache, tc.args)
-
-			if tc.shouldSucceed {
-				assert.NoError(t, err)
-				assert.NotNil(t, result)
-				assert.NotEmpty(t, result.Content)
-				// Check that we got some reasonable content back
-				assert.Len(t, result.Content, 1)
-			} else {
-				assert.Nil(t, result)
-				assert.Error(t, err)
-				if tc.expectedError != "" {
-					assert.Contains(t, err.Error(), tc.expectedError)
-				}
-			}
-		})
-	}
-}
-
 func TestExtendedHelp(t *testing.T) {
 	// Test that the unified tool provides extended help
 	tool := &aws.AWSDocumentationTool{}
@@ -507,8 +418,8 @@ func TestExtendedHelp(t *testing.T) {
 	assert.NotEmpty(t, help.WhenToUse)
 	assert.NotEmpty(t, help.WhenNotToUse)
 
-	// Check that examples cover all actions
-	var hasSearch, hasFetch, hasRecommend, hasStrands bool
+	// Check that examples cover main actions
+	var hasSearch, hasFetch, hasRecommend bool
 	for _, example := range help.Examples {
 		if action, ok := example.Arguments["action"].(string); ok {
 			switch action {
@@ -518,15 +429,12 @@ func TestExtendedHelp(t *testing.T) {
 				hasFetch = true
 			case "recommend":
 				hasRecommend = true
-			case "strands":
-				hasStrands = true
 			}
 		}
 	}
 	assert.True(t, hasSearch, "Should have search action example")
 	assert.True(t, hasFetch, "Should have fetch action example")
 	assert.True(t, hasRecommend, "Should have recommend action example")
-	assert.True(t, hasStrands, "Should have strands action example")
 }
 
 // Helper functions

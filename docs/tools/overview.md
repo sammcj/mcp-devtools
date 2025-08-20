@@ -1,6 +1,8 @@
 # MCP DevTools - Tool Reference
 
-MCP DevTools provides a comprehensive suite of developer tools through a single binary. All tools are designed to work across macOS and Linux environments.
+MCP DevTools provides a comprehensive suite of developer tools through a single binary. All tools are designed to work on both macOS and Linux environments.
+
+Each tool has it's own documentation in this directory, detailing its purpose, actions, parameters, and usage examples.
 
 ## Quick Reference
 
@@ -37,32 +39,11 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
 #### AWS Documentation Research Workflow
 ```
 1. AWS Documentation (search) → Find relevant AWS guides
-2. AWS Documentation (fetch) → Get detailed AWS content  
-3. AWS Documentation (strands) → Access AWS Strands Agents SDK documentation
+2. AWS Documentation (fetch) → Get detailed AWS content
+3. Package Documentation → Access AWS Strands Agents SDK docs via resolve_library_id + get_library_docs
 4. AWS Documentation (recommend) → Discover related AWS services
 5. Memory → Store AWS configuration patterns
 ```
-
-## Tool Dependencies
-
-### Required Environment Variables
-| Tool                      | Variable                 | Purpose                                                          |
-|---------------------------|--------------------------|------------------------------------------------------------------|
-| Agents (Claude, Gemini)   | `ENABLE_AGENTS`          | Comma-separated list of agents to enable (e.g., `claude,gemini`) |
-|                           | `AGENT_TIMEOUT`          | Timeout for agent commands (default: 180s)                       |
-| AWS Documentation         | `ENABLE_ADDITIONAL_TOOLS=aws` | Enable AWS documentation tools (no API keys required)      |
-| Claude Agent              | `CLAUDE_SYSTEM_PROMPT`   | Append a system prompt to the default system prompt              |
-|                           | `CLAUDE_PERMISSION_MODE` | Permission mode for the session                                  |
-| Internet Search (Brave)   | `BRAVE_API_KEY`          | Enable Brave search provider                                     |
-| Internet Search (SearXNG) | `SEARXNG_BASE_URL`       | Enable SearXNG provider                                          |
-| Document Processing       | `DOCLING_*`              | Configure processing options                                     |
-| Memory                    | `MEMORY_FILE_PATH`       | Set storage location                                             |
-| Generate Changelog        | `GITHUB_TOKEN`           | GitHub API access for PR/issue data (same as GitHub tool)      |
-
-### Optional Dependencies
-- **Python 3.10+**: Required for Document Processing tool
-- **Docling**: Auto-installed by Document Processing tool
-- **Hardware Acceleration**: MPS (macOS), CUDA (NVIDIA), or CPU
 
 ## Configuration Quick Start
 
@@ -86,10 +67,14 @@ MCP DevTools provides a comprehensive suite of developer tools through a single 
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "BRAVE_API_KEY": "your-brave-api-key",
-        "SEARXNG_BASE_URL": "https://your-searxng-instance.com",
-        "MEMORY_FILE_PATH": "~/.mcp-devtools/",
-        "DOCLING_CACHE_ENABLED": "true"
+        "ENABLE_ADDITIONAL_TOOLS": "aws,web_fetch,internet_search,think,memory,filesystem,shadcn_ui,security,claude-agent,gemini-agent,brave_local_search,brave_video_search,pdf,document_processing",
+        "GOOGLE_CLOUD_PROJECT": "gemini-code-assist-123456",
+        "BRAVE_API_KEY": "abc123",
+        "SEARXNG_BASE_URL": "https://searxng.your.domain",
+        "DOCLING_VLM_MODEL": "qwen2.5vl:7b-q8_0",
+        "DOCLING_VLM_API_KEY": "ollama",
+        "DOCLING_VLM_API_URL": "https://ollama.your.domain/v1",
+        "GITHUB_TOKEN": "github_pat_READ_ONLY_GITHUB_TOKEN"
       }
     }
   }

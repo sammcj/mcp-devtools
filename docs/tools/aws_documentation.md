@@ -1,34 +1,34 @@
 # AWS Documentation Tool
 
-The AWS documentation tool provides unified access to AWS official documentation and AWS Strands Agents SDK documentation through a single tool with multiple action modes: search, fetch, recommend, and Strands capabilities.
+The AWS documentation tool provides unified access to AWS official documentation through three action modes: search, fetch, and recommend.
+
+- AWS documentation tool: "What is this service and how does it work?"
+- Context7 tools (`resolve_library_id` & `get_library_docs`): "How do I code against this service?"
 
 ## Tool Overview
 
 **Tool Name:** `aws_documentation`
-**Actions:** `search`, `fetch`, `recommend`, `strands`
+**Actions:** `search`, `fetch`, `recommend`
 **Enablement:** Requires `ENABLE_ADDITIONAL_TOOLS=aws`
 
 ## Parameters
 
 ### Required
-- `action` (string): Action to perform - one of "search", "fetch", "recommend", or "strands"
+- `action` (string): Action to perform - one of "search", "fetch", or "recommend"
 
 ### Action-Specific Parameters
 
-#### For `search` action:
+For `search` action:
 - `search_phrase` (required): Search terms for finding AWS documentation
 - `limit` (optional): Maximum results to return (1-50, default: 5)
 
-#### For `fetch` action:
+For `fetch` action:
 - `url` (required): AWS documentation URL (must be from docs.aws.amazon.com and end with .html)
 - `max_length` (optional): Maximum characters to return (default: 5000)
 - `start_index` (optional): Starting character index for pagination (default: 0)
 
-#### For `recommend` action:
+For `recommend` action:
 - `url` (required): AWS documentation URL to get recommendations for
-
-#### For `strands` action:
-- `strands_topic` (required): AWS Strands Agents SDK topic - one of "quickstart", "tools", or "model_providers"
 
 ## Usage Examples
 
@@ -89,25 +89,6 @@ The AWS documentation tool provides unified access to AWS official documentation
 - `recommendations`: Array of recommendation results with url, title, and context
 - `recommendations_count`: Number of recommendations found
 
-### Get AWS Strands Agents SDK Documentation
-```json
-{
-  "name": "aws_documentation",
-  "arguments": {
-    "action": "strands",
-    "strands_topic": "quickstart"
-  }
-}
-```
-
-**Returns:**
-- `action`: "strands"
-- `topic`: The requested topic
-- `title`: Descriptive title of the content
-- `content`: Full markdown content of the documentation
-- `source`: "AWS Strands Agents SDK Documentation"
-- `description`: Brief description of the content
-
 ## Configuration
 
 The AWS tools are **disabled by default** for security purposes. Enable them by adding to your MCP configuration:
@@ -126,7 +107,7 @@ The AWS tools are **disabled by default** for security purposes. Enable them by 
 }
 ```
 
-**No API keys required** - these tools use AWS's public documentation APIs and embedded Strands documentation.
+**No API keys required** - these tools use AWS's public documentation APIs.
 
 ## Common Workflows
 
@@ -137,19 +118,23 @@ The AWS tools are **disabled by default** for security purposes. Enable them by 
 4. Use pagination for large documents with `start_index` and `max_length`
 
 ### AWS Strands Agents SDK Learning
-1. Start with `strands` action and "quickstart" topic for core concepts
-2. Use "tools" topic to understand available SDK tools
-3. Use "model_providers" topic to learn about different AI model integrations
+1. Use `resolve_library_id` with 'strands agents' to find available library IDs
+2. Use `get_library_docs` with the appropriate library ID (e.g., '/strands-agents/sdk-python')
+3. Available library IDs include:
+   - `/strands-agents/docs` - General documentation
+   - `/strands-agents/sdk-python` - Python SDK
+   - `/strands-agents/samples` - Code samples
+   - `/strands-agents/tools` - Tools documentation
 
 ### Complete AWS Documentation Research
 1. Search for broad topic (e.g., "Lambda security")
 2. Read most relevant results using fetch action
 3. Get recommendations from key pages
-4. If working with Strands Agents, access relevant SDK documentation
+4. For Strands Agents documentation, use the package documentation tools
 
 ## Best Practices
 
-### Search Optimization
+### Search Optimisation
 - Include AWS service names for targeted results
 - Use specific technical terms rather than general phrases
 - Combine multiple keywords for precision
@@ -168,9 +153,9 @@ The AWS tools are **disabled by default** for security purposes. Enable them by 
 - Use "Journey" recommendations for complete workflows
 
 ### Strands SDK Usage
-- Start with "quickstart" for fundamental concepts
-- Use "tools" for comprehensive tool reference
-- Use "model_providers" when configuring different AI models
+- Use `resolve_library_id` tool to find appropriate Strands library IDs
+- Use `get_library_docs` with specific topics for focused documentation
+- Library IDs are in format '/strands-agents/[component]'
 
 ## URL Requirements
 
@@ -205,12 +190,20 @@ All AWS documentation URLs must:
   "action": "recommend",
   "url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html"
 }
-
-// 4. Learn about Strands Agents integration (if relevant)
-{
-  "action": "strands",
-  "strands_topic": "quickstart"
-}
 ```
 
-This unified tool replaces the need for multiple separate AWS documentation tools, providing a consistent interface for all AWS documentation needs.
+This tool provides a consistent interface for AWS documentation needs.
+
+## AWS Strands Agents SDK Documentation
+
+The AWS documentation tool focuses on official AWS service documentation. For AWS Strands Agents SDK documentation, use these complementary tools:
+
+1. **resolve_library_id**: Find the correct Context7 library ID for Strands components
+2. **get_library_docs**: Retrieve comprehensive documentation for specific Strands libraries
+
+Available Strands Library IDs:
+
+- `/strands-agents/docs` - General Strands Agents SDK documentation
+- `/strands-agents/sdk-python` - Python SDK specific documentation
+- `/strands-agents/samples` - Sample code and examples
+- `/strands-agents/tools` - Tools documentation
