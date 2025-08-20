@@ -25,7 +25,6 @@ import (
 // - process_document
 // - pdf
 
-
 func IsToolEnabled(toolName string) bool {
 	enabledTools := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
 	if enabledTools == "" {
