@@ -1,0 +1,51 @@
+name: Bug Report
+description: Report an issue with mcp-devtools
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. Please provide as much information as possible to help me understand and reproduce the issue. If possible consider submitting a PR with a fix.
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: Clear description of what the bug is
+      placeholder: Describe what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration
+      description: Environment variables / config used to run MCP DevTools
+      placeholder: |
+        - mcp-devtools version or release:
+        - MCP client: (Claude Code / Cline etc)
+        ENABLE_ADDITIONAL_TOOLS=...
+        DISABLED_FUNCTIONS=...
+    validations:
+      required: true
+
+  - type: textarea
+    id: tool-call
+    attributes:
+      label: Tool call
+      description: The tool call that was made by the agent
+      placeholder: {"tool": "example_tool", "input": "example input"}
+    validations:
+      required: false
+
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, Error Messages or Screenshots
+      description: Any relevant logs, error messages, screenshots or debugging output
+      placeholder:
+      render: text
+    validations:
+      required: false

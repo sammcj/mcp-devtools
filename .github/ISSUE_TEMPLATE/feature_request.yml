@@ -1,0 +1,53 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for mcp-devtools
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature, if possible please provide a PR with the implementation.
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature Description
+      description: Clear description of the feature you'd like to see added
+      placeholder: Describe the feature...
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Explain how this feature would be useful and what problem it solves
+      placeholder: This would help with...
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Proposed Implementation
+      description: If you have ideas about how this could be implemented, share them here
+      placeholder: This could be implemented by...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: tool-category
+    attributes:
+      label: Tool Category
+      description: Which category does this feature relate to?
+      options:
+        - New MCP tool
+        - Enhancement to existing tool
+        - Core server functionality
+        - Documentation
+        - Testing
+        - Security
+        - Performance
+        - Other
+    validations:
+      required: true
