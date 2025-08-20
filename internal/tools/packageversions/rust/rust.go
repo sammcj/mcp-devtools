@@ -183,6 +183,24 @@ func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 	return packageversions.NewToolResultJSON(results)
 }
 
+// Version represents a crate version from crates.io
+type Version struct {
+	Num         string `json:"num"`
+	License     string `json:"license"`
+	CreatedAt   string `json:"created_at"`
+	Downloads   int64  `json:"downloads"`
+	Yanked      bool   `json:"yanked"`
+	RustVersion string `json:"rust_version"`
+	Edition     string `json:"edition"`
+	CrateSize   int64  `json:"crate_size"`
+	PublishedBy struct {
+		Login  string `json:"login"`
+		Name   string `json:"name"`
+		Avatar string `json:"avatar"`
+		URL    string `json:"url"`
+	} `json:"published_by"`
+}
+
 // CrateInfo represents information about a Rust crate from crates.io
 type CrateInfo struct {
 	Crate struct {
@@ -200,22 +218,7 @@ type CrateInfo struct {
 		Keywords        []string `json:"keywords"`
 		Categories      []string `json:"categories"`
 	} `json:"crate"`
-	Versions []struct {
-		Num         string `json:"num"`
-		License     string `json:"license"`
-		CreatedAt   string `json:"created_at"`
-		Downloads   int64  `json:"downloads"`
-		Yanked      bool   `json:"yanked"`
-		RustVersion string `json:"rust_version"`
-		Edition     string `json:"edition"`
-		CrateSize   int64  `json:"crate_size"`
-		PublishedBy struct {
-			Login  string `json:"login"`
-			Name   string `json:"name"`
-			Avatar string `json:"avatar"`
-			URL    string `json:"url"`
-		} `json:"published_by"`
-	} `json:"versions"`
+	Versions []Version `json:"versions"`
 }
 
 // getCrateInfo gets information about a Rust crate from crates.io
@@ -246,22 +249,7 @@ func (t *RustTool) getCrateInfo(logger *logrus.Logger, cache *sync.Map, crateNam
 	}
 
 	// Filter out yanked versions to ensure we don't suggest unavailable versions
-	var nonYankedVersions []struct {
-		Num         string `json:"num"`
-		License     string `json:"license"`
-		CreatedAt   string `json:"created_at"`
-		Downloads   int64  `json:"downloads"`
-		Yanked      bool   `json:"yanked"`
-		RustVersion string `json:"rust_version"`
-		Edition     string `json:"edition"`
-		CrateSize   int64  `json:"crate_size"`
-		PublishedBy struct {
-			Login  string `json:"login"`
-			Name   string `json:"name"`
-			Avatar string `json:"avatar"`
-			URL    string `json:"url"`
-		} `json:"published_by"`
-	}
+	var nonYankedVersions []Version
 	for _, version := range info.Versions {
 		if !version.Yanked {
 			nonYankedVersions = append(nonYankedVersions, version)
