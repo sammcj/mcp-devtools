@@ -37,7 +37,7 @@ Please read the `README.md` for more information, and `docs/creating-new-tools.m
 
 Tools are organized into categories under `internal/tools/`, e.g:
 - `internetsearch/` - Internet Search API integrations (web, image, news, video, local)
-- `packageversions/` - Package version checking across ecosystems (npm, python, go, java, swift, docker, github-actions, bedrock)
+- `packageversions/` - Package version checking across ecosystems (npm, python, go, java, swift, docker, github-actions, bedrock, rust)
 - `shadcnui/` - shadcn/ui component information and examples
 - `think/` - Structured reasoning tool for AI agents
 - `webfetch/` - Web content fetching and conversion to markdown

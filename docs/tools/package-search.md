@@ -28,14 +28,15 @@ The Package Search tool supports the following configuration options:
 
 | Ecosystem          | Package Types         | Features                                    |
 |--------------------|-----------------------|---------------------------------------------|
-| **NPM**            | Node.js packages      | Version constraints, dependency trees       |
-| **Python**         | PyPI packages         | Requirements.txt and pyproject.toml formats |
-| **Go**             | Go modules            | Module versions and dependencies            |
-| **Java**           | Maven & Gradle        | Group/artifact resolution                   |
-| **Swift**          | Swift Package Manager | Package dependencies                        |
+| **AWS Bedrock**    | AI/ML models          | Model availability and capabilities         |
 | **Docker**         | Container images      | Tag information and registries              |
 | **GitHub Actions** | Workflow actions      | Action versions and metadata                |
-| **AWS Bedrock**    | AI/ML models          | Model availability and capabilities         |
+| **Go**             | Go modules            | Module versions and dependencies            |
+| **Java**           | Maven & Gradle        | Group/artifact resolution                   |
+| **NPM**            | Node.js packages      | Version constraints, dependency trees       |
+| **Python**         | PyPI packages         | Requirements.txt and pyproject.toml formats |
+| **Rust**           | Rust crates           | Module versions, detailed package metadata  |
+| **Swift**          | Swift Package Manager | Package dependencies                        |
 
 ## Usage Examples
 
@@ -232,6 +233,31 @@ The Package Search tool supports the following configuration options:
     "ecosystem": "bedrock",
     "action": "search",
     "query": "claude"
+  }
+}
+```
+
+### Rust crates
+
+**Basic Query:**
+```json
+{
+  "name": "search_packages",
+  "arguments": {
+    "ecosystem": "rust",
+    "query": "pps-time"
+  }
+}
+```
+
+**With Detailed Information:**
+```json
+{
+  "name": "search_packages",
+  "arguments": {
+    "ecosystem": "rust",
+    "query": "pps-time",
+    "includeDetails": true
   }
 }
 ```

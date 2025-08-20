@@ -18,6 +18,7 @@ import (
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/java"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/npm"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/python"
+	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/rust"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/swift"
 	"github.com/sirupsen/logrus"
 )
@@ -40,8 +41,8 @@ func (t *SearchPackagesTool) Definition() mcp.Tool {
 		"search_packages",
 		mcp.WithDescription("Search for software packages / libraries (by name) and check versions across multiple ecosystems (npm, Go, Python, Java, Swift, GitHub Actions, Docker, AWS Bedrock). This tool is especially useful when writing software and adding dependencies to projects to ensure you get the latest stable version. TIP: When checking multiple packages, pass them all in a single call using the 'data' parameter rather than making separate calls for each package - this is significantly more efficient than individual calls per package."),
 		mcp.WithString("ecosystem",
-			mcp.Description("Package ecosystem to search. Options: 'npm' (Node.js packages), 'go' (Go modules), 'python' (PyPI packages), 'python-pyproject' (pyproject.toml format), 'java-maven' (Maven dependencies), 'java-gradle' (Gradle dependencies), 'swift' (Swift Package Manager), 'github-actions' (GitHub Actions), 'docker' (container images), 'bedrock' (AWS Bedrock models)"),
-			mcp.Enum("npm", "go", "python", "python-pyproject", "java-maven", "java-gradle", "swift", "github-actions", "docker", "bedrock"),
+			mcp.Description("Package ecosystem to search. Options: 'npm' (Node.js packages), 'go' (Go modules), 'python' (PyPI packages), 'python-pyproject' (pyproject.toml format), 'java-maven' (Maven dependencies), 'java-gradle' (Gradle dependencies), 'swift' (Swift Package Manager), 'github-actions' (GitHub Actions), 'docker' (container images), 'bedrock' (AWS Bedrock models), 'rust' (Rust crates)"),
+			mcp.Enum("npm", "go", "python", "python-pyproject", "java-maven", "java-gradle", "swift", "github-actions", "docker", "bedrock", "rust"),
 			mcp.Required(),
 		),
 		mcp.WithString("query",
@@ -109,6 +110,8 @@ func (t *SearchPackagesTool) Execute(ctx context.Context, logger *logrus.Logger,
 		result, err = t.handleDocker(ctx, logger, cache, args)
 	case "bedrock":
 		result, err = t.handleBedrock(ctx, logger, cache, args)
+	case "rust":
+		result, err = t.handleRust(ctx, logger, cache, args)
 	default:
 		return nil, fmt.Errorf("unsupported ecosystem: %s", ecosystem)
 	}
@@ -313,6 +316,41 @@ func (t *SearchPackagesTool) handleBedrock(ctx context.Context, logger *logrus.L
 	return tool.Execute(ctx, logger, cache, args)
 }
 
+// handleRust handles Rust crate searches
+func (t *SearchPackagesTool) handleRust(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+	// Convert query to dependencies format if needed
+	if data, ok := args["data"]; ok {
+		args["dependencies"] = data
+	} else if query, ok := args["query"].(string); ok {
+		// Check if query contains comma-separated crates
+		if strings.Contains(query, ",") {
+			// Split comma-separated crates and create dependencies object
+			crates := strings.Split(query, ",")
+			deps := make(map[string]interface{})
+			for _, crate := range crates {
+				crate = strings.TrimSpace(crate)
+				if crate != "" {
+					deps[crate] = "latest"
+				}
+			}
+			args["dependencies"] = deps
+		} else {
+			// Convert single crate query to dependencies object
+			args["dependencies"] = map[string]interface{}{
+				query: "latest",
+			}
+		}
+	}
+
+	// Pass through includeDetails parameter
+	if includeDetails, ok := args["includeDetails"]; ok {
+		args["includeDetails"] = includeDetails
+	}
+
+	tool := rust.NewRustTool(t.client)
+	return tool.Execute(ctx, logger, cache, args)
+}
+
 // validateAndEnhanceResult checks if the result contains useful information and provides helpful error messages
 func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult, query, ecosystem string) (*mcp.CallToolResult, error) {
 	if result == nil {
@@ -443,6 +481,19 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				},
 				ExpectedResult: "Returns Go module information and version details from the Go module proxy",
 			},
+			{
+				Description: "Check Rust crate versions",
+				Arguments: map[string]interface{}{
+					"ecosystem": "rust",
+					"query":     "serde",
+					"data": map[string]interface{}{
+						"serde":      "1.0",
+						"tokio":      "1.0",
+						"clap":       map[string]interface{}{"version": "4.0", "features": []string{"derive"}},
+					},
+				},
+				ExpectedResult: "Returns Rust crate information and latest versions from crates.io",
+			},
 		},
 		CommonPatterns: []string{
 			"Use 'data' parameter for batch checking multiple packages - much more efficient than separate calls",
@@ -479,7 +530,7 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 		},
 		ParameterDetails: map[string]string{
-			"ecosystem":      "The package ecosystem to search. Each ecosystem has different capabilities: npm (Node.js), python (PyPI), go (modules), java-maven/gradle (JVM), swift (SPM), github-actions (workflows), docker (containers), bedrock (AI models).",
+			"ecosystem":      "The package ecosystem to search. Each ecosystem has different capabilities: npm (Node.js), python (PyPI), go (modules), java-maven/gradle (JVM), swift (SPM), github-actions (workflows), docker (containers), bedrock (AI models), rust (crates.io).",
 			"query":          "Package identifier - exact names work best. For multiple packages, can use comma-separated list or better yet use the 'data' parameter for batch operations.",
 			"data":           "Ecosystem-specific bulk data structure. Much more efficient than multiple individual calls. Format varies by ecosystem - check examples for correct structure.",
 			"constraints":    "Version constraints or filters. Format depends on ecosystem (npm: semver, python: PEP 440, etc.). Use for dependency resolution and compatibility checking.",
