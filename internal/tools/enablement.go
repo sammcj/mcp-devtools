@@ -15,9 +15,17 @@ import (
 // - claude-agent
 // - gemini-agent
 // - filesystem
-// - vulnerability_scan (or vulnerability-scan)
+// - vulnerability_scan
 // - sbom
 // - aws
+// - security
+// - security_override
+// - memory
+// - changelog
+// - process_document
+// - pdf
+
+
 func IsToolEnabled(toolName string) bool {
 	enabledTools := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
 	if enabledTools == "" {
