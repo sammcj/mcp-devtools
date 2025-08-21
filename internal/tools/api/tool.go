@@ -283,12 +283,16 @@ func (t *DynamicAPITool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			}
 		}
 
+		// Build arguments map with endpoint and parameters merged at top level
+		args := make(map[string]interface{})
+		args["endpoint"] = endpoint.Name
+		for k, v := range exampleParams {
+			args[k] = v
+		}
+
 		examples = append(examples, tools.ToolExample{
-			Description: fmt.Sprintf("Call %s endpoint: %s", endpoint.Name, endpoint.Description),
-			Arguments: map[string]interface{}{
-				"endpoint":   endpoint.Name,
-				"parameters": exampleParams,
-			},
+			Description:    fmt.Sprintf("Call %s endpoint: %s", endpoint.Name, endpoint.Description),
+			Arguments:      args,
 			ExpectedResult: fmt.Sprintf("API response with data from %s %s", endpoint.Method, endpoint.Path),
 		})
 
@@ -357,9 +361,13 @@ func RegisterConfiguredAPIs() error {
 
 // init registers configured API tools - this is called when the package is imported
 func init() {
-	// Only register APIs if the tool is enabled
+	// Only register APIs if the tool is enabled (disabled by default for security)
 	if tools.IsToolEnabled("api") {
 		// Register configured APIs at startup
-		_ = RegisterConfiguredAPIs() // Ignore error - don't fail startup if config is missing or invalid
+		if err := RegisterConfiguredAPIs(); err != nil {
+			// Log the error for debugging but don't fail startup
+			// This allows the server to start even with missing/invalid API config
+			logrus.WithError(err).Info("Failed to register configured APIs; continuing startup")
+		}
 	}
 }

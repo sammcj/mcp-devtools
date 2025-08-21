@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -77,6 +78,8 @@ func LoadAPIConfig(configPath string) (*APIConfig, error) {
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		// Log missing config file for security audit purposes
+		logrus.WithField("config_path", configPath).Info("API configuration file not found, using empty config")
 		// Return empty config if file doesn't exist (not an error)
 		return &APIConfig{APIs: make(map[string]APIDefinition)}, nil
 	}
@@ -273,11 +276,15 @@ func ResolveEnvVar(value string) string {
 		if envValue := os.Getenv(envVar); envValue != "" {
 			return envValue
 		}
-		return value
+		// Return empty string for missing env vars to ensure auth fails clearly
+		// rather than using literal strings like "$API_TOKEN"
+		return ""
 	}
 	// For auth configs (env_var field), treat the value as an env var name directly
 	if envValue := os.Getenv(value); envValue != "" {
 		return envValue
 	}
-	return value
+	// Return empty string for missing env vars to ensure auth fails clearly
+	// rather than using literal strings like "API_TOKEN"
+	return ""
 }
