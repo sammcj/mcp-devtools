@@ -77,7 +77,7 @@ echo "${GOPATH}/bin/mcp-devtools" # Use this path in your MCP configuration, if 
 xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
 ```
 
-2. Update your MCP client to add the MCP DevTools server configuration, replacing `/path/to/mcp-devtools` with the actual path to the binary (e.g. `/Users/samm/go/bin/mcp-devtools`):
+1. Update your MCP client to add the MCP DevTools server configuration, replacing `/path/to/mcp-devtools` with the actual path to the binary (e.g. `/Users/samm/go/bin/mcp-devtools`):
 ```json
 {
   "mcpServers": {
@@ -148,7 +148,7 @@ cd mcp-devtools
 make build
 ```
 
-**Option 3: Download Release**
+**Option 4: Download Release**
 Download the latest binary from [releases](https://github.com/sammcj/mcp-devtools/releases) and place in your PATH and remember to check for updates!
 
 ### Basic MCP Configuration
@@ -333,6 +333,19 @@ Configuration is managed through `~/.mcp-devtools/security.yaml` with sensible d
 👉 **[Complete Security Documentation](docs/security.md)**
 
 ## Advanced Features
+
+### SBOM/Vulnerability Tools Build (Increases File Size)
+Includes all tools including SBOM generation and vulnerability scanning capabilities with Anchore Syft/Grype dependencies (~170MB binary).
+
+```bash
+# Build with SBOM and vulnerability tools
+make build-sbom-vuln-tools
+```
+
+**Additional tools**: `sbom`, `vulnerability_scan`
+
+The SBOM and vulnerability scanning tools are disabled by default in both builds but can be enabled via the `ENABLE_ADDITIONAL_TOOLS` environment variable. In the standard build, these tools will return appropriate error messages indicating they require the SBOM/vulnerability tools build variant.
+
 
 ### OAuth 2.0/2.1 Authentication
 For production deployments requiring centralised user authentication:
