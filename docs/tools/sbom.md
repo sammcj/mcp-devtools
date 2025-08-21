@@ -19,6 +19,17 @@ Critical for modern software development, this tool creates detailed inventories
 
 ## Prerequisites
 
+This tool requires the SBOM/vulnerability tools build variant that includes heavy Anchore dependencies. If using the standard build, you'll get an error message.
+
+### Build Requirements
+- **SBOM/Vulnerability Tools Build**: Tool is fully functional with Anchore Syft integration
+
+Build with SBOM and vulnerability tools:
+```bash
+make build-sbom-vuln-tools
+```
+
+### Runtime Requirements
 This tool is disabled by default. Enable it by including `sbom` in the `ENABLE_ADDITIONAL_TOOLS` environment variable.
 
 ## Tool Usage Examples

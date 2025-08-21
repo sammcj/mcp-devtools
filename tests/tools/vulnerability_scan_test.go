@@ -1,3 +1,6 @@
+//go:build sbom_vuln_tools
+// +build sbom_vuln_tools
+
 package tools_test
 
 import (
