@@ -333,6 +333,9 @@ func TestHTTPClientExecution(t *testing.T) {
 }
 
 func TestToolExecution(t *testing.T) {
+	// Enable the API tool for testing
+	t.Setenv("ENABLE_ADDITIONAL_TOOLS", "api")
+
 	// Create mock HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := map[string]interface{}{
@@ -388,6 +391,9 @@ func TestToolExecution(t *testing.T) {
 }
 
 func TestCaching(t *testing.T) {
+	// Enable the API tool for testing
+	t.Setenv("ENABLE_ADDITIONAL_TOOLS", "api")
+
 	callCount := 0
 
 	// Create mock HTTP server that tracks calls
