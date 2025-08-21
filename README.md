@@ -101,6 +101,7 @@ These tools can be disabled by adding their function name to the `DISABLED_FUNCT
 
 | Tool                                                             | Purpose                            | Dependencies                  | Example Usage                    |
 |------------------------------------------------------------------|------------------------------------|-------------------------------|----------------------------------|
+| **[API](docs/tools/api.md)**                                     | Dynamic REST API integration       | None (API credentials optional) | GitHub, Slack, custom APIs      |
 | **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search          | None (Provider keys optional) | Web, image, news, video search   |
 | **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown   | None                          | Documentation and articles       |
 | **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data       | None (GitHub token optional)  | Issues, PRs, repos, cloning      |
