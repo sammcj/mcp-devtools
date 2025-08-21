@@ -372,13 +372,18 @@ if result, err := security.AnalyseContent(content, source); err == nil {
 - **Override capability**: Blocked content includes security IDs for potential overrides
 - **Audit logging**: All security events are logged for review
 
-### 7. Import the Tool Package
+### 7. Register the Tool for Import
 
-Finally, import your tool package in `main.go` to ensure it's registered:
+Add your tool package to the imports registry so it gets automatically loaded. Add the import to `internal/imports/tools.go`:
 
 ```go
-import _ "github.com/sammcj/mcp-devtools/internal/tools/your-category/your-tool"
+import (
+    // ... existing imports ...
+    _ "github.com/sammcj/mcp-devtools/internal/tools/your-category/your-tool"
+)
 ```
+
+**Important**: Do NOT add your tool import directly to `main.go`. Use the imports registry system instead to ensure proper build tag handling and maintainability.
 
 ## Example: Hello World Tool
 

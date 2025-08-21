@@ -1,0 +1,7 @@
+//go:build !sbom_vuln_tools
+// +build !sbom_vuln_tools
+
+package sbom
+
+// This file provides empty implementation when sbom_vuln_tools build tag is not included
+// to reduce binary size by excluding heavy Anchore dependencies
