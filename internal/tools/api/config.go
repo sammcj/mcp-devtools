@@ -78,7 +78,7 @@ func LoadAPIConfig(configPath string) (*APIConfig, error) {
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		// Log missing config file for security audit purposes
+		// Log missing config file
 		logrus.WithField("config_path", configPath).Info("API configuration file not found, using empty config")
 		// Return empty config if file doesn't exist (not an error)
 		return &APIConfig{APIs: make(map[string]APIDefinition)}, nil
