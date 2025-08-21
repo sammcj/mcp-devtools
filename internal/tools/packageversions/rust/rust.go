@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -14,6 +16,8 @@ import (
 )
 
 const CratesIOAPIURL = "https://crates.io/api/v1"
+
+var crateNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 // RustTool handles Rust crate version checking
 type RustTool struct {
@@ -80,6 +84,25 @@ func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 	// Process each dependency
 	results := make([]packageversions.PackageVersion, 0, len(depsMap))
 	for name, version := range depsMap {
+		// Skip empty crate names
+		if strings.TrimSpace(name) == "" {
+			logger.Warn("Skipping empty crate name")
+			continue
+		}
+
+		// Validate crate name format
+		if !isValidCrateName(name) {
+			logger.WithField("crate", name).Warn("Skipping invalid crate name")
+			results = append(results, packageversions.PackageVersion{
+				Name:          name,
+				LatestVersion: "unknown",
+				Registry:      "crates.io",
+				Skipped:       true,
+				SkipReason:    "Invalid crate name format",
+			})
+			continue
+		}
+
 		logger.WithFields(logrus.Fields{
 			"crate":   name,
 			"version": version,
@@ -162,6 +185,24 @@ func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 	return packageversions.NewToolResultJSON(results)
 }
 
+// Version represents a crate version from crates.io
+type Version struct {
+	Num         string `json:"num"`
+	License     string `json:"license"`
+	CreatedAt   string `json:"created_at"`
+	Downloads   int64  `json:"downloads"`
+	Yanked      bool   `json:"yanked"`
+	RustVersion string `json:"rust_version"`
+	Edition     string `json:"edition"`
+	CrateSize   int64  `json:"crate_size"`
+	PublishedBy struct {
+		Login  string `json:"login"`
+		Name   string `json:"name"`
+		Avatar string `json:"avatar"`
+		URL    string `json:"url"`
+	} `json:"published_by"`
+}
+
 // CrateInfo represents information about a Rust crate from crates.io
 type CrateInfo struct {
 	Crate struct {
@@ -179,22 +220,7 @@ type CrateInfo struct {
 		Keywords        []string `json:"keywords"`
 		Categories      []string `json:"categories"`
 	} `json:"crate"`
-	Versions []struct {
-		Num         string `json:"num"`
-		License     string `json:"license"`
-		CreatedAt   string `json:"created_at"`
-		Downloads   int64  `json:"downloads"`
-		Yanked      bool   `json:"yanked"`
-		RustVersion string `json:"rust_version"`
-		Edition     string `json:"edition"`
-		CrateSize   int64  `json:"crate_size"`
-		PublishedBy struct {
-			Login  string `json:"login"`
-			Name   string `json:"name"`
-			Avatar string `json:"avatar"`
-			URL    string `json:"url"`
-		} `json:"published_by"`
-	} `json:"versions"`
+	Versions []Version `json:"versions"`
 }
 
 // getCrateInfo gets information about a Rust crate from crates.io
@@ -205,8 +231,8 @@ func (t *RustTool) getCrateInfo(logger *logrus.Logger, cache *sync.Map, crateNam
 		return cachedInfo.(*CrateInfo), nil
 	}
 
-	// Construct URL
-	crateURL := fmt.Sprintf("%s/crates/%s", CratesIOAPIURL, crateName)
+	// Construct URL with proper escaping to prevent URL injection
+	crateURL := fmt.Sprintf("%s/crates/%s", CratesIOAPIURL, url.PathEscape(crateName))
 	logger.WithFields(logrus.Fields{
 		"crate": crateName,
 		"url":   crateURL,
@@ -224,8 +250,24 @@ func (t *RustTool) getCrateInfo(logger *logrus.Logger, cache *sync.Map, crateNam
 		return nil, fmt.Errorf("failed to parse Rust crate info: %w", err)
 	}
 
+	// Filter out yanked versions to ensure we don't suggest unavailable versions
+	var nonYankedVersions []Version
+	for _, version := range info.Versions {
+		if !version.Yanked {
+			nonYankedVersions = append(nonYankedVersions, version)
+		}
+	}
+	info.Versions = nonYankedVersions
+
 	// Cache result
 	cache.Store(fmt.Sprintf("rust:%s", crateName), &info)
 
 	return &info, nil
+}
+
+// isValidCrateName validates Rust crate names according to crates.io rules
+func isValidCrateName(name string) bool {
+	// Basic validation - crates.io names are ASCII, hyphens, underscores
+	matched := crateNameRegexp.MatchString(name)
+	return matched && len(name) > 0 && len(name) <= 64
 }
