@@ -81,7 +81,6 @@ func (c *HTTPClient) ExecuteRequest(ctx context.Context, endpoint EndpointConfig
 		case security.ActionBlock:
 			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s. Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
 		case security.ActionWarn:
-			// Log warning but continue - this should be handled by the logger passed to Execute
 		}
 	}
 
