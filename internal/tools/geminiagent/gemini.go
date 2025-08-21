@@ -41,7 +41,7 @@ func (t *GeminiTool) Definition() mcp.Tool {
 			mcp.Required(),
 			mcp.Description("A clear, concise prompt to send to Gemini CLI to instruct the AI Agent to perform a specific task. Can include @file, @directory/, @./ references for context."),
 		),
-		mcp.WithString("model",
+		mcp.WithString("override-model",
 			mcp.Description(fmt.Sprintf("Force Gemini to use a different model. Default: %s.", defaultModel)),
 		),
 		mcp.WithBoolean("sandbox",
@@ -79,7 +79,7 @@ func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		return nil, fmt.Errorf("prompt is a required parameter")
 	}
 
-	model, _ := args["model"].(string)
+	model, _ := args["override-model"].(string)
 	if model == "" {
 		model = defaultModel
 	}
@@ -210,7 +210,7 @@ func (t *GeminiTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				Arguments: map[string]interface{}{
 					"prompt":            "Please analyze the performance bottlenecks in this web application and suggest optimizations.",
 					"include-all-files": true,
-					"model":             "gemini-2.5-pro",
+					"override-model":    "gemini-2.5-pro",
 				},
 				ExpectedResult: "Gemini analyzes all project files for performance issues and provides specific optimization recommendations with code examples",
 			},
@@ -225,17 +225,17 @@ func (t *GeminiTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			{
 				Description: "Let Gemini make actual changes to fix issues",
 				Arguments: map[string]interface{}{
-					"prompt":    "There are several TypeScript errors in @src/components/ that need to be fixed. Please resolve all type issues and update the interfaces accordingly.",
-					"yolo-mode": true,
-					"model":     "gemini-2.5-pro",
+					"prompt":         "There are several TypeScript errors in @src/components/ that need to be fixed. Please resolve all type issues and update the interfaces accordingly.",
+					"yolo-mode":      true,
+					"override-model": "gemini-2.5-pro",
 				},
 				ExpectedResult: "Gemini analyzes TypeScript errors and makes actual file changes to fix type issues throughout the components directory",
 			},
 			{
 				Description: "Quick analysis with flash model for speed",
 				Arguments: map[string]interface{}{
-					"prompt": "Can you quickly review this API endpoint @src/api/users.js and check if it follows REST conventions?",
-					"model":  "gemini-2.5-flash",
+					"prompt":         "Can you quickly review this API endpoint @src/api/users.js and check if it follows REST conventions?",
+					"override-model": "gemini-2.5-flash",
 				},
 				ExpectedResult: "Fast analysis using Gemini Flash model to provide quick feedback on API design and REST compliance",
 			},
@@ -282,7 +282,7 @@ func (t *GeminiTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		},
 		ParameterDetails: map[string]string{
 			"prompt":            "Clear, specific instruction to Gemini. Use @file or @directory/ syntax for context. Be detailed about what analysis, implementation, or assistance you need.",
-			"model":             "Gemini model selection affects capability vs speed. 'gemini-2.5-pro' (default, most capable), 'gemini-2.5-flash' (faster, good for simple tasks). Tool auto-falls back to flash on quota limits.",
+			"override-model":    "Gemini model selection affects capability vs speed. 'gemini-2.5-pro' (default, most capable), 'gemini-2.5-flash' (faster, good for simple tasks). Tool auto-falls back to flash on quota limits.",
 			"sandbox":           "Runs Gemini in isolated environment for safe exploration. Use when testing potentially risky operations or when you want isolated execution context.",
 			"yolo-mode":         "Allows Gemini to make actual file changes and run commands. Use with caution - only when you want Gemini to implement fixes, not just suggest them.",
 			"include-all-files": "Recursively includes all files in current directory as context. Powerful for comprehensive analysis but may hit token limits on large projects.",

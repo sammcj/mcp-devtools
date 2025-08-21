@@ -7,7 +7,7 @@ Requires the [Gemini CLI](https://github.com/google-gemini/gemini-cli) to be ins
 ## Parameters
 
 - `prompt` (string, required): A clear, concise prompt to send to the Gemini CLI.
-- `model` (string, optional): Specify a different Gemini model to use (e.g., `gemini-2.5-flash`). Defaults to `gemini-2.5-pro`.
+- `override-model` (string, optional): Specify a different Gemini model to use (e.g., `gemini-2.5-flash`). Defaults to `gemini-2.5-pro`.
 - `sandbox` (boolean, optional): Run the command in the Gemini sandbox. Defaults to `false`.
 - `yolo-mode` (boolean, optional): Allow Gemini to make changes and run commands without confirmation. Defaults to `false`.
 - `include-all-files` (boolean, optional): Recursively include all files in the current directory as context. Defaults to `false`.
