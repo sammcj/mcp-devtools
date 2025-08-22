@@ -50,13 +50,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.24.6'
           check-latest: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.13.7'
 
       - name: Check out code
         uses: actions/checkout@v4
@@ -141,13 +141,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.24.6'
           check-latest: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.13.7'
 
       - name: Check out code
         uses: actions/checkout@v4
@@ -229,13 +229,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.24.6'
           check-latest: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.13.7'
 
       - name: Check out code
         uses: actions/checkout@v4
@@ -326,7 +326,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.24.6'
           check-latest: true
 
       - name: Download all build artifacts
