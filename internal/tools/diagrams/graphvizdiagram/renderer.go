@@ -50,16 +50,7 @@ func (t *GraphvizDiagramTool) renderDiagram(ctx context.Context, logger *logrus.
 		}
 	}()
 
-	// Parse DOT content
-	graph, err := graphviz.ParseBytes([]byte(dotContent))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse DOT content: %w", err)
-	}
-	defer func() {
-		if err := graph.Close(); err != nil {
-			logger.WithError(err).Warn("Failed to close graph")
-		}
-	}()
+	// We'll parse the graph separately for each format to handle SVG sizing
 
 	// High-resolution settings are now handled in DOT generation
 	// (DPI and resolution attributes are set directly in the DOT content)
@@ -93,10 +84,30 @@ func (t *GraphvizDiagramTool) renderDiagram(ctx context.Context, logger *logrus.
 				return nil, fmt.Errorf("failed to write DOT file: %w", err)
 			}
 		} else {
+			// For SVG, use modified DOT content with lower DPI to prevent double scaling
+			dotForFormat := dotContent
+			if formatStr == "svg" {
+				// Replace high DPI with standard DPI for SVG to prevent oversizing
+				dotForFormat = strings.ReplaceAll(dotContent, `dpi="200"`, `dpi="96"`)
+				dotForFormat = strings.ReplaceAll(dotForFormat, `resolution="200"`, `resolution="96"`)
+			}
+
+			// Parse the graph for this format
+			graph, err := graphviz.ParseBytes([]byte(dotForFormat))
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse DOT content for %s: %w", formatStr, err)
+			}
+
 			// Render using graphviz to buffer first, then write file
 			var buf bytes.Buffer
 			if err := g.Render(renderCtx, graph, format, &buf); err != nil {
+				graph.Close() // Close on error
 				return nil, fmt.Errorf("failed to render %s format: %w", formatStr, err)
+			}
+
+			// Close graph after successful render
+			if err := graph.Close(); err != nil {
+				logger.WithError(err).Warn("Failed to close graph")
 			}
 
 			// Write bytes to file with proper permissions
