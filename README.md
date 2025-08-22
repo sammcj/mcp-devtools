@@ -21,7 +21,7 @@ graph LR
 
     E --> E_Tools[🧠 Think Tool<br>🕸️ Memory Graph]
 
-    F --> F_Tools[🇬🇧 American→English<br>📁 Filesystem<br>📝 Changelog Generation<br>🏗️ AWS Diagrams]
+    F --> F_Tools[🇬🇧 American→English<br>📁 Filesystem<br>📝 Changelog Generation<br>🏗️ Graphviz Diagrams]
 
     G --> G_Tools[🤖 Claude Code<br>✨ Gemini CLI]
 
@@ -126,7 +126,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[Document Processing](docs/tools/document-processing.md)** | Convert documents to Markdown            | `process_document`        | PDF, DOCX → Markdown with OCR             |
 | **[PDF Processing](docs/tools/pdf-processing.md)**           | Fast PDF text extraction                 | `pdf`                     | Quick PDF to Markdown                     |
 | **[AWS Documentation](docs/tools/aws_documentation.md)**     | AWS documentation search and retrieval   | `aws`                     | Search and read AWS docs, recommendations |
-| **[AWS Diagram](docs/tools/aws-diagram.md)**                 | Generate AWS architecture diagrams        | `aws-diagram`             | Create architecture diagrams with native Go |
+| **[Graphviz Diagram](docs/tools/graphviz-diagram.md)**                 | Generate diagrams with excellent AWS support        | `graphviz_diagram`             | Create architecture diagrams with native Go |
 | **[Security Framework](docs/security.md)** (BETA)            | Context injection security protections   | `security`                | Content analysis, access control          |
 | **[Security Override](docs/security.md)**                    | Agent managed security warning overrides | `security_override`       | Bypass false positives                    |
 | **[API](docs/tools/api.md)**                                 | Dynamic REST API integration             | `api`                     | Configure any REST API via YAML           |

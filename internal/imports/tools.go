@@ -5,7 +5,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/api"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/aws_documentation"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/claudeagent"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/diagrams/awsdiagram"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/diagrams/graphvizdiagram"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/docprocessing"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/filelength"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/filesystem"

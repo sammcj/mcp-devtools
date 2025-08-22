@@ -167,7 +167,7 @@ func requiresEnablement(toolName string) bool {
 		"pdf",
 		"memory",
 		"aws",
-		"aws_diagram",
+		"graphviz_diagram",
 	}
 
 	// Normalize the tool name (lowercase, replace underscores with hyphens)

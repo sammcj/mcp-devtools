@@ -10,9 +10,9 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 
 #### Architecture Documentation Workflow
 ```
-1. AWS Diagram (examples) → Learn diagram patterns
-2. AWS Diagram (list_icons) → Discover available components  
-3. AWS Diagram (generate) → Create architecture diagrams
+1. Graphviz Diagram (examples) → Learn diagram patterns
+2. Graphviz Diagram (list_icons) → Discover available components
+3. Graphviz Diagram (generate) → Create architecture diagrams
 4. Memory → Store diagram definitions for reuse
 ```
 
@@ -83,7 +83,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "ENABLE_ADDITIONAL_TOOLS": "aws,aws-diagram,web_fetch,internet_search,think,memory,filesystem,shadcn_ui,security,claude-agent,gemini-agent,brave_local_search,brave_video_search,pdf,process_document",
+        "ENABLE_ADDITIONAL_TOOLS": "aws,graphviz_diagram,web_fetch,internet_search,think,memory,filesystem,shadcn_ui,security,claude-agent,gemini-agent,brave_local_search,brave_video_search,pdf,process_document",
         "GOOGLE_CLOUD_PROJECT": "gemini-code-assist-123456",
         "BRAVE_API_KEY": "abc123",
         "SEARXNG_BASE_URL": "https://searxng.your.domain",
@@ -109,8 +109,8 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 **For Development:**
 - Package management → Package Search + Package Documentation
 - Code research → Internet Search + Web Fetch
-- Architecture planning → Think + Memory + AWS Diagram
-- Architecture diagrams → AWS Diagram
+- Architecture planning → Think + Memory + Graphviz Diagram
+- Architecture diagrams → Graphviz Diagram
 - File operations → Filesystem + Think
 
 **For File Management:**
