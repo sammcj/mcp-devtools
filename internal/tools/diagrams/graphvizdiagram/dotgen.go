@@ -9,6 +9,9 @@ import (
 func (t *GraphvizDiagramTool) generateDOT(diagram *DiagramSpec) (string, error) {
 	var dot strings.Builder
 
+	// Track rendered nodes to avoid duplicates across clusters
+	nodesRendered := make(map[string]bool)
+
 	// Start digraph
 	dot.WriteString("digraph {\n")
 
@@ -45,12 +48,12 @@ func (t *GraphvizDiagramTool) generateDOT(diagram *DiagramSpec) (string, error) 
 
 	// Generate clusters
 	for i, cluster := range diagram.Clusters {
-		if err := t.generateCluster(&dot, cluster, i, diagram); err != nil {
+		if err := t.generateCluster(&dot, cluster, i, diagram, nodesRendered); err != nil {
 			return "", fmt.Errorf("failed to generate cluster '%s': %w", cluster.Name, err)
 		}
 	}
 
-	// Generate nodes (only those not in clusters)
+	// Generate nodes (only those not in clusters, avoiding duplicates)
 	nodesInClusters := make(map[string]bool)
 	for _, cluster := range diagram.Clusters {
 		for _, nodeID := range cluster.Nodes {
@@ -81,7 +84,7 @@ func (t *GraphvizDiagramTool) generateDOT(diagram *DiagramSpec) (string, error) 
 }
 
 // generateCluster generates DOT for a cluster/subgraph
-func (t *GraphvizDiagramTool) generateCluster(dot *strings.Builder, cluster ClusterSpec, index int, diagram *DiagramSpec) error {
+func (t *GraphvizDiagramTool) generateCluster(dot *strings.Builder, cluster ClusterSpec, index int, diagram *DiagramSpec, nodesRendered map[string]bool) error {
 	// Start subgraph
 	fmt.Fprintf(dot, "  subgraph cluster_%d {\n", index)
 	fmt.Fprintf(dot, "    label=\"%s\";\n", escapeDOTString(cluster.Name))
@@ -99,8 +102,13 @@ func (t *GraphvizDiagramTool) generateCluster(dot *strings.Builder, cluster Clus
 
 	dot.WriteString("\n")
 
-	// Generate nodes within the cluster
+	// Generate nodes within the cluster (avoid duplicates)
 	for _, nodeID := range cluster.Nodes {
+		// Skip if already rendered in another cluster
+		if nodesRendered[nodeID] {
+			continue
+		}
+
 		// Find the node spec
 		var nodeSpec *NodeSpec
 		for i := range diagram.Nodes {
@@ -118,6 +126,9 @@ func (t *GraphvizDiagramTool) generateCluster(dot *strings.Builder, cluster Clus
 		if err := t.generateNodeWithIndent(dot, *nodeSpec, "    "); err != nil {
 			return err
 		}
+
+		// Mark as rendered
+		nodesRendered[nodeID] = true
 	}
 
 	// End subgraph

@@ -169,7 +169,12 @@ func (t *GraphvizDiagramTool) getOutputDirectory(workspaceDir string) (string, e
 		}
 		// Additional validation: ensure we got a valid directory
 		if baseDir == "" || baseDir == "/" {
-			return "", fmt.Errorf("invalid working directory detected: '%s'. Please specify workspace_dir parameter", baseDir)
+			// If we're in root directory (common in MCP mode), use a sensible default
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return "", fmt.Errorf("invalid working directory detected: '%s' and cannot determine home directory: %w. Please specify workspace_dir parameter", baseDir, err)
+			}
+			baseDir = homeDir
 		}
 	}
 
