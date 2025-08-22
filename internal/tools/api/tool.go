@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -344,7 +346,11 @@ func (t *DynamicAPITool) ProvideExtendedInfo() *tools.ExtendedHelp {
 
 // RegisterConfiguredAPIs loads API configuration and registers tools
 func RegisterConfiguredAPIs() error {
-	configPath := "~/.mcp-devtools/apis.yaml"
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %w", err)
+	}
+	configPath := filepath.Join(homeDir, ".mcp-devtools", "apis.yaml")
 	config, err := LoadAPIConfig(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load API configuration: %w", err)
