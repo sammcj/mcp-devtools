@@ -159,7 +159,6 @@ func (t *GraphvizDiagramTool) getIconPathMap() map[string]string {
 		"aws.quicksight": "aws/Architecture-Service/Analytics/QuickSight.png",
 		"aws.opensearch": "aws/Architecture-Service/Analytics/OpenSearch-Service.png",
 		"aws.msk":        "aws/Architecture-Service/Analytics/Managed-Streaming-for-Apache-Kafka.png",
-		"aws.datazone":   "aws/Architecture-Service/Analytics/DataZone.png",
 
 		// AWS AI/ML
 		"aws.sagemaker":   "aws/Architecture-Service/Artificial-Intelligence/SageMaker.png",
@@ -201,7 +200,6 @@ func (t *GraphvizDiagramTool) getIconPathMap() map[string]string {
 		"aws.config":          "aws/Architecture-Service/Management-Governance/Config.png",
 		"aws.systems-manager": "aws/Architecture-Service/Management-Governance/Systems-Manager.png",
 		"aws.cloudformation":  "aws/Architecture-Service/Management-Governance/CloudFormation.png",
-		"aws.organizations":   "aws/Architecture-Service/Management-Governance/Organizations.png",
 		"aws.control-tower":   "aws/Architecture-Service/Management-Governance/Control-Tower.png",
 
 		// AWS IoT
@@ -233,9 +231,35 @@ func (t *GraphvizDiagramTool) getIconPathMap() map[string]string {
 		"aws.device-farm": "aws/Architecture-Service/Front-End-Web-Mobile/Device-Farm.png",
 		"aws.location":    "aws/Architecture-Service/Front-End-Web-Mobile/Location-Service.png",
 
+		// Additional AWS Services from 'm' prefixed icons
+		"aws.account":        "aws/Resource/General-Icons/Light/mAccount.png",
+		"aws.appstudio":      "aws/Resource/General-Icons/Light/mApp-Studio.png",
+		"aws.bedrock.agent":  "aws/Resource/General-Icons/Light/mBedrock-Agent.png",
+		"aws.bedrock.kb":     "aws/Resource/General-Icons/Light/mBedrock-Knowledge-Base.png",
+		"aws.client":         "aws/Resource/General-Icons/Light/mClient.png",
+		"aws.cli":            "aws/Resource/General-Icons/Light/mCLI.png",
+		"aws.console":        "aws/Resource/General-Icons/Light/mConsole.png",
+		"aws.datazone":       "aws/Resource/General-Icons/Light/mDataZone.png",
+		"aws.sdk":            "aws/Resource/General-Icons/Light/mSDK.png",
+		"aws.notebook":       "aws/Resource/General-Icons/Light/mSageMaker-Notebook.png",
+		"aws.nova":           "aws/Resource/General-Icons/Light/mNova.png",
+		"aws.q.business":     "aws/Resource/General-Icons/Light/mQ-Business.png",
+		"aws.q.developer":    "aws/Resource/General-Icons/Light/mQ-Developer.png",
+		"aws.supplychain":    "aws/Resource/General-Icons/Light/mSupply-Chain.png",
+		"aws.deepcomposer":   "aws/Resource/General-Icons/Light/mDeepComposer.png",
+		"aws.deeplens":       "aws/Resource/General-Icons/Light/mDeepLens.png",
+		"aws.deepracer":      "aws/Resource/General-Icons/Light/mDeepRacer.png",
+		"aws.ec2.instance":   "aws/Resource/General-Icons/Light/mEC2-Instance.png",
+		"aws.ec2.spot":       "aws/Resource/General-Icons/Light/mEC2-Spot-Instance.png",
+		"aws.glue.databrew":  "aws/Resource/General-Icons/Light/mGlue-DataBrew.png",
+		"aws.quicksight.q":   "aws/Resource/General-Icons/Light/mQuickSight-Q.png",
+		"aws.organizations":  "aws/Resource/General-Icons/Light/mOrganizations.png",
+		"aws.resilience-hub": "aws/Resource/General-Icons/Light/mResilience-Hub.png",
+		"aws.snow-device":    "aws/Resource/General-Icons/Light/mSnow-Device.png",
+		"aws.supply.chain":   "aws/Resource/General-Icons/Light/mSupply-Chain.png",
+
 		// AWS Architecture Groups
 		"aws.region":         "aws/Architecture-Group/Region.png",
-		"aws.account":        "aws/Architecture-Group/Account.png",
 		"aws.cloud":          "aws/Architecture-Group/Cloud.png",
 		"aws.corporate":      "aws/Architecture-Group/Corporate-data-center.png",
 		"aws.subnet-public":  "aws/Architecture-Group/Public-subnet.png",
@@ -303,6 +327,15 @@ func normalizeNodeType(nodeType string) string {
 		"lambda":     "aws.lambda",
 		"dynamodb":   "aws.dynamodb",
 		"cloudfront": "aws.cloudfront",
+		"bedrock":    "aws.bedrock",
+		"sagemaker":  "aws.sagemaker",
+		"console":    "aws.console",
+		"cli":        "aws.cli",
+		"sdk":        "aws.sdk",
+		"account":    "aws.account",
+		"client":     "aws.client",
+		"q":          "aws.q.developer",
+		"nova":       "aws.nova",
 		"server":     "generic.server",
 		"database":   "generic.database",
 		"user":       "generic.user",
@@ -318,6 +351,9 @@ func normalizeNodeType(nodeType string) string {
 		"ec2", "rds", "s3", "lambda", "dynamodb", "cloudfront",
 		"sqs", "sns", "ecs", "eks", "fargate", "elasticache",
 		"aurora", "redshift", "glue", "athena", "sagemaker",
+		"bedrock", "appstudio", "console", "cli", "sdk", "notebook",
+		"nova", "deepcomposer", "deeplens", "deepracer", "organizations",
+		"quicksight", "datazone", "supplychain", "resilience-hub",
 	}
 
 	for _, service := range awsServices {
