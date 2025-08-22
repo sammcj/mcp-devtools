@@ -341,22 +341,28 @@ func (t *GraphvizDiagramTool) getKubernetesExamples() map[string]interface{} {
 		"description": "Kubernetes architecture diagrams",
 		"simple_deployment": map[string]interface{}{
 			"description": "Basic Kubernetes deployment",
-			"text_dsl": `diagram "K8s Deployment" direction=TB {
-  cluster k8s_cluster "Kubernetes Cluster" {
-    node ingress = k8s.ingress "Ingress"
-    node service = k8s.service "Service"
-    node deployment = k8s.deployment "Deployment"
-    
-    cluster pods "Pods" {
-      node pod1 = k8s.pod "Pod 1"
-      node pod2 = k8s.pod "Pod 2"
-      node pod3 = k8s.pod "Pod 3"
-    }
-  }
-  
-  ingress -> service -> deployment
-  deployment -> [pod1, pod2, pod3]
-}`,
+			"json": map[string]interface{}{
+				"name":      "K8s Deployment",
+				"direction": "TB",
+				"nodes": []map[string]string{
+					{"id": "ingress", "type": "k8s.ingress", "label": "Ingress"},
+					{"id": "service", "type": "k8s.service", "label": "Service"},
+					{"id": "deployment", "type": "k8s.deployment", "label": "Deployment"},
+					{"id": "pod1", "type": "k8s.pod", "label": "Pod 1"},
+					{"id": "pod2", "type": "k8s.pod", "label": "Pod 2"},
+					{"id": "pod3", "type": "k8s.pod", "label": "Pod 3"},
+				},
+				"connections": []map[string]string{
+					{"from": "ingress", "to": "service"},
+					{"from": "service", "to": "deployment"},
+					{"from": "deployment", "to": "pod1"},
+					{"from": "deployment", "to": "pod2"},
+					{"from": "deployment", "to": "pod3"},
+				},
+				"clusters": []map[string]interface{}{
+					{"name": "Kubernetes Cluster", "nodes": []string{"ingress", "service", "deployment", "pod1", "pod2", "pod3"}},
+				},
+			},
 		},
 	}
 }
@@ -367,29 +373,29 @@ func (t *GraphvizDiagramTool) getOnPremExamples() map[string]interface{} {
 		"description": "On-premises infrastructure diagrams",
 		"traditional_architecture": map[string]interface{}{
 			"description": "Traditional 3-tier on-premises architecture",
-			"text_dsl": `diagram "On-Premises Architecture" direction=TB {
-  cluster datacenter "Data Center" {
-    cluster dmz "DMZ" {
-      node firewall = generic.firewall "Firewall"
-      node lb = generic.server "Load Balancer"
-    }
-    
-    cluster app_tier "Application Tier" {
-      node app1 = generic.server "App Server 1"
-      node app2 = generic.server "App Server 2"
-    }
-    
-    cluster db_tier "Database Tier" {
-      node primary_db = generic.database "Primary DB"
-      node backup_db = generic.database "Backup DB"
-    }
-  }
-  
-  firewall -> lb
-  lb -> [app1, app2]
-  [app1, app2] -> primary_db
-  primary_db -> backup_db
-}`,
+			"json": map[string]interface{}{
+				"name":      "On-Premises Architecture",
+				"direction": "TB",
+				"nodes": []map[string]string{
+					{"id": "firewall", "type": "generic.firewall", "label": "Firewall"},
+					{"id": "lb", "type": "generic.server", "label": "Load Balancer"},
+					{"id": "app1", "type": "generic.server", "label": "App Server 1"},
+					{"id": "app2", "type": "generic.server", "label": "App Server 2"},
+					{"id": "primary_db", "type": "generic.database", "label": "Primary DB"},
+					{"id": "backup_db", "type": "generic.database", "label": "Backup DB"},
+				},
+				"connections": []map[string]string{
+					{"from": "firewall", "to": "lb"},
+					{"from": "lb", "to": "app1"},
+					{"from": "lb", "to": "app2"},
+					{"from": "app1", "to": "primary_db"},
+					{"from": "app2", "to": "primary_db"},
+					{"from": "primary_db", "to": "backup_db"},
+				},
+				"clusters": []map[string]interface{}{
+					{"name": "Data Center", "nodes": []string{"firewall", "lb", "app1", "app2", "primary_db", "backup_db"}},
+				},
+			},
 		},
 	}
 }
@@ -400,45 +406,52 @@ func (t *GraphvizDiagramTool) getCustomExamples() map[string]interface{} {
 		"description": "Custom diagrams with mixed providers",
 		"hybrid_cloud": map[string]interface{}{
 			"description": "Hybrid cloud architecture",
-			"text_dsl": `diagram "Hybrid Cloud Architecture" direction=TB {
-  cluster onprem "On-Premises" {
-    node legacy_app = generic.server "Legacy Application"
-    node local_db = generic.database "Local Database"
-  }
-  
-  cluster aws_cloud "AWS Cloud" {
-    node api_gateway = aws.apigateway "API Gateway"
-    node lambda = aws.lambda "Lambda Functions"
-    node s3 = aws.s3 "S3 Storage"
-  }
-  
-  legacy_app -> api_gateway
-  api_gateway -> lambda
-  lambda -> s3
-  lambda -> local_db
-}`,
+			"json": map[string]interface{}{
+				"name":      "Hybrid Cloud Architecture",
+				"direction": "TB",
+				"nodes": []map[string]string{
+					{"id": "legacy_app", "type": "generic.server", "label": "Legacy Application"},
+					{"id": "local_db", "type": "generic.database", "label": "Local Database"},
+					{"id": "api_gateway", "type": "aws.apigateway", "label": "API Gateway"},
+					{"id": "lambda", "type": "aws.lambda", "label": "Lambda Functions"},
+					{"id": "s3", "type": "aws.s3", "label": "S3 Storage"},
+				},
+				"connections": []map[string]string{
+					{"from": "legacy_app", "to": "api_gateway"},
+					{"from": "api_gateway", "to": "lambda"},
+					{"from": "lambda", "to": "s3"},
+					{"from": "lambda", "to": "local_db"},
+				},
+				"clusters": []map[string]interface{}{
+					{"name": "On-Premises", "nodes": []string{"legacy_app", "local_db"}},
+					{"name": "AWS Cloud", "nodes": []string{"api_gateway", "lambda", "s3"}},
+				},
+			},
 		},
 		"multi_cloud": map[string]interface{}{
 			"description": "Multi-cloud architecture",
-			"text_dsl": `diagram "Multi-Cloud Architecture" {
-  cluster aws_region "AWS Region" {
-    node aws_compute = aws.ec2 "EC2 Instance"
-    node aws_storage = aws.s3 "S3 Bucket"
-  }
-  
-  cluster gcp_region "GCP Region" {
-    node gcp_compute = gcp.compute "Compute Engine"
-    node gcp_storage = gcp.storage "Cloud Storage"
-  }
-  
-  node user = user "User"
-  
-  user -> aws_compute
-  user -> gcp_compute
-  aws_compute -> aws_storage
-  gcp_compute -> gcp_storage
-  aws_compute -> gcp_compute
-}`,
+			"json": map[string]interface{}{
+				"name":      "Multi-Cloud Architecture",
+				"direction": "LR",
+				"nodes": []map[string]string{
+					{"id": "user", "type": "generic.user", "label": "User"},
+					{"id": "aws_compute", "type": "aws.ec2", "label": "EC2 Instance"},
+					{"id": "aws_storage", "type": "aws.s3", "label": "S3 Bucket"},
+					{"id": "gcp_compute", "type": "gcp.compute", "label": "Compute Engine"},
+					{"id": "gcp_storage", "type": "gcp.storage", "label": "Cloud Storage"},
+				},
+				"connections": []map[string]string{
+					{"from": "user", "to": "aws_compute"},
+					{"from": "user", "to": "gcp_compute"},
+					{"from": "aws_compute", "to": "aws_storage"},
+					{"from": "gcp_compute", "to": "gcp_storage"},
+					{"from": "aws_compute", "to": "gcp_compute"},
+				},
+				"clusters": []map[string]interface{}{
+					{"name": "AWS Region", "nodes": []string{"aws_compute", "aws_storage"}},
+					{"name": "GCP Region", "nodes": []string{"gcp_compute", "gcp_storage"}},
+				},
+			},
 		},
 	}
 }

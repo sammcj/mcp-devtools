@@ -38,8 +38,9 @@ func (t *GraphvizDiagramTool) generateDOT(diagram *DiagramSpec) (string, error) 
 	}
 
 	// Default node and edge styles
-	dot.WriteString("  node [shape=box, style=rounded, fontname=\"Helvetica\", fontsize=12];\n")
-	dot.WriteString("  edge [fontname=\"Helvetica\", fontsize=10];\n")
+	dot.WriteString("  node [shape=box, style=rounded, fontname=\"Helvetica\", fontsize=11];\n")
+	dot.WriteString("  edge [fontname=\"Helvetica\", fontsize=10, color=\"#333333\"];\n")
+	dot.WriteString("  bgcolor=\"white\";\n")
 	dot.WriteString("\n")
 
 	// Generate clusters
@@ -84,10 +85,12 @@ func (t *GraphvizDiagramTool) generateCluster(dot *strings.Builder, cluster Clus
 	// Start subgraph
 	fmt.Fprintf(dot, "  subgraph cluster_%d {\n", index)
 	fmt.Fprintf(dot, "    label=\"%s\";\n", escapeDOTString(cluster.Name))
-	dot.WriteString("    style=\"dashed\";\n")
-	dot.WriteString("    color=\"gray\";\n")
-	dot.WriteString("    fontsize=\"14\";\n")
-	dot.WriteString("    fontname=\"Helvetica\";\n")
+	dot.WriteString("    style=\"rounded,filled\";\n")
+	dot.WriteString("    fillcolor=\"#f0f0f0\";\n")
+	dot.WriteString("    color=\"#cccccc\";\n")
+	dot.WriteString("    fontsize=\"13\";\n")
+	dot.WriteString("    fontname=\"Helvetica-Bold\";\n")
+	dot.WriteString("    penwidth=\"2\";\n")
 
 	// Apply custom cluster styles
 	for key, value := range cluster.Style {
@@ -165,17 +168,16 @@ func (t *GraphvizDiagramTool) generateNodeWithIndent(dot *strings.Builder, node 
 
 // generateIconNode generates a node with an icon image
 func (t *GraphvizDiagramTool) generateIconNode(dot *strings.Builder, node NodeSpec, iconPath string, indent string) error {
-	// Use HTML-like labels to embed images
+	// Use a simpler approach with image attribute for better connections
 	fmt.Fprintf(dot, "%s%s [", indent, node.ID)
 
-	// Set shape to none to let the image be the shape
-	dot.WriteString("shape=none, ")
-
-	// Create HTML-like label with image and text
-	fmt.Fprintf(dot, "label=<<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\">")
-	fmt.Fprintf(dot, "<TR><TD><IMG SRC=\"%s\" SCALE=\"TRUE\"/></TD></TR>", iconPath)
-	fmt.Fprintf(dot, "<TR><TD><FONT POINT-SIZE=\"10\">%s</FONT></TD></TR>", escapeDOTString(node.Label))
-	fmt.Fprintf(dot, "</TABLE>>")
+	// Use image attribute instead of HTML label for better connection points
+	fmt.Fprintf(dot, "image=\"%s\"", iconPath)
+	fmt.Fprintf(dot, ", label=\"%s\"", escapeDOTString(node.Label))
+	fmt.Fprintf(dot, ", shape=\"none\"")
+	fmt.Fprintf(dot, ", fontsize=\"11\"")
+	fmt.Fprintf(dot, ", labelloc=\"b\"")
+	fmt.Fprintf(dot, ", fontname=\"Helvetica\"")
 
 	// Apply any custom styles
 	for key, value := range node.Style {

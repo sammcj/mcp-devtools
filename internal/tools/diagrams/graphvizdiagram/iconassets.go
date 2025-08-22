@@ -31,7 +31,7 @@ var tempIconDir string
 // initTempIconDir creates a temporary directory for extracted icons
 func initTempIconDir() error {
 	if tempIconDir != "" {
-		return nil // Already initialized
+		return nil // Already initialised
 	}
 
 	dir, err := os.MkdirTemp("", "graphviz-icons-*")
@@ -49,7 +49,7 @@ func extractIconToTemp(embeddedPath string) (string, error) {
 		return cachedPath, nil
 	}
 
-	// Initialize temp directory if needed
+	// Initialise temp directory if needed
 	if err := initTempIconDir(); err != nil {
 		return "", err
 	}
@@ -108,6 +108,7 @@ func (t *GraphvizDiagramTool) getIconPathMap() map[string]string {
 		"aws.ec2":     "aws/Architecture-Service/Compute/EC2.png",
 		"aws.lambda":  "aws/Architecture-Service/Compute/Lambda.png",
 		"aws.ecs":     "aws/Architecture-Service/Containers/Elastic-Container-Service.png",
+		"aws.ecr":     "aws/Architecture-Service/Containers/Elastic-Container-Registry.png",
 		"aws.eks":     "aws/Architecture-Service/Containers/Elastic-Kubernetes-Service.png",
 		"aws.fargate": "aws/Architecture-Service/Compute/Fargate.png",
 		"aws.batch":   "aws/Architecture-Service/Compute/Batch.png",
@@ -349,7 +350,7 @@ func normalizeNodeType(nodeType string) string {
 	// Add aws prefix if it looks like an AWS service without prefix
 	awsServices := []string{
 		"ec2", "rds", "s3", "lambda", "dynamodb", "cloudfront",
-		"sqs", "sns", "ecs", "eks", "fargate", "elasticache",
+		"sqs", "sns", "ecs", "ecr", "eks", "fargate", "elasticache",
 		"aurora", "redshift", "glue", "athena", "sagemaker",
 		"bedrock", "appstudio", "console", "cli", "sdk", "notebook",
 		"nova", "deepcomposer", "deeplens", "deepracer", "organizations",
