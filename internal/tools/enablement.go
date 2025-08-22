@@ -9,21 +9,22 @@ import (
 // The environment variable should contain a comma-separated list of tool names.
 // Tool names are case-insensitive and spaces are ignored.
 //
-// Example: ENABLE_ADDITIONAL_TOOLS="claude-agent,gemini-agent,filesystem,vulnerability_scan,sbom,aws"
+// Example: ENABLE_ADDITIONAL_TOOLS="claude-agent,gemini-agent,filesystem,vulnerability_scan,sbom,aws,api"
 //
 // Supported tool names:
-// - claude-agent
-// - gemini-agent
-// - filesystem
-// - vulnerability_scan
-// - sbom
+// - api
 // - aws
+// - changelog
+// - claude-agent
+// - filesystem
+// - gemini-agent
+// - memory
+// - pdf
+// - process_document
+// - sbom
 // - security
 // - security_override
-// - memory
-// - changelog
-// - process_document
-// - pdf
+// - vulnerability_scan
 
 func IsToolEnabled(toolName string) bool {
 	enabledTools := os.Getenv("ENABLE_ADDITIONAL_TOOLS")

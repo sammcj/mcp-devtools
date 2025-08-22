@@ -1,6 +1,6 @@
 # Filesystem Tool
 
-The filesystem tool provides secure file and directory operations with strict access controls. **This tool is disabled by default for security reasons** and must be explicitly enabled.
+The filesystem tool provides secure file and directory operations with strict access controls. **This tool is disabled by default** and must be explicitly enabled.
 
 ## Security Notice
 

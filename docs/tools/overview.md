@@ -36,6 +36,14 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 3. Memory → Store findings for later reference
 ```
 
+#### API Integration Workflow
+```
+1. Configure APIs in ~/.mcp-devtools/apis.yaml
+2. Dynamic API tools automatically available (e.g., github_api, slack_api)
+3. Use endpoints via unified parameter interface
+4. Security framework validates all requests automatically
+```
+
 #### AWS Documentation Research Workflow
 ```
 1. AWS Documentation (search) → Find relevant AWS guides

@@ -13,7 +13,7 @@ graph LR
     A --> F[Utilities]
     A --> G[Agents]
 
-    B --> B_Tools[🌐 Internet Search<br>📡 Web Fetch<br>📦 Package Search<br>📚 Package Documentation<br>🐙 GitHub<br>🎨 ShadCN UI Components]
+    B --> B_Tools[🌐 Internet Search<br>📡 Web Fetch<br>📦 Package Search<br>📚 Package Documentation<br>🐙 GitHub<br>🎨 ShadCN UI Components<br>🔌 API Integration]
 
     C --> C_Tools[📄 Document Processing<br>📑 PDF Processing]
 
@@ -128,6 +128,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[AWS Documentation](docs/tools/aws_documentation.md)**     | AWS documentation search and retrieval   | `aws`                     | Search and read AWS docs, recommendations |
 | **[Security Framework](docs/security.md)** (BETA)            | Context injection security protections   | `security`                | Content analysis, access control          |
 | **[Security Override](docs/security.md)**                    | Agent managed security warning overrides | `security_override`       | Bypass false positives                    |
+| **[API](docs/tools/api.md)**                                 | Dynamic REST API integration             | `api`                     | Configure any REST API via YAML           |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 

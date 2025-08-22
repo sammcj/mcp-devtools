@@ -63,7 +63,7 @@ func (t *ClaudeTool) Definition() mcp.Tool {
 
 // Execute executes the tool's logic by calling the claude CLI
 func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
-	// Check if claude-agent tool is enabled (disabled by default for security)
+	// Check if claude-agent tool is enabled
 	if !tools.IsToolEnabled("claude-agent") {
 		return nil, fmt.Errorf("claude agent tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'claude-agent'")
 	}
