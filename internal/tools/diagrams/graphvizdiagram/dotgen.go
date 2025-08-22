@@ -19,8 +19,8 @@ func (t *GraphvizDiagramTool) generateDOT(diagram *DiagramSpec) (string, error) 
 	dot.WriteString("  fontname=\"Helvetica\";\n") // Clean, modern font available on most systems
 
 	// High-resolution settings for better PNG quality
-	dot.WriteString("  dpi=\"300\";\n")        // 300 DPI for high quality
-	dot.WriteString("  resolution=\"300\";\n") // Alternative resolution setting
+	dot.WriteString("  dpi=\"200\";\n")        // 200 DPI for good quality
+	dot.WriteString("  resolution=\"200\";\n") // Alternative resolution setting
 	dot.WriteString("  size=\"12,8!\";\n")     // Set reasonable size limit
 
 	// Set direction

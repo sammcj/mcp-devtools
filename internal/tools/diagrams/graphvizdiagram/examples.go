@@ -112,108 +112,125 @@ func (t *GraphvizDiagramTool) getAWSExamples() map[string]interface{} {
 		"three_tier_basic": map[string]interface{}{
 			"description": "Basic 3-tier web application",
 			"complexity":  "basic",
-			"text_dsl": `diagram "3-Tier Web Application" {
-  node alb = aws.alb "Application Load Balancer"
-  node web = aws.ec2 "Web Server"
-  node db = aws.rds "Database"
-  
-  alb -> web -> db
-}`,
+			"json": map[string]interface{}{
+				"name":      "3-Tier Web Application",
+				"direction": "LR",
+				"nodes": []map[string]string{
+					{"id": "alb", "type": "aws.alb", "label": "Application Load Balancer"},
+					{"id": "web", "type": "aws.ec2", "label": "Web Server"},
+					{"id": "db", "type": "aws.rds", "label": "Database"},
+				},
+				"connections": []map[string]string{
+					{"from": "alb", "to": "web"},
+					{"from": "web", "to": "db"},
+				},
+			},
 		},
 		"three_tier_with_vpc": map[string]interface{}{
 			"description": "3-tier application with VPC clustering",
 			"complexity":  "intermediate",
-			"text_dsl": `diagram "3-Tier with VPC" direction=TB {
-  cluster vpc "Production VPC" {
-    cluster public "Public Subnet" {
-      node alb = aws.alb "Application LB"
-    }
-    
-    cluster private "Private Subnet" {
-      node web = aws.ec2 "Web Server"
-      node db = aws.rds "Database"
-    }
-  }
-  
-  alb -> web -> db
-}`,
+			"json": map[string]interface{}{
+				"name":      "3-Tier with VPC",
+				"direction": "TB",
+				"nodes": []map[string]string{
+					{"id": "alb", "type": "aws.alb", "label": "Application LB"},
+					{"id": "web", "type": "aws.ec2", "label": "Web Server"},
+					{"id": "db", "type": "aws.rds", "label": "Database"},
+				},
+				"connections": []map[string]string{
+					{"from": "alb", "to": "web"},
+					{"from": "web", "to": "db"},
+				},
+				"clusters": []map[string]interface{}{
+					{"name": "Production VPC", "nodes": []string{"alb", "web", "db"}},
+				},
+			},
 		},
 		"scalable_web_app": map[string]interface{}{
 			"description": "Scalable web application with multiple instances",
 			"complexity":  "advanced",
-			"text_dsl": `diagram "Scalable Web Application" direction=TB {
-  node cloudfront = aws.cloudfront "CloudFront CDN"
-  
-  cluster vpc "Production VPC" {
-    cluster public "Public Subnet" {
-      node alb = aws.alb "Application LB"
-    }
-    
-    cluster private_web "Web Tier" {
-      node web1 = aws.ec2 "Web Server 1"
-      node web2 = aws.ec2 "Web Server 2"
-      node web3 = aws.ec2 "Web Server 3"
-    }
-    
-    cluster private_data "Data Tier" {
-      node rds_primary = aws.rds "Primary DB"
-      node rds_replica = aws.rds "Read Replica"
-      node elasticache = aws.elasticache "Redis Cache"
-    }
-  }
-  
-  cloudfront -> alb
-  alb -> [web1, web2, web3]
-  [web1, web2, web3] -> rds_primary
-  [web1, web2, web3] -> elasticache
-  rds_primary -> rds_replica
-}`,
+			"json": map[string]interface{}{
+				"name":      "Scalable Web Application",
+				"direction": "TB",
+				"nodes": []map[string]string{
+					{"id": "cloudfront", "type": "aws.cloudfront", "label": "CloudFront CDN"},
+					{"id": "alb", "type": "aws.alb", "label": "Application LB"},
+					{"id": "web1", "type": "aws.ec2", "label": "Web Server 1"},
+					{"id": "web2", "type": "aws.ec2", "label": "Web Server 2"},
+					{"id": "web3", "type": "aws.ec2", "label": "Web Server 3"},
+					{"id": "rds_primary", "type": "aws.rds", "label": "Primary DB"},
+					{"id": "rds_replica", "type": "aws.rds", "label": "Read Replica"},
+					{"id": "elasticache", "type": "aws.elasticache", "label": "Redis Cache"},
+				},
+				"connections": []map[string]string{
+					{"from": "cloudfront", "to": "alb"},
+					{"from": "alb", "to": "web1"},
+					{"from": "alb", "to": "web2"},
+					{"from": "alb", "to": "web3"},
+					{"from": "web1", "to": "rds_primary"},
+					{"from": "web2", "to": "rds_primary"},
+					{"from": "web3", "to": "rds_primary"},
+					{"from": "web1", "to": "elasticache"},
+					{"from": "web2", "to": "elasticache"},
+					{"from": "web3", "to": "elasticache"},
+					{"from": "rds_primary", "to": "rds_replica"},
+				},
+				"clusters": []map[string]interface{}{
+					{"name": "Production VPC", "nodes": []string{"alb", "web1", "web2", "web3", "rds_primary", "rds_replica", "elasticache"}},
+				},
+			},
 		},
 		"serverless_architecture": map[string]interface{}{
 			"description": "Serverless application with Lambda and API Gateway",
 			"complexity":  "intermediate",
-			"text_dsl": `diagram "Serverless Architecture" {
-  node user = user "User"
-  node api = aws.apigateway "API Gateway"
-  node lambda = aws.lambda "Lambda Function"
-  node dynamodb = aws.dynamodb "DynamoDB"
-  node s3 = aws.s3 "S3 Bucket"
-  
-  user -> api -> lambda
-  lambda -> dynamodb
-  lambda -> s3
-}`,
+			"json": map[string]interface{}{
+				"name":      "Serverless Architecture",
+				"direction": "LR",
+				"nodes": []map[string]string{
+					{"id": "user", "type": "generic.user", "label": "User"},
+					{"id": "api", "type": "aws.apigateway", "label": "API Gateway"},
+					{"id": "lambda", "type": "aws.lambda", "label": "Lambda Function"},
+					{"id": "dynamodb", "type": "aws.dynamodb", "label": "DynamoDB"},
+					{"id": "s3", "type": "aws.s3", "label": "S3 Bucket"},
+				},
+				"connections": []map[string]string{
+					{"from": "user", "to": "api"},
+					{"from": "api", "to": "lambda"},
+					{"from": "lambda", "to": "dynamodb"},
+					{"from": "lambda", "to": "s3"},
+				},
+			},
 		},
 		"microservices": map[string]interface{}{
 			"description": "Microservices architecture with service mesh",
 			"complexity":  "advanced",
-			"text_dsl": `diagram "Microservices Architecture" direction=TB {
-  cluster vpc "Microservices VPC" {
-    cluster ingress "Ingress Layer" {
-      node alb = aws.alb "Application LB"
-      node apigw = aws.apigateway "API Gateway"
-    }
-    
-    cluster services "Services Layer" {
-      node user_svc = aws.ecs "User Service"
-      node order_svc = aws.ecs "Order Service"
-      node payment_svc = aws.ecs "Payment Service"
-    }
-    
-    cluster data "Data Layer" {
-      node user_db = aws.rds "User DB"
-      node order_db = aws.rds "Order DB"
-      node payment_db = aws.rds "Payment DB"
-    }
-  }
-  
-  alb -> apigw
-  apigw -> [user_svc, order_svc, payment_svc]
-  user_svc -> user_db
-  order_svc -> order_db
-  payment_svc -> payment_db
-  order_svc -> payment_svc
-}`,
+			"json": map[string]interface{}{
+				"name":      "Microservices Architecture",
+				"direction": "TB",
+				"nodes": []map[string]string{
+					{"id": "alb", "type": "aws.alb", "label": "Application LB"},
+					{"id": "apigw", "type": "aws.apigateway", "label": "API Gateway"},
+					{"id": "user_svc", "type": "aws.ecs", "label": "User Service"},
+					{"id": "order_svc", "type": "aws.ecs", "label": "Order Service"},
+					{"id": "payment_svc", "type": "aws.ecs", "label": "Payment Service"},
+					{"id": "user_db", "type": "aws.rds", "label": "User DB"},
+					{"id": "order_db", "type": "aws.rds", "label": "Order DB"},
+					{"id": "payment_db", "type": "aws.rds", "label": "Payment DB"},
+				},
+				"connections": []map[string]string{
+					{"from": "alb", "to": "apigw"},
+					{"from": "apigw", "to": "user_svc"},
+					{"from": "apigw", "to": "order_svc"},
+					{"from": "apigw", "to": "payment_svc"},
+					{"from": "user_svc", "to": "user_db"},
+					{"from": "order_svc", "to": "order_db"},
+					{"from": "payment_svc", "to": "payment_db"},
+					{"from": "order_svc", "to": "payment_svc"},
+				},
+				"clusters": []map[string]interface{}{
+					{"name": "Microservices VPC", "nodes": []string{"alb", "apigw", "user_svc", "order_svc", "payment_svc", "user_db", "order_db", "payment_db"}},
+				},
+			},
 		},
 	}
 }
@@ -224,36 +241,46 @@ func (t *GraphvizDiagramTool) getSequenceExamples() map[string]interface{} {
 		"description": "Process flow and sequence diagrams",
 		"user_authentication": map[string]interface{}{
 			"description": "User authentication flow",
-			"text_dsl": `diagram "Authentication Flow" direction=LR {
-  node user = user "User"
-  node frontend = generic.server "Frontend"
-  node auth = aws.cognito "Auth Service"
-  node backend = aws.lambda "Backend API"
-  
-  user -> frontend
-  frontend -> auth
-  auth -> backend
-  backend -> frontend
-  frontend -> user
-}`,
+			"json": map[string]interface{}{
+				"name":      "Authentication Flow",
+				"direction": "LR",
+				"nodes": []map[string]string{
+					{"id": "user", "type": "generic.user", "label": "User"},
+					{"id": "frontend", "type": "generic.server", "label": "Frontend"},
+					{"id": "auth", "type": "aws.cognito", "label": "Auth Service"},
+					{"id": "backend", "type": "aws.lambda", "label": "Backend API"},
+				},
+				"connections": []map[string]string{
+					{"from": "user", "to": "frontend"},
+					{"from": "frontend", "to": "auth"},
+					{"from": "auth", "to": "backend"},
+					{"from": "backend", "to": "frontend"},
+					{"from": "frontend", "to": "user"},
+				},
+			},
 		},
 		"api_request_flow": map[string]interface{}{
 			"description": "API request processing flow",
-			"text_dsl": `diagram "API Request Flow" direction=TB {
-  node client = user "Client"
-  node gateway = aws.apigateway "API Gateway"
-  node lambda = aws.lambda "Lambda"
-  node database = aws.dynamodb "Database"
-  node cache = aws.elasticache "Cache"
-  
-  client -> gateway
-  gateway -> lambda
-  lambda -> cache
-  lambda -> database
-  database -> lambda
-  lambda -> gateway
-  gateway -> client
-}`,
+			"json": map[string]interface{}{
+				"name":      "API Request Flow",
+				"direction": "TB",
+				"nodes": []map[string]string{
+					{"id": "client", "type": "generic.user", "label": "Client"},
+					{"id": "gateway", "type": "aws.apigateway", "label": "API Gateway"},
+					{"id": "lambda", "type": "aws.lambda", "label": "Lambda"},
+					{"id": "database", "type": "aws.dynamodb", "label": "Database"},
+					{"id": "cache", "type": "aws.elasticache", "label": "Cache"},
+				},
+				"connections": []map[string]string{
+					{"from": "client", "to": "gateway"},
+					{"from": "gateway", "to": "lambda"},
+					{"from": "lambda", "to": "cache"},
+					{"from": "lambda", "to": "database"},
+					{"from": "database", "to": "lambda"},
+					{"from": "lambda", "to": "gateway"},
+					{"from": "gateway", "to": "client"},
+				},
+			},
 		},
 	}
 }
@@ -264,18 +291,23 @@ func (t *GraphvizDiagramTool) getFlowExamples() map[string]interface{} {
 		"description": "Decision trees and workflow diagrams",
 		"deployment_pipeline": map[string]interface{}{
 			"description": "CI/CD deployment pipeline",
-			"text_dsl": `diagram "Deployment Pipeline" direction=TB {
-  node start = generic.start "Start"
-  node code = generic.server "Code Commit"
-  node build = aws.codebuild "Build"
-  node test = generic.server "Test"
-  node deploy_staging = aws.ecs "Deploy Staging"
-  node deploy_prod = aws.ecs "Deploy Production"
-  node end = generic.stop "End"
-  
-  start -> code -> build -> test
-  test -> deploy_staging -> deploy_prod -> end
-}`,
+			"json": map[string]interface{}{
+				"name":      "Deployment Pipeline",
+				"direction": "TB",
+				"nodes": []map[string]string{
+					{"id": "code", "type": "generic.git", "label": "Code Commit"},
+					{"id": "build", "type": "aws.codebuild", "label": "Build"},
+					{"id": "test", "type": "generic.server", "label": "Test"},
+					{"id": "deploy_staging", "type": "aws.ecs", "label": "Deploy Staging"},
+					{"id": "deploy_prod", "type": "aws.ecs", "label": "Deploy Production"},
+				},
+				"connections": []map[string]string{
+					{"from": "code", "to": "build"},
+					{"from": "build", "to": "test"},
+					{"from": "test", "to": "deploy_staging"},
+					{"from": "deploy_staging", "to": "deploy_prod"},
+				},
+			},
 		},
 	}
 }
@@ -286,14 +318,19 @@ func (t *GraphvizDiagramTool) getClassExamples() map[string]interface{} {
 		"description": "Object relationships and inheritance diagrams",
 		"simple_inheritance": map[string]interface{}{
 			"description": "Simple class inheritance",
-			"text_dsl": `diagram "Class Inheritance" {
-  node base = generic.server "BaseService"
-  node web = aws.ec2 "WebService"
-  node api = aws.lambda "APIService"
-  
-  base -> web
-  base -> api
-}`,
+			"json": map[string]interface{}{
+				"name":      "Class Inheritance",
+				"direction": "TB",
+				"nodes": []map[string]string{
+					{"id": "base", "type": "generic.server", "label": "BaseService"},
+					{"id": "web", "type": "aws.ec2", "label": "WebService"},
+					{"id": "api", "type": "aws.lambda", "label": "APIService"},
+				},
+				"connections": []map[string]string{
+					{"from": "base", "to": "web"},
+					{"from": "base", "to": "api"},
+				},
+			},
 		},
 	}
 }
