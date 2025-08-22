@@ -11,7 +11,8 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
     - [4. Result Schema](#4-result-schema)
     - [5. Caching](#5-caching)
     - [6. Security Integration](#6-security-integration)
-    - [7. Import the Tool Package](#7-import-the-tool-package)
+    - [7. Register the Tool for Import](#7-register-the-tool-for-import)
+    - [8. Add Tool to Enablement List (For Tools Disabled By Default)](#8-add-tool-to-enablement-list-for-tools-disabled-by-default)
   - [Example: Hello World Tool](#example-hello-world-tool)
     - [Testing Your Tool](#testing-your-tool)
   - [Testing](#testing)
@@ -384,6 +385,22 @@ import (
 ```
 
 **Important**: Do NOT add your tool import directly to `main.go`. Use the imports registry system instead to ensure proper build tag handling and maintainability.
+
+### 8. Add Tool to Enablement List (For Tools Disabled By Default)
+
+If your tool is disabled by default and requires enablement via `ENABLE_ADDITIONAL_TOOLS`, add it to the enablement list in `internal/registry/registry.go`:
+
+```go
+func requiresEnablement(toolName string) bool {
+    additionalTools := []string{
+        // ... existing tools ...
+        "your_tool_name",  // Add your tool name here
+    }
+    // ... rest of function
+}
+```
+
+This ensures the tool only appears when explicitly enabled with `ENABLE_ADDITIONAL_TOOLS="your_tool_name"`. Use this for security-sensitive tools or tools that require external dependencies.
 
 ## Example: Hello World Tool
 

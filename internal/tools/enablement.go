@@ -14,6 +14,7 @@ import (
 // Supported tool names:
 // - api
 // - aws
+// - aws-diagram
 // - changelog
 // - claude-agent
 // - filesystem
