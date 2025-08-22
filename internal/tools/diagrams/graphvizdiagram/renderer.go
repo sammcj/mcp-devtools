@@ -180,12 +180,25 @@ func (t *GraphvizDiagramTool) getOutputDirectory(workspaceDir string) (string, e
 		}
 		// Additional validation: ensure we got a valid directory
 		if baseDir == "" || baseDir == "/" {
-			// If we're in root directory (common in MCP mode), use a sensible default
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				return "", fmt.Errorf("invalid working directory detected: '%s' and cannot determine home directory: %w. Please specify workspace_dir parameter", baseDir, err)
+			// If we're in root directory (common in MCP mode), try to use the executable's directory
+			execPath, err := os.Executable()
+			if err == nil {
+				// Get the directory containing the executable
+				execDir := filepath.Dir(execPath)
+				// If it's in a bin directory, go up one level to the project root
+				if filepath.Base(execDir) == "bin" {
+					baseDir = filepath.Dir(execDir)
+				} else {
+					baseDir = execDir
+				}
+			} else {
+				// Fall back to home directory if we can't determine executable path
+				homeDir, err := os.UserHomeDir()
+				if err != nil {
+					return "", fmt.Errorf("invalid working directory detected: '%s' and cannot determine fallback directory: %w. Please specify workspace_dir parameter", baseDir, err)
+				}
+				baseDir = homeDir
 			}
-			baseDir = homeDir
 		}
 	}
 

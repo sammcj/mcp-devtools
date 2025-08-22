@@ -41,8 +41,8 @@ func (t *GraphvizDiagramTool) generateDOT(diagram *DiagramSpec) (string, error) 
 	}
 
 	// Default node and edge styles
-	dot.WriteString("  node [shape=box, style=rounded, fontname=\"Helvetica\", fontsize=11];\n")
-	dot.WriteString("  edge [fontname=\"Helvetica\", fontsize=10, color=\"#333333\"];\n")
+	dot.WriteString("  node [shape=box, style=\"filled,rounded\", fontname=\"Helvetica\", fontsize=11];\n")
+	dot.WriteString("  edge [fontname=\"Helvetica\", fontsize=10, color=\"#4A90E2\", penwidth=2, arrowsize=0.8];\n")
 	dot.WriteString("  bgcolor=\"white\";\n")
 	dot.WriteString("\n")
 
@@ -144,10 +144,10 @@ func (t *GraphvizDiagramTool) generateNode(dot *strings.Builder, node NodeSpec) 
 
 // generateNodeWithIndent generates DOT for a node with specified indentation
 func (t *GraphvizDiagramTool) generateNodeWithIndent(dot *strings.Builder, node NodeSpec, indent string) error {
-	// Check if we have an icon for this node type
+	// Try icon-based rendering first
 	normalizedType := normalizeNodeType(node.Type)
 	if iconPath, hasIcon := t.getIconPath(normalizedType); hasIcon {
-		// Use icon-based node rendering
+		// Use icon-based node rendering with better connection points
 		return t.generateIconNode(dot, node, iconPath, indent)
 	}
 
@@ -177,18 +177,24 @@ func (t *GraphvizDiagramTool) generateNodeWithIndent(dot *strings.Builder, node 
 	return nil
 }
 
-// generateIconNode generates a node with an icon image
+// generateIconNode generates a node with an icon image and proper connection points
 func (t *GraphvizDiagramTool) generateIconNode(dot *strings.Builder, node NodeSpec, iconPath string, indent string) error {
-	// Use a simpler approach with image attribute for better connections
+	// Use a rectangle shape with proper connection boundaries
 	fmt.Fprintf(dot, "%s%s [", indent, node.ID)
 
-	// Use image attribute instead of HTML label for better connection points
-	fmt.Fprintf(dot, "image=\"%s\"", iconPath)
-	fmt.Fprintf(dot, ", label=\"%s\"", escapeDOTString(node.Label))
-	fmt.Fprintf(dot, ", shape=\"none\"")
-	fmt.Fprintf(dot, ", fontsize=\"11\"")
-	fmt.Fprintf(dot, ", labelloc=\"b\"")
-	fmt.Fprintf(dot, ", fontname=\"Helvetica\"")
+	// Use rectangle shape with proper connection points
+	fmt.Fprintf(dot, "shape=\"box\"")
+	fmt.Fprintf(dot, ", style=\"filled,rounded\"")
+	fmt.Fprintf(dot, ", fillcolor=\"white\"")
+	fmt.Fprintf(dot, ", penwidth=\"2\"")
+	fmt.Fprintf(dot, ", color=\"#4A90E2\"")
+	
+	// Create HTML table with proper border for connections
+	fmt.Fprintf(dot, ", label=<")
+	fmt.Fprintf(dot, "<TABLE BORDER=\"1\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"8\" STYLE=\"rounded\">")
+	fmt.Fprintf(dot, "<TR><TD><IMG SRC=\"%s\" SCALE=\"FALSE\" WIDTH=\"32\" HEIGHT=\"32\"/></TD></TR>", iconPath)
+	fmt.Fprintf(dot, "<TR><TD><FONT POINT-SIZE=\"10\" FACE=\"Helvetica-Bold\">%s</FONT></TD></TR>", escapeDOTString(node.Label))
+	fmt.Fprintf(dot, "</TABLE>>")
 
 	// Apply any custom styles
 	for key, value := range node.Style {
@@ -204,19 +210,27 @@ func (t *GraphvizDiagramTool) generateConnection(dot *strings.Builder, conn Conn
 	// Basic connection
 	fmt.Fprintf(dot, "  %s -> %s", conn.From, conn.To)
 
-	// Add attributes if any
+	// Add attributes
 	attributes := []string{}
+	
+	// Default professional styling
+	attributes = append(attributes, "penwidth=2")
+	attributes = append(attributes, "color=\"#4A90E2\"")
+	attributes = append(attributes, "arrowsize=0.8")
+	attributes = append(attributes, "arrowhead=\"vee\"")
 
 	if conn.Label != "" {
 		attributes = append(attributes, fmt.Sprintf("label=\"%s\"", escapeDOTString(conn.Label)))
+		attributes = append(attributes, "fontsize=9")
+		attributes = append(attributes, "fontcolor=\"#666666\"")
 	}
 
-	// Add custom styles
+	// Add custom styles (allow override of defaults)
 	for key, value := range conn.Style {
 		attributes = append(attributes, fmt.Sprintf("%s=\"%s\"", key, escapeDOTString(value)))
 	}
 
-	// Add attributes if any
+	// Add all attributes
 	if len(attributes) > 0 {
 		dot.WriteString(" [")
 		dot.WriteString(strings.Join(attributes, ", "))
