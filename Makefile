@@ -19,7 +19,7 @@ all: build
 build:
 	mkdir -p bin
 	$(GO) build $(GOFLAGS) -o $(BINARY_PATH) \
-		-ldflags "-X main.Version=$(shell git describe --tags --always --dirty 2>/dev/null || echo '0.1.0-dev') \
+		-ldflags "-w -s -X main.Version=$(shell git describe --tags --always --dirty 2>/dev/null || echo '0.1.0-dev') \
 		-X main.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo 'unknown') \
 		-X main.BuildDate=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")" \
 		.
@@ -29,7 +29,7 @@ build:
 build-sbom-vuln-tools:
 	mkdir -p bin
 	$(GO) build $(GOFLAGS) -tags sbom_vuln_tools -o $(BINARY_PATH) \
-		-ldflags "-X main.Version=$(shell git describe --tags --always --dirty 2>/dev/null || echo '0.1.0-dev') \
+		-ldflags "-w -s -X main.Version=$(shell git describe --tags --always --dirty 2>/dev/null || echo '0.1.0-dev') \
 		-X main.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo 'unknown') \
 		-X main.BuildDate=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")" \
 		.
