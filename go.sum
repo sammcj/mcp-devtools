@@ -808,6 +808,8 @@ github.com/charmbracelet/colorprofile v0.3.2 h1:9J27WdztfJQVAQKX2WOlSSRB+5gaKqqI
 github.com/charmbracelet/colorprofile v0.3.2/go.mod h1:mTD5XzNeWHj8oqHb+S1bssQb7vIHbepiebQ2kPKVKbI=
 github.com/charmbracelet/lipgloss v1.1.0 h1:vYXsiLHVkK7fp74RkV7b2kq9+zDLoEU4MZoFqR/noCY=
 github.com/charmbracelet/lipgloss v1.1.0/go.mod h1:/6Q8FR2o+kj8rz4Dq0zQc3vYf7X+B0binUUBwA0aL30=
+github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834 h1:ZR7e0ro+SZZiIZD7msJyA+NjkCNNavuiPBLgerbOziE=
+github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834/go.mod h1:aKC/t2arECF6rNOnaKaVU6y4t4ZeHQzqfxedE/VkVhA=
 github.com/charmbracelet/x/ansi v0.10.1 h1:rL3Koar5XvX0pHGfovN03f5cxLbCF2YvLeyz7D2jVDQ=
 github.com/charmbracelet/x/ansi v0.10.1/go.mod h1:3RQDQ6lDnROptfpWuUVIUG64bD2g2BgntdxH0Ya5TeE=
 github.com/charmbracelet/x/cellbuf v0.0.13 h1:/KBBKHuVRbq1lYx5BzEHBAFBP8VcQzJejZ/IA3iR28k=
@@ -1411,6 +1413,8 @@ github.com/muesli/termenv v0.16.0/go.mod h1:ZRfOIKPFDYQoDFF4Olj7/QJbW60Ol/kL1pU3
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
+github.com/neurosnap/sentences v1.1.2 h1:iphYOzx/XckXeBiLIUBkPu2EKMJ+6jDbz/sLJZ7ZoUw=
+github.com/neurosnap/sentences v1.1.2/go.mod h1:/pwU4E9XNL21ygMIkOIllv/SMy2ujHwpf8GQPu1YPbQ=
 github.com/nix-community/go-nix v0.0.0-20250101154619-4bdde671e0a1 h1:kpt9ZfKcm+EDG4s40hMwE//d5SBgDjUOrITReV2u4aA=
 github.com/nix-community/go-nix v0.0.0-20250101154619-4bdde671e0a1/go.mod h1:qgCw4bBKZX8qMgGeEZzGFVT3notl42dBjNqO2jut0M0=
 github.com/nsf/jsondiff v0.0.0-20210926074059-1e845ec5d249 h1:NHrXEjTNQY7P0Zfx1aMrNhpgxHmow66XQtm0aQLY0AE=
@@ -1525,6 +1529,8 @@ github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d h1:hrujxIzL1woJ7
 github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d/go.mod h1:uugorj2VCxiV1x+LzaIdVa9b4S4qGAcH6cbhh4qVxOU=
 github.com/sammcj/m2e v0.0.16 h1:1G+RB9apkvNPW2oBWr1k3kMMOixgGuUgQyTO2XjQaEk=
 github.com/sammcj/m2e v0.0.16/go.mod h1:XU+Tg9E9H1ELOzbzbTCWol9Y7kaLLpItV8m2OUXrR0k=
+github.com/sammcj/m2e v0.0.27 h1:XluOlSE0pt0UWmHvnKzOWqDWii/yk1SS4DKY9r41u3I=
+github.com/sammcj/m2e v0.0.27/go.mod h1:L2p1TVdm5gCGSF4+4mnVxZkfD1/fziETZKoJIBc1v7Y=
 github.com/sanity-io/litter v1.5.8 h1:uM/2lKrWdGbRXDrIq08Lh9XtVYoeGtcQxk9rtQ7+rYg=
 github.com/sanity-io/litter v1.5.8/go.mod h1:9gzJgR2i4ZpjZHsKvUXIRQVk7P+yM3e+jAF7bU2UI5U=
 github.com/sassoftware/go-rpmutils v0.4.0 h1:ojND82NYBxgwrV+mX1CWsd5QJvvEZTKddtCdFLPWhpg=
@@ -1669,6 +1675,7 @@ github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5t
 github.com/yuin/goldmark v1.7.1/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
 github.com/yuin/goldmark v1.7.4 h1:BDXOHExt+A7gwPCJgPIIq7ENvceR7we7rOS9TNoLZeg=
 github.com/yuin/goldmark v1.7.4/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
+github.com/yuin/goldmark v1.7.8/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
 github.com/zclconf/go-cty v1.16.3 h1:osr++gw2T61A8KVYHoQiFbFd1Lh3JOCXc/jFLJXKTxk=
 github.com/zclconf/go-cty v1.16.3/go.mod h1:VvMs5i0vgZdhYawQNq5kePSpLAoz8u1xvZgrPIxfnZE=
 github.com/zclconf/go-cty-debug v0.0.0-20240509010212-0d6042c53940 h1:4r45xpDWB6ZMSMNJFMOjqrGHynW3DIBuR2H9j0ug+Mo=

@@ -1,6 +1,6 @@
 module github.com/sammcj/mcp-devtools
 
-go 1.24.2
+go 1.24.6
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
@@ -21,7 +21,7 @@ require (
 	github.com/openai/openai-go v1.12.0
 	github.com/pdfcpu/pdfcpu v0.11.0
 	github.com/sahilm/fuzzy v0.1.1
-	github.com/sammcj/m2e v0.0.16
+	github.com/sammcj/m2e v0.0.27
 	github.com/sirupsen/logrus v1.9.4-0.20230606125235-dd1b4c2e81af
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.7
@@ -94,7 +94,7 @@ require (
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.3.2 // indirect
-	github.com/charmbracelet/lipgloss v1.1.0 // indirect
+	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834 // indirect
 	github.com/charmbracelet/x/ansi v0.10.1 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
@@ -212,6 +212,7 @@ require (
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
+	github.com/neurosnap/sentences v1.1.2 // indirect
 	github.com/nix-community/go-nix v0.0.0-20250101154619-4bdde671e0a1 // indirect
 	github.com/nwaples/rardecode v1.1.3 // indirect
 	github.com/nwaples/rardecode/v2 v2.1.1 // indirect
@@ -276,7 +277,7 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
-	github.com/yuin/goldmark v1.7.4 // indirect
+	github.com/yuin/goldmark v1.7.8 // indirect
 	github.com/zclconf/go-cty v1.16.3 // indirect
 	github.com/zeebo/errs v1.4.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
