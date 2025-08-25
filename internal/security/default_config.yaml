@@ -53,6 +53,7 @@ access_control:
   deny_domains:
     - "malicious-site.com"
     - "phishing-domain.net"
+    - "ghrc.io" # Known malicious copycat of ghcr.io
     - "*.ru"
     - "*.kp"
     - "*.cn"

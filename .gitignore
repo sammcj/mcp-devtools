@@ -72,3 +72,7 @@ semgrep.out
 **/*vulnerability*scan*.json
 **/vulnerability-report.json
 **/*.sarif
+
+# serena https://github.com/oraios/serena
+!.serena/project.yml
+.serena/
