@@ -93,7 +93,7 @@ Find Terraform Sentinel policies:
 ```json
 {
   "action": "search_policies",
-  "policy_query": "security compliance"
+  "query": "security compliance"
 }
 ```
 
