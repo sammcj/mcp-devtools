@@ -48,9 +48,15 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ```
 1. AWS Documentation (search) → Find relevant AWS guides
 2. AWS Documentation (fetch) → Get detailed AWS content
-3. Package Documentation → Access AWS Strands Agents SDK docs via resolve_library_id + get_library_docs
-4. AWS Documentation (recommend) → Discover related AWS services
-5. Memory → Store AWS configuration patterns
+```
+
+#### Terraform Documentation Research Workflow
+```
+1. Terraform Documentation (search_providers) → Find provider resources
+2. Terraform Documentation (get_provider_details) → Get detailed provider documentation
+3. Terraform Documentation (search_modules) → Find relevant modules
+4. Terraform Documentation (get_module_details) → Get module configuration examples
+5. Memory → Store Terraform configuration patterns
 ```
 
 ## Configuration Quick Start
