@@ -18,6 +18,7 @@ import (
 // - claude-agent
 // - filesystem
 // - gemini-agent
+// - q-developer-agent
 // - memory
 // - pdf
 // - process_document

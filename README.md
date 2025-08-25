@@ -23,7 +23,7 @@ graph LR
 
     F --> F_Tools[🇬🇧 American→English<br>📁 Filesystem<br>📝 Changelog Generation]
 
-    G --> G_Tools[🤖 Claude Code<br>✨ Gemini CLI]
+    G --> G_Tools[🤖 Claude Code<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
     classDef inputOutput fill:#FEE0D2,stroke:#E6550D,color:#E6550D
     classDef llm fill:#E5F5E0,stroke:#31A354,color:#31A354
@@ -119,6 +119,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[Filesystem](docs/tools/filesystem.md)**                   | File and directory operations            | `filesystem`              | Read, write, edit, search files           |
 | **[Claude Agent](docs/tools/claude-agent.md)**               | Claude Code CLI Agent                    | `claude-agent`            | Code analysis, generation                 |
 | **[Gemini Agent](docs/tools/gemini-agent.md)**               | Gemini CLI Agent                         | `gemini-agent`            | Code analysis, generation                 |
+| **[Q Developer Agent](docs/tools/q-developer-agent.md)**     | AWS Q Developer CLI Agent                | `q-developer-agent`       | AWS-focused code analysis, generation     |
 | **[Memory](docs/tools/memory.md)**                           | Persistent knowledge graphs              | `memory`                  | Store entities and relationships          |
 | **[SBOM Generation](docs/tools/sbom.md)**                    | Generate Software Bill of Materials      | `sbom`                    | Analyse project dependencies              |
 | **[Vulnerability Scan](docs/tools/vulnerability_scan.md)**   | Security vulnerability scanning          | `vulnerability_scan`      | Find security issues                      |
@@ -272,7 +273,7 @@ All environment variables are optional, but if you want to use specific search p
 - `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
 **Security-Sensitive Tools:**
-- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,generate_changelog,process_document,pdf,memory`)
+- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,q-developer-agent,generate_changelog,process_document,pdf,memory`)
 - `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories (only for filesystem tool)
 
 **Document Processing:**
