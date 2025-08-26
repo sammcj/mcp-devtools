@@ -271,6 +271,7 @@ All environment variables are optional, but if you want to use specific search p
 **Core Tools:**
 - `BRAVE_API_KEY` - Enable Brave Search provider by providing a ([free Brave search API key](https://brave.com/search/api/))
 - `SEARXNG_BASE_URL` - Enable SearXNG search provider by providing the base URL (e.g. `https://searxng.example.com`)
+- `CONTEXT7_API_KEY` - Optional Context7 API key for higher rate limits and authentication with package documentation tools
 - `MEMORY_FILE_PATH` - Memory storage location (default: `~/.mcp-devtools/`)
 - `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
@@ -348,7 +349,6 @@ make build-sbom-vuln-tools
 **Additional tools**: `sbom`, `vulnerability_scan`
 
 The SBOM and vulnerability scanning tools are disabled by default in both builds but can be enabled via the `ENABLE_ADDITIONAL_TOOLS` environment variable. In the standard build, these tools will return appropriate error messages indicating they require the SBOM/vulnerability tools build variant.
-
 
 ### OAuth 2.0/2.1 Authentication
 For production deployments requiring centralised user authentication:

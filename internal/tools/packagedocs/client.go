@@ -28,6 +28,8 @@ const (
 	DefaultPackageDocsRateLimit = 10
 	// PackageDocsRateLimitEnvVar is the environment variable for configuring rate limit
 	PackageDocsRateLimitEnvVar = "PACKAGE_DOCS_RATE_LIMIT"
+	// Context7APIKeyEnvVar is the environment variable for the Context7 API key
+	Context7APIKeyEnvVar = "CONTEXT7_API_KEY"
 )
 
 // RateLimitedHTTPClient implements a rate-limited HTTP client
@@ -82,6 +84,7 @@ type Client struct {
 	httpClient HTTPClientInterface
 	logger     *logrus.Logger
 	cache      map[string]cacheEntry
+	apiKey     string
 }
 
 type cacheEntry struct {
@@ -95,6 +98,7 @@ func NewClient(logger *logrus.Logger) *Client {
 		httpClient: newRateLimitedHTTPClient(),
 		logger:     logger,
 		cache:      make(map[string]cacheEntry),
+		apiKey:     os.Getenv(Context7APIKeyEnvVar),
 	}
 }
 
@@ -283,7 +287,18 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 
 	start := time.Now()
 
-	// Use security helper for HTTP operations
+	// Prepare headers matching the official Context7 server
+	headers := make(map[string]string)
+
+	// Add API key headers if available, supporting multiple formats like the official server
+	if c.apiKey != "" {
+		// Use Authorisation header as the primary method (Bearer token)
+		headers["Authorization"] = "Bearer " + c.apiKey
+		// Also add Context7-specific header for compatibility
+		headers["Context7-API-Key"] = c.apiKey
+	}
+
+	// Use security helper for HTTP operations with custom headers
 	ops := security.NewOperations("packagedocs")
 
 	var safeResp *security.SafeHTTPResponse
@@ -291,9 +306,9 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 
 	switch method {
 	case "GET":
-		safeResp, err = ops.SafeHTTPGet(fullURL)
+		safeResp, err = ops.SafeHTTPGetWithHeaders(fullURL, headers)
 	case "POST":
-		safeResp, err = ops.SafeHTTPPost(fullURL, body)
+		safeResp, err = ops.SafeHTTPPostWithHeaders(fullURL, body, headers)
 	default:
 		return fmt.Errorf("unsupported HTTP method: %s", method)
 	}
@@ -317,13 +332,25 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 		c.logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
 	}
 
+	// Enhanced error handling based on official Context7 server improvements
 	if safeResp.StatusCode >= 400 {
 		// Limit error response content for security
 		content := safeResp.Content
 		if len(content) > 1024*1024 { // 1MB limit for error responses
 			content = content[:1024*1024]
 		}
-		return fmt.Errorf("API request failed with status %d: %s", safeResp.StatusCode, string(content))
+
+		// Provide specific error messages based on HTTP status codes
+		switch safeResp.StatusCode {
+		case 401:
+			return fmt.Errorf("unauthorised. Please check your API key")
+		case 404:
+			return fmt.Errorf("the library you are trying to access does not exist. Please try with a different library ID")
+		case 429:
+			return fmt.Errorf("rate limited due to too many requests. Please try again later")
+		default:
+			return fmt.Errorf("API request failed with status %d: %s", safeResp.StatusCode, string(content))
+		}
 	}
 
 	// Handle string response type
