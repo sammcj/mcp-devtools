@@ -44,14 +44,7 @@ func init() {
 func (t *SequentialThinkingTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"sequential_thinking",
-		mcp.WithDescription(`Dynamic problem-solving through sequential thinking with auto-managed state.
-
-Use for:
-- Stubborn or complex multi-step problems requiring systematic breakdown
-- Analysis needing course correction or alternative approaches
-- Complex planning with iterative refinement and uncertainty handling
-
-Features: automatic thought tracking, revision detection, branch management, progress logging. Use 'get_usage' action for detailed usage instructions.`),
+		mcp.WithDescription(`Solve complex problems step-by-step with automatic thought tracking, revision detection, and branch management. Ideal for multi-step reasoning, planning, and iterative refinement. Use 'get_usage' action for detailed instructions.`),
 		mcp.WithString("action",
 			mcp.Description("Action to perform: 'think' or 'get_usage'"),
 			mcp.Enum("think", "get_usage"),
