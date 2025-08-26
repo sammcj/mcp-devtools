@@ -11,7 +11,7 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
     - [4. Result Schema](#4-result-schema)
     - [5. Caching](#5-caching)
     - [6. Security Integration](#6-security-integration)
-    - [7. Import the Tool Package](#7-import-the-tool-package)
+    - [7. Register the Tool for Import](#7-register-the-tool-for-import)
   - [Example: Hello World Tool](#example-hello-world-tool)
     - [Testing Your Tool](#testing-your-tool)
   - [Testing](#testing)
