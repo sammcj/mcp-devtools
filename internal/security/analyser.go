@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -394,24 +395,14 @@ func (t *ThreatAnalyser) parsePipeOperations(cmdStr string) []PipeOperation {
 func (t *ThreatAnalyser) isNetworkCommand(cmd string) bool {
 	networkCommands := []string{"curl", "wget", "fetch", "nc", "netcat", "telnet", "ssh", "scp", "rsync"}
 	cmd = strings.ToLower(cmd)
-	for _, netCmd := range networkCommands {
-		if cmd == netCmd {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(networkCommands, cmd)
 }
 
 // isShellCommand checks if a command is a shell interpreter
 func (t *ThreatAnalyser) isShellCommand(cmd string) bool {
 	shellCommands := []string{"sh", "bash", "zsh", "fish", "csh", "tcsh", "ksh"}
 	cmd = strings.ToLower(strings.Fields(cmd)[0])
-	for _, shellCmd := range shellCommands {
-		if cmd == shellCmd {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(shellCommands, cmd)
 }
 
 // isDangerousPipe checks if a pipe operation is potentially dangerous
@@ -589,8 +580,8 @@ func (s *SourceTrust) GetTrustScore(domain string) float64 {
 
 // domainMatches checks if domain matches pattern (supports wildcards)
 func (s *SourceTrust) domainMatches(domain, pattern string) bool {
-	if strings.HasPrefix(pattern, "*.") {
-		baseDomain := strings.TrimPrefix(pattern, "*.")
+	if after, ok := strings.CutPrefix(pattern, "*."); ok {
+		baseDomain := after
 		return domain == baseDomain || strings.HasSuffix(domain, "."+baseDomain)
 	}
 	return domain == pattern

@@ -86,9 +86,9 @@ func (d *DenyListChecker) IsDomainBlocked(domain string) bool {
 	for _, pattern := range d.domainPatterns {
 		pattern = strings.ToLower(strings.TrimSpace(pattern))
 
-		if strings.HasPrefix(pattern, "*.") {
+		if after, ok := strings.CutPrefix(pattern, "*."); ok {
 			// Wildcard subdomain matching
-			baseDomain := strings.TrimPrefix(pattern, "*.")
+			baseDomain := after
 			if domain == baseDomain || strings.HasSuffix(domain, "."+baseDomain) {
 				return true
 			}

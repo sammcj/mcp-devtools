@@ -806,8 +806,8 @@ func (r *YAMLRuleEngine) isSourceExcepted(source SourceContext, exceptions []str
 
 // domainMatches checks if domain matches pattern (supports wildcards)
 func (r *YAMLRuleEngine) domainMatches(domain, pattern string) bool {
-	if strings.HasPrefix(pattern, "*.") {
-		baseDomain := strings.TrimPrefix(pattern, "*.")
+	if after, ok := strings.CutPrefix(pattern, "*."); ok {
+		baseDomain := after
 		return domain == baseDomain || strings.HasSuffix(domain, "."+baseDomain)
 	}
 	return domain == pattern
@@ -935,8 +935,8 @@ func (r *YAMLRuleEngine) recursiveBase64Decode(content string, maxSize int, maxD
 		allDecoded = append(allDecoded, decodedStr)
 
 		// Check if the decoded content itself contains base64
-		lines := strings.Split(decodedStr, "\n")
-		for _, line := range lines {
+		lines := strings.SplitSeq(decodedStr, "\n")
+		for line := range lines {
 			line = strings.TrimSpace(line)
 
 			// Check if entire line is base64
@@ -959,9 +959,9 @@ func (r *YAMLRuleEngine) recursiveBase64Decode(content string, maxSize int, maxD
 func (r *YAMLRuleEngine) extractAndDecodeEmbeddedBase64(line string, maxSize int, maxDepth int, allDecoded *[]string) {
 	// Look for base64 patterns: sequences of 16+ chars that are mostly base64 characters
 	// This handles cases like: echo "base64string" | base64 -d
-	words := strings.Fields(line)
+	words := strings.FieldsSeq(line)
 
-	for _, word := range words {
+	for word := range words {
 		// Remove common surrounding characters
 		cleaned := strings.Trim(word, `"'()[]{}`)
 

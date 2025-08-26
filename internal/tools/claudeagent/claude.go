@@ -62,7 +62,7 @@ func (t *ClaudeTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic by calling the claude CLI
-func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Check if claude-agent tool is enabled
 	if !tools.IsToolEnabled("claude-agent") {
 		return nil, fmt.Errorf("claude agent tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'claude-agent'")
@@ -89,7 +89,7 @@ func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 	yoloMode, _ := args["yolo-mode"].(bool)
 	continueLast, _ := args["continue-last-conversation"].(bool)
 	resumeSession, _ := args["resume-specific-session"].(string)
-	includeDirs, _ := args["include-directories"].([]interface{})
+	includeDirs, _ := args["include-directories"].([]any)
 
 	var sessionID string
 	if !continueLast && resumeSession == "" {
@@ -116,7 +116,7 @@ func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 	return mcp.NewToolResultText(output), nil
 }
 
-func (t *ClaudeTool) runClaude(ctx context.Context, logger *logrus.Logger, timeout time.Duration, prompt, model string, yoloMode, continueLast bool, resumeSession, sessionID string, includeDirs []interface{}) (string, error) {
+func (t *ClaudeTool) runClaude(ctx context.Context, logger *logrus.Logger, timeout time.Duration, prompt, model string, yoloMode, continueLast bool, resumeSession, sessionID string, includeDirs []any) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -215,14 +215,14 @@ func (t *ClaudeTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Get Claude to review a completed implementation",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"prompt": "Please review the authentication implementation in @src/auth/ and check for security best practices, edge cases, and potential improvements.",
 				},
 				ExpectedResult: "Claude agent analyzes the authentication code and provides detailed feedback on security, implementation quality, and suggestions for improvement",
 			},
 			{
 				Description: "Ask Claude to help debug a specific issue",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"prompt":         "I'm getting a 'connection refused' error when trying to connect to the database. Here's the error: @logs/database.log. Can you help troubleshoot?",
 					"override-model": "opus",
 				},
@@ -230,7 +230,7 @@ func (t *ClaudeTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Continue a previous conversation",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"prompt":                     "Thanks for the previous suggestions. I've implemented the caching layer you recommended. Can you now help me add monitoring?",
 					"continue-last-conversation": true,
 				},
@@ -238,7 +238,7 @@ func (t *ClaudeTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get help with a complex refactoring task in yolo mode",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"prompt":    "I need to refactor this legacy payment processing code in @src/payments/ to use the new payment gateway API. Please help me migrate it while preserving all existing functionality.",
 					"yolo-mode": true,
 				},
@@ -246,7 +246,7 @@ func (t *ClaudeTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Resume a specific session with additional directory access",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"prompt":                  "Now let's work on the frontend components that integrate with the API we just built.",
 					"resume-specific-session": "abc123-def456-ghi789",
 					"include-directories":     []string{"/Users/username/project/frontend", "/Users/username/project/shared"},

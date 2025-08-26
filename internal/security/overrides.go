@@ -230,7 +230,7 @@ func (o *OverrideManager) LogSecurityEvent(securityID, action string, analysis *
 }
 
 // GetOverrideStats returns statistics about overrides
-func (o *OverrideManager) GetOverrideStats() map[string]interface{} {
+func (o *OverrideManager) GetOverrideStats() map[string]any {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
 
@@ -245,7 +245,7 @@ func (o *OverrideManager) GetOverrideStats() map[string]interface{} {
 		}
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"total_overrides":      len(o.overrides.Overrides),
 		"bypass_overrides":     bypassCount,
 		"allowlist_overrides":  allowlistCount,

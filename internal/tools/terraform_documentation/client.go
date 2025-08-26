@@ -87,7 +87,7 @@ func (c *Client) SearchProviders(ctx context.Context, providerName, providerName
 			return nil, fmt.Errorf("getting provider details from v2 API: %w", err)
 		}
 		fullContent := fmt.Sprintf("# %s provider docs\n\n%s", providerName, content)
-		result := map[string]interface{}{
+		result := map[string]any{
 			"content": fullContent,
 		}
 		jsonBytes, err := json.Marshal(result)
@@ -134,7 +134,7 @@ func (c *Client) SearchProviders(ctx context.Context, providerName, providerName
 		return nil, fmt.Errorf("no documentation found for service_slug %s, provide a more relevant service_slug or use the provider_name for its value", serviceSlug)
 	}
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"content": builder.String(),
 	}
 	jsonBytes, err := json.Marshal(result)
@@ -165,7 +165,7 @@ func (c *Client) GetProviderDetails(ctx context.Context, providerDocID string) (
 
 	content := fmt.Sprintf("# %s\n\n%s", docResponse.Data.Attributes.Title, docResponse.Data.Attributes.Content)
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"content":  content,
 		"title":    docResponse.Data.Attributes.Title,
 		"category": docResponse.Data.Attributes.Category,
@@ -186,7 +186,7 @@ func (c *Client) GetLatestProviderVersion(ctx context.Context, providerNamespace
 		return nil, err
 	}
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"version":  version,
 		"provider": fmt.Sprintf("%s/%s", providerNamespace, providerName),
 	}
@@ -231,7 +231,7 @@ func (c *Client) SearchModules(ctx context.Context, moduleQuery string, currentO
 			module.ID, module.Name, module.Description, module.Downloads, verified, module.PublishedAt))
 	}
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"content": builder.String(),
 		"total":   len(moduleResponse.Modules),
 		"offset":  currentOffset,
@@ -282,7 +282,7 @@ func (c *Client) GetModuleDetails(ctx context.Context, moduleID string) (*mcp.Ca
 		builder.WriteString("\n")
 	}
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"content":   builder.String(),
 		"module_id": moduleID,
 		"version":   moduleDetails.Version,
@@ -309,7 +309,7 @@ func (c *Client) GetLatestModuleVersion(ctx context.Context, moduleID string) (*
 		return nil, fmt.Errorf("unmarshalling module details: %w", err)
 	}
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"version":   moduleDetails.Version,
 		"module_id": moduleID,
 	}
@@ -348,7 +348,7 @@ func (c *Client) SearchPolicies(ctx context.Context, policyQuery string) (*mcp.C
 			policy.ID, policy.Name, policy.Title, policy.Downloads))
 	}
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"content": builder.String(),
 		"total":   len(policyResponse.Policies),
 	}
@@ -380,7 +380,7 @@ func (c *Client) GetPolicyDetails(ctx context.Context, policyID string) (*mcp.Ca
 	builder.WriteString(fmt.Sprintf("**Downloads:** %d\n", policyDetails.Downloads))
 	builder.WriteString(fmt.Sprintf("**Description:**\n%s\n\n", policyDetails.Description))
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"content":   builder.String(),
 		"policy_id": policyID,
 	}

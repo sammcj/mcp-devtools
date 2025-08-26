@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sync"
@@ -26,7 +27,7 @@ type DynamicAPITool struct {
 
 // CacheEntry represents a cached API response
 type CacheEntry struct {
-	Data      interface{}
+	Data      any
 	ExpiresAt time.Time
 }
 
@@ -166,7 +167,7 @@ func (t *DynamicAPITool) collectAllParameters() []ParameterConfig {
 }
 
 // Execute executes the tool's logic
-func (t *DynamicAPITool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *DynamicAPITool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Check if API tool is enabled
 	if !tools.IsToolEnabled("api") {
 		return nil, fmt.Errorf("API tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'api'")
@@ -194,7 +195,7 @@ func (t *DynamicAPITool) Execute(ctx context.Context, logger *logrus.Logger, cac
 	}
 
 	// Parse parameters - now they come directly from args, not nested in "parameters"
-	parameters := make(map[string]interface{})
+	parameters := make(map[string]any)
 	for _, param := range endpoint.Parameters {
 		if value, exists := args[param.Name]; exists {
 			parameters[param.Name] = value
@@ -269,7 +270,7 @@ func (t *DynamicAPITool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	// Generate examples for each endpoint
 	for _, endpoint := range t.apiDef.Endpoints {
 		// Build example parameters
-		exampleParams := make(map[string]interface{})
+		exampleParams := make(map[string]any)
 		for _, param := range endpoint.Parameters {
 			switch param.Type {
 			case "string":
@@ -286,11 +287,9 @@ func (t *DynamicAPITool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		}
 
 		// Build arguments map with endpoint and parameters merged at top level
-		args := make(map[string]interface{})
+		args := make(map[string]any)
 		args["endpoint"] = endpoint.Name
-		for k, v := range exampleParams {
-			args[k] = v
-		}
+		maps.Copy(args, exampleParams)
 
 		examples = append(examples, tools.ToolExample{
 			Description:    fmt.Sprintf("Call %s endpoint: %s", endpoint.Name, endpoint.Description),

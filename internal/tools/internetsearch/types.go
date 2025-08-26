@@ -6,11 +6,11 @@ import (
 
 // SearchResult represents a unified search result
 type SearchResult struct {
-	Title       string                 `json:"title"`
-	URL         string                 `json:"url"`
-	Description string                 `json:"description"`
-	Type        string                 `json:"type"` // web, image, news, video, local
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	Title       string         `json:"title"`
+	URL         string         `json:"url"`
+	Description string         `json:"description"`
+	Type        string         `json:"type"` // web, image, news, video, local
+	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
 // SearchResponse represents a unified response structure

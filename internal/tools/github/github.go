@@ -54,55 +54,55 @@ Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow
 		),
 		mcp.WithObject("options",
 			mcp.Description("Function-specific options - see function description for parameters"),
-			mcp.Properties(map[string]interface{}{
-				"query": map[string]interface{}{
+			mcp.Properties(map[string]any{
+				"query": map[string]any{
 					"type":        "string",
 					"description": "Search query string (for search_repositories, search_issues, search_pull_requests)",
 				},
-				"limit": map[string]interface{}{
+				"limit": map[string]any{
 					"type":        "number",
 					"description": "Maximum number of results (for search functions, default: 30)",
 					"default":     30,
 				},
-				"number": map[string]interface{}{
+				"number": map[string]any{
 					"type":        "number",
 					"description": "Issue or PR number (required for get_issue/get_pull_request unless using full URL)",
 				},
-				"run_id": map[string]interface{}{
+				"run_id": map[string]any{
 					"type":        "number",
 					"description": "Workflow run ID (required for get_workflow_run unless using full URL)",
 				},
-				"include_comments": map[string]interface{}{
+				"include_comments": map[string]any{
 					"type":        "boolean",
 					"description": "Include comments for issues/PRs (default: false)",
 					"default":     false,
 				},
-				"include_logs": map[string]interface{}{
+				"include_logs": map[string]any{
 					"type":        "boolean",
 					"description": "Include workflow run logs (default: false)",
 					"default":     false,
 				},
-				"include_closed": map[string]interface{}{
+				"include_closed": map[string]any{
 					"type":        "boolean",
 					"description": "Include closed issues/PRs in search results (default: false, only open)",
 					"default":     false,
 				},
-				"paths": map[string]interface{}{
+				"paths": map[string]any{
 					"type":        "array",
 					"description": "Array of file paths to retrieve (required for get_file_contents)",
-					"items": map[string]interface{}{
+					"items": map[string]any{
 						"type": "string",
 					},
 				},
-				"path": map[string]interface{}{
+				"path": map[string]any{
 					"type":        "string",
 					"description": "Directory path to list (optional for list_directory, defaults to root)",
 				},
-				"ref": map[string]interface{}{
+				"ref": map[string]any{
 					"type":        "string",
 					"description": "Git reference - branch, tag, or commit SHA (optional for get_file_contents)",
 				},
-				"local_path": map[string]interface{}{
+				"local_path": map[string]any{
 					"type":        "string",
 					"description": "Local directory path for cloning (optional for clone_repository)",
 				},
@@ -112,7 +112,7 @@ Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow
 }
 
 // Execute executes the GitHub tool
-func (t *GitHubTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse and validate parameters
 	request, err := t.parseRequest(args)
 	if err != nil {
@@ -151,7 +151,7 @@ func (t *GitHubTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 }
 
 // parseRequest parses and validates the request parameters
-func (t *GitHubTool) parseRequest(args map[string]interface{}) (*GitHubRequest, error) {
+func (t *GitHubTool) parseRequest(args map[string]any) (*GitHubRequest, error) {
 	function, ok := args["function"].(string)
 	if !ok {
 		return nil, fmt.Errorf("missing required parameter: function")
@@ -162,8 +162,8 @@ func (t *GitHubTool) parseRequest(args map[string]interface{}) (*GitHubRequest, 
 		repository = repo
 	}
 
-	options := make(map[string]interface{})
-	if opts, ok := args["options"].(map[string]interface{}); ok {
+	options := make(map[string]any)
+	if opts, ok := args["options"].(map[string]any); ok {
 		options = opts
 	}
 
@@ -194,7 +194,7 @@ func (t *GitHubTool) handleSearchRepositories(ctx context.Context, client *GitHu
 		return nil, fmt.Errorf("failed to search repositories: %w", err)
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"function": "search_repositories",
 		"query":    query,
 		"result":   result,
@@ -256,7 +256,7 @@ func (t *GitHubTool) handleSearchIssues(ctx context.Context, client *GitHubClien
 		return nil, fmt.Errorf("failed to search issues: %w", err)
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"function":   "search_issues",
 		"repository": fmt.Sprintf("%s/%s", owner, repo),
 		"query":      query,
@@ -319,7 +319,7 @@ func (t *GitHubTool) handleSearchPullRequests(ctx context.Context, client *GitHu
 		return nil, fmt.Errorf("failed to search pull requests: %w", err)
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"function":   "search_pull_requests",
 		"repository": fmt.Sprintf("%s/%s", owner, repo),
 		"query":      query,
@@ -391,7 +391,7 @@ func (t *GitHubTool) handleGetIssue(ctx context.Context, client *GitHubClient, r
 		return nil, fmt.Errorf("failed to get issue: %w", err)
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"function":   "get_issue",
 		"repository": fmt.Sprintf("%s/%s", owner, repo),
 		"issue":      issue,
@@ -466,7 +466,7 @@ func (t *GitHubTool) handleGetPullRequest(ctx context.Context, client *GitHubCli
 		return nil, fmt.Errorf("failed to get pull request: %w", err)
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"function":     "get_pull_request",
 		"repository":   fmt.Sprintf("%s/%s", owner, repo),
 		"pull_request": pullRequest,
@@ -511,7 +511,7 @@ func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubCl
 
 	// Get paths from options
 	var paths []string
-	if pathsRaw, ok := request.Options["paths"].([]interface{}); ok {
+	if pathsRaw, ok := request.Options["paths"].([]any); ok {
 		for _, path := range pathsRaw {
 			if pathStr, ok := path.(string); ok {
 				paths = append(paths, pathStr)
@@ -542,7 +542,7 @@ func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubCl
 		}
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"function":      "get_file_contents",
 		"repository":    fmt.Sprintf("%s/%s", owner, repo),
 		"ref":           ref,
@@ -599,7 +599,7 @@ func (t *GitHubTool) handleListDirectory(ctx context.Context, client *GitHubClie
 		return nil, fmt.Errorf("failed to list directory: %w", err)
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"function":   "list_directory",
 		"repository": fmt.Sprintf("%s/%s", owner, repo),
 		"ref":        ref,
@@ -652,7 +652,7 @@ func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubCl
 		return nil, fmt.Errorf("failed to clone repository: %w", err)
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"function": "clone_repository",
 		"result":   result,
 	}
@@ -722,7 +722,7 @@ func (t *GitHubTool) handleGetWorkflowRun(ctx context.Context, client *GitHubCli
 		return nil, fmt.Errorf("failed to get workflow run: %w", err)
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"function":     "get_workflow_run",
 		"repository":   fmt.Sprintf("%s/%s", owner, repo),
 		"workflow_run": workflowRun,
@@ -755,7 +755,7 @@ func (t *GitHubTool) handleGetWorkflowRun(ctx context.Context, client *GitHubCli
 }
 
 // convertToJSON converts the response to JSON string for better formatting
-func (t *GitHubTool) convertToJSON(response interface{}) (string, error) {
+func (t *GitHubTool) convertToJSON(response any) (string, error) {
 	jsonBytes, err := json.MarshalIndent(response, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal response to JSON: %w", err)
@@ -769,9 +769,9 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Search for repositories related to machine learning",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function": "search_repositories",
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"query": "machine learning python",
 						"limit": 10,
 					},
@@ -780,7 +780,7 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "List root directory contents to explore repository structure",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function":   "list_directory",
 					"repository": "anchore/chronicle",
 				},
@@ -788,10 +788,10 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "List contents of a specific directory",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function":   "list_directory",
 					"repository": "anchore/chronicle",
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"path": "internal",
 						"ref":  "main",
 					},
@@ -800,10 +800,10 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get file contents with graceful error handling",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function":   "get_file_contents",
 					"repository": "anchore/chronicle",
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"paths": []string{"README.md", "nonexistent-file.go", "go.mod"},
 					},
 				},
@@ -811,10 +811,10 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get details of a specific issue with comments",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function":   "get_issue",
 					"repository": "microsoft/vscode",
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"number":           12345,
 						"include_comments": true,
 					},
@@ -823,10 +823,10 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get workflow run details with logs",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function":   "get_workflow_run",
 					"repository": "https://github.com/owner/repo/actions/runs/123456789",
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"include_logs": true,
 					},
 				},

@@ -75,7 +75,7 @@ func (c *BraveClient) makeRequest(ctx context.Context, logger *logrus.Logger, en
 	maxRetries := 3
 	baseDelay := 100 * time.Millisecond
 
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for attempt := range maxRetries {
 		// Check context cancellation before each attempt
 		select {
 		case <-ctx.Done():

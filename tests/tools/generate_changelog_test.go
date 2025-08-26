@@ -36,7 +36,7 @@ func TestGenerateChangelogTool_Definition(t *testing.T) {
 	assert.Contains(t, def.InputSchema.Required, "repository_path")
 
 	// Verify repository_path is a string with description
-	repoPathMap, ok := repoPathProp.(map[string]interface{})
+	repoPathMap, ok := repoPathProp.(map[string]any)
 	require.True(t, ok, "repository_path should be a property map")
 	assert.Equal(t, "string", repoPathMap["type"])
 	assert.Contains(t, repoPathMap["description"].(string), "Absolute path to local Git repository or subdirectory")
@@ -44,7 +44,7 @@ func TestGenerateChangelogTool_Definition(t *testing.T) {
 	// Test optional parameters exist with defaults
 	outputFormatProp, exists := def.InputSchema.Properties["output_format"]
 	assert.True(t, exists, "output_format parameter should exist")
-	outputFormatMap, ok := outputFormatProp.(map[string]interface{})
+	outputFormatMap, ok := outputFormatProp.(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "markdown", outputFormatMap["default"])
 
@@ -59,7 +59,7 @@ func TestGenerateChangelogTool_Definition(t *testing.T) {
 	// Test boolean parameter
 	speculateProp, exists := def.InputSchema.Properties["speculate_next_version"]
 	assert.True(t, exists, "speculate_next_version parameter should exist")
-	speculateMap, ok := speculateProp.(map[string]interface{})
+	speculateMap, ok := speculateProp.(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "boolean", speculateMap["type"])
 	assert.Equal(t, false, speculateMap["default"])
@@ -67,7 +67,7 @@ func TestGenerateChangelogTool_Definition(t *testing.T) {
 	// Test GitHub integration parameter
 	githubProp, exists := def.InputSchema.Properties["enable_github_integration"]
 	assert.True(t, exists, "enable_github_integration parameter should exist")
-	githubMap, ok := githubProp.(map[string]interface{})
+	githubMap, ok := githubProp.(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "boolean", githubMap["type"])
 	assert.Equal(t, false, githubMap["default"])
@@ -84,7 +84,7 @@ func TestGenerateChangelogTool_ToolDisabled(t *testing.T) {
 	logger := logrus.New()
 	cache := &sync.Map{}
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"repository_path": "/path/to/repo",
 	}
 
@@ -104,7 +104,7 @@ func TestGenerateChangelogTool_ParseRequest(t *testing.T) {
 	tool := &generatechangelog.GenerateChangelogTool{}
 
 	t.Run("valid minimal request", func(t *testing.T) {
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path": "/path/to/repo",
 		}
 
@@ -125,7 +125,7 @@ func TestGenerateChangelogTool_ParseRequest(t *testing.T) {
 	})
 
 	t.Run("missing required parameter", func(t *testing.T) {
-		args := map[string]interface{}{
+		args := map[string]any{
 			"output_format": "json",
 		}
 
@@ -141,7 +141,7 @@ func TestGenerateChangelogTool_ParseRequest(t *testing.T) {
 	})
 
 	t.Run("invalid output format", func(t *testing.T) {
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path": "/path/to/repo",
 			"output_format":   "xml",
 		}
@@ -167,7 +167,7 @@ func TestGenerateChangelogTool_RepositoryValidation(t *testing.T) {
 	tool := &generatechangelog.GenerateChangelogTool{}
 
 	t.Run("non-existent directory", func(t *testing.T) {
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path": "/nonexistent/path/to/repo",
 		}
 
@@ -189,7 +189,7 @@ func TestGenerateChangelogTool_RepositoryValidation(t *testing.T) {
 		defer func() { _ = os.Remove(tmpFile.Name()) }()
 		_ = tmpFile.Close()
 
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path": tmpFile.Name(),
 		}
 
@@ -210,7 +210,7 @@ func TestGenerateChangelogTool_RepositoryValidation(t *testing.T) {
 		require.NoError(t, err)
 		defer func() { _ = os.RemoveAll(tmpDir) }()
 
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path": tmpDir,
 		}
 
@@ -235,7 +235,7 @@ func TestGenerateChangelogTool_RepositoryValidation(t *testing.T) {
 		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path": tmpDir,
 		}
 
@@ -280,7 +280,7 @@ func TestGenerateChangelogTool_PlaceholderOutput(t *testing.T) {
 		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path": tmpDir,
 			"output_format":   "markdown",
 			"title":           "Test Changelog",
@@ -316,7 +316,7 @@ func TestGenerateChangelogTool_PlaceholderOutput(t *testing.T) {
 		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path": tmpDir,
 			"output_format":   "json",
 		}
@@ -358,7 +358,7 @@ func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
 		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path":           tmpDir,
 			"output_format":             "markdown",
 			"enable_github_integration": false,
@@ -398,7 +398,7 @@ func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
 		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path":           tmpDir,
 			"output_format":             "markdown",
 			"enable_github_integration": true,
@@ -438,7 +438,7 @@ func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
 		err = os.Mkdir(gitDir, 0700)
 		require.NoError(t, err)
 
-		args := map[string]interface{}{
+		args := map[string]any{
 			"repository_path":           tmpDir,
 			"output_format":             "markdown",
 			"enable_github_integration": true,
@@ -459,12 +459,12 @@ func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
 		// Test various parameter combinations
 		testCases := []struct {
 			name    string
-			args    map[string]interface{}
+			args    map[string]any
 			wantErr bool
 		}{
 			{
 				name: "github integration true",
-				args: map[string]interface{}{
+				args: map[string]any{
 					"repository_path":           "/tmp/test",
 					"enable_github_integration": true,
 				},
@@ -472,7 +472,7 @@ func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
 			},
 			{
 				name: "github integration false",
-				args: map[string]interface{}{
+				args: map[string]any{
 					"repository_path":           "/tmp/test",
 					"enable_github_integration": false,
 				},
@@ -480,7 +480,7 @@ func TestGenerateChangelogTool_GitHubIntegration(t *testing.T) {
 			},
 			{
 				name: "github integration omitted (defaults to false)",
-				args: map[string]interface{}{
+				args: map[string]any{
 					"repository_path": "/tmp/test",
 				},
 				wantErr: false,
@@ -516,8 +516,8 @@ func TestGenerateChangelogTool_ExtendedHelp(t *testing.T) {
 	tool := &generatechangelog.GenerateChangelogTool{}
 
 	// Test that the tool implements ExtendedHelpProvider
-	helpProvider, ok := interface{}(tool).(interface {
-		ProvideExtendedInfo() interface{}
+	helpProvider, ok := any(tool).(interface {
+		ProvideExtendedInfo() any
 	})
 
 	if !ok {

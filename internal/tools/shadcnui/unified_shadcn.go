@@ -63,7 +63,7 @@ Examples:
 }
 
 // Execute executes the unified shadcn tool
-func (t *UnifiedShadcnTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse action (required)
 	action, ok := args["action"].(string)
 	if !ok || action == "" {
@@ -387,14 +387,14 @@ func (t *UnifiedShadcnTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "List all available shadcn/ui components",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action": "list",
 				},
 				ExpectedResult: "Returns a complete list of all available shadcn/ui components with names and URLs",
 			},
 			{
 				Description: "Search for button-related components",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action": "search",
 					"query":  "button",
 				},
@@ -402,7 +402,7 @@ func (t *UnifiedShadcnTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get detailed information about the dialog component",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action":        "details",
 					"componentName": "dialog",
 				},
@@ -410,7 +410,7 @@ func (t *UnifiedShadcnTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get code examples for the table component",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action":        "examples",
 					"componentName": "table",
 				},
@@ -418,7 +418,7 @@ func (t *UnifiedShadcnTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Search for form-related components",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action": "search",
 					"query":  "form",
 				},

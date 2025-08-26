@@ -33,7 +33,7 @@ func NewHTTPClient(apiDef APIDefinition) *HTTPClient {
 }
 
 // ExecuteRequest executes an API request
-func (c *HTTPClient) ExecuteRequest(ctx context.Context, endpoint EndpointConfig, parameters map[string]interface{}) (map[string]interface{}, error) {
+func (c *HTTPClient) ExecuteRequest(ctx context.Context, endpoint EndpointConfig, parameters map[string]any) (map[string]any, error) {
 	// Build the request URL
 	requestURL, err := c.buildURL(endpoint, parameters)
 	if err != nil {
@@ -90,7 +90,7 @@ func (c *HTTPClient) ExecuteRequest(ctx context.Context, endpoint EndpointConfig
 	}
 
 	// Parse response
-	var responseData interface{}
+	var responseData any
 	if len(bodyBytes) > 0 {
 		// Try to parse as JSON first
 		if err := json.Unmarshal(bodyBytes, &responseData); err != nil {
@@ -99,7 +99,7 @@ func (c *HTTPClient) ExecuteRequest(ctx context.Context, endpoint EndpointConfig
 		}
 	}
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"status_code": resp.StatusCode,
 		"headers":     resp.Header,
 		"data":        responseData,
@@ -109,7 +109,7 @@ func (c *HTTPClient) ExecuteRequest(ctx context.Context, endpoint EndpointConfig
 }
 
 // buildURL constructs the full request URL with path and query parameters
-func (c *HTTPClient) buildURL(endpoint EndpointConfig, parameters map[string]interface{}) (string, error) {
+func (c *HTTPClient) buildURL(endpoint EndpointConfig, parameters map[string]any) (string, error) {
 	// Start with base URL
 	baseURL := strings.TrimSuffix(c.apiDef.BaseURL, "/")
 	path := strings.TrimPrefix(endpoint.Path, "/")
@@ -152,7 +152,7 @@ func (c *HTTPClient) buildURL(endpoint EndpointConfig, parameters map[string]int
 }
 
 // buildRequest creates the HTTP request with headers, auth, and body
-func (c *HTTPClient) buildRequest(ctx context.Context, endpoint EndpointConfig, requestURL string, parameters map[string]interface{}) (*http.Request, error) {
+func (c *HTTPClient) buildRequest(ctx context.Context, endpoint EndpointConfig, requestURL string, parameters map[string]any) (*http.Request, error) {
 	// Prepare request body
 	var bodyReader io.Reader
 	// Check if this method typically supports a body
@@ -161,7 +161,7 @@ func (c *HTTPClient) buildRequest(ctx context.Context, endpoint EndpointConfig, 
 
 	if methodSupportsBody {
 		// Extract body parameters
-		bodyData := make(map[string]interface{})
+		bodyData := make(map[string]any)
 		hasBodyParams := false
 
 		for _, param := range endpoint.Parameters {

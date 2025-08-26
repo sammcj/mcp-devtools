@@ -41,14 +41,14 @@ func (t *RustTool) Definition() mcp.Tool {
 		mcp.WithDescription("Check latest stable versions for Rust crates"),
 		mcp.WithObject("dependencies",
 			mcp.Description("Dependencies from Cargo.toml"),
-			mcp.Properties(map[string]interface{}{}),
+			mcp.Properties(map[string]any{}),
 			mcp.Required(),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting latest Rust crate versions")
 
 	// Parse dependencies
@@ -59,11 +59,11 @@ func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 
 	// Convert to map[string]string
 	depsMap := make(map[string]string)
-	if deps, ok := depsRaw.(map[string]interface{}); ok {
+	if deps, ok := depsRaw.(map[string]any); ok {
 		for name, version := range deps {
 			if vStr, ok := version.(string); ok {
 				depsMap[name] = vStr
-			} else if vMap, ok := version.(map[string]interface{}); ok {
+			} else if vMap, ok := version.(map[string]any); ok {
 				// Handle complex dependency format: { version = "1.0", features = ["derive"] }
 				if v, ok := vMap["version"].(string); ok {
 					depsMap[name] = v

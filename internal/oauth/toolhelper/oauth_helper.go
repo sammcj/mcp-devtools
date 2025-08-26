@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 
 	oauthclient "github.com/sammcj/mcp-devtools/internal/oauth/client"
 	"github.com/sammcj/mcp-devtools/internal/oauth/types"
@@ -57,10 +58,8 @@ func (h *OAuthHelper) HasScope(ctx context.Context, requiredScope string) bool {
 
 	// Parse scopes (space-separated)
 	scopes := parseScopes(claims.Scope)
-	for _, scope := range scopes {
-		if scope == requiredScope {
-			return true
-		}
+	if slices.Contains(scopes, requiredScope) {
+		return true
 	}
 
 	h.logger.WithFields(logrus.Fields{

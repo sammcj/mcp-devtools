@@ -30,27 +30,27 @@ func (t *SwiftTool) Definition() mcp.Tool {
 		),
 		mcp.WithObject("constraints",
 			mcp.Description("Optional constraints for specific packages"),
-			mcp.Properties(map[string]interface{}{}),
+			mcp.Properties(map[string]any{}),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *SwiftTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SwiftTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting latest Swift package versions")
 
 	// Parse dependencies
-	depsRaw, ok := args["dependencies"].([]interface{})
+	depsRaw, ok := args["dependencies"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("missing required parameter: dependencies")
 	}
 
 	// Parse constraints
 	var constraints packageversions.VersionConstraints
-	if constraintsRaw, ok := args["constraints"].(map[string]interface{}); ok {
+	if constraintsRaw, ok := args["constraints"].(map[string]any); ok {
 		constraints = make(packageversions.VersionConstraints)
 		for name, constraintRaw := range constraintsRaw {
-			if constraintMap, ok := constraintRaw.(map[string]interface{}); ok {
+			if constraintMap, ok := constraintRaw.(map[string]any); ok {
 				var constraint packageversions.VersionConstraint
 				if majorVersion, ok := constraintMap["majorVersion"].(float64); ok {
 					majorInt := int(majorVersion)
@@ -67,7 +67,7 @@ func (t *SwiftTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 	// Convert to SwiftDependency
 	var dependencies []packageversions.SwiftDependency
 	for _, depRaw := range depsRaw {
-		if depMap, ok := depRaw.(map[string]interface{}); ok {
+		if depMap, ok := depRaw.(map[string]any); ok {
 			var dep packageversions.SwiftDependency
 
 			// Parse URL

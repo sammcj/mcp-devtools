@@ -15,7 +15,7 @@ type MockHTTPClient struct {
 	err error
 }
 
-func (m *MockHTTPClient) Do(req interface{}) (interface{}, error) {
+func (m *MockHTTPClient) Do(req any) (any, error) {
 	// Simplified mock - in real implementation this would return proper HTTP response
 	return nil, m.err
 }
@@ -31,8 +31,8 @@ func TestGoTool_Execute_SimpleFormat(t *testing.T) {
 	tool := go_tool.NewGoTool(packageversions.DefaultHTTPClient)
 
 	// Test simple format (key-value pairs)
-	args := map[string]interface{}{
-		"dependencies": map[string]interface{}{
+	args := map[string]any{
+		"dependencies": map[string]any{
 			"github.com/gorilla/mux":      "v1.8.0",
 			"github.com/stretchr/testify": "",
 		},
@@ -67,15 +67,15 @@ func TestGoTool_Execute_ComplexFormat(t *testing.T) {
 	tool := go_tool.NewGoTool(packageversions.DefaultHTTPClient)
 
 	// Test complex format (structured with require array)
-	args := map[string]interface{}{
-		"dependencies": map[string]interface{}{
+	args := map[string]any{
+		"dependencies": map[string]any{
 			"module": "github.com/example/project",
-			"require": []interface{}{
-				map[string]interface{}{
+			"require": []any{
+				map[string]any{
 					"path":    "github.com/gorilla/mux",
 					"version": "v1.8.0",
 				},
-				map[string]interface{}{
+				map[string]any{
 					"path":    "github.com/stretchr/testify",
 					"version": "v1.9.0",
 				},
@@ -112,7 +112,7 @@ func TestGoTool_Execute_MissingDependencies(t *testing.T) {
 	tool := go_tool.NewGoTool(packageversions.DefaultHTTPClient)
 
 	// Test missing dependencies parameter
-	args := map[string]interface{}{}
+	args := map[string]any{}
 
 	ctx := context.Background()
 	_, err := tool.Execute(ctx, logger, cache, args)
@@ -139,7 +139,7 @@ func TestGoTool_Execute_InvalidDependenciesFormat(t *testing.T) {
 	tool := go_tool.NewGoTool(packageversions.DefaultHTTPClient)
 
 	// Test invalid dependencies format
-	args := map[string]interface{}{
+	args := map[string]any{
 		"dependencies": "not an object",
 	}
 

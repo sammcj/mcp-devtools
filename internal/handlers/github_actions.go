@@ -42,7 +42,7 @@ type GitHubRelease struct {
 }
 
 // GetLatestVersion gets the latest version of GitHub Actions
-func (h *GitHubActionsHandler) GetLatestVersion(ctx context.Context, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (h *GitHubActionsHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	h.logger.Info("Getting latest GitHub Actions versions")
 
 	// Parse actions
@@ -53,9 +53,9 @@ func (h *GitHubActionsHandler) GetLatestVersion(ctx context.Context, args map[st
 
 	// Convert to []GitHubAction
 	var actions []GitHubAction
-	if actionsArr, ok := actionsRaw.([]interface{}); ok {
+	if actionsArr, ok := actionsRaw.([]any); ok {
 		for _, actionRaw := range actionsArr {
-			if actionMap, ok := actionRaw.(map[string]interface{}); ok {
+			if actionMap, ok := actionRaw.(map[string]any); ok {
 				var action GitHubAction
 				if owner, ok := actionMap["owner"].(string); ok {
 					action.Owner = owner

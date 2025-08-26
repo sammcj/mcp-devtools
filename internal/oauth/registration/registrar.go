@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -261,13 +262,7 @@ func (r *InMemoryRegistrar) validateRedirectURI(redirectURI string) error {
 
 	// Check scheme
 	scheme := strings.ToLower(parsedURL.Scheme)
-	allowed := false
-	for _, allowedScheme := range r.config.AllowedRedirectSchemes {
-		if scheme == allowedScheme {
-			allowed = true
-			break
-		}
-	}
+	allowed := slices.Contains(r.config.AllowedRedirectSchemes, scheme)
 	if !allowed {
 		return fmt.Errorf("unsupported scheme: %s", scheme)
 	}
@@ -295,12 +290,7 @@ func (r *InMemoryRegistrar) isValidGrantType(grantType string) bool {
 		"refresh_token",
 	}
 
-	for _, valid := range validGrantTypes {
-		if grantType == valid {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(validGrantTypes, grantType)
 }
 
 // isValidResponseType checks if a response type is supported
@@ -309,12 +299,7 @@ func (r *InMemoryRegistrar) isValidResponseType(responseType string) bool {
 		"code",
 	}
 
-	for _, valid := range validResponseTypes {
-		if responseType == valid {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(validResponseTypes, responseType)
 }
 
 // isValidAuthMethod checks if a token endpoint auth method is supported
@@ -325,12 +310,7 @@ func (r *InMemoryRegistrar) isValidAuthMethod(authMethod string) bool {
 		"none", // For public clients
 	}
 
-	for _, valid := range validAuthMethods {
-		if authMethod == valid {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(validAuthMethods, authMethod)
 }
 
 // ServeRegistration handles HTTP requests for client registration

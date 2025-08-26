@@ -48,13 +48,13 @@ type AccessControl struct {
 
 // Rule represents a security rule with patterns and actions
 type Rule struct {
-	Description string                 `yaml:"description"`
-	Patterns    []PatternConfig        `yaml:"patterns"`
-	Action      string                 `yaml:"action"` // "block", "warn_high", "warn", "notify", "ignore"
-	Severity    string                 `yaml:"severity,omitempty"`
-	Exceptions  []string               `yaml:"exceptions,omitempty"`
-	Logic       string                 `yaml:"logic,omitempty"` // "any" or "all"
-	Options     map[string]interface{} `yaml:"options,omitempty"`
+	Description string          `yaml:"description"`
+	Patterns    []PatternConfig `yaml:"patterns"`
+	Action      string          `yaml:"action"` // "block", "warn_high", "warn", "notify", "ignore"
+	Severity    string          `yaml:"severity,omitempty"`
+	Exceptions  []string        `yaml:"exceptions,omitempty"`
+	Logic       string          `yaml:"logic,omitempty"` // "any" or "all"
+	Options     map[string]any  `yaml:"options,omitempty"`
 }
 
 // PatternConfig represents different types of pattern matching

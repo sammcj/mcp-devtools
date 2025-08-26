@@ -3,6 +3,7 @@ package memory
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -172,13 +173,7 @@ func (gm *GraphManager) AddObservations(observations []ObservationInput) ([]Obse
 			}
 
 			// Check if observation already exists
-			exists := false
-			for _, existing := range entity.Observations {
-				if existing == content {
-					exists = true
-					break
-				}
-			}
+			exists := slices.Contains(entity.Observations, content)
 
 			if !exists {
 				newObservations = append(newObservations, content)

@@ -60,15 +60,15 @@ func cleanupOldLogs(logDir string, maxAge time.Duration) {
 }
 
 // getDebugInfo returns debug information including environment variables (with secrets masked)
-func (t *DocumentProcessorTool) getDebugInfo() map[string]interface{} {
-	debugInfo := map[string]interface{}{
+func (t *DocumentProcessorTool) getDebugInfo() map[string]any {
+	debugInfo := map[string]any{
 		"debug_mode":  true,
 		"timestamp":   time.Now().Format(time.RFC3339),
 		"system_info": t.config.GetSystemInfo(),
 	}
 
 	// Environment variables related to document processing
-	envVars := map[string]interface{}{
+	envVars := map[string]any{
 		// LLM Configuration
 		"DOCLING_VLM_API_URL":     maskSecret(os.Getenv("DOCLING_VLM_API_URL")),
 		"DOCLING_VLM_MODEL":       os.Getenv("DOCLING_VLM_MODEL"),
@@ -93,7 +93,7 @@ func (t *DocumentProcessorTool) getDebugInfo() map[string]interface{} {
 	debugInfo["environment_variables"] = envVars
 
 	// LLM Configuration Status
-	llmStatus := map[string]interface{}{
+	llmStatus := map[string]any{
 		"configured":   IsLLMConfigured(),
 		"api_base_set": os.Getenv("DOCLING_VLM_API_URL") != "",
 		"model_set":    os.Getenv("DOCLING_VLM_MODEL") != "",
@@ -112,7 +112,7 @@ func (t *DocumentProcessorTool) getDebugInfo() map[string]interface{} {
 	debugInfo["llm_status"] = llmStatus
 
 	// Configuration details
-	configInfo := map[string]interface{}{
+	configInfo := map[string]any{
 		"python_path":       t.config.PythonPath,
 		"script_path":       t.config.GetScriptPath(),
 		"cache_enabled":     t.config.CacheEnabled,

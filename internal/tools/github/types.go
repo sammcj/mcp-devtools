@@ -4,9 +4,9 @@ package github
 
 // GitHubRequest represents the unified request structure for all GitHub operations
 type GitHubRequest struct {
-	Function   string                 `json:"function"`
-	Repository string                 `json:"repository"`
-	Options    map[string]interface{} `json:"options,omitempty"`
+	Function   string         `json:"function"`
+	Repository string         `json:"repository"`
+	Options    map[string]any `json:"options,omitempty"`
 }
 
 // Repository represents a GitHub repository
@@ -154,9 +154,9 @@ type AuthConfig struct {
 
 // SearchResult represents a generic search result wrapper
 type SearchResult struct {
-	TotalCount        int         `json:"total_count"`
-	IncompleteResults bool        `json:"incomplete_results"`
-	Items             interface{} `json:"items"`
+	TotalCount        int  `json:"total_count"`
+	IncompleteResults bool `json:"incomplete_results"`
+	Items             any  `json:"items"`
 }
 
 // Filtered response types for reduced output

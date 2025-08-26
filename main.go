@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -301,7 +302,7 @@ func main() {
 					}
 
 					// Type assert the arguments to map[string]interface{}
-					args, ok := request.Params.Arguments.(map[string]interface{})
+					args, ok := request.Params.Arguments.(map[string]any)
 					if !ok {
 						return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
 					}
@@ -522,12 +523,7 @@ func isValidProtocolVersion(version string) bool {
 		"2024-11-05", // Backwards compatibility
 	}
 
-	for _, supported := range supportedVersions {
-		if version == supported {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(supportedVersions, version)
 }
 
 // isValidOrigin validates the Origin header to prevent DNS rebinding attacks
@@ -583,19 +579,19 @@ type logrusAdapter struct {
 	logger *logrus.Logger
 }
 
-func (l *logrusAdapter) Debugf(format string, args ...interface{}) {
+func (l *logrusAdapter) Debugf(format string, args ...any) {
 	l.logger.Debugf(format, args...)
 }
 
-func (l *logrusAdapter) Infof(format string, args ...interface{}) {
+func (l *logrusAdapter) Infof(format string, args ...any) {
 	l.logger.Infof(format, args...)
 }
 
-func (l *logrusAdapter) Warnf(format string, args ...interface{}) {
+func (l *logrusAdapter) Warnf(format string, args ...any) {
 	l.logger.Warnf(format, args...)
 }
 
-func (l *logrusAdapter) Errorf(format string, args ...interface{}) {
+func (l *logrusAdapter) Errorf(format string, args ...any) {
 	l.logger.Errorf(format, args...)
 }
 

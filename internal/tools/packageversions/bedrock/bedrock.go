@@ -42,7 +42,7 @@ func (t *BedrockTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *BedrockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *BedrockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting AWS Bedrock model information")
 
 	// Parse action
@@ -270,7 +270,7 @@ func (t *BedrockTool) listModels() (*mcp.CallToolResult, error) {
 }
 
 // searchModels searches for AWS Bedrock models
-func (t *BedrockTool) searchModels(args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *BedrockTool) searchModels(args map[string]any) (*mcp.CallToolResult, error) {
 	// Get all models
 	result, err := t.listModels()
 	if err != nil {
@@ -284,13 +284,13 @@ func (t *BedrockTool) searchModels(args map[string]interface{}) (*mcp.CallToolRe
 	}
 
 	// Parse result
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.Unmarshal(resultJSON, &data); err != nil {
 		return nil, fmt.Errorf("failed to parse model data: %w", err)
 	}
 
 	// Get models
-	modelsRaw, ok := data["models"].([]interface{})
+	modelsRaw, ok := data["models"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("invalid model data format")
 	}
@@ -316,7 +316,7 @@ func (t *BedrockTool) searchModels(args map[string]interface{}) (*mcp.CallToolRe
 	// Filter models
 	var filteredModels []packageversions.BedrockModel
 	for _, modelRaw := range modelsRaw {
-		modelMap, ok := modelRaw.(map[string]interface{})
+		modelMap, ok := modelRaw.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -378,7 +378,7 @@ func (t *BedrockTool) searchModels(args map[string]interface{}) (*mcp.CallToolRe
 }
 
 // getModel gets a specific AWS Bedrock model
-func (t *BedrockTool) getModel(args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *BedrockTool) getModel(args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse model ID
 	modelID, ok := args["modelId"].(string)
 	if !ok || modelID == "" {
@@ -398,20 +398,20 @@ func (t *BedrockTool) getModel(args map[string]interface{}) (*mcp.CallToolResult
 	}
 
 	// Parse result
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.Unmarshal(resultJSON, &data); err != nil {
 		return nil, fmt.Errorf("failed to parse model data: %w", err)
 	}
 
 	// Get models
-	modelsRaw, ok := data["models"].([]interface{})
+	modelsRaw, ok := data["models"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("invalid model data format")
 	}
 
 	// Find model
 	for _, modelRaw := range modelsRaw {
-		modelMap, ok := modelRaw.(map[string]interface{})
+		modelMap, ok := modelRaw.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -440,20 +440,20 @@ func (t *BedrockTool) getLatestClaudeSonnet() (*mcp.CallToolResult, error) {
 	}
 
 	// Parse result
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.Unmarshal(resultJSON, &data); err != nil {
 		return nil, fmt.Errorf("failed to parse model data: %w", err)
 	}
 
 	// Get models
-	modelsRaw, ok := data["models"].([]interface{})
+	modelsRaw, ok := data["models"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("invalid model data format")
 	}
 
 	// Find Claude Sonnet model
 	for _, modelRaw := range modelsRaw {
-		modelMap, ok := modelRaw.(map[string]interface{})
+		modelMap, ok := modelRaw.(map[string]any)
 		if !ok {
 			continue
 		}

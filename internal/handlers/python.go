@@ -99,7 +99,7 @@ func parseRequirement(req string) (name string, version string, err error) {
 }
 
 // GetLatestVersionFromRequirements gets the latest version of Python packages from requirements.txt
-func (h *PythonHandler) GetLatestVersionFromRequirements(ctx context.Context, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (h *PythonHandler) GetLatestVersionFromRequirements(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	h.logger.Info("Getting latest Python package versions from requirements.txt")
 
 	// Parse requirements
@@ -110,7 +110,7 @@ func (h *PythonHandler) GetLatestVersionFromRequirements(ctx context.Context, ar
 
 	// Convert to []string
 	var reqs []string
-	if reqsArr, ok := reqsRaw.([]interface{}); ok {
+	if reqsArr, ok := reqsRaw.([]any); ok {
 		for _, req := range reqsArr {
 			if reqStr, ok := req.(string); ok {
 				reqs = append(reqs, reqStr)
@@ -188,7 +188,7 @@ func (h *PythonHandler) GetLatestVersionFromRequirements(ctx context.Context, ar
 }
 
 // GetLatestVersionFromPyProject gets the latest version of Python packages from pyproject.toml
-func (h *PythonHandler) GetLatestVersionFromPyProject(ctx context.Context, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (h *PythonHandler) GetLatestVersionFromPyProject(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	h.logger.Info("Getting latest Python package versions from pyproject.toml")
 
 	// Parse dependencies
@@ -199,9 +199,9 @@ func (h *PythonHandler) GetLatestVersionFromPyProject(ctx context.Context, args 
 
 	// Convert to PyProjectDependencies
 	var pyProjectDeps PyProjectDependencies
-	if depsMap, ok := depsRaw.(map[string]interface{}); ok {
+	if depsMap, ok := depsRaw.(map[string]any); ok {
 		// Parse main dependencies
-		if mainDeps, ok := depsMap["dependencies"].(map[string]interface{}); ok {
+		if mainDeps, ok := depsMap["dependencies"].(map[string]any); ok {
 			pyProjectDeps.Dependencies = make(map[string]string)
 			for name, version := range mainDeps {
 				if vStr, ok := version.(string); ok {
@@ -213,10 +213,10 @@ func (h *PythonHandler) GetLatestVersionFromPyProject(ctx context.Context, args 
 		}
 
 		// Parse optional dependencies
-		if optDeps, ok := depsMap["optional-dependencies"].(map[string]interface{}); ok {
+		if optDeps, ok := depsMap["optional-dependencies"].(map[string]any); ok {
 			pyProjectDeps.OptionalDependencies = make(map[string]map[string]string)
 			for group, deps := range optDeps {
-				if depsMap, ok := deps.(map[string]interface{}); ok {
+				if depsMap, ok := deps.(map[string]any); ok {
 					pyProjectDeps.OptionalDependencies[group] = make(map[string]string)
 					for name, version := range depsMap {
 						if vStr, ok := version.(string); ok {
@@ -230,7 +230,7 @@ func (h *PythonHandler) GetLatestVersionFromPyProject(ctx context.Context, args 
 		}
 
 		// Parse dev dependencies
-		if devDeps, ok := depsMap["dev-dependencies"].(map[string]interface{}); ok {
+		if devDeps, ok := depsMap["dev-dependencies"].(map[string]any); ok {
 			pyProjectDeps.DevDependencies = make(map[string]string)
 			for name, version := range devDeps {
 				if vStr, ok := version.(string); ok {

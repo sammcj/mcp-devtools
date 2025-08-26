@@ -73,7 +73,7 @@ func (t *FindLongFilesTool) Definition() mcp.Tool {
 }
 
 // Execute executes the find-long-files tool
-func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	startTime := time.Now()
 	logger.Info("Executing find-long-files tool")
 
@@ -159,7 +159,7 @@ func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, 
 }
 
 // parseRequest parses and validates the tool arguments
-func (t *FindLongFilesTool) parseRequest(args map[string]interface{}) (*FindLongFilesRequest, error) {
+func (t *FindLongFilesTool) parseRequest(args map[string]any) (*FindLongFilesRequest, error) {
 	request := &FindLongFilesRequest{
 		LineThreshold:         defaultLineThreshold,
 		AdditionalExcludes:    []string{},
@@ -200,7 +200,7 @@ func (t *FindLongFilesTool) parseRequest(args map[string]interface{}) (*FindLong
 			request.AdditionalExcludes[i] = strings.TrimSpace(exclude)
 		}
 	}
-	if excludesRaw, ok := args["additional_excludes"].([]interface{}); ok {
+	if excludesRaw, ok := args["additional_excludes"].([]any); ok {
 		excludes := make([]string, len(excludesRaw))
 		for i, exclude := range excludesRaw {
 			if excludeStr, ok := exclude.(string); ok {
@@ -478,8 +478,8 @@ func (t *FindLongFilesTool) matchesPattern(path, fileName, pattern string) bool 
 	}
 
 	// Handle patterns starting with **/ (like "**/*.bin")
-	if strings.HasPrefix(pattern, "**/") {
-		simplePattern := strings.TrimPrefix(pattern, "**/")
+	if after, ok := strings.CutPrefix(pattern, "**/"); ok {
+		simplePattern := after
 		// Try to match against filename
 		if matched, _ := filepath.Match(simplePattern, fileName); matched {
 			return true
@@ -524,7 +524,7 @@ func (t *FindLongFilesTool) isBinaryFile(path string) bool {
 	}
 
 	// Check for null bytes (common in binary files)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		if buffer[i] == 0 {
 			return true
 		}
@@ -687,14 +687,14 @@ func (t *FindLongFilesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Find files over 700 lines in a project",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"path": "/Users/username/projects/my-app",
 				},
 				ExpectedResult: "Returns a checklist of files exceeding 700 lines with their line counts and file sizes, sorted by line count descending",
 			},
 			{
 				Description: "Find files over 500 lines with custom threshold",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"path":           "/Users/username/projects/large-codebase",
 					"line_threshold": 500,
 				},
@@ -702,7 +702,7 @@ func (t *FindLongFilesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Find long files excluding additional patterns",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"path":                "/Users/username/projects/web-app",
 					"line_threshold":      600,
 					"additional_excludes": []string{"**/*.generated.ts", "**/*.spec.ts", "**/migrations/**"},
@@ -711,7 +711,7 @@ func (t *FindLongFilesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Find files over 1000 lines for major refactoring",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"path":           "/Users/username/projects/legacy-system",
 					"line_threshold": 1000,
 				},

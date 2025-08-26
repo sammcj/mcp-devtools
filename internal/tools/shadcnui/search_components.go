@@ -92,7 +92,7 @@ func (t *SearchShadcnComponentsTool) fetchAndCacheComponentList(logger *logrus.L
 }
 
 // Execute performs the tool's action.
-func (t *SearchShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	query, ok := args["query"].(string)
 	if !ok || query == "" {
 		return nil, fmt.Errorf("query is a required argument and must be a non-empty string")

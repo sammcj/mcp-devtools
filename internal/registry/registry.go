@@ -41,8 +41,8 @@ func parseDisabledFunctions() {
 	}
 
 	// Split by comma and trim whitespace
-	functions := strings.Split(disabledEnv, ",")
-	for _, function := range functions {
+	functions := strings.SplitSeq(disabledEnv, ",")
+	for function := range functions {
 		function = strings.TrimSpace(function)
 		if function != "" {
 			disabledFunctions[function] = true
@@ -193,8 +193,8 @@ func isToolEnabled(toolName string) bool {
 	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
 
 	// Split by comma and check each tool
-	toolsList := strings.Split(enabledTools, ",")
-	for _, tool := range toolsList {
+	toolsList := strings.SplitSeq(enabledTools, ",")
+	for tool := range toolsList {
 		// Normalize the tool from env var (trim spaces, lowercase, replace underscores with hyphens)
 		normalizedTool := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tool), "_", "-"))
 		if normalizedTool == normalisedToolName {

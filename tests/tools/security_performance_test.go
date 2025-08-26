@@ -202,7 +202,7 @@ func BenchmarkSecurityAnalysis(b *testing.B) {
 			}
 
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, _ = securityManager.AnalyseContent(content, source)
 			}
 		})
@@ -231,7 +231,7 @@ func TestSecurityPerformanceComparison(t *testing.T) {
 			// Measure security analysis performance
 			start := time.Now()
 			iterations := 100
-			for i := 0; i < iterations; i++ {
+			for range iterations {
 				_, _ = securityManager.AnalyseContent(content, source)
 			}
 			duration := time.Since(start)
@@ -284,7 +284,7 @@ func TestSecuritySizeLimitPerformance(t *testing.T) {
 
 			start := time.Now()
 			iterations := 50
-			for i := 0; i < iterations; i++ {
+			for range iterations {
 				_, _ = securityManager.AnalyseContent(content, source)
 			}
 			duration := time.Since(start) / time.Duration(iterations)
@@ -342,7 +342,7 @@ func TestEntropyAnalysisPerformance(t *testing.T) {
 
 			start := time.Now()
 			iterations := 100
-			for i := 0; i < iterations; i++ {
+			for range iterations {
 				_, _ = securityManager.AnalyseContent(tc.content, source)
 			}
 			duration := time.Since(start) / time.Duration(iterations)

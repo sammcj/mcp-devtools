@@ -65,7 +65,7 @@ func TestSequentialThinkingTool_Execute_ToolDisabled(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action":   "think",
 		"thought":  "Test thought",
 		"continue": false,
@@ -92,7 +92,7 @@ func TestSequentialThinkingTool_Execute_ValidInput(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action":   "think",
 		"thought":  "This is my first thought about the problem",
 		"continue": true,
@@ -137,7 +137,7 @@ func TestSequentialThinkingTool_Execute_WithRevision(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action":   "think",
 		"thought":  "I need to revise my previous thought",
 		"continue": true,
@@ -160,7 +160,7 @@ func TestSequentialThinkingTool_Execute_WithBranching(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action":   "think",
 		"thought":  "Let me explore an alternative approach",
 		"continue": true,
@@ -196,7 +196,7 @@ func TestSequentialThinkingTool_Execute_MissingRequiredField(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	// Missing required field "thought"
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action":   "think",
 		"continue": true,
 	}
@@ -223,7 +223,7 @@ func TestSequentialThinkingTool_Execute_MissingContinueField(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	// Missing required field "continue"
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action":  "think",
 		"thought": "Test thought",
 	}
@@ -250,7 +250,7 @@ func TestSequentialThinkingTool_Execute_AutoNumbering(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	// First thought - should be numbered 1
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action":   "think",
 		"thought":  "First thought",
 		"continue": true,
@@ -287,7 +287,7 @@ func TestSequentialThinkingTool_Execute_DisableLogging(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action":   "think",
 		"thought":  "This thought should not be logged",
 		"continue": false,
@@ -309,7 +309,7 @@ func TestSequentialThinkingTool_Execute_GetUsage(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action": "get_usage",
 	}
 
@@ -353,7 +353,7 @@ func TestSequentialThinkingTool_Execute_DefaultAction(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	// Test that omitting action parameter defaults to "think"
-	args := map[string]interface{}{
+	args := map[string]any{
 		"thought":  "Test thought",
 		"continue": false,
 	}
@@ -391,7 +391,7 @@ func TestSequentialThinkingTool_Execute_InvalidAction(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action": "invalid_action",
 	}
 

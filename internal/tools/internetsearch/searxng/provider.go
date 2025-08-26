@@ -75,7 +75,7 @@ func (p *SearXNGProvider) GetSupportedTypes() []string {
 }
 
 // Search executes a search using the SearXNG provider
-func (p *SearXNGProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+func (p *SearXNGProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	logger.WithFields(logrus.Fields{
@@ -90,16 +90,13 @@ func (p *SearXNGProvider) Search(ctx context.Context, logger *logrus.Logger, sea
 }
 
 // executeSearch handles the actual search execution
-func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse SearXNG-specific parameters
 	pageno := 1
 	if pagenoRaw, ok := args["pageno"].(float64); ok {
-		pageno = int(pagenoRaw)
-		if pageno < 1 {
-			pageno = 1
-		}
+		pageno = max(int(pagenoRaw), 1)
 	}
 
 	timeRange := ""
@@ -235,7 +232,7 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 
 	results := make([]internetsearch.SearchResult, 0, len(searxngResp.Results))
 	for _, searxngResult := range searxngResp.Results {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		metadata["category"] = searchType
 		if language != "all" {
 			metadata["language"] = language

@@ -97,7 +97,7 @@ func (h *JavaHandler) getLatestVersion(groupID, artifactID string) (string, erro
 }
 
 // GetLatestVersionFromMaven gets the latest version of Java packages from Maven
-func (h *JavaHandler) GetLatestVersionFromMaven(ctx context.Context, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (h *JavaHandler) GetLatestVersionFromMaven(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	h.logger.Info("Getting latest Maven package versions")
 
 	// Parse dependencies
@@ -108,9 +108,9 @@ func (h *JavaHandler) GetLatestVersionFromMaven(ctx context.Context, args map[st
 
 	// Convert to []MavenDependency
 	var deps []MavenDependency
-	if depsArr, ok := depsRaw.([]interface{}); ok {
+	if depsArr, ok := depsRaw.([]any); ok {
 		for _, depRaw := range depsArr {
-			if depMap, ok := depRaw.(map[string]interface{}); ok {
+			if depMap, ok := depRaw.(map[string]any); ok {
 				var dep MavenDependency
 				if groupID, ok := depMap["groupId"].(string); ok {
 					dep.GroupID = groupID
@@ -185,7 +185,7 @@ func (h *JavaHandler) GetLatestVersionFromMaven(ctx context.Context, args map[st
 }
 
 // GetLatestVersionFromGradle gets the latest version of Java packages from Gradle
-func (h *JavaHandler) GetLatestVersionFromGradle(ctx context.Context, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (h *JavaHandler) GetLatestVersionFromGradle(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	h.logger.Info("Getting latest Gradle package versions")
 
 	// Parse dependencies
@@ -196,9 +196,9 @@ func (h *JavaHandler) GetLatestVersionFromGradle(ctx context.Context, args map[s
 
 	// Convert to []GradleDependency
 	var deps []GradleDependency
-	if depsArr, ok := depsRaw.([]interface{}); ok {
+	if depsArr, ok := depsRaw.([]any); ok {
 		for _, depRaw := range depsArr {
-			if depMap, ok := depRaw.(map[string]interface{}); ok {
+			if depMap, ok := depRaw.(map[string]any); ok {
 				var dep GradleDependency
 				if config, ok := depMap["configuration"].(string); ok {
 					dep.Configuration = config

@@ -54,9 +54,9 @@ func TestFilesystem_DefaultLimits(t *testing.T) {
 
 	// Test small file write (should succeed)
 	smallContent := "test content"
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "write_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path":    filepath.Join(testDir, "test_small.txt"),
 			"content": smallContent,
 		},
@@ -105,9 +105,9 @@ func TestFilesystem_CustomFileSizeLimit(t *testing.T) {
 
 	// Test small content (should succeed)
 	smallContent := "small"
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "write_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path":    filepath.Join(testDir, "small.txt"),
 			"content": smallContent,
 		},
@@ -119,9 +119,9 @@ func TestFilesystem_CustomFileSizeLimit(t *testing.T) {
 
 	// Test large content (should fail)
 	largeContent := strings.Repeat("a", 2048) // 2KB, exceeds 1KB limit
-	args = map[string]interface{}{
+	args = map[string]any{
 		"function": "write_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path":    filepath.Join(testDir, "large.txt"),
 			"content": largeContent,
 		},
@@ -162,9 +162,9 @@ func TestFilesystem_CustomFilePermissions(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Write a file
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "write_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path":    filepath.Join(testDir, "custom_perms.txt"),
 			"content": "test content",
 		},
@@ -215,9 +215,9 @@ func TestFilesystem_ReadFileSizeValidation(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Try to read the large file (should fail)
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "read_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path": largeFilePath,
 		},
 	}
@@ -263,12 +263,12 @@ func TestFilesystem_EditFileSizeValidation(t *testing.T) {
 
 	// Try to edit file to make it exceed size limit
 	largeReplacement := strings.Repeat("x", 150) // 150 bytes, exceeds 100 byte limit
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "edit_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path": testFilePath,
-			"edits": []interface{}{
-				map[string]interface{}{
+			"edits": []any{
+				map[string]any{
 					"oldText": "short content",
 					"newText": largeReplacement,
 				},
@@ -318,9 +318,9 @@ func TestFilesystem_InvalidEnvironmentVariables(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Should work with default settings despite invalid environment variables
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "write_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path":    filepath.Join(testDir, "test_invalid_env.txt"),
 			"content": "test content",
 		},
@@ -373,9 +373,9 @@ func TestFilesystem_ZeroValues(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Should work with default settings
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "write_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path":    filepath.Join(testDir, "test_zero_values.txt"),
 			"content": "test content",
 		},
@@ -438,10 +438,10 @@ func TestFilesystem_MultipleFilesSizeValidation(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Try to read multiple files including one that exceeds size limit
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "read_multiple_files",
-		"options": map[string]interface{}{
-			"paths": []interface{}{smallFilePath, largeFilePath},
+		"options": map[string]any{
+			"paths": []any{smallFilePath, largeFilePath},
 		},
 	}
 

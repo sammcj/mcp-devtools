@@ -255,7 +255,7 @@ func TestHTTPClientExecution(t *testing.T) {
 		}
 
 		// Return mock response
-		response := map[string]interface{}{
+		response := map[string]any{
 			"id":     "123",
 			"name":   "Test Item",
 			"status": "active",
@@ -303,7 +303,7 @@ func TestHTTPClientExecution(t *testing.T) {
 	client := api.NewHTTPClient(apiDef)
 	endpoint := apiDef.Endpoints[0]
 
-	parameters := map[string]interface{}{
+	parameters := map[string]any{
 		"id":     "123",
 		"format": "json",
 	}
@@ -319,7 +319,7 @@ func TestHTTPClientExecution(t *testing.T) {
 		t.Errorf("Expected status code 200, got %v", result["status_code"])
 	}
 
-	data, ok := result["data"].(map[string]interface{})
+	data, ok := result["data"].(map[string]any)
 	if !ok {
 		t.Fatalf("Expected data to be map[string]interface{}, got %T", result["data"])
 	}
@@ -339,7 +339,7 @@ func TestToolExecution(t *testing.T) {
 
 	// Create mock HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := map[string]interface{}{
+		response := map[string]any{
 			"message": "Hello, API!",
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -372,7 +372,7 @@ func TestToolExecution(t *testing.T) {
 	logger.SetLevel(logrus.ErrorLevel) // Reduce log noise in tests
 	cache := &sync.Map{}
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"endpoint": "hello",
 	}
 
@@ -400,7 +400,7 @@ func TestCaching(t *testing.T) {
 	// Create mock HTTP server that tracks calls
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
-		response := map[string]interface{}{
+		response := map[string]any{
 			"message": fmt.Sprintf("Call #%d", callCount),
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -431,7 +431,7 @@ func TestCaching(t *testing.T) {
 	logger.SetLevel(logrus.ErrorLevel)
 	cache := &sync.Map{}
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"endpoint": "test",
 	}
 
@@ -480,7 +480,7 @@ func TestAuthenticationHandling(t *testing.T) {
 			return
 		}
 
-		response := map[string]interface{}{"authenticated": true}
+		response := map[string]any{"authenticated": true}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(response)
 	}))
@@ -509,7 +509,7 @@ func TestAuthenticationHandling(t *testing.T) {
 	endpoint := apiDef.Endpoints[0]
 
 	ctx := context.Background()
-	result, err := client.ExecuteRequest(ctx, endpoint, map[string]interface{}{})
+	result, err := client.ExecuteRequest(ctx, endpoint, map[string]any{})
 	if err != nil {
 		t.Fatalf("Auth request failed: %v", err)
 	}
@@ -519,7 +519,7 @@ func TestAuthenticationHandling(t *testing.T) {
 		t.Errorf("Expected status 200, got %v", result["status_code"])
 	}
 
-	data := result["data"].(map[string]interface{})
+	data := result["data"].(map[string]any)
 	if data["authenticated"] != true {
 		t.Error("Expected authenticated=true")
 	}

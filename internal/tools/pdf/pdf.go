@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -60,7 +61,7 @@ func (t *PDFTool) Definition() mcp.Tool {
 }
 
 // Execute processes the PDF file
-func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Check if pdf tool is enabled (disabled by default)
 	if !tools.IsToolEnabled("pdf") {
 		return nil, fmt.Errorf("pdf tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'pdf'")
@@ -112,7 +113,7 @@ func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 	// Process the PDF
 	result, err := t.processPDF(ctx, logger, request, conf)
 	if err != nil {
-		return t.newToolResultJSON(map[string]interface{}{
+		return t.newToolResultJSON(map[string]any{
 			"error":     err.Error(),
 			"file_path": request.FilePath,
 		})
@@ -129,7 +130,7 @@ func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 }
 
 // ParseRequest parses and validates the tool arguments
-func (t *PDFTool) ParseRequest(args map[string]interface{}) (*PDFRequest, error) {
+func (t *PDFTool) ParseRequest(args map[string]any) (*PDFRequest, error) {
 	// Parse file_path (required)
 	filePath, ok := args["file_path"].(string)
 	if !ok || filePath == "" {
@@ -303,16 +304,16 @@ func (t *PDFTool) processPDF(ctx context.Context, logger *logrus.Logger, request
 func (t *PDFTool) ParsePageSelection(pages string, maxPage int) ([]int, error) {
 	if pages == "" || pages == "all" {
 		result := make([]int, maxPage)
-		for i := 0; i < maxPage; i++ {
+		for i := range maxPage {
 			result[i] = i + 1
 		}
 		return result, nil
 	}
 
 	var result []int
-	parts := strings.Split(pages, ",")
+	parts := strings.SplitSeq(pages, ",")
 
-	for _, part := range parts {
+	for part := range parts {
 		part = strings.TrimSpace(part)
 		if strings.Contains(part, "-") {
 			// Range: "1-5"
@@ -464,9 +465,9 @@ func (t *PDFTool) processPageContent(content string) string {
 // extractAllTextFromPDFContent extracts all text strings from PDF content operations
 func (t *PDFTool) extractAllTextFromPDFContent(content string) []string {
 	var texts []string
-	lines := strings.Split(content, "\n")
+	lines := strings.SplitSeq(content, "\n")
 
-	for _, line := range lines {
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -569,10 +570,8 @@ func (t *PDFTool) isPDFCommand(line string) bool {
 
 	// Check if line ends with a PDF command
 	lastWord := words[len(words)-1]
-	for _, cmd := range pdfCommands {
-		if lastWord == cmd {
-			return true
-		}
+	if slices.Contains(pdfCommands, lastWord) {
+		return true
 	}
 
 	// Check if line is mostly numbers and operators (coordinates, etc.)
@@ -734,7 +733,7 @@ func (t *PDFTool) getImagesForPage(allImages []string, pageNum int) []string {
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (t *PDFTool) newToolResultJSON(data interface{}) (*mcp.CallToolResult, error) {
+func (t *PDFTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
@@ -794,7 +793,7 @@ func (t *PDFTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Extract text and images from entire PDF",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"file_path":      "/Users/username/documents/report.pdf",
 					"extract_images": true,
 				},
@@ -802,7 +801,7 @@ func (t *PDFTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Extract only text from specific pages",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"file_path":      "/Users/username/documents/manual.pdf",
 					"pages":          "1-5,10,15-20",
 					"extract_images": false,
@@ -811,7 +810,7 @@ func (t *PDFTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Extract to custom output directory",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"file_path":      "/Users/username/pdfs/research.pdf",
 					"output_dir":     "/Users/username/extracted/research",
 					"extract_images": true,
@@ -820,7 +819,7 @@ func (t *PDFTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Extract single page with images",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"file_path":      "/Users/username/docs/presentation.pdf",
 					"pages":          "5",
 					"extract_images": true,

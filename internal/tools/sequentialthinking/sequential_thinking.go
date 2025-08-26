@@ -65,7 +65,7 @@ func (t *SequentialThinkingTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *SequentialThinkingTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SequentialThinkingTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Check if sequential-thinking tool is enabled
 	if !tools.IsToolEnabled("sequential-thinking") {
 		return nil, fmt.Errorf("sequential thinking tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'sequential-thinking'")
@@ -110,7 +110,7 @@ func (t *SequentialThinkingTool) Execute(ctx context.Context, logger *logrus.Log
 }
 
 // validateThoughtData validates and converts the input arguments to ThoughtData
-func (t *SequentialThinkingTool) validateThoughtData(args map[string]interface{}) (*ThoughtData, error) {
+func (t *SequentialThinkingTool) validateThoughtData(args map[string]any) (*ThoughtData, error) {
 	thought, ok := args["thought"].(string)
 	if !ok || thought == "" {
 		return nil, fmt.Errorf("thought is required and must be a non-empty string")
@@ -141,7 +141,7 @@ func (t *SequentialThinkingTool) validateThoughtData(args map[string]interface{}
 }
 
 // processThought processes a thought and maintains the thought history
-func (t *SequentialThinkingTool) processThought(thoughtData *ThoughtData, logger *logrus.Logger) (map[string]interface{}, error) {
+func (t *SequentialThinkingTool) processThought(thoughtData *ThoughtData, logger *logrus.Logger) (map[string]any, error) {
 	t.thoughtHistoryMutex.Lock()
 	defer t.thoughtHistoryMutex.Unlock()
 
@@ -185,7 +185,7 @@ func (t *SequentialThinkingTool) processThought(thoughtData *ThoughtData, logger
 	}
 
 	// Create result
-	result := map[string]interface{}{
+	result := map[string]any{
 		"thoughtNumber":        thoughtData.ThoughtNumber,
 		"totalThoughts":        len(t.thoughtHistory), // Auto-calculated
 		"continue":             thoughtData.Continue,
@@ -222,10 +222,7 @@ func (t *SequentialThinkingTool) formatThought(thoughtData *ThoughtData) string 
 	// Calculate border length based on content
 	headerLen := len(fmt.Sprintf("💭 Thought %d%s", thoughtData.ThoughtNumber, context))
 	thoughtLen := len(thoughtData.Thought)
-	borderLen := headerLen
-	if thoughtLen > headerLen {
-		borderLen = thoughtLen
-	}
+	borderLen := max(thoughtLen, headerLen)
 	borderLen += 4 // Add padding
 
 	border := strings.Repeat("─", borderLen)

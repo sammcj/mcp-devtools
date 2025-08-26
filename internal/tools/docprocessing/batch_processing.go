@@ -13,7 +13,7 @@ import (
 )
 
 // executeBatch processes multiple documents concurrently
-func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[string]interface{}, sources []interface{}) (*mcp.CallToolResult, error) {
+func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[string]any, sources []any) (*mcp.CallToolResult, error) {
 	startTime := time.Now()
 
 	// Convert sources to strings
@@ -29,10 +29,7 @@ func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[strin
 	}
 
 	// Determine concurrency limit
-	maxConcurrency := t.getMaxConcurrency(args)
-	if maxConcurrency > len(sourceStrings) {
-		maxConcurrency = len(sourceStrings)
-	}
+	maxConcurrency := min(t.getMaxConcurrency(args), len(sourceStrings))
 
 	// Create channels for work distribution
 	sourceChan := make(chan string, len(sourceStrings))
@@ -46,13 +43,13 @@ func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[strin
 
 	// Start worker goroutines
 	var wg sync.WaitGroup
-	for i := 0; i < maxConcurrency; i++ {
+	for range maxConcurrency {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for source := range sourceChan {
 				// Create individual request for this source
-				individualArgs := make(map[string]interface{})
+				individualArgs := make(map[string]any)
 				for k, v := range args {
 					if k != "sources" { // Exclude sources array
 						individualArgs[k] = v
@@ -137,7 +134,7 @@ func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[strin
 }
 
 // getMaxConcurrency determines the maximum concurrency for batch processing
-func (t *DocumentProcessorTool) getMaxConcurrency(args map[string]interface{}) int {
+func (t *DocumentProcessorTool) getMaxConcurrency(args map[string]any) int {
 	// Check if max_concurrency is specified
 	if maxConc, ok := args["max_concurrency"].(float64); ok {
 		requested := int(maxConc)
@@ -148,13 +145,7 @@ func (t *DocumentProcessorTool) getMaxConcurrency(args map[string]interface{}) i
 
 	// Default: CPU cores - 1, minimum 1, maximum 10
 	cores := runtime.NumCPU()
-	defaultConcurrency := cores - 1
-	if defaultConcurrency < 1 {
-		defaultConcurrency = 1
-	}
-	if defaultConcurrency > 10 {
-		defaultConcurrency = 10
-	}
+	defaultConcurrency := min(max(cores-1, 1), 10)
 
 	return defaultConcurrency
 }

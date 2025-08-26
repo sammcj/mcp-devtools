@@ -75,7 +75,7 @@ type DirectoryEntry struct {
 	Name     string           `json:"name"`
 	Type     string           `json:"type"` // "file" or "directory"
 	Size     int64            `json:"size,omitempty"`
-	Modified time.Time        `json:"modified,omitempty"`
+	Modified time.Time        `json:"modified"`
 	Children []DirectoryEntry `json:"children,omitempty"` // Only for directories
 }
 

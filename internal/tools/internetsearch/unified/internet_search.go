@@ -3,6 +3,7 @@ package unified
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -24,7 +25,7 @@ type InternetSearchTool struct {
 
 // SearchProvider defines the interface all search providers must implement
 type SearchProvider interface {
-	Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]interface{}) (*internetsearch.SearchResponse, error)
+	Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]any) (*internetsearch.SearchResponse, error)
 	GetName() string
 	IsAvailable() bool
 	GetSupportedTypes() []string
@@ -193,7 +194,7 @@ After you have received the results you can fetch the url if you want to read th
 }
 
 // Execute executes the unified search tool
-func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse parameters (with default for type)
 	searchType, ok := args["type"].(string)
 	if !ok || searchType == "" {
@@ -265,7 +266,7 @@ func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 				case security.ActionWarn:
 					// Add security notice to result metadata
 					if result.Metadata == nil {
-						result.Metadata = make(map[string]interface{})
+						result.Metadata = make(map[string]any)
 					}
 					result.Metadata["security_warning"] = secResult.Message
 					result.Metadata["security_id"] = secResult.ID
@@ -290,12 +291,7 @@ func (t *InternetSearchTool) getAvailableProviders() []string {
 }
 
 func (t *InternetSearchTool) providerSupportsType(provider SearchProvider, searchType string) bool {
-	for _, supportedType := range provider.GetSupportedTypes() {
-		if supportedType == searchType {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(provider.GetSupportedTypes(), searchType)
 }
 
 // ProvideExtendedInfo provides detailed usage information for the internet search tool
@@ -303,7 +299,7 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	examples := []tools.ToolExample{
 		{
 			Description: "Basic web search with default provider",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"query": "golang best practices",
 				"count": 5,
 			},
@@ -311,7 +307,7 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		},
 		{
 			Description: "News search with time filtering",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"type":  "news",
 				"query": "artificial intelligence breakthrough",
 				"count": 3,
@@ -320,7 +316,7 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		},
 		{
 			Description: "Image search with specific provider",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"type":     "image",
 				"query":    "golang gopher mascot",
 				"provider": "brave",
@@ -334,7 +330,7 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	if t.hasProvider("brave") {
 		examples = append(examples, tools.ToolExample{
 			Description: "Brave search with time filtering and pagination",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"query":     "machine learning tutorials",
 				"provider":  "brave",
 				"freshness": "pw", // Past week
@@ -348,7 +344,7 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	if t.hasProvider("searxng") {
 		examples = append(examples, tools.ToolExample{
 			Description: "SearXNG search with language and safe search settings",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"query":      "programming tutorials",
 				"provider":   "searxng",
 				"language":   "en",

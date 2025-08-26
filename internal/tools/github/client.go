@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -369,11 +370,8 @@ func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string,
 					}
 
 					isText := true
-					for _, b := range checkBytes {
-						if b == 0 {
-							isText = false
-							break
-						}
+					if slices.Contains(checkBytes, 0) {
+						isText = false
 					}
 
 					if isText {
@@ -388,11 +386,8 @@ func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string,
 					}
 
 					isText := true
-					for _, b := range checkBytes {
-						if b == 0 {
-							isText = false
-							break
-						}
+					if slices.Contains(checkBytes, 0) {
+						isText = false
 					}
 
 					if isText {

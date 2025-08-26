@@ -98,7 +98,7 @@ func (c *DefaultOAuth2Client) tryDiscoverFromURL(ctx context.Context, discoveryU
 	}
 
 	// Parse the metadata response - both OpenID Connect and OAuth 2.0 use similar structures
-	var metadata map[string]interface{}
+	var metadata map[string]any
 	if err := json.Unmarshal(body, &metadata); err != nil {
 		return fmt.Errorf("failed to parse metadata: %w", err)
 	}

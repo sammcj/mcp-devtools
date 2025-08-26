@@ -63,7 +63,7 @@ Inline mode: Provide text parameter instead to get converted text returned direc
 }
 
 // Execute executes the m2e tool
-func (m *M2ETool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *M2ETool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse and validate parameters
 	request, err := m.parseRequest(args)
 	if err != nil {
@@ -196,7 +196,7 @@ func (m *M2ETool) executeUpdateFileMode(conv *converter.Converter, request *Conv
 }
 
 // parseRequest parses and validates the request parameters
-func (m *M2ETool) parseRequest(args map[string]interface{}) (*ConvertRequest, error) {
+func (m *M2ETool) parseRequest(args map[string]any) (*ConvertRequest, error) {
 	request := &ConvertRequest{}
 
 	// Parse text (for inline mode)
@@ -259,12 +259,9 @@ func (m *M2ETool) countChanges(original, converted string) int {
 	convertedWords := strings.Fields(converted)
 
 	changes := 0
-	maxLen := len(originalWords)
-	if len(convertedWords) > maxLen {
-		maxLen = len(convertedWords)
-	}
+	maxLen := max(len(convertedWords), len(originalWords))
 
-	for i := 0; i < maxLen; i++ {
+	for i := range maxLen {
 		var origWord, convWord string
 		if i < len(originalWords) {
 			origWord = originalWords[i]
@@ -287,21 +284,21 @@ func (m *M2ETool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Convert inline text from American to British English",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"text": "The color of the aluminum center was gray, and we realized it needed optimization.",
 				},
 				ExpectedResult: "Returns the converted text with British spellings: 'The colour of the aluminium centre was grey, and we realised it needed optimisation.'",
 			},
 			{
 				Description: "Convert a file in place with British spellings",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"file_path": "/Users/username/projects/myapp/README.md",
 				},
 				ExpectedResult: "Updates the file directly, converting American spellings to British throughout the document and returns a summary of changes made",
 			},
 			{
 				Description: "Convert text while preserving smart quotes",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"text":              "The program's behavior was optimized for the organization's needs.",
 					"keep_smart_quotes": true,
 				},
@@ -309,7 +306,7 @@ func (m *M2ETool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Convert text with smart quote normalisation",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"text":              "The program's behavior was \"optimized\" for the organization's needs.",
 					"keep_smart_quotes": false,
 				},

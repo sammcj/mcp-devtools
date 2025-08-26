@@ -230,10 +230,7 @@ func (p *Parser) FormatDocumentationResult(url, content string, startIndex, maxL
 	}
 
 	// Calculate end index
-	endIndex := startIndex + maxLength
-	if endIndex > originalLength {
-		endIndex = originalLength
-	}
+	endIndex := min(startIndex+maxLength, originalLength)
 
 	// Extract the content slice
 	extractedContent := content[startIndex:endIndex]

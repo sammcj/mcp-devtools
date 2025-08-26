@@ -75,7 +75,7 @@ func (t *TerraformDocumentationTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *TerraformDocumentationTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 
 	// Initialise client if needed
 	if t.client == nil {
@@ -117,7 +117,7 @@ func (t *TerraformDocumentationTool) Execute(ctx context.Context, logger *logrus
 }
 
 // executeSearchProviders handles search_providers action
-func (t *TerraformDocumentationTool) executeSearchProviders(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeSearchProviders(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	providerName, ok := args["provider_name"].(string)
 	if !ok || providerName == "" {
 		return nil, fmt.Errorf("search_providers requires 'provider_name' parameter (e.g., 'aws', 'azurerm', 'google')")
@@ -147,7 +147,7 @@ func (t *TerraformDocumentationTool) executeSearchProviders(ctx context.Context,
 }
 
 // executeGetProviderDetails handles get_provider_details action
-func (t *TerraformDocumentationTool) executeGetProviderDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetProviderDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	providerDocID, ok := args["provider_doc_id"].(string)
 	if !ok || providerDocID == "" {
 		return nil, fmt.Errorf("missing required parameter: provider_doc_id")
@@ -157,7 +157,7 @@ func (t *TerraformDocumentationTool) executeGetProviderDetails(ctx context.Conte
 }
 
 // executeGetLatestProviderVersion handles get_latest_provider_version action
-func (t *TerraformDocumentationTool) executeGetLatestProviderVersion(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetLatestProviderVersion(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	providerName, ok := args["provider_name"].(string)
 	if !ok || providerName == "" {
 		return nil, fmt.Errorf("missing required parameter: provider_name")
@@ -172,7 +172,7 @@ func (t *TerraformDocumentationTool) executeGetLatestProviderVersion(ctx context
 }
 
 // executeSearchModules handles search_modules action
-func (t *TerraformDocumentationTool) executeSearchModules(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeSearchModules(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	moduleQuery, ok := args["query"].(string)
 	if !ok || moduleQuery == "" {
 		return nil, fmt.Errorf("missing required parameter: query")
@@ -187,7 +187,7 @@ func (t *TerraformDocumentationTool) executeSearchModules(ctx context.Context, l
 }
 
 // executeGetModuleDetails handles get_module_details action
-func (t *TerraformDocumentationTool) executeGetModuleDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetModuleDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	moduleID, ok := args["module_id"].(string)
 	if !ok || moduleID == "" {
 		return nil, fmt.Errorf("missing required parameter: module_id")
@@ -197,7 +197,7 @@ func (t *TerraformDocumentationTool) executeGetModuleDetails(ctx context.Context
 }
 
 // executeGetLatestModuleVersion handles get_latest_module_version action
-func (t *TerraformDocumentationTool) executeGetLatestModuleVersion(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetLatestModuleVersion(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	moduleID, ok := args["module_id"].(string)
 	if !ok || moduleID == "" {
 		return nil, fmt.Errorf("missing required parameter: module_id")
@@ -207,7 +207,7 @@ func (t *TerraformDocumentationTool) executeGetLatestModuleVersion(ctx context.C
 }
 
 // executeSearchPolicies handles search_policies action
-func (t *TerraformDocumentationTool) executeSearchPolicies(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeSearchPolicies(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	policyQuery, ok := args["query"].(string)
 	if !ok || policyQuery == "" {
 		return nil, fmt.Errorf("missing required parameter: query")
@@ -217,7 +217,7 @@ func (t *TerraformDocumentationTool) executeSearchPolicies(ctx context.Context, 
 }
 
 // executeGetPolicyDetails handles get_policy_details action
-func (t *TerraformDocumentationTool) executeGetPolicyDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetPolicyDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	policyID, ok := args["policy_id"].(string)
 	if !ok || policyID == "" {
 		return nil, fmt.Errorf("missing required parameter: policy_id")
@@ -232,7 +232,7 @@ func (t *TerraformDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Search for AWS provider resources",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action":             "search_providers",
 					"provider_name":      "aws",
 					"provider_namespace": "hashicorp",
@@ -243,7 +243,7 @@ func (t *TerraformDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get specific provider documentation",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action":          "get_provider_details",
 					"provider_doc_id": "8894603",
 				},
@@ -251,7 +251,7 @@ func (t *TerraformDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Search for Terraform modules",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action": "search_modules",
 					"query":  "vpc aws",
 					"limit":  5,
@@ -260,7 +260,7 @@ func (t *TerraformDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get module details",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action":    "get_module_details",
 					"module_id": "terraform-aws-modules/vpc/aws",
 				},

@@ -24,14 +24,14 @@ func (t *PyProjectTool) Definition() mcp.Tool {
 		mcp.WithDescription("Check latest stable versions for Python packages in pyproject.toml"),
 		mcp.WithObject("dependencies",
 			mcp.Description("Dependencies object from pyproject.toml"),
-			mcp.Properties(map[string]interface{}{}),
+			mcp.Properties(map[string]any{}),
 			mcp.Required(),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *PyProjectTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *PyProjectTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting latest Python package versions from pyproject.toml")
 
 	// Parse dependencies
@@ -41,7 +41,7 @@ func (t *PyProjectTool) Execute(ctx context.Context, logger *logrus.Logger, cach
 	}
 
 	// Convert to map[string]interface{}
-	depsMap, ok := depsRaw.(map[string]interface{})
+	depsMap, ok := depsRaw.(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("invalid dependencies format: expected object")
 	}
@@ -50,7 +50,7 @@ func (t *PyProjectTool) Execute(ctx context.Context, logger *logrus.Logger, cach
 	var packages []Package
 
 	// Process main dependencies
-	if mainDeps, ok := depsMap["dependencies"].(map[string]interface{}); ok {
+	if mainDeps, ok := depsMap["dependencies"].(map[string]any); ok {
 		for name, version := range mainDeps {
 			if vStr, ok := version.(string); ok {
 				packages = append(packages, Package{
@@ -62,9 +62,9 @@ func (t *PyProjectTool) Execute(ctx context.Context, logger *logrus.Logger, cach
 	}
 
 	// Process optional dependencies
-	if optDeps, ok := depsMap["optional-dependencies"].(map[string]interface{}); ok {
+	if optDeps, ok := depsMap["optional-dependencies"].(map[string]any); ok {
 		for _, group := range optDeps {
-			if groupDeps, ok := group.(map[string]interface{}); ok {
+			if groupDeps, ok := group.(map[string]any); ok {
 				for name, version := range groupDeps {
 					if vStr, ok := version.(string); ok {
 						packages = append(packages, Package{
@@ -78,7 +78,7 @@ func (t *PyProjectTool) Execute(ctx context.Context, logger *logrus.Logger, cach
 	}
 
 	// Process dev dependencies
-	if devDeps, ok := depsMap["dev-dependencies"].(map[string]interface{}); ok {
+	if devDeps, ok := depsMap["dev-dependencies"].(map[string]any); ok {
 		for name, version := range devDeps {
 			if vStr, ok := version.(string); ok {
 				packages = append(packages, Package{
@@ -175,8 +175,8 @@ func cleanPyProjectVersion(version string) string {
 
 	// Remove version specifiers
 	for _, prefix := range []string{">=", "<=", ">", "<", "==", "~=", "!="} {
-		if strings.HasPrefix(version, prefix) {
-			version = strings.TrimPrefix(version, prefix)
+		if after, ok := strings.CutPrefix(version, prefix); ok {
+			version = after
 			break
 		}
 	}

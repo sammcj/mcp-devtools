@@ -41,7 +41,7 @@ type GitHubReleaseResponse []struct {
 }
 
 // GetLatestVersion gets the latest version of Swift packages
-func (h *SwiftHandler) GetLatestVersion(ctx context.Context, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (h *SwiftHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	h.logger.Info("Getting latest Swift package versions")
 
 	// Parse dependencies
@@ -52,9 +52,9 @@ func (h *SwiftHandler) GetLatestVersion(ctx context.Context, args map[string]int
 
 	// Convert to []SwiftDependency
 	var deps []SwiftDependency
-	if depsArr, ok := depsRaw.([]interface{}); ok {
+	if depsArr, ok := depsRaw.([]any); ok {
 		for _, depRaw := range depsArr {
-			if depMap, ok := depRaw.(map[string]interface{}); ok {
+			if depMap, ok := depRaw.(map[string]any); ok {
 				var dep SwiftDependency
 				if url, ok := depMap["url"].(string); ok {
 					dep.URL = url
@@ -77,10 +77,10 @@ func (h *SwiftHandler) GetLatestVersion(ctx context.Context, args map[string]int
 	// Parse constraints
 	var constraints VersionConstraints
 	if constraintsRaw, ok := args["constraints"]; ok {
-		if constraintsMap, ok := constraintsRaw.(map[string]interface{}); ok {
+		if constraintsMap, ok := constraintsRaw.(map[string]any); ok {
 			constraints = make(VersionConstraints)
 			for name, constraintRaw := range constraintsMap {
-				if constraintMap, ok := constraintRaw.(map[string]interface{}); ok {
+				if constraintMap, ok := constraintRaw.(map[string]any); ok {
 					var constraint VersionConstraint
 					if majorVersion, ok := constraintMap["majorVersion"].(float64); ok {
 						majorInt := int(majorVersion)

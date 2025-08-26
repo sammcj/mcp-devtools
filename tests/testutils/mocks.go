@@ -51,7 +51,7 @@ func (m *MockTool) Definition() mcp.Tool {
 }
 
 // Execute executes the mock tool
-func (m *MockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *MockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	if m.executeErr != nil {
 		return nil, m.executeErr
 	}
@@ -138,26 +138,26 @@ func (m *MockReadCloser) Close() error {
 
 // MockCache provides a controllable cache for testing
 type MockCache struct {
-	data map[string]interface{}
+	data map[string]any
 	mu   sync.RWMutex
 }
 
 // NewMockCache creates a new mock cache
 func NewMockCache() *MockCache {
 	return &MockCache{
-		data: make(map[string]interface{}),
+		data: make(map[string]any),
 	}
 }
 
 // Store stores a value in the mock cache
-func (m *MockCache) Store(key, value interface{}) {
+func (m *MockCache) Store(key, value any) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.data[fmt.Sprintf("%v", key)] = value
 }
 
 // Load loads a value from the mock cache
-func (m *MockCache) Load(key interface{}) (interface{}, bool) {
+func (m *MockCache) Load(key any) (any, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	value, ok := m.data[fmt.Sprintf("%v", key)]
@@ -165,14 +165,14 @@ func (m *MockCache) Load(key interface{}) (interface{}, bool) {
 }
 
 // Delete removes a value from the mock cache
-func (m *MockCache) Delete(key interface{}) {
+func (m *MockCache) Delete(key any) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.data, fmt.Sprintf("%v", key))
 }
 
 // Range calls f sequentially for each key and value present in the cache
-func (m *MockCache) Range(f func(key, value interface{}) bool) {
+func (m *MockCache) Range(f func(key, value any) bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	for k, v := range m.data {

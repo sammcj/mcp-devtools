@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -716,10 +717,8 @@ func (c *Config) ResolveHardwareAcceleration() HardwareAcceleration {
 
 	// Prefer MPS on macOS, then CUDA, then CPU
 	for _, accel := range []HardwareAcceleration{HardwareAccelerationMPS, HardwareAccelerationCUDA, HardwareAccelerationCPU} {
-		for _, avail := range available {
-			if accel == avail {
-				return accel
-			}
+		if slices.Contains(available, accel) {
+			return accel
 		}
 	}
 

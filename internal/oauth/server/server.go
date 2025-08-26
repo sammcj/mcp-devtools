@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/sammcj/mcp-devtools/internal/oauth/metadata"
@@ -189,13 +190,7 @@ func (s *OAuth2Server) isOAuthMetadataEndpoint(path string) bool {
 		oauthPaths = append(oauthPaths, "/oauth/register")
 	}
 
-	for _, oauthPath := range oauthPaths {
-		if path == oauthPath {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(oauthPaths, path)
 }
 
 // RegisterHandlers registers OAuth 2.1 endpoints with an HTTP mux
@@ -230,13 +225,7 @@ func HasScope(ctx context.Context, requiredScope string) bool {
 
 	// Parse scopes (space-separated)
 	scopes := strings.Fields(claims.Scope)
-	for _, scope := range scopes {
-		if scope == requiredScope {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(scopes, requiredScope)
 }
 
 // RequireScope creates a middleware that requires a specific OAuth scope

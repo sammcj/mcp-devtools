@@ -13,8 +13,8 @@ import (
 )
 
 // formatResponse formats the response for MCP output
-func (t *DocumentProcessorTool) formatResponse(response *DocumentProcessingResponse) map[string]interface{} {
-	result := map[string]interface{}{
+func (t *DocumentProcessorTool) formatResponse(response *DocumentProcessingResponse) map[string]any {
+	result := map[string]any{
 		"source":          response.Source,
 		"content":         response.Content,
 		"cache_hit":       response.CacheHit,
@@ -87,13 +87,13 @@ func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *Docu
 	}
 
 	// Create success response
-	result := map[string]interface{}{
+	result := map[string]any{
 		"success":   true,
 		"message":   "Content successfully exported to file",
 		"save_path": savePath,
 		"source":    response.Source,
 		"cache_hit": response.CacheHit,
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"file_size": len(response.Content),
 		},
 		"processing_info": response.ProcessingInfo,
@@ -101,7 +101,7 @@ func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *Docu
 
 	// Include document metadata if available
 	if response.Metadata != nil {
-		if metadata, ok := result["metadata"].(map[string]interface{}); ok {
+		if metadata, ok := result["metadata"].(map[string]any); ok {
 			metadata["document_title"] = response.Metadata.Title
 			metadata["document_author"] = response.Metadata.Author
 			metadata["page_count"] = response.Metadata.PageCount
@@ -165,7 +165,7 @@ func (t *DocumentProcessorTool) generateSavePath(source string) (string, error) 
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (t *DocumentProcessorTool) newToolResultJSON(data interface{}) (*mcp.CallToolResult, error) {
+func (t *DocumentProcessorTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)

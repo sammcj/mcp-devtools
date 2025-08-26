@@ -45,7 +45,7 @@ func (t *GetLibraryDocsTool) Definition() mcp.Tool {
 }
 
 // Execute executes the get_library_docs tool
-func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Lazy initialise client
 	if t.client == nil {
 		t.client = NewClient(logger)
@@ -151,14 +151,14 @@ func (t *GetLibraryDocsTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Get Next.js documentation without a specific topic focus",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"context7CompatibleLibraryID": "/vercel/next.js",
 				},
 				ExpectedResult: "Returns general Next.js documentation up to 10,000 tokens covering core concepts, setup, and API reference",
 			},
 			{
 				Description: "Get focused React hooks documentation with higher token limit",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"context7CompatibleLibraryID": "/facebook/react",
 					"topic":                       "hooks",
 					"tokens":                      20000,
@@ -167,7 +167,7 @@ func (t *GetLibraryDocsTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get MongoDB driver documentation for a specific version",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"context7CompatibleLibraryID": "/mongodb/node-mongodb-native/v4.17.1",
 					"topic":                       "aggregation",
 				},
@@ -175,7 +175,7 @@ func (t *GetLibraryDocsTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get concise AWS SDK documentation for Lambda functions",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"context7CompatibleLibraryID": "/aws/aws-sdk-js-v3",
 					"topic":                       "lambda",
 					"tokens":                      5000,

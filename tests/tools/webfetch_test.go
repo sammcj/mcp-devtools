@@ -33,7 +33,7 @@ func TestFetchURLTool_Execute_MissingURL(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{}
+	args := map[string]any{}
 
 	_, err := tool.Execute(ctx, logger, cache, args)
 
@@ -47,7 +47,7 @@ func TestFetchURLTool_Execute_EmptyURL(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"url": "",
 	}
 
@@ -63,7 +63,7 @@ func TestFetchURLTool_Execute_InvalidURLType(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"url": 123, // Invalid type
 	}
 
@@ -79,7 +79,7 @@ func TestFetchURLTool_Execute_InvalidURLScheme(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"url": "ftp://example.com",
 	}
 
@@ -96,7 +96,7 @@ func TestFetchURLTool_Execute_InvalidMaxLength(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	// Test max_length too small
-	args := map[string]interface{}{
+	args := map[string]any{
 		"url":        "https://example.com",
 		"max_length": float64(0),
 	}
@@ -121,7 +121,7 @@ func TestFetchURLTool_Execute_InvalidStartIndex(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"url":         "https://example.com",
 		"start_index": float64(-1),
 	}
@@ -368,10 +368,7 @@ func TestFetchURLTool_PaginationLogic(t *testing.T) {
 				return
 			}
 
-			endIndex := tt.startIndex + tt.maxLength
-			if endIndex > totalLength {
-				endIndex = totalLength
-			}
+			endIndex := min(tt.startIndex+tt.maxLength, totalLength)
 
 			resultLength := endIndex - tt.startIndex
 			truncated := endIndex < totalLength
@@ -392,7 +389,7 @@ func TestFetchURLTool_ResultFormat(t *testing.T) {
 	}
 
 	// This is a structure test - we verify the expected JSON structure
-	sampleResponse := map[string]interface{}{
+	sampleResponse := map[string]any{
 		"url":          "https://example.com",
 		"content_type": "text/html",
 		"status_code":  200,
@@ -409,7 +406,7 @@ func TestFetchURLTool_ResultFormat(t *testing.T) {
 	jsonBytes, err := json.Marshal(sampleResponse)
 	testutils.AssertNoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal(jsonBytes, &parsed)
 	testutils.AssertNoError(t, err)
 

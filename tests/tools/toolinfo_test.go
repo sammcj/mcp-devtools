@@ -28,7 +28,7 @@ func (m *mockExtendedInfoTool) Definition() mcp.Tool {
 	)
 }
 
-func (m *mockExtendedInfoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *mockExtendedInfoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	return mcp.NewToolResultText("mock result"), nil
 }
 
@@ -37,7 +37,7 @@ func (m *mockExtendedInfoTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Basic usage example",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"param1": "test_value",
 				},
 				ExpectedResult: "Success with test_value",
@@ -103,7 +103,7 @@ func TestToolHelpTool_Execute_ValidToolWithoutExtendedInfo(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"tool_name": "think",
 	}
 
@@ -132,7 +132,7 @@ func TestToolHelpTool_Execute_ValidToolWithExtendedInfo(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"tool_name": "mock_extended_tool",
 	}
 
@@ -183,7 +183,7 @@ func TestToolHelpTool_Execute_InvalidToolName(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"tool_name": "nonexistent_tool",
 	}
 
@@ -203,7 +203,7 @@ func TestToolHelpTool_Execute_MissingToolName(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{}
+	args := map[string]any{}
 
 	_, err := tool.Execute(ctx, logger, cache, args)
 
@@ -220,7 +220,7 @@ func TestToolHelpTool_Execute_InvalidToolNameType(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"tool_name": 123, // Invalid type
 	}
 
@@ -243,7 +243,7 @@ func TestToolHelpTool_Execute_AlwaysIncludeExamples(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"tool_name": "mock_extended_tool",
 	}
 
