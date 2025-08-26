@@ -81,7 +81,7 @@ fmt:
 lint:
 	gofmt -w -s .
 	golangci-lint run
-	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -test ./...
+	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -fix -test ./...
 
 # Install dependencies
 .PHONY: deps
