@@ -326,12 +326,10 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 		"duration": duration.Round(time.Millisecond),
 	}).Debug("Context7 API request completed")
 
-	// Handle warnings
 	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
 		c.logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
 	}
 
-	// Enhanced error handling based on official Context7 server improvements
 	if safeResp.StatusCode >= 400 {
 		// Limit error response content for security
 		content := safeResp.Content
@@ -339,7 +337,6 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 			content = content[:1024*1024]
 		}
 
-		// Provide specific error messages based on HTTP status codes
 		switch safeResp.StatusCode {
 		case 401:
 			return fmt.Errorf("unauthorised. Please check your API key")
