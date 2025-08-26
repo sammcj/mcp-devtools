@@ -44,9 +44,7 @@ func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[strin
 	// Start worker goroutines
 	var wg sync.WaitGroup
 	for range maxConcurrency {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for source := range sourceChan {
 				// Create individual request for this source
 				individualArgs := make(map[string]any)
@@ -104,7 +102,7 @@ func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[strin
 
 				resultChan <- response
 			}
-		}()
+		})
 	}
 
 	// Wait for all workers to complete

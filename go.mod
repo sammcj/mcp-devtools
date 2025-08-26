@@ -1,6 +1,6 @@
 module github.com/sammcj/mcp-devtools
 
-go 1.24.2
+go 1.25
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
@@ -9,6 +9,7 @@ require (
 	github.com/anchore/go-logger v0.0.0-20250813181427-74728f89a619
 	github.com/anchore/grype v0.98.0
 	github.com/anchore/syft v1.31.0
+	github.com/fatih/color v1.18.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/gofrs/flock v0.12.1
@@ -133,7 +134,6 @@ require (
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/facebookincubator/nvdtools v0.1.5 // indirect
-	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/fgprof v0.9.5 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
