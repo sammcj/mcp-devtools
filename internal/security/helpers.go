@@ -283,7 +283,7 @@ func (o *Operations) SafeHTTPPostWithHeaders(urlStr string, body io.Reader, head
 	}
 
 	// Set default content type if not provided
-	if headers["Content-Type"] == "" {
+	if _, ok := headers["Content-Type"]; !ok {
 		req.Header.Set("Content-Type", "application/json")
 	}
 
