@@ -74,5 +74,7 @@ semgrep.out
 **/*.sarif
 
 # serena https://github.com/oraios/serena
-!.serena/project.yml
-.serena/
+!*.serena/project.yml
+.serena/memories
+.serena/cache
+.serena/logs
