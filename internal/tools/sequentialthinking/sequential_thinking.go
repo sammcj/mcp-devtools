@@ -17,15 +17,12 @@ import (
 
 // ThoughtData represents a single thought in the sequential thinking process
 type ThoughtData struct {
-	Thought           string `json:"thought"`
-	ThoughtNumber     int    `json:"thoughtNumber"`
-	TotalThoughts     int    `json:"totalThoughts"`
-	NextThoughtNeeded bool   `json:"nextThoughtNeeded"`
-	IsRevision        bool   `json:"isRevision,omitempty"`
-	RevisesThought    int    `json:"revisesThought,omitempty"`
-	BranchFromThought int    `json:"branchFromThought,omitempty"`
-	BranchID          string `json:"branchId,omitempty"`
-	NeedsMoreThoughts bool   `json:"needsMoreThoughts,omitempty"`
+	Thought       string `json:"thought"`
+	ThoughtNumber int    `json:"thoughtNumber"`
+	Continue      bool   `json:"continue"`
+	IsRevision    bool   `json:"isRevision,omitempty"`
+	RevisedText   string `json:"revisedText,omitempty"`
+	ExploreLabel  string `json:"exploreLabel,omitempty"`
 }
 
 // SequentialThinkingTool implements the tools.Tool interface for sequential thinking
@@ -47,14 +44,14 @@ func init() {
 func (t *SequentialThinkingTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"sequential_thinking",
-		mcp.WithDescription(`Dynamic problem-solving through sequential thinking with branching and revision.
+		mcp.WithDescription(`Dynamic problem-solving through sequential thinking with auto-managed state.
 
 Use for:
 - Stubborn or complex multi-step problems requiring systematic breakdown
 - Analysis needing course correction or alternative approaches
 - Complex planning with iterative refinement and uncertainty handling
 
-Features: thought revision, branching, progress tracking, formatted logging. Use 'get_usage' action for detailed usage instructions.`),
+Features: automatic thought tracking, revision detection, branch management, progress logging. Use 'get_usage' action for detailed usage instructions.`),
 		mcp.WithString("action",
 			mcp.Description("Action to perform: 'think' or 'get_usage'"),
 			mcp.Enum("think", "get_usage"),
@@ -62,29 +59,14 @@ Features: thought revision, branching, progress tracking, formatted logging. Use
 		mcp.WithString("thought",
 			mcp.Description("Your current thinking step (required for 'think' action)"),
 		),
-		mcp.WithBoolean("nextThoughtNeeded",
-			mcp.Description("Whether another thought step is needed (required for 'think' action)"),
+		mcp.WithBoolean("continue",
+			mcp.Description("Whether more thinking is needed after this step (required for 'think' action)"),
 		),
-		mcp.WithNumber("thoughtNumber",
-			mcp.Description("Current thought number (required for 'think' action)"),
+		mcp.WithString("revise",
+			mcp.Description("Brief text snippet from previous thought to revise (optional)"),
 		),
-		mcp.WithNumber("totalThoughts",
-			mcp.Description("Estimated total thoughts needed (required for 'think' action)"),
-		),
-		mcp.WithBoolean("isRevision",
-			mcp.Description("Whether this revises previous thinking"),
-		),
-		mcp.WithNumber("revisesThought",
-			mcp.Description("Which thought is being reconsidered"),
-		),
-		mcp.WithNumber("branchFromThought",
-			mcp.Description("Branching point thought number"),
-		),
-		mcp.WithString("branchId",
-			mcp.Description("Branch identifier"),
-		),
-		mcp.WithBoolean("needsMoreThoughts",
-			mcp.Description("If more thoughts are needed"),
+		mcp.WithString("explore",
+			mcp.Description("Label for exploring alternative approach (optional)"),
 		),
 	)
 }
@@ -141,47 +123,25 @@ func (t *SequentialThinkingTool) validateThoughtData(args map[string]interface{}
 		return nil, fmt.Errorf("thought is required and must be a non-empty string")
 	}
 
-	nextThoughtNeeded, ok := args["nextThoughtNeeded"].(bool)
+	continueThinking, ok := args["continue"].(bool)
 	if !ok {
-		return nil, fmt.Errorf("nextThoughtNeeded is required and must be a boolean")
-	}
-
-	thoughtNumber, ok := args["thoughtNumber"].(float64)
-	if !ok || thoughtNumber < 1 {
-		return nil, fmt.Errorf("thoughtNumber is required and must be a positive integer")
-	}
-
-	totalThoughts, ok := args["totalThoughts"].(float64)
-	if !ok || totalThoughts < 1 {
-		return nil, fmt.Errorf("totalThoughts is required and must be a positive integer")
+		return nil, fmt.Errorf("continue is required and must be a boolean")
 	}
 
 	data := &ThoughtData{
-		Thought:           thought,
-		ThoughtNumber:     int(thoughtNumber),
-		TotalThoughts:     int(totalThoughts),
-		NextThoughtNeeded: nextThoughtNeeded,
+		Thought:  thought,
+		Continue: continueThinking,
 	}
 
-	// Parse optional fields
-	if isRevision, ok := args["isRevision"].(bool); ok {
-		data.IsRevision = isRevision
+	// Handle optional revision parameter
+	if revise, ok := args["revise"].(string); ok && revise != "" {
+		data.IsRevision = true
+		data.RevisedText = revise
 	}
 
-	if revisesThought, ok := args["revisesThought"].(float64); ok && revisesThought >= 1 {
-		data.RevisesThought = int(revisesThought)
-	}
-
-	if branchFromThought, ok := args["branchFromThought"].(float64); ok && branchFromThought >= 1 {
-		data.BranchFromThought = int(branchFromThought)
-	}
-
-	if branchID, ok := args["branchId"].(string); ok && branchID != "" {
-		data.BranchID = branchID
-	}
-
-	if needsMoreThoughts, ok := args["needsMoreThoughts"].(bool); ok {
-		data.NeedsMoreThoughts = needsMoreThoughts
+	// Handle optional exploration parameter
+	if explore, ok := args["explore"].(string); ok && explore != "" {
+		data.ExploreLabel = explore
 	}
 
 	return data, nil
@@ -197,21 +157,21 @@ func (t *SequentialThinkingTool) processThought(thoughtData *ThoughtData, logger
 		t.branches = make(map[string][]ThoughtData)
 	}
 
-	// Adjust total thoughts if current thought number exceeds it
-	if thoughtData.ThoughtNumber > thoughtData.TotalThoughts {
-		thoughtData.TotalThoughts = thoughtData.ThoughtNumber
-	}
+	// Auto-manage thought numbering
+	thoughtData.ThoughtNumber = len(t.thoughtHistory) + 1
 
-	// Add thought to history
-	t.thoughtHistory = append(t.thoughtHistory, *thoughtData)
-
-	// Handle branching
-	if thoughtData.BranchFromThought > 0 && thoughtData.BranchID != "" {
-		if t.branches[thoughtData.BranchID] == nil {
-			t.branches[thoughtData.BranchID] = []ThoughtData{}
+	// Handle exploration (branching)
+	var currentBranch string
+	if thoughtData.ExploreLabel != "" {
+		currentBranch = thoughtData.ExploreLabel
+		if t.branches[currentBranch] == nil {
+			t.branches[currentBranch] = []ThoughtData{}
 		}
-		t.branches[thoughtData.BranchID] = append(t.branches[thoughtData.BranchID], *thoughtData)
+		t.branches[currentBranch] = append(t.branches[currentBranch], *thoughtData)
 	}
+
+	// Add thought to main history
+	t.thoughtHistory = append(t.thoughtHistory, *thoughtData)
 
 	// Format and log the thought if logging is enabled
 	// Note: We use the logger instead of stderr to avoid MCP stdio protocol violations
@@ -219,9 +179,9 @@ func (t *SequentialThinkingTool) processThought(thoughtData *ThoughtData, logger
 		formattedThought := t.formatThought(thoughtData)
 		logger.WithFields(logrus.Fields{
 			"thought_number": thoughtData.ThoughtNumber,
-			"total_thoughts": thoughtData.TotalThoughts,
 			"is_revision":    thoughtData.IsRevision,
-			"branch_id":      thoughtData.BranchID,
+			"revised_text":   thoughtData.RevisedText,
+			"explore_label":  thoughtData.ExploreLabel,
 		}).Info("Sequential thinking step:\n" + formattedThought)
 	}
 
@@ -234,8 +194,8 @@ func (t *SequentialThinkingTool) processThought(thoughtData *ThoughtData, logger
 	// Create result
 	result := map[string]interface{}{
 		"thoughtNumber":        thoughtData.ThoughtNumber,
-		"totalThoughts":        thoughtData.TotalThoughts,
-		"nextThoughtNeeded":    thoughtData.NextThoughtNeeded,
+		"totalThoughts":        len(t.thoughtHistory), // Auto-calculated
+		"continue":             thoughtData.Continue,
 		"branches":             branchNames,
 		"thoughtHistoryLength": len(t.thoughtHistory),
 	}
@@ -254,24 +214,20 @@ func (t *SequentialThinkingTool) formatThought(thoughtData *ThoughtData) string 
 
 	if thoughtData.IsRevision {
 		prefix = yellow("🔄 Revision")
-		if thoughtData.RevisesThought > 0 {
-			context = fmt.Sprintf(" (revising thought %d)", thoughtData.RevisesThought)
+		if thoughtData.RevisedText != "" {
+			context = fmt.Sprintf(" (revising: %.20s...)", thoughtData.RevisedText)
 		}
-	} else if thoughtData.BranchFromThought > 0 {
-		prefix = green("🌿 Branch")
-		context = fmt.Sprintf(" (from thought %d", thoughtData.BranchFromThought)
-		if thoughtData.BranchID != "" {
-			context += fmt.Sprintf(", ID: %s", thoughtData.BranchID)
-		}
-		context += ")"
+	} else if thoughtData.ExploreLabel != "" {
+		prefix = green("🌿 Explore")
+		context = fmt.Sprintf(" (%s)", thoughtData.ExploreLabel)
 	} else {
 		prefix = blue("💭 Thought")
 	}
 
-	header := fmt.Sprintf("%s %d/%d%s", prefix, thoughtData.ThoughtNumber, thoughtData.TotalThoughts, context)
+	header := fmt.Sprintf("%s %d%s", prefix, thoughtData.ThoughtNumber, context)
 
 	// Calculate border length based on content
-	headerLen := len(fmt.Sprintf("💭 Thought %d/%d%s", thoughtData.ThoughtNumber, thoughtData.TotalThoughts, context))
+	headerLen := len(fmt.Sprintf("💭 Thought %d%s", thoughtData.ThoughtNumber, context))
 	thoughtLen := len(thoughtData.Thought)
 	borderLen := headerLen
 	if thoughtLen > headerLen {
@@ -300,8 +256,8 @@ func (t *SequentialThinkingTool) getUsage() *mcp.CallToolResult {
 
 ## Purpose
 A tool for dynamic and reflective problem-solving through sequential thinking.
-This tool helps analyse problems through a flexible thinking process that can adapt and evolve.
-Each thought can build on, question, or revise previous insights as understanding deepens.
+This tool helps analyse problems through a flexible thinking process with auto-managed state.
+Focus on your thinking content - the tool handles numbering, tracking, and branching automatically.
 
 ## When to Use This Tool
 - Breaking down complex problems into steps
@@ -316,49 +272,48 @@ Each thought can build on, question, or revise previous insights as understandin
 
 **Step 1: Initial Analysis**
 - thought: "Let me break down this API design problem..."
-- thoughtNumber: 1, totalThoughts: 3, nextThoughtNeeded: true
+- continue: true
 
 **Step 2: Revision**
 - thought: "Actually, I missed security considerations..."
-- thoughtNumber: 2, totalThoughts: 4 (adjusted up)
-- isRevision: true, revisesThought: 1 (revising step 1)
+- continue: true
+- revise: "API design problem" (snippet from previous thought)
 
-**Step 3: Branching**
+**Step 3: Exploration**
 - thought: "What if we used GraphQL instead?"
-- thoughtNumber: 3, branchFromThought: 2, branchId: "graphql-alternative"
+- continue: true
+- explore: "graphql-alternative"
 
 **Step 4: Final Decision**
 - thought: "After comparing both approaches, REST is better..."
-- thoughtNumber: 4, nextThoughtNeeded: false (completed)
+- continue: false
 
 ## Parameters Explained
-- **thought**: Your current thinking step, which can include:
-  * Regular analytical steps
-  * Revisions of previous thoughts
-  * Questions about previous decisions
-  * Realisations about needing more analysis
-  * Changes in approach
-  * Hypothesis generation & verification
-- **nextThoughtNeeded**: True if you need more thinking, even if at what seemed like the end
-- **thoughtNumber**: Current number in sequence (can go beyond initial total if needed)
-- **totalThoughts**: Current estimate of thoughts needed (can be adjusted up/down)
-- **isRevision**: A boolean indicating if this thought revises previous thinking
-- **revisesThought**: If isRevision is true, which thought number is being reconsidered
-- **branchFromThought**: If branching, which thought number is the branching point
-- **branchId**: Identifier for the current branch (if any)
-- **needsMoreThoughts**: If reaching end but realising more thoughts needed
+- **thought**: Your current thinking step content (required)
+- **continue**: Whether more thinking is needed after this step - true/false (required)
+- **revise**: Brief text snippet from previous thought you're revising (optional)
+- **explore**: Label for exploring alternative approach/branch (optional)
+
+## Key Features
+- **Auto-managed numbering**: No need to track thought numbers manually
+- **Automatic totals**: Tool calculates total thoughts dynamically
+- **Smart revision detection**: Just provide snippet of what you're revising
+- **Simple branching**: Use explore labels to track alternative approaches
+- **Progress tracking**: Tool maintains complete thinking history
+- **Formatted logging**: Visual output shows thinking structure
 
 ## Best Practices
-1. Don't hesitate to add more thoughts if needed, even at the "end"
-2. Express uncertainty when present
-3. Mark thoughts that revise previous thinking or branch into new paths
-4. Ignore information that is irrelevant to the current step
-5. Generate a solution hypothesis when appropriate
-6. Verify the hypothesis based on the Chain of Thought steps
-7. Repeat the process until satisfied with the solution
-8. Provide a single, ideally correct answer as the final output
-9. Only set nextThoughtNeeded to false when truly done and a satisfactory answer is reached
-10. Be concise and clear, don't waste tokens`
+1. Focus on your thinking content, not mechanics
+2. Use "revise" when reconsidering previous thoughts
+3. Use "explore" when trying alternative approaches
+4. Express uncertainty naturally in your thoughts
+5. Set continue=false only when truly done with satisfactory answer
+6. Keep thoughts focused and clear
+7. Don't worry about numbering - the tool handles it
+
+## Environment Variables
+- **DISABLE_THOUGHT_LOGGING**: Set to "true" to disable formatted console output
+- **ENABLE_ADDITIONAL_TOOLS**: Must include "sequential-thinking" to enable this tool`
 
 	return mcp.NewToolResultText(usage)
 }
