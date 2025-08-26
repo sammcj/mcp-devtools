@@ -343,9 +343,7 @@ func (c *Calculator) ProvideExtendedInfo() *tools.ExtendedHelp {
 		WhenToUse:    "Use when performing arithmetic calculations to ensure accuracy, when complex expressions need proper order of operations, when handling multiple related calculations in batch, or when decimal precision is important for financial calculations.",
 		WhenNotToUse: "Don't use for scientific functions (sqrt, sin, cos, log, etc.), bitwise operations or boolean logic, statistical calculations or data analysis, or advanced mathematical operations like matrices or calculus.",
 		CommonPatterns: []string{
-			"Basic arithmetic: \"2 + 3 * 4\" (follows order of operations)",
 			"Parentheses for grouping: \"(10 + 5) * 2\"",
-			"Decimal calculations: \"12.50 * 1.08\" (tax calculations)",
 			"Array mode for batch: {\"expressions\": [\"100 * 0.15\", \"200 * 0.15\"]}",
 			"Unary operators: \"-5 + 10\" or \"-(2 + 3)\"",
 			"Use parentheses to make complex expressions clear",

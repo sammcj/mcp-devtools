@@ -21,7 +21,7 @@ graph LR
 
     E --> E_Tools[🧠 Think Tool<br>🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
-    F --> F_Tools[h<br>🧮 Calculator🇬🇧 American→English<br>📁 Filesystem<br>📝 Changelog Generation]
+    F --> F_Tools[🧮 Calculator<br>🇬🇧 American→English<br>📁 Filesystem<br>📝 Changelog Generation]
 
     G --> G_Tools[🤖 Claude Code<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
