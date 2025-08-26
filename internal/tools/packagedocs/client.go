@@ -287,10 +287,9 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 
 	start := time.Now()
 
-	// Prepare headers matching the official Context7 server
 	headers := make(map[string]string)
 
-	// Add API key headers if available, supporting multiple formats like the official server
+	// Add API key headers if available
 	if c.apiKey != "" {
 		// Use Authorisation header as the primary method (Bearer token)
 		headers["Authorization"] = "Bearer " + c.apiKey
