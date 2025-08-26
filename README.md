@@ -21,7 +21,7 @@ graph LR
 
     E --> E_Tools[🧠 Think Tool<br>🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
-    F --> F_Tools[🇬🇧 American→English<br>📁 Filesystem<br>📝 Changelog Generation]
+    F --> F_Tools[h<br>🧮 Calculator🇬🇧 American→English<br>📁 Filesystem<br>📝 Changelog Generation]
 
     G --> G_Tools[🤖 Claude Code<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
@@ -85,7 +85,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "DISABLED_FUNCTIONS": "security", // Optional, disable specific tools if not needed
+        "DISABLED_FUNCTIONS": "think", // Optional, disable specific tools if not needed
         "ENABLE_ADDITIONAL_TOOLS": "security,security_override,sbom,vulnerability_scan,memory" // Optional, enable security and analysis tools
       }
     }
@@ -108,30 +108,36 @@ These tools can be disabled by adding their function name to the `DISABLED_FUNCT
 | **[Package Search](docs/tools/package-search.md)**               | Check package versions             | None                          | NPM, Python, Go, Java, Docker   |
 | **[Think](docs/tools/think.md)**                                 | Structured reasoning space         | None                          | Complex problem analysis        |
 | **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring | None                          | Find files over 700 lines       |
-| **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**       | Component information              | None                          | Button, Dialog, Form components |
-| **[American→English](docs/tools/american-to-english.md)**        | Convert to British spelling        | None                          | Organise, colour, centre        |
+| **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations      | None                          | 2 + 3 * 4, batch processing     |
 | **[DevTools Help](docs/tools/devtools_help.md)**                 | Extended info about DevTools tools | None                          | Usage examples, troubleshooting |
 
 These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment variable in your MCP configuration.
 
-| Tool                                                         | Purpose                                  | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                             |
-|--------------------------------------------------------------|------------------------------------------|---------------------------|-------------------------------------------|
-| **[Filesystem](docs/tools/filesystem.md)**                   | File and directory operations            | `filesystem`              | Read, write, edit, search files           |
-| **[Claude Agent](docs/tools/claude-agent.md)**               | Claude Code CLI Agent                    | `claude-agent`            | Code analysis, generation                 |
-| **[Gemini Agent](docs/tools/gemini-agent.md)**               | Gemini CLI Agent                         | `gemini-agent`            | Code analysis, generation                 |
-| **[Q Developer Agent](docs/tools/q-developer-agent.md)**     | AWS Q Developer CLI Agent                | `q-developer-agent`       | AWS-focused code analysis, generation     |
-| **[Memory](docs/tools/memory.md)**                           | Persistent knowledge graphs              | `memory`                  | Store entities and relationships          |
-| **[SBOM Generation](docs/tools/sbom.md)**                    | Generate Software Bill of Materials      | `sbom`                    | Analyse project dependencies              |
-| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)**   | Security vulnerability scanning          | `vulnerability_scan`      | Find security issues                      |
-| **[Generate Changelog](docs/tools/changelog.md)**            | Generate changelogs from git commits     | `generate_changelog`      | Release notes from local/remote repos     |
-| **[Document Processing](docs/tools/document-processing.md)** | Convert documents to Markdown            | `process_document`        | PDF, DOCX → Markdown with OCR             |
-| **[PDF Processing](docs/tools/pdf-processing.md)**           | Fast PDF text extraction                 | `pdf`                     | Quick PDF to Markdown                     |
-| **[AWS Documentation](docs/tools/aws_documentation.md)**     | AWS documentation search and retrieval   | `aws`                     | Search and read AWS docs, recommendations |
+| Tool                                                                 | Purpose                                                            | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                               |
+|----------------------------------------------------------------------|--------------------------------------------------------------------|---------------------------|---------------------------------------------|
+| **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                                        | `murican_to_english`      | Organise, colour, centre                    |
+| **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                              | `shadcn`                  | Button, Dialog, Form components             |
+| **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            |
+| **[SBOM Generation](docs/tools/sbom.md)**                            | Generate Software Bill of Materials                                | `sbom`                    | Analyse project dependencies                |
+| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)**           | Security vulnerability scanning                                    | `vulnerability_scan`      | Find security issues                        |
+| **[Generate Changelog](docs/tools/changelog.md)**                    | Generate changelogs from git commits                               | `generate_changelog`      | Release notes from local/remote repos       |
+| **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                                      | `process_document`        | PDF, DOCX → Markdown with OCR               |
+| **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                           | `pdf`                     | Quick PDF to Markdown                       |
+| **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                             | `aws`                     | Search and read AWS docs, recommendations   |
 | **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API access for providers, modules, and policies | `terraform_documentation` | Provider docs, module search, policy lookup |
-| **[Security Framework](docs/security.md)** (BETA)            | Context injection security protections   | `security`                | Content analysis, access control          |
-| **[Security Override](docs/security.md)**                    | Agent managed security warning overrides | `security_override`       | Bypass false positives                    |
-| **[Sequential Thinking](docs/tools/sequential-thinking.md)** | Dynamic problem-solving through structured thoughts | `sequential-thinking` | Step-by-step analysis, revision, branching |
-| **[API](docs/tools/api.md)**                                 | Dynamic REST API integration             | `api`                     | Configure any REST API via YAML           |
+| **[Security Framework](docs/security.md)** (BETA)                    | Context injection security protections                             | `security`                | Content analysis, access control            |
+| **[Security Override](docs/security.md)**                            | Agent managed security warning overrides                           | `security_override`       | Bypass false positives                      |
+| **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts                | `sequential-thinking`     | Step-by-step analysis, revision, branching  |
+| **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                                       | `api`                     | Configure any REST API via YAML             |
+| **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                                      | `filesystem`              | Read, write, edit, search files             |
+
+**Agents as Tools** - In addition to the above tools, MCP DevTools can provide access to AI agents as tools by integrating with external LLMs.
+
+| Agent                                                    | Purpose                   | `ENABLE_ADDITIONAL_TOOLS` |
+|----------------------------------------------------------|---------------------------|---------------------------|
+| **[Claude Agent](docs/tools/claude-agent.md)**           | Claude Code CLI Agent     | `claude-agent`            |
+| **[Gemini Agent](docs/tools/gemini-agent.md)**           | Gemini CLI Agent          | `gemini-agent`            |
+| **[Q Developer Agent](docs/tools/q-developer-agent.md)** | AWS Q Developer CLI Agent | `q-developer-agent`       |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
