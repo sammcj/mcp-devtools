@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `go test -short -v ./tests/...` - Run specific test suites
 
 ### Code Quality
-- `make lint` - Run linting, formatting and modernization checks
+- `make lint` - Run linting, formatting and modernisation checks
 
 ### Dependencies
 - `make deps` - Install dependencies

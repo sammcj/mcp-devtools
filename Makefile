@@ -66,7 +66,7 @@ test-docling-vlm:
 	@echo "Note: This requires VLM environment variables to be configured in .env"
 	TEST_VLM_INTEGRATION=1 $(GOTEST) -v -run "TestVLMPipeline_ActualIntegration|TestLLMClient_Connectivity|TestMermaidGeneration" ./tests/tools/
 
-# Clean build artifacts
+# Clean build artefacts
 .PHONY: clean
 clean:
 	rm -rf bin/
@@ -76,7 +76,7 @@ clean:
 fmt:
 	$(GOFMT) ./...
 
-# Lint code and check for modernization opportunities
+# Lint code and check for modernisation opportunities
 .PHONY: lint
 lint:
 	gofmt -w -s .
