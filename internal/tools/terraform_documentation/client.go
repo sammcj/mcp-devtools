@@ -149,7 +149,7 @@ func (c *Client) GetProviderDetails(ctx context.Context, providerDocID string) (
 	c.logger.Infof("Getting provider details for doc ID: %s", providerDocID)
 
 	if _, err := strconv.Atoi(providerDocID); err != nil {
-		return nil, fmt.Errorf("provider_doc_id must be a valid number: %s", providerDocID)
+		return nil, fmt.Errorf("provider_doc_id must be a numeric ID from the provider's documentation index, not a resource name. Got: '%s' (hint: use search_providers first to find valid IDs)", providerDocID)
 	}
 
 	apiURL := fmt.Sprintf("%s/provider-docs/%s", terraformRegistryAPIv2, providerDocID)

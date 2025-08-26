@@ -35,7 +35,7 @@ Please read the `README.md` for more information, and `docs/creating-new-tools.m
 
 ### Tool Categories
 
-Tools are organized into categories under `internal/tools/`, e.g:
+Tools are organised into categories under `internal/tools/`, e.g:
 - `internetsearch/` - Internet Search API integrations (web, image, news, video, local)
 - `packageversions/` - Package version checking across ecosystems (npm, python, go, java, swift, docker, github-actions, bedrock, rust)
 - `shadcnui/` - shadcn/ui component information and examples

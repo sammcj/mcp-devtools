@@ -32,7 +32,7 @@ Find provider documentation by searching for specific services:
 ```
 
 #### Get Provider Details
-Retrieve detailed documentation using a document ID from search results:
+Retrieve detailed documentation using a numeric document ID (obtain from search_providers results):
 
 ```json
 {
@@ -40,6 +40,8 @@ Retrieve detailed documentation using a document ID from search results:
   "provider_doc_id": "8894603"
 }
 ```
+
+**Note:** The `provider_doc_id` must be a numeric ID from the provider's documentation index, not a resource name like "s3_bucket". Use `search_providers` first to find valid IDs.
 
 #### Get Latest Provider Version
 Check the latest available version for a provider:
@@ -71,9 +73,11 @@ Retrieve detailed module information including inputs, outputs, and examples:
 ```json
 {
   "action": "get_module_details",
-  "module_id": "terraform-aws-modules/vpc/aws"
+  "module_id": "terraform-aws-modules/vpc/aws/3.14.0"
 }
 ```
+
+**Note:** The `module_id` should include the full path: `namespace/name/provider/version` (e.g., `terraform-aws-modules/vpc/aws/3.14.0`).
 
 #### Get Latest Module Version
 Get the latest version of a specific module:
@@ -84,6 +88,8 @@ Get the latest version of a specific module:
   "module_id": "terraform-aws-modules/vpc/aws"
 }
 ```
+
+**Note:** For version queries, you can omit the version from the module_id.
 
 ### Policy Operations
 

@@ -34,24 +34,24 @@ func (t *TerraformDocumentationTool) Definition() mcp.Tool {
 		),
 		// Common search parameter (consolidates *_query parameters)
 		mcp.WithString("query",
-			mcp.Description("Search query (for search_modules, search_policies, or service slug for search_providers)"),
+			mcp.Description("Search query (for search_modules, search_policies, or service slug for search_providers). Examples: 'vpc', 'kubernetes', 'security'"),
 		),
 		// Resource-specific ID parameters (semantically different, keep separate)
 		mcp.WithString("provider_doc_id",
-			mcp.Description("Terraform provider document ID (required for get_provider_details)"),
+			mcp.Description("Terraform provider document ID (required for get_provider_details) - must be a numeric ID from the provider's documentation index"),
 		),
 		mcp.WithString("module_id",
-			mcp.Description("Terraform module ID (required for get_module_details and get_latest_module_version)"),
+			mcp.Description("Terraform module ID (required for get_module_details and get_latest_module_version). Format: 'namespace/name/provider/version' (e.g., 'terraform-aws-modules/vpc/aws/3.14.0')"),
 		),
 		mcp.WithString("policy_id",
 			mcp.Description("Terraform policy ID (required for get_policy_details)"),
 		),
 		// Provider-specific parameters (grouped together for clarity)
 		mcp.WithString("provider_name",
-			mcp.Description("Name of the Terraform provider (required for provider actions)"),
+			mcp.Description("Name of the Terraform provider (required for all provider actions). Examples: 'aws', 'azurerm', 'google'"),
 		),
 		mcp.WithString("provider_namespace",
-			mcp.Description("Publisher namespace of the Terraform provider (required for provider actions)"),
+			mcp.Description("Publisher namespace of the Terraform provider (required for all provider actions). Examples: 'hashicorp', 'integrations'"),
 		),
 		mcp.WithString("provider_data_type",
 			mcp.Description("Type of provider documentation to retrieve"),
@@ -120,17 +120,17 @@ func (t *TerraformDocumentationTool) Execute(ctx context.Context, logger *logrus
 func (t *TerraformDocumentationTool) executeSearchProviders(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
 	providerName, ok := args["provider_name"].(string)
 	if !ok || providerName == "" {
-		return nil, fmt.Errorf("missing required parameter: provider_name")
+		return nil, fmt.Errorf("search_providers requires 'provider_name' parameter (e.g., 'aws', 'azurerm', 'google')")
 	}
 
 	providerNamespace, ok := args["provider_namespace"].(string)
 	if !ok || providerNamespace == "" {
-		return nil, fmt.Errorf("missing required parameter: provider_namespace")
+		return nil, fmt.Errorf("search_providers requires 'provider_namespace' parameter (e.g., 'hashicorp', 'integrations')")
 	}
 
 	serviceSlug, ok := args["query"].(string)
 	if !ok || serviceSlug == "" {
-		return nil, fmt.Errorf("missing required parameter: query (service slug for providers)")
+		return nil, fmt.Errorf("search_providers requires 'query' parameter for service slug (e.g., 's3', 'compute', 'networking')")
 	}
 
 	providerDataType := "resources"
