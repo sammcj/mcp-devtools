@@ -59,6 +59,15 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 5. Memory → Store Terraform configuration patterns
 ```
 
+#### Complex Problem Solving Workflow
+```
+1. Sequential Thinking → Break down problem systematically
+2. Internet Search / Web Fetch → Gather relevant information
+3. Sequential Thinking → Process findings and revise approach
+4. Think → Deep analysis of solution options
+5. Sequential Thinking → Finalise solution with confidence
+```
+
 ## Configuration Quick Start
 
 ### Minimal Configuration (Most Tools Available)
@@ -81,7 +90,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "ENABLE_ADDITIONAL_TOOLS": "aws,web_fetch,internet_search,think,memory,filesystem,shadcn_ui,security,claude-agent,gemini-agent,q-developer-agent,brave_local_search,brave_video_search,pdf,process_document",
+        "ENABLE_ADDITIONAL_TOOLS": "aws,web_fetch,internet_search,think,memory,filesystem,shadcn_ui,security,claude-agent,gemini-agent,q-developer-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking",
         "GOOGLE_CLOUD_PROJECT": "gemini-code-assist-123456",
         "BRAVE_API_KEY": "abc123",
         "SEARXNG_BASE_URL": "https://searxng.your.domain",
@@ -107,7 +116,8 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 **For Development:**
 - Package management → Package Search + Package Documentation
 - Code research → Internet Search + Web Fetch
-- Architecture planning → Think + Memory
+- Architecture planning → Sequential Thinking + Think + Memory
+- Complex debugging → Sequential Thinking + Internet Search
 - File operations → Filesystem + Think
 
 **For File Management:**

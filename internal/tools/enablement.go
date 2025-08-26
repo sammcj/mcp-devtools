@@ -18,13 +18,14 @@ import (
 // - claude-agent
 // - filesystem
 // - gemini-agent
-// - q-developer-agent
 // - memory
 // - pdf
 // - process_document
+// - q-developer-agent
 // - sbom
 // - security
 // - security_override
+// - sequential-thinking
 // - vulnerability_scan
 
 func IsToolEnabled(toolName string) bool {
