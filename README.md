@@ -19,7 +19,7 @@ graph LR
 
     D --> D_Tools[📋 SBOM Generation<br>🛡️ Vulnerability Scan<br>🔒 Security Framework<br>🛠️ Security Override]
 
-    E --> E_Tools[🧠 Think Tool<br>🕸️ Memory Graph]
+    E --> E_Tools[🧠 Think Tool<br>🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
     F --> F_Tools[🇬🇧 American→English<br>📁 Filesystem<br>📝 Changelog Generation]
 
@@ -130,6 +130,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API access for providers, modules, and policies | `terraform_documentation` | Provider docs, module search, policy lookup |
 | **[Security Framework](docs/security.md)** (BETA)            | Context injection security protections   | `security`                | Content analysis, access control          |
 | **[Security Override](docs/security.md)**                    | Agent managed security warning overrides | `security_override`       | Bypass false positives                    |
+| **[Sequential Thinking](docs/tools/sequential-thinking.md)** | Dynamic problem-solving through structured thoughts | `sequential-thinking` | Step-by-step analysis, revision, branching |
 | **[API](docs/tools/api.md)**                                 | Dynamic REST API integration             | `api`                     | Configure any REST API via YAML           |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
@@ -274,7 +275,7 @@ All environment variables are optional, but if you want to use specific search p
 - `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
 **Security-Sensitive Tools:**
-- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,q-developer-agent,generate_changelog,process_document,pdf,memory,terraform_documentation`)
+- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,sbom,vulnerability_scan,filesystem,claude-agent,gemini-agent,q-developer-agent,generate_changelog,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
 - `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories (only for filesystem tool)
 
 **Document Processing:**
