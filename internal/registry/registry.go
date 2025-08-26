@@ -162,11 +162,14 @@ func requiresEnablement(toolName string) bool {
 		"vulnerability_scan",
 		"claude-agent",
 		"gemini-agent",
+		"q-developer-agent",
 		"generate_changelog",
 		"process_document",
 		"pdf",
 		"memory",
 		"aws",
+		"shadcn",
+		"murican_to_english",
 	}
 
 	// Normalize the tool name (lowercase, replace underscores with hyphens)

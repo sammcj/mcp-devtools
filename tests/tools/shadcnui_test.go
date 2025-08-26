@@ -30,7 +30,32 @@ func TestUnifiedShadcnTool_Definition(t *testing.T) {
 	testutils.AssertNotNil(t, definition.InputSchema)
 }
 
+func TestUnifiedShadcnTool_Execute_ToolDisabled(t *testing.T) {
+	// Ensure shadcn tool is disabled by default
+	_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+
+	tool := &shadcnui.UnifiedShadcnTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	args := map[string]any{
+		"action": "list",
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+
+	testutils.AssertError(t, err)
+	testutils.AssertErrorContains(t, err, "shadcn tool is not enabled")
+	testutils.AssertErrorContains(t, err, "Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'shadcn'")
+	testutils.AssertNil(t, result)
+}
+
 func TestUnifiedShadcnTool_Execute_MissingAction(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -45,6 +70,10 @@ func TestUnifiedShadcnTool_Execute_MissingAction(t *testing.T) {
 }
 
 func TestUnifiedShadcnTool_Execute_EmptyAction(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -61,6 +90,10 @@ func TestUnifiedShadcnTool_Execute_EmptyAction(t *testing.T) {
 }
 
 func TestUnifiedShadcnTool_Execute_InvalidActionType(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -77,6 +110,10 @@ func TestUnifiedShadcnTool_Execute_InvalidActionType(t *testing.T) {
 }
 
 func TestUnifiedShadcnTool_Execute_InvalidAction(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -93,6 +130,10 @@ func TestUnifiedShadcnTool_Execute_InvalidAction(t *testing.T) {
 }
 
 func TestUnifiedShadcnTool_Execute_SearchMissingQuery(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -109,6 +150,10 @@ func TestUnifiedShadcnTool_Execute_SearchMissingQuery(t *testing.T) {
 }
 
 func TestUnifiedShadcnTool_Execute_SearchEmptyQuery(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -126,6 +171,10 @@ func TestUnifiedShadcnTool_Execute_SearchEmptyQuery(t *testing.T) {
 }
 
 func TestUnifiedShadcnTool_Execute_DetailsMissingComponentName(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -142,6 +191,10 @@ func TestUnifiedShadcnTool_Execute_DetailsMissingComponentName(t *testing.T) {
 }
 
 func TestUnifiedShadcnTool_Execute_DetailsEmptyComponentName(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -159,6 +212,10 @@ func TestUnifiedShadcnTool_Execute_DetailsEmptyComponentName(t *testing.T) {
 }
 
 func TestUnifiedShadcnTool_Execute_ExamplesMissingComponentName(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -175,6 +232,10 @@ func TestUnifiedShadcnTool_Execute_ExamplesMissingComponentName(t *testing.T) {
 }
 
 func TestUnifiedShadcnTool_Execute_ExamplesEmptyComponentName(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -278,6 +339,10 @@ func TestUnifiedShadcnTool_CacheBehavior(t *testing.T) {
 
 // Test action parameter validation comprehensively
 func TestUnifiedShadcnTool_ActionValidation(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	invalidActions := []string{"invalid", "notfound", "wrong", ""}
 
 	tool := &shadcnui.UnifiedShadcnTool{}
@@ -304,6 +369,10 @@ func TestUnifiedShadcnTool_ActionValidation(t *testing.T) {
 
 // Test parameter type validation
 func TestUnifiedShadcnTool_ParameterTypes(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -351,6 +420,10 @@ func TestUnifiedShadcnTool_ParameterTypes(t *testing.T) {
 
 // Test edge cases
 func TestUnifiedShadcnTool_EdgeCases(t *testing.T) {
+	// Enable the shadcn tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &shadcnui.UnifiedShadcnTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()

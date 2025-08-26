@@ -28,7 +28,32 @@ func TestM2ETool_Definition(t *testing.T) {
 	testutils.AssertNotNil(t, definition.InputSchema)
 }
 
+func TestM2ETool_Execute_ToolDisabled(t *testing.T) {
+	// Ensure murican_to_english tool is disabled by default
+	_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+
+	tool := &m2e.M2ETool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	args := map[string]any{
+		"text": "The color of the organization's behavior was analyzed.",
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+
+	testutils.AssertError(t, err)
+	testutils.AssertErrorContains(t, err, "murican_to_english tool is not enabled")
+	testutils.AssertErrorContains(t, err, "Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'murican_to_english'")
+	testutils.AssertNil(t, result)
+}
+
 func TestM2ETool_Execute_InlineMode_ValidInput(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &m2e.M2ETool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -66,6 +91,10 @@ func TestM2ETool_Execute_InlineMode_ValidInput(t *testing.T) {
 }
 
 func TestM2ETool_Execute_InlineMode_EmptyText(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &m2e.M2ETool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -82,6 +111,10 @@ func TestM2ETool_Execute_InlineMode_EmptyText(t *testing.T) {
 }
 
 func TestM2ETool_Execute_InlineMode_TrulyEmptyText(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &m2e.M2ETool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -98,6 +131,10 @@ func TestM2ETool_Execute_InlineMode_TrulyEmptyText(t *testing.T) {
 }
 
 func TestM2ETool_Execute_InlineMode_ExcessivelyLongText(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &m2e.M2ETool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -122,6 +159,10 @@ func TestM2ETool_Execute_InlineMode_ExcessivelyLongText(t *testing.T) {
 }
 
 func TestM2ETool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	// Save original environment variable
 	originalValue := os.Getenv("M2E_MAX_LENGTH")
 	defer func() {
@@ -169,6 +210,10 @@ func TestM2ETool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
 }
 
 func TestM2ETool_Execute_FileMode_ValidFile(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	// Create a temporary file with American text
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, "test.txt")
@@ -211,6 +256,10 @@ func TestM2ETool_Execute_FileMode_ValidFile(t *testing.T) {
 }
 
 func TestM2ETool_Execute_FileMode_ExcessivelyLargeFile(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	// Create a temporary file with content exceeding the limit
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, "large_test.txt")
@@ -244,6 +293,10 @@ func TestM2ETool_Execute_FileMode_ExcessivelyLargeFile(t *testing.T) {
 }
 
 func TestM2ETool_Execute_MissingParameters(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &m2e.M2ETool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -258,6 +311,10 @@ func TestM2ETool_Execute_MissingParameters(t *testing.T) {
 }
 
 func TestM2ETool_Execute_BothParameters(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &m2e.M2ETool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -275,6 +332,10 @@ func TestM2ETool_Execute_BothParameters(t *testing.T) {
 }
 
 func TestM2ETool_Execute_InvalidFilePath(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &m2e.M2ETool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
@@ -291,6 +352,10 @@ func TestM2ETool_Execute_InvalidFilePath(t *testing.T) {
 }
 
 func TestM2ETool_Execute_SmartQuotesOption(t *testing.T) {
+	// Enable the murican_to_english tool for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
 	tool := &m2e.M2ETool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()

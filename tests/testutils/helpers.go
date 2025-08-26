@@ -3,6 +3,7 @@ package testutils
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"sync"
 	"testing"
 
@@ -61,6 +62,22 @@ func AssertNotNil(t *testing.T, value any) {
 	if value == nil {
 		t.Fatal("Expected non-nil value")
 	}
+}
+
+// AssertNil asserts that a value is nil
+// AssertNil asserts that a value is nil
+// AssertNil asserts that a value is nil
+func AssertNil(t *testing.T, value any) {
+	t.Helper()
+	if value == nil {
+		return // Test passes
+	}
+	// Handle the case where value is a nil pointer wrapped in an interface
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		return // Test passes
+	}
+	t.Fatalf("Expected nil value, got %v (type: %T)", value, value)
 }
 
 // AssertEqual fails the test if expected != actual
