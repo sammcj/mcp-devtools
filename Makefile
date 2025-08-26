@@ -199,7 +199,7 @@ help:
 	@echo "  gosec			: Run gosec security tests"
 	@echo "  clean			: Clean build artifacts"
 	@echo "  fmt			: Format code"
-	@echo "  lint			: Lint code and check modernization"
+	@echo "  lint			: Lint code and check modernisation"
 	@echo "  deps			: Install Go dependencies"
 	@echo "  update-deps		: Update Go dependencies"
 	@echo "  install-docling	: Install Python dependencies for document processing"
