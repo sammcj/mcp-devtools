@@ -66,10 +66,9 @@ func TestSequentialThinkingTool_Execute_ToolDisabled(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	args := map[string]interface{}{
-		"thought":           "Test thought",
-		"nextThoughtNeeded": false,
-		"thoughtNumber":     1.0,
-		"totalThoughts":     1.0,
+		"action":   "think",
+		"thought":  "Test thought",
+		"continue": false,
 	}
 
 	result, err := tool.Execute(ctx, logger, cache, args)
