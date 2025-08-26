@@ -16,11 +16,6 @@ type Operations struct {
 	toolName string
 }
 
-// NewOperations creates a new Operations instance for a specific tool
-func NewOperations(toolName string) *Operations {
-	return &Operations{toolName: toolName}
-}
-
 // SafeHTTPResponse contains HTTP response data with security metadata
 type SafeHTTPResponse struct {
 	Content        []byte          // EXACT original bytes - never modified
@@ -36,6 +31,11 @@ type SafeFileContent struct {
 	Path           string          // Resolved path
 	Info           os.FileInfo     // Original file info
 	SecurityResult *SecurityResult // nil if safe, populated if warn
+}
+
+// NewOperations creates a new Operations instance for a specific tool
+func NewOperations(toolName string) *Operations {
+	return &Operations{toolName: toolName}
 }
 
 // SafeHTTPGet performs a secure HTTP GET with content integrity preservation
@@ -180,6 +180,177 @@ func (o *Operations) SafeHTTPPost(urlStr string, body io.Reader) (*SafeHTTPRespo
 	}, nil
 }
 
+// SafeHTTPGetWithHeaders performs a secure HTTP GET with custom headers
+func (o *Operations) SafeHTTPGetWithHeaders(urlStr string, headers map[string]string) (*SafeHTTPResponse, error) {
+	// 1. Parse and validate URL
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Check domain access (before any HTTP call)
+	if err := CheckDomainAccess(parsedURL.Hostname()); err != nil {
+		return nil, err // Hard block - no content fetched
+	}
+
+	// 3. Create request with headers
+	req, err := http.NewRequest("GET", urlStr, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set custom headers
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	// 4. Execute request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close response body")
+		}
+	}()
+
+	content, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. Security analysis on copy of content (original untouched)
+	var securityResult *SecurityResult
+	if o.shouldAnalyseContent(content, resp.Header.Get("Content-Type")) {
+		sourceCtx := SourceContext{
+			URL:         urlStr,
+			Domain:      parsedURL.Hostname(),
+			ContentType: resp.Header.Get("Content-Type"),
+			Tool:        o.toolName,
+		}
+
+		// Create copy for analysis to ensure no side effects
+		contentForAnalysis := make([]byte, len(content))
+		copy(contentForAnalysis, content)
+
+		var err error
+		securityResult, err = AnalyseContent(string(contentForAnalysis), sourceCtx)
+		if err != nil {
+			// Log error but don't fail - return content with no security metadata
+			logrus.WithError(err).Warn("Security analysis failed")
+			securityResult = nil
+		}
+
+		// Handle security blocks
+		if securityResult != nil && securityResult.Action == ActionBlock {
+			return nil, &SecurityError{
+				ID:      securityResult.ID,
+				Message: securityResult.Message,
+				Action:  ActionBlock,
+			}
+		}
+	}
+
+	// 6. Return original content with optional security metadata
+	return &SafeHTTPResponse{
+		Content:        content, // EXACT original bytes
+		ContentType:    resp.Header.Get("Content-Type"),
+		StatusCode:     resp.StatusCode,
+		Headers:        resp.Header,    // Full original headers
+		SecurityResult: securityResult, // nil for safe, populated for warnings
+	}, nil
+}
+
+// SafeHTTPPostWithHeaders performs a secure HTTP POST with custom headers
+func (o *Operations) SafeHTTPPostWithHeaders(urlStr string, body io.Reader, headers map[string]string) (*SafeHTTPResponse, error) {
+	// 1. Parse and validate URL
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Check domain access (before any HTTP call)
+	if err := CheckDomainAccess(parsedURL.Hostname()); err != nil {
+		return nil, err // Hard block - no content fetched
+	}
+
+	// 3. Create request with headers
+	req, err := http.NewRequest("POST", urlStr, body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set default content type if not provided
+	if _, ok := headers["Content-Type"]; !ok {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	// Set custom headers
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	// 4. Execute request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Warn("Failed to close response body")
+		}
+	}()
+
+	content, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. Security analysis on copy of content (original untouched)
+	var securityResult *SecurityResult
+	if o.shouldAnalyseContent(content, resp.Header.Get("Content-Type")) {
+		sourceCtx := SourceContext{
+			URL:         urlStr,
+			Domain:      parsedURL.Hostname(),
+			ContentType: resp.Header.Get("Content-Type"),
+			Tool:        o.toolName,
+		}
+
+		// Create copy for analysis to ensure no side effects
+		contentForAnalysis := make([]byte, len(content))
+		copy(contentForAnalysis, content)
+
+		var err error
+		securityResult, err = AnalyseContent(string(contentForAnalysis), sourceCtx)
+		if err != nil {
+			// Log error but don't fail - return content with no security metadata
+			logrus.WithError(err).Warn("Security analysis failed")
+			securityResult = nil
+		}
+
+		// Handle security blocks
+		if securityResult != nil && securityResult.Action == ActionBlock {
+			return nil, &SecurityError{
+				ID:      securityResult.ID,
+				Message: securityResult.Message,
+				Action:  ActionBlock,
+			}
+		}
+	}
+
+	// 6. Return original content with optional security metadata
+	return &SafeHTTPResponse{
+		Content:        content, // EXACT original bytes
+		ContentType:    resp.Header.Get("Content-Type"),
+		StatusCode:     resp.StatusCode,
+		Headers:        resp.Header,    // Full original headers
+		SecurityResult: securityResult, // nil for safe, populated for warnings
+	}, nil
+}
+
 // SafeFileRead performs a secure file read with content integrity preservation
 func (o *Operations) SafeFileRead(path string) (*SafeFileContent, error) {
 	// 1. Check file access (before any file operation)
@@ -247,7 +418,7 @@ func (o *Operations) SafeFileWrite(path string, content []byte) error {
 	return os.WriteFile(path, content, 0600)
 }
 
-// shouldAnalyseContent determines if content should be analyzed for security threats
+// shouldAnalyseContent determines if content should be analysed for security threats
 func (o *Operations) shouldAnalyseContent(content []byte, contentType string) bool {
 	// Skip analysis for obviously binary content types
 	if contentType != "" {
@@ -262,7 +433,7 @@ func (o *Operations) shouldAnalyseContent(content []byte, contentType string) bo
 		}
 	}
 
-	// Only analyze content that appears to be text
+	// Only analyse content that appears to be text
 	return isTextContent(content)
 }
 

@@ -255,6 +255,11 @@ Use the resolved ID to fetch documentation:
 
 The Package Documentation tool supports the following configuration options:
 
+- **`CONTEXT7_API_KEY`**: API key for Context7 authentication
+  - **Default**: Not set (anonymous requests)
+  - **Description**: Provides higher rate limits and authentication with Context7 API. Get your API key at [context7.com/console](https://context7.com/console)
+  - **Example**: `CONTEXT7_API_KEY=your_api_key_here`
+
 - **`PACKAGE_DOCS_RATE_LIMIT`**: Maximum HTTP requests per second to the Context7 API
   - **Default**: `10`
   - **Description**: Controls the rate of HTTP requests to prevent overwhelming the Context7 API service
