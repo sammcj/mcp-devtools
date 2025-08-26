@@ -35,14 +35,14 @@ func (t *GoTool) Definition() mcp.Tool {
 		mcp.WithDescription("Check latest stable versions for Go packages in go.mod"),
 		mcp.WithObject("dependencies",
 			mcp.Description("Dependencies from go.mod"),
-			mcp.Properties(map[string]interface{}{}),
+			mcp.Properties(map[string]any{}),
 			mcp.Required(),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *GoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *GoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting latest Go package versions")
 
 	// Parse dependencies
@@ -52,7 +52,7 @@ func (t *GoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 	}
 
 	// Convert to map[string]interface{}
-	depsMap, ok := depsRaw.(map[string]interface{})
+	depsMap, ok := depsRaw.(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("invalid dependencies format: expected object")
 	}
@@ -60,11 +60,11 @@ func (t *GoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 	var requires []packageversions.GoRequire
 
 	// Handle different input formats
-	if requireRaw, ok := depsMap["require"].([]interface{}); ok {
+	if requireRaw, ok := depsMap["require"].([]any); ok {
 		// Complex format: structured go.mod with require array
 		logger.Debug("Processing complex go.mod format with require array")
 		for _, req := range requireRaw {
-			if reqMap, ok := req.(map[string]interface{}); ok {
+			if reqMap, ok := req.(map[string]any); ok {
 				var require packageversions.GoRequire
 
 				// Parse path

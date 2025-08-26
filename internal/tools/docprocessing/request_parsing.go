@@ -6,7 +6,7 @@ import (
 )
 
 // parseRequest parses and validates the request arguments
-func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*DocumentProcessingRequest, error) {
+func (t *DocumentProcessorTool) parseRequest(args map[string]any) (*DocumentProcessingRequest, error) {
 	req := &DocumentProcessingRequest{}
 
 	// Required: source
@@ -39,7 +39,7 @@ func (t *DocumentProcessorTool) parseRequest(args map[string]interface{}) (*Docu
 	}
 
 	// Optional: ocr_languages
-	if langs, ok := args["ocr_languages"].([]interface{}); ok {
+	if langs, ok := args["ocr_languages"].([]any); ok {
 		for _, lang := range langs {
 			if langStr, ok := lang.(string); ok {
 				req.OCRLanguages = append(req.OCRLanguages, langStr)

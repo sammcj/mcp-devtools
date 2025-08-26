@@ -29,7 +29,7 @@ func (t *ListShadcnComponentsTool) Definition() mcp.Tool {
 }
 
 // Execute performs the tool's action.
-func (t *ListShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *ListShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Listing shadcn ui components")
 
 	// Check cache

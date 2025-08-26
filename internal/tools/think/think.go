@@ -65,7 +65,7 @@ Use this tool as a structured thinking space during complex workflows, especiall
 }
 
 // Execute executes the think tool
-func (t *ThinkTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *ThinkTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse and validate parameters
 	request, err := t.parseRequest(args)
 	if err != nil {
@@ -82,7 +82,7 @@ func (t *ThinkTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 }
 
 // parseRequest parses and validates the tool arguments
-func (t *ThinkTool) parseRequest(args map[string]interface{}) (*ThinkRequest, error) {
+func (t *ThinkTool) parseRequest(args map[string]any) (*ThinkRequest, error) {
 	// Parse thought (required)
 	thought, ok := args["thought"].(string)
 	if !ok || thought == "" {

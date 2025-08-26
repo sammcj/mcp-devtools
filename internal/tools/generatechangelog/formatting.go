@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -154,18 +155,18 @@ func (t *GenerateChangelogTool) writeChangeAsMarkdown(buf *bytes.Buffer, ch chan
 // formatAsJSON formats the changelog as JSON
 func (t *GenerateChangelogTool) formatAsJSON(description *release.Description) (string, error) {
 	// Create a structured JSON representation
-	jsonData := map[string]interface{}{
+	jsonData := map[string]any{
 		"title":       "Changelog",
 		"version":     description.Version,
 		"date":        description.Date.Format("2006-01-02"),
 		"timestamp":   description.Date,
 		"repository":  description.VCSReferenceURL,
 		"changes_url": description.VCSChangesURL,
-		"summary": map[string]interface{}{
+		"summary": map[string]any{
 			"total_changes": len(description.Changes),
 		},
 		"sections": t.groupChangesForJSON(description.Changes),
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"generator": "MCP DevTools generate_changelog",
 			"generated": time.Now(),
 		},
@@ -181,7 +182,7 @@ func (t *GenerateChangelogTool) formatAsJSON(description *release.Description) (
 }
 
 // groupChangesForJSON groups changes by type for JSON output
-func (t *GenerateChangelogTool) groupChangesForJSON(changes []change.Change) []map[string]interface{} {
+func (t *GenerateChangelogTool) groupChangesForJSON(changes []change.Change) []map[string]any {
 	// Group changes by type
 	changesByType := make(map[string][]change.Change)
 	for _, ch := range changes {
@@ -205,7 +206,7 @@ func (t *GenerateChangelogTool) groupChangesForJSON(changes []change.Change) []m
 	}
 
 	// Create sections
-	var sections []map[string]interface{}
+	var sections []map[string]any
 
 	// Define order for consistent output
 	typeOrder := []string{
@@ -231,14 +232,14 @@ func (t *GenerateChangelogTool) groupChangesForJSON(changes []change.Change) []m
 		}
 
 		// Convert changes to JSON format
-		var jsonChanges []map[string]interface{}
+		var jsonChanges []map[string]any
 		for _, ch := range typeChanges {
 			changeType := "unknown"
 			if len(ch.ChangeTypes) > 0 {
 				changeType = ch.ChangeTypes[0].Name
 			}
 
-			jsonChange := map[string]interface{}{
+			jsonChange := map[string]any{
 				"text":      ch.Text,
 				"type":      changeType,
 				"timestamp": ch.Timestamp,
@@ -259,7 +260,7 @@ func (t *GenerateChangelogTool) groupChangesForJSON(changes []change.Change) []m
 			jsonChanges = append(jsonChanges, jsonChange)
 		}
 
-		section := map[string]interface{}{
+		section := map[string]any{
 			"type":    changeType,
 			"title":   title,
 			"count":   len(typeChanges),
@@ -276,14 +277,14 @@ func (t *GenerateChangelogTool) groupChangesForJSON(changes []change.Change) []m
 
 		title := cases.Title(language.English).String(strings.ReplaceAll(changeType, "-", " "))
 
-		var jsonChanges []map[string]interface{}
+		var jsonChanges []map[string]any
 		for _, ch := range typeChanges {
 			changeType := "unknown"
 			if len(ch.ChangeTypes) > 0 {
 				changeType = ch.ChangeTypes[0].Name
 			}
 
-			jsonChange := map[string]interface{}{
+			jsonChange := map[string]any{
 				"text":      ch.Text,
 				"type":      changeType,
 				"timestamp": ch.Timestamp,
@@ -304,7 +305,7 @@ func (t *GenerateChangelogTool) groupChangesForJSON(changes []change.Change) []m
 			jsonChanges = append(jsonChanges, jsonChange)
 		}
 
-		section := map[string]interface{}{
+		section := map[string]any{
 			"type":    changeType,
 			"title":   title,
 			"count":   len(typeChanges),
@@ -318,10 +319,5 @@ func (t *GenerateChangelogTool) groupChangesForJSON(changes []change.Change) []m
 
 // contains checks if a slice contains a string
 func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, item)
 }

@@ -63,7 +63,7 @@ func NewJWKSClient(jwksURL string, logger *logrus.Logger) (*JWKSClient, error) {
 }
 
 // GetKey retrieves a specific key by ID from the JWKS
-func (c *JWKSClient) GetKey(ctx context.Context, keyID string) (interface{}, error) {
+func (c *JWKSClient) GetKey(ctx context.Context, keyID string) (any, error) {
 	jwks, err := c.getJWKS(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get JWKS: %w", err)

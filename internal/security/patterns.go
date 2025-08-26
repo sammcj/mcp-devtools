@@ -92,8 +92,8 @@ func (m *ContainsMatcher) expandHomeDirectoryPatterns(pattern string) []string {
 		expanded = append(expanded, braceExpanded)
 
 		// Extract relative path for broader matching
-		if strings.HasPrefix(pattern, "$HOME/") {
-			relativePath := strings.TrimPrefix(pattern, "$HOME/")
+		if after, ok := strings.CutPrefix(pattern, "$HOME/"); ok {
+			relativePath := after
 			if relativePath != "" {
 				expanded = append(expanded, "/"+relativePath)
 			}
@@ -109,8 +109,8 @@ func (m *ContainsMatcher) expandHomeDirectoryPatterns(pattern string) []string {
 		expanded = append(expanded, dollarExpanded)
 
 		// Extract relative path for broader matching
-		if strings.HasPrefix(pattern, "${HOME}/") {
-			relativePath := strings.TrimPrefix(pattern, "${HOME}/")
+		if after, ok := strings.CutPrefix(pattern, "${HOME}/"); ok {
+			relativePath := after
 			if relativePath != "" {
 				expanded = append(expanded, "/"+relativePath)
 			}
@@ -179,8 +179,8 @@ func (m *FilePathMatcher) Match(content string) bool {
 	}
 
 	// Check for glob-style matching
-	lines := strings.Split(content, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(content, "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		for _, pattern := range patterns {
 			if matched, _ := filepath.Match(pattern, line); matched {
@@ -196,9 +196,9 @@ func (m *FilePathMatcher) generatePathPatterns(path string) []string {
 	patterns := []string{path} // Always include original pattern
 
 	// Handle tilde expansion
-	if strings.HasPrefix(path, "~/") {
+	if after, ok := strings.CutPrefix(path, "~/"); ok {
 		// Generate common home directory patterns
-		relativePath := strings.TrimPrefix(path, "~/")
+		relativePath := after
 		patterns = append(patterns,
 			"$HOME/"+relativePath,    // $HOME expansion
 			"${HOME}/"+relativePath,  // ${HOME} expansion
@@ -318,16 +318,16 @@ func (m *EntropyMatcher) Match(content string) bool {
 	}
 
 	// Split content into words/tokens and check entropy of each
-	words := strings.Fields(analysisContent)
-	for _, word := range words {
+	words := strings.FieldsSeq(analysisContent)
+	for word := range words {
 		if len(word) > 20 && m.calculateEntropy(word) >= m.threshold {
 			return true
 		}
 	}
 
 	// Also check lines for high entropy
-	lines := strings.Split(analysisContent, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(analysisContent, "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) > 40 && m.calculateEntropy(line) >= m.threshold {
 			return true
@@ -440,15 +440,15 @@ func NewGlobMatcher(pattern string) *GlobMatcher {
 
 func (m *GlobMatcher) Match(content string) bool {
 	// Split content into words and lines to check each against the glob pattern
-	words := strings.Fields(content)
-	for _, word := range words {
+	words := strings.FieldsSeq(content)
+	for word := range words {
 		if matched, _ := filepath.Match(m.pattern, word); matched {
 			return true
 		}
 	}
 
-	lines := strings.Split(content, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(content, "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if matched, _ := filepath.Match(m.pattern, line); matched {
 			return true

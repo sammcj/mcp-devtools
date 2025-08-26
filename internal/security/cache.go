@@ -57,7 +57,7 @@ func (c *Cache) Set(key string, result *SecurityResult) {
 // cleanup removes expired entries from the cache
 func (c *Cache) cleanup() {
 	now := time.Now()
-	c.data.Range(func(key, value interface{}) bool {
+	c.data.Range(func(key, value any) bool {
 		entry := value.(*CacheEntry)
 		if now.Sub(entry.Created) > c.maxAge {
 			c.data.Delete(key)
@@ -69,7 +69,7 @@ func (c *Cache) cleanup() {
 
 // Clear removes all entries from the cache
 func (c *Cache) Clear() {
-	c.data.Range(func(key, value interface{}) bool {
+	c.data.Range(func(key, value any) bool {
 		c.data.Delete(key)
 		return true
 	})

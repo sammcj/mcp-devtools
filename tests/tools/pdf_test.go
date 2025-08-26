@@ -116,19 +116,19 @@ func TestParseRequest(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		args     map[string]interface{}
+		args     map[string]any
 		hasError bool
 	}{
 		{
 			name: "valid minimal request",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"file_path": "/absolute/path/to/file.pdf",
 			},
 			hasError: false,
 		},
 		{
 			name: "valid full request",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"file_path":      "/absolute/path/to/file.pdf",
 				"output_dir":     "/absolute/output/dir",
 				"extract_images": true,
@@ -138,28 +138,28 @@ func TestParseRequest(t *testing.T) {
 		},
 		{
 			name: "missing file_path",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"output_dir": "/some/dir",
 			},
 			hasError: true,
 		},
 		{
 			name: "relative file_path",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"file_path": "relative/path/file.pdf",
 			},
 			hasError: true,
 		},
 		{
 			name: "non-pdf file",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"file_path": "/absolute/path/to/file.txt",
 			},
 			hasError: true,
 		},
 		{
 			name: "relative output_dir",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"file_path":  "/absolute/path/to/file.pdf",
 				"output_dir": "relative/dir",
 			},

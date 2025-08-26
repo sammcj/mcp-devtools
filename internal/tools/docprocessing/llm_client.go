@@ -69,14 +69,14 @@ type LLMConfig struct {
 
 // DiagramAnalysis represents the result of LLM-based diagram analysis
 type DiagramAnalysis struct {
-	Description    string                 `json:"description"`
-	DiagramType    string                 `json:"diagram_type"`
-	MermaidCode    string                 `json:"mermaid_code"`
-	Elements       []DiagramElement       `json:"elements"`
-	Confidence     float64                `json:"confidence"`
-	Properties     map[string]interface{} `json:"properties"`
-	ProcessingTime time.Duration          `json:"processing_time"`
-	TokenUsage     *TokenUsage            `json:"token_usage,omitempty"` // Token usage from LLM provider (if available)
+	Description    string           `json:"description"`
+	DiagramType    string           `json:"diagram_type"`
+	MermaidCode    string           `json:"mermaid_code"`
+	Elements       []DiagramElement `json:"elements"`
+	Confidence     float64          `json:"confidence"`
+	Properties     map[string]any   `json:"properties"`
+	ProcessingTime time.Duration    `json:"processing_time"`
+	TokenUsage     *TokenUsage      `json:"token_usage,omitempty"` // Token usage from LLM provider (if available)
 }
 
 // NewDiagramLLMClient creates a new LLM client for diagram analysis using OpenAI API
@@ -179,7 +179,7 @@ func (c *DiagramLLMClient) AnalyseDiagram(diagram *ExtractedDiagram) (*DiagramAn
 		if !validateMermaidSyntax(analysis.MermaidCode) {
 			// Don't fail completely, just log the issue
 			if analysis.Properties == nil {
-				analysis.Properties = make(map[string]interface{})
+				analysis.Properties = make(map[string]any)
 			}
 			analysis.Properties["mermaid_validation_failed"] = true
 		}
@@ -236,7 +236,7 @@ func (c *DiagramLLMClient) createFallbackAnalysis(response string, originalDiagr
 		Description: response,
 		DiagramType: originalDiagram.DiagramType,
 		Confidence:  0.5, // Lower confidence for fallback
-		Properties:  make(map[string]interface{}),
+		Properties:  make(map[string]any),
 	}
 
 	// Try to extract Mermaid code from response

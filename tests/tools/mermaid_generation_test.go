@@ -86,7 +86,7 @@ func TestMermaidGeneration(t *testing.T) {
 
 		t.Logf("Using test PDF: %s", testPDFPath)
 
-		args := map[string]interface{}{
+		args := map[string]any{
 			"source":                      testPDFPath,
 			"profile":                     "llm-external",
 			"inline":                      true,
@@ -113,7 +113,7 @@ func TestMermaidGeneration(t *testing.T) {
 			t.Fatal("Expected TextContent, got different type")
 		}
 
-		var response map[string]interface{}
+		var response map[string]any
 		if err := json.Unmarshal([]byte(textContent.Text), &response); err != nil {
 			t.Fatalf("Failed to parse response JSON: %v", err)
 		}
@@ -128,7 +128,7 @@ func TestMermaidGeneration(t *testing.T) {
 		}
 
 		// Check processing method
-		if processingInfo, ok := response["processing_info"].(map[string]interface{}); ok {
+		if processingInfo, ok := response["processing_info"].(map[string]any); ok {
 			if method, ok := processingInfo["processing_method"].(string); ok {
 				t.Logf("Processing method: %s", method)
 
@@ -140,11 +140,11 @@ func TestMermaidGeneration(t *testing.T) {
 		}
 
 		// Check for diagrams in the response
-		if diagrams, ok := response["diagrams"].([]interface{}); ok {
+		if diagrams, ok := response["diagrams"].([]any); ok {
 			t.Logf("Found %d diagrams in response", len(diagrams))
 
 			for i, diagramInterface := range diagrams {
-				if diagram, ok := diagramInterface.(map[string]interface{}); ok {
+				if diagram, ok := diagramInterface.(map[string]any); ok {
 					t.Logf("Diagram %d:", i+1)
 					if id, ok := diagram["id"].(string); ok {
 						t.Logf("  ID: %s", id)
@@ -264,7 +264,7 @@ func isVLMConfigured() bool {
 	return apiURL != "" && model != "" && apiKey != ""
 }
 
-func getMapKeys(m map[string]interface{}) []string {
+func getMapKeys(m map[string]any) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)

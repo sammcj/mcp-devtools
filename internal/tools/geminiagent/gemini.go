@@ -60,7 +60,7 @@ func (t *GeminiTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic by calling the gemini CLI
-func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Check if gemini-agent tool is enabled
 	if !tools.IsToolEnabled("gemini-agent") {
 		return nil, fmt.Errorf("gemini agent tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'gemini-agent'")
@@ -207,7 +207,7 @@ func (t *GeminiTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Get Gemini to analyze code with full project context",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"prompt":            "Please analyze the performance bottlenecks in this web application and suggest optimizations.",
 					"include-all-files": true,
 					"override-model":    "gemini-2.5-pro",
@@ -216,7 +216,7 @@ func (t *GeminiTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Ask Gemini to help debug with sandbox mode",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"prompt":  "I'm getting intermittent test failures in my Jest test suite. Can you help identify the root cause and fix the timing issues? @tests/",
 					"sandbox": true,
 				},
@@ -224,7 +224,7 @@ func (t *GeminiTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Let Gemini make actual changes to fix issues",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"prompt":         "There are several TypeScript errors in @src/components/ that need to be fixed. Please resolve all type issues and update the interfaces accordingly.",
 					"yolo-mode":      true,
 					"override-model": "gemini-2.5-pro",
@@ -233,7 +233,7 @@ func (t *GeminiTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Quick analysis with flash model for speed",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"prompt":         "Can you quickly review this API endpoint @src/api/users.js and check if it follows REST conventions?",
 					"override-model": "gemini-2.5-flash",
 				},
@@ -241,7 +241,7 @@ func (t *GeminiTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Comprehensive code review with context",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"prompt": "Please conduct a thorough security review of the authentication system in @src/auth/ and identify any vulnerabilities or improvements needed.",
 				},
 				ExpectedResult: "Detailed security analysis of authentication code with specific vulnerability findings and remediation suggestions",

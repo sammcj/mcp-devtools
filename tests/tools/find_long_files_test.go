@@ -63,19 +63,19 @@ func TestFindLongFilesTool(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		args     map[string]interface{}
+		args     map[string]any
 		expected []string // Expected file paths in results
 	}{
 		{
 			name: "default threshold 700",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"path": tempDir,
 			},
 			expected: []string{"./long.py", "./very_long.java"},
 		},
 		{
 			name: "custom threshold 500",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"path":           tempDir,
 				"line_threshold": float64(500),
 			},
@@ -83,7 +83,7 @@ func TestFindLongFilesTool(t *testing.T) {
 		},
 		{
 			name: "high threshold",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"path":           tempDir,
 				"line_threshold": float64(1500),
 			},
@@ -135,19 +135,19 @@ func TestFindLongFilesTool_ParseRequest(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		args           map[string]interface{}
+		args           map[string]any
 		expectError    bool
 		checkPath      string
 		checkThreshold int
 	}{
 		{
 			name:        "missing path parameter",
-			args:        map[string]interface{}{},
+			args:        map[string]any{},
 			expectError: true,
 		},
 		{
 			name: "valid absolute path",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"path":           tempDir,
 				"line_threshold": float64(1000),
 			},
@@ -155,7 +155,7 @@ func TestFindLongFilesTool_ParseRequest(t *testing.T) {
 		},
 		{
 			name: "invalid threshold",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"path":           tempDir,
 				"line_threshold": float64(0),
 			},
@@ -163,14 +163,14 @@ func TestFindLongFilesTool_ParseRequest(t *testing.T) {
 		},
 		{
 			name: "nonexistent path",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"path": "/nonexistent/path/that/does/not/exist",
 			},
 			expectError: true,
 		},
 		{
 			name: "relative path",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"path": "./relative/path",
 			},
 			expectError: true,
@@ -247,7 +247,7 @@ func TestFindLongFilesTool_EnvironmentVariables(t *testing.T) {
 	logger.SetLevel(logrus.ErrorLevel)
 	cache := &sync.Map{}
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"path": tempDir,
 		// Don't set line_threshold to test environment variable
 	}
@@ -306,7 +306,7 @@ func TestFindLongFilesTool_MaxFileSize(t *testing.T) {
 	// Test with 2KB limit - should skip the large file
 	require.NoError(t, os.Setenv("LONG_FILES_MAX_SIZE_KB", "2"))
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"path":           tempDir,
 		"line_threshold": float64(10), // Low threshold to catch both files if not skipped
 	}

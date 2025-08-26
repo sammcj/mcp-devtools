@@ -36,7 +36,7 @@ func TestUnifiedShadcnTool_Execute_MissingAction(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{}
+	args := map[string]any{}
 
 	_, err := tool.Execute(ctx, logger, cache, args)
 
@@ -50,7 +50,7 @@ func TestUnifiedShadcnTool_Execute_EmptyAction(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action": "",
 	}
 
@@ -66,7 +66,7 @@ func TestUnifiedShadcnTool_Execute_InvalidActionType(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action": 123, // Invalid type
 	}
 
@@ -82,7 +82,7 @@ func TestUnifiedShadcnTool_Execute_InvalidAction(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action": "invalid",
 	}
 
@@ -98,7 +98,7 @@ func TestUnifiedShadcnTool_Execute_SearchMissingQuery(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action": "search",
 	}
 
@@ -114,7 +114,7 @@ func TestUnifiedShadcnTool_Execute_SearchEmptyQuery(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action": "search",
 		"query":  "",
 	}
@@ -131,7 +131,7 @@ func TestUnifiedShadcnTool_Execute_DetailsMissingComponentName(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action": "details",
 	}
 
@@ -147,7 +147,7 @@ func TestUnifiedShadcnTool_Execute_DetailsEmptyComponentName(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action":        "details",
 		"componentName": "",
 	}
@@ -164,7 +164,7 @@ func TestUnifiedShadcnTool_Execute_ExamplesMissingComponentName(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action": "examples",
 	}
 
@@ -180,7 +180,7 @@ func TestUnifiedShadcnTool_Execute_ExamplesEmptyComponentName(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action":        "examples",
 		"componentName": "",
 	}
@@ -287,7 +287,7 @@ func TestUnifiedShadcnTool_ActionValidation(t *testing.T) {
 
 	// Test invalid actions (should fail on validation before HTTP calls)
 	for _, action := range invalidActions {
-		args := map[string]interface{}{
+		args := map[string]any{
 			"action": action,
 		}
 
@@ -310,7 +310,7 @@ func TestUnifiedShadcnTool_ParameterTypes(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	// Test invalid action type
-	args := map[string]interface{}{
+	args := map[string]any{
 		"action": 123,
 	}
 
@@ -319,7 +319,7 @@ func TestUnifiedShadcnTool_ParameterTypes(t *testing.T) {
 	testutils.AssertErrorContains(t, err, "missing or invalid required parameter: action")
 
 	// Test invalid query type for search
-	args = map[string]interface{}{
+	args = map[string]any{
 		"action": "search",
 		"query":  123,
 	}
@@ -329,7 +329,7 @@ func TestUnifiedShadcnTool_ParameterTypes(t *testing.T) {
 	testutils.AssertErrorContains(t, err, "query parameter is required for search action")
 
 	// Test invalid componentName type for details
-	args = map[string]interface{}{
+	args = map[string]any{
 		"action":        "details",
 		"componentName": 123,
 	}
@@ -339,7 +339,7 @@ func TestUnifiedShadcnTool_ParameterTypes(t *testing.T) {
 	testutils.AssertErrorContains(t, err, "componentName parameter is required for details action")
 
 	// Test invalid componentName type for examples
-	args = map[string]interface{}{
+	args = map[string]any{
 		"action":        "examples",
 		"componentName": []string{"test"},
 	}
@@ -362,7 +362,7 @@ func TestUnifiedShadcnTool_EdgeCases(t *testing.T) {
 	testutils.AssertErrorContains(t, err, "missing or invalid required parameter: action")
 
 	// Test with empty arguments
-	args := map[string]interface{}{}
+	args := map[string]any{}
 	_, err = tool.Execute(ctx, logger, cache, args)
 	testutils.AssertError(t, err)
 	testutils.AssertErrorContains(t, err, "missing or invalid required parameter: action")

@@ -36,11 +36,11 @@ func (t *GitHubActionsTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *GitHubActionsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *GitHubActionsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Checking GitHub Actions versions")
 
 	// Parse actions
-	actionsRaw, ok := args["actions"].([]interface{})
+	actionsRaw, ok := args["actions"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("missing required parameter: actions")
 	}
@@ -54,7 +54,7 @@ func (t *GitHubActionsTool) Execute(ctx context.Context, logger *logrus.Logger, 
 	// Convert to GitHubAction
 	var actions []packageversions.GitHubAction
 	for _, actionRaw := range actionsRaw {
-		if actionMap, ok := actionRaw.(map[string]interface{}); ok {
+		if actionMap, ok := actionRaw.(map[string]any); ok {
 			var action packageversions.GitHubAction
 
 			// Parse owner

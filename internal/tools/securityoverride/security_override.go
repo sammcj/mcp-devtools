@@ -44,7 +44,7 @@ func (t *SecurityOverrideTool) Definition() mcp.Tool {
 }
 
 // Execute processes security override requests
-func (t *SecurityOverrideTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SecurityOverrideTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Check if security system is enabled
 	if !tools.IsToolEnabled("security") {
 		return nil, fmt.Errorf("security system is not enabled. Ask the user to set ENABLE_ADDITIONAL_TOOLS environment variable to include 'security'")
@@ -111,7 +111,7 @@ func (t *SecurityOverrideTool) Execute(ctx context.Context, logger *logrus.Logge
 	}
 
 	// Create response
-	result := map[string]interface{}{
+	result := map[string]any{
 		"status":        "override_created",
 		"security_id":   securityID,
 		"action":        action,
@@ -161,7 +161,7 @@ func (t *SecurityOverrideTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Bypass a specific security warning",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"security_id":   "sec_warn_1705315800_a1b2c3",
 					"justification": "This is the official Docker installation script from docs.docker.com, verified as safe",
 					"action":        "bypass",
@@ -170,7 +170,7 @@ func (t *SecurityOverrideTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Allowlist a pattern to prevent future warnings",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"security_id":   "sec_warn_1705315801_d4e5f6",
 					"justification": "Development environment requires access to test SSH keys in ~/.ssh/test_* for automated testing",
 					"action":        "allowlist",
@@ -179,7 +179,7 @@ func (t *SecurityOverrideTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Override a content analysis block",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"security_id":   "sec_block_1705315802_g7h8i9",
 					"justification": "This base64 content is a legitimate configuration file for our application, not malicious code",
 					"action":        "bypass",

@@ -47,7 +47,7 @@ func (p *DuckDuckGoProvider) GetSupportedTypes() []string {
 }
 
 // Search executes a search using the DuckDuckGo provider
-func (p *DuckDuckGoProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+func (p *DuckDuckGoProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	logger.WithFields(logrus.Fields{
@@ -61,7 +61,7 @@ func (p *DuckDuckGoProvider) Search(ctx context.Context, logger *logrus.Logger, 
 }
 
 // executeWebSearch handles web search execution
-func (p *DuckDuckGoProvider) executeWebSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+func (p *DuckDuckGoProvider) executeWebSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -147,7 +147,7 @@ func (p *DuckDuckGoProvider) executeWebSearch(ctx context.Context, logger *logru
 			snippet = strings.TrimSpace(snippetElem.Text())
 		}
 
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		metadata["provider"] = "duckduckgo"
 		metadata["position"] = len(results) + 1
 

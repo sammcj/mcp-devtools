@@ -145,9 +145,9 @@ type BraveVideoResult struct {
 
 // BraveVideoData contains video metadata
 type BraveVideoData struct {
-	Duration string      `json:"duration,omitempty"`
-	Views    interface{} `json:"views,omitempty"` // Can be string or number
-	Creator  string      `json:"creator,omitempty"`
+	Duration string `json:"duration,omitempty"`
+	Views    any    `json:"views,omitempty"` // Can be string or number
+	Creator  string `json:"creator,omitempty"`
 }
 
 // BraveLocalSearchResponse represents the response from Brave local search API
@@ -181,14 +181,14 @@ type BraveLocalPOIResponse struct {
 
 // BravePOIData contains point of interest data
 type BravePOIData struct {
-	ID          string                 `json:"id,omitempty"`
-	Name        string                 `json:"name"`
-	Address     string                 `json:"address,omitempty"`
-	PhoneNumber string                 `json:"phone_number,omitempty"`
-	Rating      float64                `json:"rating,omitempty"`
-	ReviewCount int                    `json:"review_count,omitempty"`
-	Hours       map[string]interface{} `json:"hours,omitempty"`
-	Website     string                 `json:"website,omitempty"`
+	ID          string         `json:"id,omitempty"`
+	Name        string         `json:"name"`
+	Address     string         `json:"address,omitempty"`
+	PhoneNumber string         `json:"phone_number,omitempty"`
+	Rating      float64        `json:"rating,omitempty"`
+	ReviewCount int            `json:"review_count,omitempty"`
+	Hours       map[string]any `json:"hours,omitempty"`
+	Website     string         `json:"website,omitempty"`
 }
 
 // BraveLocalDescriptionsResponse represents the response from local descriptions API

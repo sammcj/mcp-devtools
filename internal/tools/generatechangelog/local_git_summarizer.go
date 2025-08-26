@@ -262,8 +262,8 @@ func getGitHubRepositoryURL(repoPath string) string {
 // normaliseGitHubURL converts various GitHub URL formats to the standard web URL
 func normaliseGitHubURL(url string) string {
 	// Handle SSH format: git@github.com:owner/repo.git
-	if strings.HasPrefix(url, "git@github.com:") {
-		url = strings.TrimPrefix(url, "git@github.com:")
+	if after, ok := strings.CutPrefix(url, "git@github.com:"); ok {
+		url = after
 		url = "https://github.com/" + url
 	}
 
@@ -424,8 +424,8 @@ func (s *EnhancedLocalSummarizer) normaliseCommitMessage(message string) string 
 	}
 
 	for _, prefix := range prefixes {
-		if strings.HasPrefix(normalised, prefix) {
-			normalised = strings.TrimSpace(strings.TrimPrefix(normalised, prefix))
+		if after, ok := strings.CutPrefix(normalised, prefix); ok {
+			normalised = strings.TrimSpace(after)
 			break
 		}
 	}

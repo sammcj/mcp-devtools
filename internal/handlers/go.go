@@ -77,7 +77,7 @@ func (h *GoHandler) getLatestVersion(modulePath string) (string, error) {
 }
 
 // GetLatestVersion gets the latest version of Go packages
-func (h *GoHandler) GetLatestVersion(ctx context.Context, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (h *GoHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	h.logger.Info("Getting latest Go package versions")
 
 	// Parse dependencies
@@ -95,15 +95,15 @@ func (h *GoHandler) GetLatestVersion(ctx context.Context, args map[string]interf
 	h.logger.WithField("dependencies", fmt.Sprintf("%+v", depsRaw)).Debug("Raw dependencies")
 
 	// Handle different input formats
-	if depsMap, ok := depsRaw.(map[string]interface{}); ok {
+	if depsMap, ok := depsRaw.(map[string]any); ok {
 		// Check if this is the complex format with a module field
 		if moduleName, ok := depsMap["module"].(string); ok {
 			goModule.Module = moduleName
 
 			// Parse require
-			if requireRaw, ok := depsMap["require"].([]interface{}); ok {
+			if requireRaw, ok := depsMap["require"].([]any); ok {
 				for _, reqRaw := range requireRaw {
-					if reqMap, ok := reqRaw.(map[string]interface{}); ok {
+					if reqMap, ok := reqRaw.(map[string]any); ok {
 						var req GoRequire
 						if path, ok := reqMap["path"].(string); ok {
 							req.Path = path
@@ -119,9 +119,9 @@ func (h *GoHandler) GetLatestVersion(ctx context.Context, args map[string]interf
 			}
 
 			// Parse replace
-			if replaceRaw, ok := depsMap["replace"].([]interface{}); ok {
+			if replaceRaw, ok := depsMap["replace"].([]any); ok {
 				for _, repRaw := range replaceRaw {
-					if repMap, ok := repRaw.(map[string]interface{}); ok {
+					if repMap, ok := repRaw.(map[string]any); ok {
 						var rep GoReplace
 						if old, ok := repMap["old"].(string); ok {
 							rep.Old = old

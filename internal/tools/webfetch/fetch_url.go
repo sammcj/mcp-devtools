@@ -58,7 +58,7 @@ This tool is useful for fetching web content - for example to get documentation,
 }
 
 // Execute executes the fetch-url tool
-func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Executing fetch-url tool")
 
 	// Parse and validate parameters
@@ -84,7 +84,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
 		}
 		// Return error information in a structured way
-		errorResponse := map[string]interface{}{
+		errorResponse := map[string]any{
 			"url":       request.URL,
 			"error":     err.Error(),
 			"timestamp": time.Now(),
@@ -124,7 +124,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 	// Add security notice to response if needed
 	if securityNotice != "" {
 		// Convert response to map for adding security field
-		responseMap := map[string]interface{}{
+		responseMap := map[string]any{
 			"url":             paginatedResponse.URL,
 			"content":         paginatedResponse.Content,
 			"truncated":       paginatedResponse.Truncated,
@@ -177,7 +177,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 }
 
 // parseRequest parses and validates the tool arguments
-func (t *FetchURLTool) parseRequest(args map[string]interface{}) (*FetchURLRequest, error) {
+func (t *FetchURLTool) parseRequest(args map[string]any) (*FetchURLRequest, error) {
 	// Parse URL (required)
 	url, ok := args["url"].(string)
 	if !ok || url == "" {
@@ -361,7 +361,7 @@ func max(a, b int) int {
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (t *FetchURLTool) newToolResultJSON(data interface{}) (*mcp.CallToolResult, error) {
+func (t *FetchURLTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
@@ -376,14 +376,14 @@ func (t *FetchURLTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Fetch a webpage and convert to markdown",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"url": "https://docs.example.com/getting-started",
 				},
 				ExpectedResult: "Returns webpage content converted to clean markdown format, useful for analysis and processing",
 			},
 			{
 				Description: "Fetch raw HTML without markdown conversion",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"url": "https://api.example.com/status",
 					"raw": true,
 				},
@@ -391,7 +391,7 @@ func (t *FetchURLTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Fetch large content with pagination",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"url":        "https://longdocument.example.com/guide",
 					"max_length": 15000,
 				},
@@ -399,7 +399,7 @@ func (t *FetchURLTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Continue reading from a specific point",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"url":         "https://longdocument.example.com/guide",
 					"start_index": 15000,
 					"max_length":  10000,
@@ -408,7 +408,7 @@ func (t *FetchURLTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Fetch API documentation with custom length",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"url":        "https://api-docs.example.com/v2/reference",
 					"max_length": 25000,
 				},

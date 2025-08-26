@@ -14,7 +14,7 @@ type Tool interface {
 	Definition() mcp.Tool
 
 	// Execute executes the tool's logic using shared resources (logger, cache) and parsed arguments
-	Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error)
+	Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error)
 }
 
 // ExtendedHelpProvider is an optional interface that tools can implement to provide
@@ -35,9 +35,9 @@ type ExtendedHelp struct {
 
 // ToolExample represents a usage example for a tool
 type ToolExample struct {
-	Description    string                 `json:"description"`
-	Arguments      map[string]interface{} `json:"arguments"`
-	ExpectedResult string                 `json:"expected_result,omitempty"`
+	Description    string         `json:"description"`
+	Arguments      map[string]any `json:"arguments"`
+	ExpectedResult string         `json:"expected_result,omitempty"`
 }
 
 // TroubleshootingTip represents a troubleshooting tip for a tool

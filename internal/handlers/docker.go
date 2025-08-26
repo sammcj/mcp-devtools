@@ -56,7 +56,7 @@ type GHCRTagsResponse struct {
 }
 
 // GetLatestVersion gets information about Docker image tags
-func (h *DockerHandler) GetLatestVersion(ctx context.Context, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (h *DockerHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	h.logger.Info("Getting Docker image tag information")
 
 	// Parse image
@@ -85,7 +85,7 @@ func (h *DockerHandler) GetLatestVersion(ctx context.Context, args map[string]in
 
 	// Parse filter tags
 	var filterTags []string
-	if filterTagsRaw, ok := args["filterTags"].([]interface{}); ok {
+	if filterTagsRaw, ok := args["filterTags"].([]any); ok {
 		for _, tagRaw := range filterTagsRaw {
 			if tag, ok := tagRaw.(string); ok {
 				filterTags = append(filterTags, tag)

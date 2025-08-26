@@ -180,11 +180,11 @@ type ModuleDetails struct {
 
 // ModuleInput represents a module input variable
 type ModuleInput struct {
-	Name        string      `json:"name"`
-	Type        string      `json:"type"`
-	Description string      `json:"description"`
-	Default     interface{} `json:"default"`
-	Required    bool        `json:"required"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
+	Default     any    `json:"default"`
+	Required    bool   `json:"required"`
 }
 
 // ModuleOutput represents a module output

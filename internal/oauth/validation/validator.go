@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -51,7 +52,7 @@ func (v *JWTValidator) ValidateToken(ctx context.Context, tokenString string) (*
 	}
 
 	// Parse the JWT token
-	token, err := jwt.ParseWithClaims(tokenString, &types.TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &types.TokenClaims{}, func(token *jwt.Token) (any, error) {
 		// Validate the signing method
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -117,16 +118,11 @@ func (v *JWTValidator) ValidateToken(ctx context.Context, tokenString string) (*
 
 // validateAudience validates the audience claim according to RFC8707
 func (v *JWTValidator) validateAudience(tokenAudience jwt.ClaimStrings, expectedAudience string) bool {
-	for _, aud := range tokenAudience {
-		if aud == expectedAudience {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(tokenAudience, expectedAudience)
 }
 
 // GetJWKS returns the JWKS for this validator
-func (v *JWTValidator) GetJWKS(ctx context.Context) (interface{}, error) {
+func (v *JWTValidator) GetJWKS(ctx context.Context) (any, error) {
 	if v.jwks == nil {
 		return nil, fmt.Errorf("no JWKS configured")
 	}

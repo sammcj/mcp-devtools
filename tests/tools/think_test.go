@@ -33,7 +33,7 @@ func TestThinkTool_Execute_ValidInput(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"thought": "This is a test thought",
 	}
 
@@ -71,7 +71,7 @@ func TestThinkTool_Execute_EmptyThought(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"thought": "",
 	}
 
@@ -87,7 +87,7 @@ func TestThinkTool_Execute_MissingThought(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{}
+	args := map[string]any{}
 
 	_, err := tool.Execute(ctx, logger, cache, args)
 
@@ -101,7 +101,7 @@ func TestThinkTool_Execute_InvalidThoughtType(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"thought": 123, // Invalid type
 	}
 
@@ -123,7 +123,7 @@ func TestThinkTool_Execute_LongThought(t *testing.T) {
 		"amounts of text for complex reasoning tasks. This is important for AI agents that need to " +
 		"work through complicated problems step by step."
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"thought": normalLongThought,
 	}
 
@@ -154,11 +154,11 @@ func TestThinkTool_Execute_ExcessivelyLongThought(t *testing.T) {
 	baseText := "This is a very long thought that will be repeated many times to exceed the character limit. "
 	repetitions := 25 // 90 chars * 25 = ~2250 chars (exceeds 2000)
 	var excessivelyLongThought string
-	for i := 0; i < repetitions; i++ {
+	for range repetitions {
 		excessivelyLongThought += baseText
 	}
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"thought": excessivelyLongThought,
 	}
 
@@ -193,7 +193,7 @@ func TestThinkTool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
 	// Test with a thought that exceeds the custom limit (over 100 characters)
 	longThought := "This is a thought that is definitely longer than one hundred characters and should trigger the validation error when testing custom limits set via environment variables."
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"thought": longThought,
 	}
 
@@ -205,7 +205,7 @@ func TestThinkTool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
 	// Test with a thought within the custom limit (should succeed)
 	shortThought := "This is within the custom limit."
 
-	args = map[string]interface{}{
+	args = map[string]any{
 		"thought": shortThought,
 	}
 
@@ -222,7 +222,7 @@ func TestThinkTool_Execute_HowHardParameter(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	// Test with "harder" parameter
-	args := map[string]interface{}{
+	args := map[string]any{
 		"thought":  "This is a complex problem",
 		"how_hard": "harder",
 	}
@@ -244,7 +244,7 @@ func TestThinkTool_Execute_HowHardParameter(t *testing.T) {
 	}
 
 	// Test with "ultra" parameter
-	args = map[string]interface{}{
+	args = map[string]any{
 		"thought":  "This is an extremely complex problem",
 		"how_hard": "ultra",
 	}
@@ -266,7 +266,7 @@ func TestThinkTool_Execute_HowHardParameter(t *testing.T) {
 	}
 
 	// Test with explicit "hard" parameter
-	args = map[string]interface{}{
+	args = map[string]any{
 		"thought":  "This is a standard problem",
 		"how_hard": "hard",
 	}
@@ -295,7 +295,7 @@ func TestThinkTool_Execute_InvalidHowHardParameter(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	// Test with invalid string value
-	args := map[string]interface{}{
+	args := map[string]any{
 		"thought":  "This is a test thought",
 		"how_hard": "invalid",
 	}
@@ -306,7 +306,7 @@ func TestThinkTool_Execute_InvalidHowHardParameter(t *testing.T) {
 	testutils.AssertErrorContains(t, err, "invalid how_hard parameter: must be 'hard', 'harder', or 'ultra', got 'invalid'")
 
 	// Test with invalid type
-	args = map[string]interface{}{
+	args = map[string]any{
 		"thought":  "This is a test thought",
 		"how_hard": 123,
 	}

@@ -66,7 +66,7 @@ test-docling-vlm:
 	@echo "Note: This requires VLM environment variables to be configured in .env"
 	TEST_VLM_INTEGRATION=1 $(GOTEST) -v -run "TestVLMPipeline_ActualIntegration|TestLLMClient_Connectivity|TestMermaidGeneration" ./tests/tools/
 
-# Clean build artifacts
+# Clean build artefacts
 .PHONY: clean
 clean:
 	rm -rf bin/
@@ -76,11 +76,12 @@ clean:
 fmt:
 	$(GOFMT) ./...
 
-# Lint code
+# Lint code and check for modernisation opportunities
 .PHONY: lint
 lint:
 	gofmt -w -s .
 	golangci-lint run
+	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -test ./...
 
 # Install dependencies
 .PHONY: deps
@@ -198,7 +199,7 @@ help:
 	@echo "  gosec			: Run gosec security tests"
 	@echo "  clean			: Clean build artifacts"
 	@echo "  fmt			: Format code"
-	@echo "  lint			: Lint code"
+	@echo "  lint			: Lint code and check modernisation"
 	@echo "  deps			: Install Go dependencies"
 	@echo "  update-deps		: Update Go dependencies"
 	@echo "  install-docling	: Install Python dependencies for document processing"

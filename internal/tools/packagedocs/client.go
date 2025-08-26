@@ -85,7 +85,7 @@ type Client struct {
 }
 
 type cacheEntry struct {
-	data      interface{}
+	data      any
 	timestamp time.Time
 }
 
@@ -258,7 +258,7 @@ func (c *Client) GetLibraryDocs(ctx context.Context, libraryID string, params *S
 }
 
 // makeRequest makes an HTTP request to the Context7 API
-func (c *Client) makeRequest(ctx context.Context, method, path string, params map[string]string, body io.Reader, result interface{}) error {
+func (c *Client) makeRequest(ctx context.Context, method, path string, params map[string]string, body io.Reader, result any) error {
 	// Build full URL
 	fullURL := context7BaseURL + path
 

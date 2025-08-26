@@ -42,11 +42,11 @@ func (t *PythonTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *PythonTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *PythonTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting latest Python package versions")
 
 	// Parse requirements
-	requirementsRaw, ok := args["requirements"].([]interface{})
+	requirementsRaw, ok := args["requirements"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("missing required parameter: requirements")
 	}

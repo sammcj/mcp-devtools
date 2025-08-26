@@ -34,7 +34,7 @@ func TestM2ETool_Execute_InlineMode_ValidInput(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"text": "The color of the organization's behavior was analyzed.",
 	}
 
@@ -71,7 +71,7 @@ func TestM2ETool_Execute_InlineMode_EmptyText(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"text": "   ", // Whitespace only text
 	}
 
@@ -87,7 +87,7 @@ func TestM2ETool_Execute_InlineMode_TrulyEmptyText(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"text": "", // Empty string
 	}
 
@@ -107,11 +107,11 @@ func TestM2ETool_Execute_InlineMode_ExcessivelyLongText(t *testing.T) {
 	baseText := "This is American text with color and organization that will be repeated many times to exceed the character limit. "
 	repetitions := 400 // 110 chars * 400 = 44000 chars (exceeds 40000)
 	var excessivelyLongText string
-	for i := 0; i < repetitions; i++ {
+	for range repetitions {
 		excessivelyLongText += baseText
 	}
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"text": excessivelyLongText,
 	}
 
@@ -146,7 +146,7 @@ func TestM2ETool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
 	// Test with text that exceeds the custom limit (over 100 characters)
 	longText := "This is American text with color and organization that is definitely longer than one hundred characters and should trigger the validation error when testing custom limits set via environment variables."
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"text": longText,
 	}
 
@@ -158,7 +158,7 @@ func TestM2ETool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
 	// Test with text within the custom limit (should succeed)
 	shortText := "This American text has color."
 
-	args = map[string]interface{}{
+	args = map[string]any{
 		"text": shortText,
 	}
 
@@ -184,7 +184,7 @@ func TestM2ETool_Execute_FileMode_ValidFile(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"file_path": tempFile,
 	}
 
@@ -219,7 +219,7 @@ func TestM2ETool_Execute_FileMode_ExcessivelyLargeFile(t *testing.T) {
 	baseText := "This is American text with color and organization that will be repeated many times to exceed the character limit. "
 	repetitions := 400 // 110 chars * 400 = 44000 chars (exceeds 40000)
 	var largeText string
-	for i := 0; i < repetitions; i++ {
+	for range repetitions {
 		largeText += baseText
 	}
 
@@ -233,7 +233,7 @@ func TestM2ETool_Execute_FileMode_ExcessivelyLargeFile(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"file_path": tempFile,
 	}
 
@@ -249,7 +249,7 @@ func TestM2ETool_Execute_MissingParameters(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{}
+	args := map[string]any{}
 
 	_, err := tool.Execute(ctx, logger, cache, args)
 
@@ -263,7 +263,7 @@ func TestM2ETool_Execute_BothParameters(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"text":      "Some text",
 		"file_path": "/some/path",
 	}
@@ -280,7 +280,7 @@ func TestM2ETool_Execute_InvalidFilePath(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"file_path": "relative/path", // Not absolute
 	}
 
@@ -296,7 +296,7 @@ func TestM2ETool_Execute_SmartQuotesOption(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"text":              "The color is beautiful.",
 		"keep_smart_quotes": true,
 	}

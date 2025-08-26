@@ -53,7 +53,7 @@ For ambiguous queries, request clarification before proceeding with a best-guess
 }
 
 // Execute executes the resolve_library_id tool
-func (t *ResolveLibraryIDTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *ResolveLibraryIDTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Lazy initialise client
 	if t.client == nil {
 		t.client = NewClient(logger)
@@ -161,35 +161,35 @@ func (t *ResolveLibraryIDTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Find the Context7 library ID for React",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"libraryName": "React",
 				},
 				ExpectedResult: "Returns the Context7-compatible library ID for React (e.g., '/facebook/react') along with trust score, stars, and documentation coverage details",
 			},
 			{
 				Description: "Resolve Next.js library ID",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"libraryName": "Next.js",
 				},
 				ExpectedResult: "Identifies '/vercel/next.js' as the library ID with explanation of selection criteria and alternative matches if available",
 			},
 			{
 				Description: "Find MongoDB Node.js driver",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"libraryName": "mongodb nodejs driver",
 				},
 				ExpectedResult: "Locates the official MongoDB Node.js driver library ID with version information and documentation metrics",
 			},
 			{
 				Description: "Search for AWS SDK",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"libraryName": "aws-sdk",
 				},
 				ExpectedResult: "Returns the most relevant AWS SDK library ID (likely JavaScript version) with alternatives for different language SDKs",
 			},
 			{
 				Description: "Resolve specific version of a library",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"libraryName": "vue 3",
 				},
 				ExpectedResult: "Finds Vue.js version 3 specific documentation or the main Vue library with version-specific information",

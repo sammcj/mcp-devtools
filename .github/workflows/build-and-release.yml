@@ -53,22 +53,8 @@ jobs:
           go-version: '1.24'
           check-latest: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
       - name: Check out code
         uses: actions/checkout@v4
-
-      - name: Cache Python dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-          key: ${{ runner.os }}-pip-docling-3.13
-          restore-keys: |
-            ${{ runner.os }}-pip-
 
       - name: Set up Go cache
         uses: actions/cache@v4
@@ -82,11 +68,6 @@ jobs:
 
       - name: Get dependencies
         run: go mod download
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install docling
 
       - name: Test
         run: TEST_FAST=1 make test
@@ -144,22 +125,8 @@ jobs:
           go-version: '1.24'
           check-latest: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
       - name: Check out code
         uses: actions/checkout@v4
-
-      - name: Cache Python dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-          key: ${{ runner.os }}-pip-docling-3.13
-          restore-keys: |
-            ${{ runner.os }}-pip-
 
       - name: Set up Go cache
         uses: actions/cache@v4
@@ -173,11 +140,6 @@ jobs:
 
       - name: Get dependencies
         run: go mod download
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install docling
 
       - name: Build
         env:
@@ -232,21 +194,8 @@ jobs:
           go-version: '1.24'
           check-latest: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
       - name: Check out code
         uses: actions/checkout@v4
-
-      - name: Cache Python dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/Library/Caches/pip
-          key: ${{ runner.os }}-pip-docling-3.13
-          restore-keys: |
-            ${{ runner.os }}-pip-
 
       - name: Set up Go cache
         uses: actions/cache@v4
@@ -260,11 +209,6 @@ jobs:
 
       - name: Get dependencies
         run: go mod download
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install docling
 
       - name: Test
         run: TEST_FAST=1 make test

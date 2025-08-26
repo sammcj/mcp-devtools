@@ -56,7 +56,7 @@ func AssertErrorContains(t *testing.T, err error, expected string) {
 }
 
 // AssertNotNil fails the test if value is nil
-func AssertNotNil(t *testing.T, value interface{}) {
+func AssertNotNil(t *testing.T, value any) {
 	t.Helper()
 	if value == nil {
 		t.Fatal("Expected non-nil value")
@@ -64,7 +64,7 @@ func AssertNotNil(t *testing.T, value interface{}) {
 }
 
 // AssertEqual fails the test if expected != actual
-func AssertEqual(t *testing.T, expected, actual interface{}) {
+func AssertEqual(t *testing.T, expected, actual any) {
 	t.Helper()
 	if expected != actual {
 		t.Fatalf("Expected %v, got %v", expected, actual)
@@ -105,7 +105,7 @@ func containsMiddle(s, substr string) bool {
 }
 
 // ExtractPackageVersions extracts PackageVersion structs from a tool result
-func ExtractPackageVersions(t *testing.T, result interface{}) []packageversions.PackageVersion {
+func ExtractPackageVersions(t *testing.T, result any) []packageversions.PackageVersion {
 	t.Helper()
 
 	// Cast to CallToolResult

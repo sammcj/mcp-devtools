@@ -63,7 +63,7 @@ func (t *DockerTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *DockerTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *DockerTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Checking Docker image tags")
 
 	// Parse image
@@ -97,7 +97,7 @@ func (t *DockerTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 
 	// Parse filter tags
 	var filterTags []string
-	if filterTagsRaw, ok := args["filterTags"].([]interface{}); ok {
+	if filterTagsRaw, ok := args["filterTags"].([]any); ok {
 		for _, tagRaw := range filterTagsRaw {
 			if tag, ok := tagRaw.(string); ok {
 				filterTags = append(filterTags, tag)

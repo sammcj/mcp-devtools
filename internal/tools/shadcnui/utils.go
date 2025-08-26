@@ -24,7 +24,7 @@ const (
 // CacheEntry defines the structure for cached data.
 // Moved here to be shared across shadcnui tools.
 type CacheEntry struct {
-	Data      interface{}
+	Data      any
 	Timestamp time.Time
 }
 

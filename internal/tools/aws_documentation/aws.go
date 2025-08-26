@@ -54,7 +54,7 @@ func (t *AWSDocumentationTool) Definition() mcp.Tool {
 }
 
 // Execute performs the specified action on AWS documentation
-func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Initialise client and parser if needed
 	if t.client == nil {
 		t.client = NewClient(logger)
@@ -88,7 +88,7 @@ func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logge
 }
 
 // executeSearch performs documentation search
-func (t *AWSDocumentationTool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse search phrase
 	searchPhrase, ok := args["search_phrase"].(string)
 	if !ok {
@@ -116,7 +116,7 @@ func (t *AWSDocumentationTool) executeSearch(ctx context.Context, logger *logrus
 	}
 
 	// Format results
-	result := map[string]interface{}{
+	result := map[string]any{
 		"action":        "search",
 		"search_phrase": searchPhrase,
 		"results_count": len(results),
@@ -133,7 +133,7 @@ func (t *AWSDocumentationTool) executeSearch(ctx context.Context, logger *logrus
 }
 
 // executeFetch performs documentation fetching and conversion
-func (t *AWSDocumentationTool) executeFetch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeFetch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse the URL parameter
 	urlRaw, ok := args["url"].(string)
 	if !ok {
@@ -178,7 +178,7 @@ func (t *AWSDocumentationTool) executeFetch(ctx context.Context, logger *logrus.
 	docResponse := t.parser.FormatDocumentationResult(urlRaw, markdownContent, startIndex, maxLength)
 
 	// Create formatted response
-	result := map[string]interface{}{
+	result := map[string]any{
 		"action":           "fetch",
 		"url":              docResponse.URL,
 		"content":          docResponse.Content,
@@ -207,7 +207,7 @@ func (t *AWSDocumentationTool) executeFetch(ctx context.Context, logger *logrus.
 }
 
 // executeRecommend performs recommendation fetching
-func (t *AWSDocumentationTool) executeRecommend(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeRecommend(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse URL
 	url, ok := args["url"].(string)
 	if !ok {
@@ -226,7 +226,7 @@ func (t *AWSDocumentationTool) executeRecommend(ctx context.Context, logger *log
 	}
 
 	// Format results
-	result := map[string]interface{}{
+	result := map[string]any{
 		"action":                "recommend",
 		"url":                   url,
 		"recommendations":       recommendations,
@@ -268,7 +268,7 @@ func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Search for S3 bucket documentation",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action":        "search",
 					"search_phrase": "S3 bucket versioning",
 					"limit":         5,
@@ -277,7 +277,7 @@ func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Fetch AWS documentation page content",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action": "fetch",
 					"url":    "https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html",
 				},
@@ -285,7 +285,7 @@ func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Get recommendations for related AWS content",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"action": "recommend",
 					"url":    "https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-one-zone.html",
 				},

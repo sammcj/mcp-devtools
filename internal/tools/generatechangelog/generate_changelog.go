@@ -68,7 +68,7 @@ func (t *GenerateChangelogTool) Definition() mcp.Tool {
 }
 
 // Execute executes the generate_changelog tool
-func (t *GenerateChangelogTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *GenerateChangelogTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Executing generate_changelog tool")
 
 	// Check if generate_changelog tool is enabled (disabled by default)
@@ -105,7 +105,7 @@ func (t *GenerateChangelogTool) Execute(ctx context.Context, logger *logrus.Logg
 	response, err := t.executeChronicle(cmdCtx, logger, request, repoPath)
 	if err != nil {
 		// Return error information in a structured way
-		errorResponse := map[string]interface{}{
+		errorResponse := map[string]any{
 			"repository_path": request.RepositoryPath,
 			"error":           err.Error(),
 			"timestamp":       time.Now(),
@@ -127,7 +127,7 @@ func (t *GenerateChangelogTool) Execute(ctx context.Context, logger *logrus.Logg
 }
 
 // parseRequest parses and validates the tool arguments
-func (t *GenerateChangelogTool) parseRequest(args map[string]interface{}) (*GenerateChangelogRequest, error) {
+func (t *GenerateChangelogTool) parseRequest(args map[string]any) (*GenerateChangelogRequest, error) {
 	// Parse repository_path (required)
 	repoPath, ok := args["repository_path"].(string)
 	if !ok || repoPath == "" {
@@ -296,7 +296,7 @@ func (t *GenerateChangelogTool) writeToFile(filename, content string) error {
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (t *GenerateChangelogTool) newToolResultJSON(data interface{}) (*mcp.CallToolResult, error) {
+func (t *GenerateChangelogTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)

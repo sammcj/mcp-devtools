@@ -32,7 +32,7 @@ type TokenClaims struct {
 // TokenValidator interface for token validation
 type TokenValidator interface {
 	ValidateToken(ctx context.Context, token string) (*TokenClaims, error)
-	GetJWKS(ctx context.Context) (interface{}, error)
+	GetJWKS(ctx context.Context) (any, error)
 }
 
 // AuthorizationServerMetadata represents OAuth 2.0 Authorization Server Metadata (RFC8414)

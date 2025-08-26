@@ -25,19 +25,19 @@ func TestRustTool_Execute(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		args     map[string]interface{}
+		args     map[string]any
 		wantErr  bool
-		validate func(t *testing.T, result interface{})
+		validate func(t *testing.T, result any)
 	}{
 		{
 			name: "single crate",
-			args: map[string]interface{}{
-				"dependencies": map[string]interface{}{
+			args: map[string]any{
+				"dependencies": map[string]any{
 					"serde": "1.0",
 				},
 			},
 			wantErr: false,
-			validate: func(t *testing.T, result interface{}) {
+			validate: func(t *testing.T, result any) {
 				versions := testutils.ExtractPackageVersions(t, result)
 				require.Len(t, versions, 1)
 				assert.Equal(t, "serde", versions[0].Name)
@@ -47,14 +47,14 @@ func TestRustTool_Execute(t *testing.T) {
 		},
 		{
 			name: "multiple crates",
-			args: map[string]interface{}{
-				"dependencies": map[string]interface{}{
+			args: map[string]any{
+				"dependencies": map[string]any{
 					"serde": "1.0",
 					"tokio": "1.0",
 				},
 			},
 			wantErr: false,
-			validate: func(t *testing.T, result interface{}) {
+			validate: func(t *testing.T, result any) {
 				versions := testutils.ExtractPackageVersions(t, result)
 				require.Len(t, versions, 2)
 
@@ -70,16 +70,16 @@ func TestRustTool_Execute(t *testing.T) {
 		},
 		{
 			name: "complex dependency format",
-			args: map[string]interface{}{
-				"dependencies": map[string]interface{}{
-					"clap": map[string]interface{}{
+			args: map[string]any{
+				"dependencies": map[string]any{
+					"clap": map[string]any{
 						"version":  "4.0",
 						"features": []string{"derive"},
 					},
 				},
 			},
 			wantErr: false,
-			validate: func(t *testing.T, result interface{}) {
+			validate: func(t *testing.T, result any) {
 				versions := testutils.ExtractPackageVersions(t, result)
 				require.Len(t, versions, 1)
 				assert.Equal(t, "clap", versions[0].Name)
@@ -89,13 +89,13 @@ func TestRustTool_Execute(t *testing.T) {
 		},
 		{
 			name: "nonexistent crate",
-			args: map[string]interface{}{
-				"dependencies": map[string]interface{}{
+			args: map[string]any{
+				"dependencies": map[string]any{
 					"nonexistent-crate-12345": "1.0",
 				},
 			},
 			wantErr: false,
-			validate: func(t *testing.T, result interface{}) {
+			validate: func(t *testing.T, result any) {
 				versions := testutils.ExtractPackageVersions(t, result)
 				require.Len(t, versions, 1)
 				assert.Equal(t, "nonexistent-crate-12345", versions[0].Name)
@@ -105,7 +105,7 @@ func TestRustTool_Execute(t *testing.T) {
 		},
 		{
 			name:    "missing dependencies",
-			args:    map[string]interface{}{},
+			args:    map[string]any{},
 			wantErr: true,
 		},
 	}

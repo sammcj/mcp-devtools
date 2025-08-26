@@ -43,7 +43,7 @@ func (p *BraveProvider) GetSupportedTypes() []string {
 }
 
 // Search executes a search using the Brave provider
-func (p *BraveProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+func (p *BraveProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	logger.WithFields(logrus.Fields{
@@ -69,7 +69,7 @@ func (p *BraveProvider) Search(ctx context.Context, logger *logrus.Logger, searc
 }
 
 // executeWebSearch handles web search
-func (p *BraveProvider) executeWebSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+func (p *BraveProvider) executeWebSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -106,7 +106,7 @@ func (p *BraveProvider) executeWebSearch(ctx context.Context, logger *logrus.Log
 
 	results := make([]internetsearch.SearchResult, 0, len(response.Web.Results))
 	for _, webResult := range response.Web.Results {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if webResult.Age != "" {
 			metadata["age"] = webResult.Age
 		}
@@ -124,7 +124,7 @@ func (p *BraveProvider) executeWebSearch(ctx context.Context, logger *logrus.Log
 }
 
 // executeImageSearch handles image search
-func (p *BraveProvider) executeImageSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+func (p *BraveProvider) executeImageSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -148,7 +148,7 @@ func (p *BraveProvider) executeImageSearch(ctx context.Context, logger *logrus.L
 
 	results := make([]internetsearch.SearchResult, 0, len(response.Results))
 	for _, imageResult := range response.Results {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		metadata["imageURL"] = imageResult.Properties.URL
 		if imageResult.Properties.Format != "" {
 			metadata["format"] = imageResult.Properties.Format
@@ -173,7 +173,7 @@ func (p *BraveProvider) executeImageSearch(ctx context.Context, logger *logrus.L
 }
 
 // executeNewsSearch handles news search
-func (p *BraveProvider) executeNewsSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+func (p *BraveProvider) executeNewsSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -202,7 +202,7 @@ func (p *BraveProvider) executeNewsSearch(ctx context.Context, logger *logrus.Lo
 
 	results := make([]internetsearch.SearchResult, 0, len(response.Results))
 	for _, newsResult := range response.Results {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if newsResult.Age != "" {
 			metadata["age"] = newsResult.Age
 		}
@@ -220,7 +220,7 @@ func (p *BraveProvider) executeNewsSearch(ctx context.Context, logger *logrus.Lo
 }
 
 // executeVideoSearch handles video search
-func (p *BraveProvider) executeVideoSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+func (p *BraveProvider) executeVideoSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -249,7 +249,7 @@ func (p *BraveProvider) executeVideoSearch(ctx context.Context, logger *logrus.L
 
 	results := make([]internetsearch.SearchResult, 0, len(response.Results))
 	for _, videoResult := range response.Results {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if videoResult.Video.Duration != "" {
 			metadata["duration"] = videoResult.Video.Duration
 		}
@@ -273,7 +273,7 @@ func (p *BraveProvider) executeVideoSearch(ctx context.Context, logger *logrus.L
 }
 
 // executeLocalSearch handles local search with web fallback
-func (p *BraveProvider) executeLocalSearch(ctx context.Context, logger *logrus.Logger, args map[string]interface{}) (*internetsearch.SearchResponse, error) {
+func (p *BraveProvider) executeLocalSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -309,7 +309,7 @@ func (p *BraveProvider) executeLocalSearch(ctx context.Context, logger *logrus.L
 	// Convert web results with fallback indicator
 	results := make([]internetsearch.SearchResult, 0, len(webResponse.Web.Results))
 	for _, webResult := range webResponse.Web.Results {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		metadata["fallback"] = "web_search"
 		if webResult.Age != "" {
 			metadata["age"] = webResult.Age
@@ -392,7 +392,7 @@ func (p *BraveProvider) processLocalResults(ctx context.Context, logger *logrus.
 			break
 		}
 
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 
 		// Add POI data if available
 		if poi, exists := poiMap[location.ID]; exists {

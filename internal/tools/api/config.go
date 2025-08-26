@@ -49,20 +49,20 @@ type EndpointConfig struct {
 
 // ParameterConfig defines a parameter for an endpoint
 type ParameterConfig struct {
-	Name        string      `yaml:"name"`
-	Type        string      `yaml:"type"` // "string", "number", "boolean", "array", "object"
-	Required    bool        `yaml:"required"`
-	Description string      `yaml:"description"`
-	Default     interface{} `yaml:"default"`
-	Enum        []string    `yaml:"enum"`
-	Location    string      `yaml:"location"` // "path", "query", "header"
+	Name        string   `yaml:"name"`
+	Type        string   `yaml:"type"` // "string", "number", "boolean", "array", "object"
+	Required    bool     `yaml:"required"`
+	Description string   `yaml:"description"`
+	Default     any      `yaml:"default"`
+	Enum        []string `yaml:"enum"`
+	Location    string   `yaml:"location"` // "path", "query", "header"
 }
 
 // BodyConfig defines request body configuration
 type BodyConfig struct {
-	Type        string                 `yaml:"type"`         // "json", "form", "raw"
-	ContentType string                 `yaml:"content_type"` // override content type
-	Schema      map[string]interface{} `yaml:"schema"`       // JSON schema for body validation
+	Type        string         `yaml:"type"`         // "json", "form", "raw"
+	ContentType string         `yaml:"content_type"` // override content type
+	Schema      map[string]any `yaml:"schema"`       // JSON schema for body validation
 }
 
 // LoadAPIConfig loads the API configuration from the specified file
@@ -271,8 +271,8 @@ func (p *ParameterConfig) validate() error {
 // For auth configs, the value should be the environment variable name
 // For other configs that start with $, it's treated as an env var reference
 func ResolveEnvVar(value string) string {
-	if strings.HasPrefix(value, "$") {
-		envVar := strings.TrimPrefix(value, "$")
+	if after, ok := strings.CutPrefix(value, "$"); ok {
+		envVar := after
 		if envValue := os.Getenv(envVar); envValue != "" {
 			return envValue
 		}

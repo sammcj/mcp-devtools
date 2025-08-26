@@ -41,18 +41,18 @@ func (t *NpmTool) Definition() mcp.Tool {
 		mcp.WithDescription("Check latest stable versions for npm packages"),
 		mcp.WithObject("dependencies",
 			mcp.Description("Dependencies object from package.json"),
-			mcp.Properties(map[string]interface{}{}),
+			mcp.Properties(map[string]any{}),
 			mcp.Required(),
 		),
 		mcp.WithObject("constraints",
 			mcp.Description("Optional constraints for specific packages"),
-			mcp.Properties(map[string]interface{}{}),
+			mcp.Properties(map[string]any{}),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *NpmTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *NpmTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting latest npm package versions")
 
 	// Parse dependencies
@@ -63,7 +63,7 @@ func (t *NpmTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 
 	// Convert to map[string]string
 	depsMap := make(map[string]string)
-	if deps, ok := depsRaw.(map[string]interface{}); ok {
+	if deps, ok := depsRaw.(map[string]any); ok {
 		for name, version := range deps {
 			if vStr, ok := version.(string); ok {
 				depsMap[name] = vStr
@@ -78,10 +78,10 @@ func (t *NpmTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 	// Parse constraints
 	var constraints packageversions.VersionConstraints
 	if constraintsRaw, ok := args["constraints"]; ok {
-		if constraintsMap, ok := constraintsRaw.(map[string]interface{}); ok {
+		if constraintsMap, ok := constraintsRaw.(map[string]any); ok {
 			constraints = make(packageversions.VersionConstraints)
 			for name, constraintRaw := range constraintsMap {
-				if constraintMap, ok := constraintRaw.(map[string]interface{}); ok {
+				if constraintMap, ok := constraintRaw.(map[string]any); ok {
 					var constraint packageversions.VersionConstraint
 					if majorVersion, ok := constraintMap["majorVersion"].(float64); ok {
 						majorInt := int(majorVersion)

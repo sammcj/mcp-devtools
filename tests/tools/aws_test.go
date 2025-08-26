@@ -59,17 +59,17 @@ func TestAWSDocumentationTool_Execute_InvalidAction(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		args          map[string]interface{}
+		args          map[string]any
 		expectedError string
 	}{
 		{
 			name:          "missing action parameter",
-			args:          map[string]interface{}{},
+			args:          map[string]any{},
 			expectedError: "missing required parameter: action",
 		},
 		{
 			name: "invalid action",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"action": "invalid",
 			},
 			expectedError: "invalid action: invalid. Must be one of: search, fetch, recommend",
@@ -98,19 +98,19 @@ func TestAWSDocumentationTool_Execute_SearchAction(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		args          map[string]interface{}
+		args          map[string]any
 		expectedError string
 	}{
 		{
 			name: "missing search_phrase",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"action": "search",
 			},
 			expectedError: "missing required parameter for search action: search_phrase",
 		},
 		{
 			name: "empty search phrase",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"action":        "search",
 				"search_phrase": "",
 			},
@@ -118,7 +118,7 @@ func TestAWSDocumentationTool_Execute_SearchAction(t *testing.T) {
 		},
 		{
 			name: "limit too low",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"action":        "search",
 				"search_phrase": "S3",
 				"limit":         0.0, // Use float64 as that's what comes from JSON
@@ -127,7 +127,7 @@ func TestAWSDocumentationTool_Execute_SearchAction(t *testing.T) {
 		},
 		{
 			name: "limit too high",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"action":        "search",
 				"search_phrase": "S3",
 				"limit":         51.0, // Use float64 as that's what comes from JSON
@@ -162,19 +162,19 @@ func TestAWSDocumentationTool_Execute_FetchAction(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		args          map[string]interface{}
+		args          map[string]any
 		expectedError string
 	}{
 		{
 			name: "missing URL parameter",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"action": "fetch",
 			},
 			expectedError: "missing required parameter for fetch action: url",
 		},
 		{
 			name: "non-AWS domain",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"action": "fetch",
 				"url":    "https://google.com/page.html",
 			},
@@ -182,7 +182,7 @@ func TestAWSDocumentationTool_Execute_FetchAction(t *testing.T) {
 		},
 		{
 			name: "non-HTML file",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"action": "fetch",
 				"url":    "https://docs.aws.amazon.com/page.pdf",
 			},
@@ -212,19 +212,19 @@ func TestAWSDocumentationTool_Execute_RecommendAction(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		args          map[string]interface{}
+		args          map[string]any
 		expectedError string
 	}{
 		{
 			name: "missing URL parameter",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"action": "recommend",
 			},
 			expectedError: "missing required parameter for recommend action: url",
 		},
 		{
 			name: "empty URL",
-			args: map[string]interface{}{
+			args: map[string]any{
 				"action": "recommend",
 				"url":    "",
 			},

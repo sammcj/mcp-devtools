@@ -69,7 +69,7 @@ This can be useful if the user asks you to store or retrieve something specific 
 }
 
 // Execute executes the memory tool operations
-func (m *MemoryTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse namespace parameter (default: "default")
 	namespace := "default"
 	if namespaceRaw, exists := args["namespace"]; exists && namespaceRaw != nil {
@@ -99,9 +99,9 @@ func (m *MemoryTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 	}
 
 	// Parse data parameter (optional for some operations)
-	var data map[string]interface{}
+	var data map[string]any
 	if dataRaw, exists := args["data"]; exists && dataRaw != nil {
-		if dataMap, ok := dataRaw.(map[string]interface{}); ok {
+		if dataMap, ok := dataRaw.(map[string]any); ok {
 			data = dataMap
 		} else {
 			return nil, fmt.Errorf("data parameter must be an object")
@@ -134,7 +134,7 @@ func (m *MemoryTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 }
 
 // handleCreateEntities handles entity creation
-func (m *MemoryTool) handleCreateEntities(data map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleCreateEntities(data map[string]any) (*mcp.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for create_entities operation")
 	}
@@ -169,7 +169,7 @@ func (m *MemoryTool) handleCreateEntities(data map[string]interface{}) (*mcp.Cal
 }
 
 // handleCreateRelations handles relation creation
-func (m *MemoryTool) handleCreateRelations(data map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleCreateRelations(data map[string]any) (*mcp.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for create_relations operation")
 	}
@@ -204,7 +204,7 @@ func (m *MemoryTool) handleCreateRelations(data map[string]interface{}) (*mcp.Ca
 }
 
 // handleAddObservations handles adding observations
-func (m *MemoryTool) handleAddObservations(data map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleAddObservations(data map[string]any) (*mcp.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for add_observations operation")
 	}
@@ -239,7 +239,7 @@ func (m *MemoryTool) handleAddObservations(data map[string]interface{}) (*mcp.Ca
 }
 
 // handleDeleteEntities handles entity deletion
-func (m *MemoryTool) handleDeleteEntities(data map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleDeleteEntities(data map[string]any) (*mcp.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for delete_entities operation")
 	}
@@ -273,7 +273,7 @@ func (m *MemoryTool) handleDeleteEntities(data map[string]interface{}) (*mcp.Cal
 }
 
 // handleDeleteObservations handles observation deletion
-func (m *MemoryTool) handleDeleteObservations(data map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleDeleteObservations(data map[string]any) (*mcp.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for delete_observations operation")
 	}
@@ -307,7 +307,7 @@ func (m *MemoryTool) handleDeleteObservations(data map[string]interface{}) (*mcp
 }
 
 // handleDeleteRelations handles relation deletion
-func (m *MemoryTool) handleDeleteRelations(data map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleDeleteRelations(data map[string]any) (*mcp.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for delete_relations operation")
 	}
@@ -351,7 +351,7 @@ func (m *MemoryTool) handleReadGraph() (*mcp.CallToolResult, error) {
 }
 
 // handleSearchNodes handles node searching
-func (m *MemoryTool) handleSearchNodes(data map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleSearchNodes(data map[string]any) (*mcp.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for search_nodes operation")
 	}
@@ -383,7 +383,7 @@ func (m *MemoryTool) handleSearchNodes(data map[string]interface{}) (*mcp.CallTo
 }
 
 // handleOpenNodes handles opening specific nodes
-func (m *MemoryTool) handleOpenNodes(data map[string]interface{}) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleOpenNodes(data map[string]any) (*mcp.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for open_nodes operation")
 	}
@@ -413,7 +413,7 @@ func (m *MemoryTool) handleOpenNodes(data map[string]interface{}) (*mcp.CallTool
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (m *MemoryTool) newToolResultJSON(data interface{}) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal response: %w", err)
@@ -428,11 +428,11 @@ func (m *MemoryTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Create entities for a project team",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"operation": "create_entities",
 					"namespace": "project_alpha",
-					"data": map[string]interface{}{
-						"entities": []map[string]interface{}{
+					"data": map[string]any{
+						"entities": []map[string]any{
 							{"name": "alice", "entityType": "person", "observations": []string{"Senior Developer", "Team Lead"}},
 							{"name": "backend_api", "entityType": "system", "observations": []string{"REST API", "Handles authentication"}},
 						},
@@ -442,11 +442,11 @@ func (m *MemoryTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Create relationships between entities",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"operation": "create_relations",
 					"namespace": "project_alpha",
-					"data": map[string]interface{}{
-						"relations": []map[string]interface{}{
+					"data": map[string]any{
+						"relations": []map[string]any{
 							{"from": "alice", "to": "backend_api", "relationType": "maintains"},
 						},
 					},
@@ -455,10 +455,10 @@ func (m *MemoryTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Search for entities containing specific terms",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"operation": "search_nodes",
 					"namespace": "project_alpha",
-					"data": map[string]interface{}{
+					"data": map[string]any{
 						"query": "API",
 					},
 				},
@@ -466,7 +466,7 @@ func (m *MemoryTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Read the complete memory graph",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"operation": "read_graph",
 					"namespace": "project_alpha",
 				},
@@ -474,11 +474,11 @@ func (m *MemoryTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Add observations to existing entities",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"operation": "add_observations",
 					"namespace": "project_alpha",
-					"data": map[string]interface{}{
-						"observations": []map[string]interface{}{
+					"data": map[string]any{
+						"observations": []map[string]any{
 							{"entityName": "alice", "contents": []string{"Proficient in Go", "Mentor for junior developers"}},
 							{"entityName": "backend_api", "contents": []string{"Uses PostgreSQL", "Deployed on AWS"}},
 						},

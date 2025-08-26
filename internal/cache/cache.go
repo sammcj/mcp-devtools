@@ -7,7 +7,7 @@ import (
 
 // Cache provides a simple in-memory cache with expiration
 type Cache struct {
-	data  map[string]interface{}
+	data  map[string]any
 	times map[string]time.Time
 	ttl   time.Duration
 	mu    sync.RWMutex
@@ -16,14 +16,14 @@ type Cache struct {
 // NewCache creates a new cache with the specified TTL
 func NewCache(ttl time.Duration) *Cache {
 	return &Cache{
-		data:  make(map[string]interface{}),
+		data:  make(map[string]any),
 		times: make(map[string]time.Time),
 		ttl:   ttl,
 	}
 }
 
 // Get retrieves a value from the cache
-func (c *Cache) Get(key string) (interface{}, bool) {
+func (c *Cache) Get(key string) (any, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -41,7 +41,7 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 }
 
 // Set stores a value in the cache
-func (c *Cache) Set(key string, val interface{}) {
+func (c *Cache) Set(key string, val any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

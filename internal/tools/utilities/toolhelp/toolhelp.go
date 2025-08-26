@@ -58,7 +58,7 @@ func (t *ToolHelpTool) Definition() mcp.Tool {
 }
 
 // Execute executes the devtools_help tool
-func (t *ToolHelpTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *ToolHelpTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse and validate parameters
 	toolName, err := t.parseRequest(args)
 	if err != nil {
@@ -100,7 +100,7 @@ func (t *ToolHelpTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 }
 
 // parseRequest parses and validates the tool arguments
-func (t *ToolHelpTool) parseRequest(args map[string]interface{}) (string, error) {
+func (t *ToolHelpTool) parseRequest(args map[string]any) (string, error) {
 	// Parse tool_name (required)
 	toolName, ok := args["tool_name"].(string)
 	if !ok || toolName == "" {
@@ -111,10 +111,10 @@ func (t *ToolHelpTool) parseRequest(args map[string]interface{}) (string, error)
 }
 
 // extractBasicInfo extracts basic information from a tool's definition
-func (t *ToolHelpTool) extractBasicInfo(tool tools.Tool) map[string]interface{} {
+func (t *ToolHelpTool) extractBasicInfo(tool tools.Tool) map[string]any {
 	definition := tool.Definition()
 
-	basicInfo := map[string]interface{}{
+	basicInfo := map[string]any{
 		"name":        definition.Name,
 		"description": definition.Description,
 	}

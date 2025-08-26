@@ -30,11 +30,11 @@ func (t *GradleTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *GradleTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *GradleTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting latest Gradle package versions")
 
 	// Parse dependencies
-	depsRaw, ok := args["dependencies"].([]interface{})
+	depsRaw, ok := args["dependencies"].([]any)
 	if !ok {
 		return nil, fmt.Errorf("missing required parameter: dependencies")
 	}
@@ -42,7 +42,7 @@ func (t *GradleTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 	// Convert to GradleDependency
 	var dependencies []packageversions.GradleDependency
 	for _, depRaw := range depsRaw {
-		if depMap, ok := depRaw.(map[string]interface{}); ok {
+		if depMap, ok := depRaw.(map[string]any); ok {
 			var dep packageversions.GradleDependency
 
 			// Parse configuration

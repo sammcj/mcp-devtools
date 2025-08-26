@@ -83,7 +83,7 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 }
 
 // Execute processes the document using the Python wrapper
-func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Check if process_document tool is enabled (disabled by default)
 	if !tools.IsToolEnabled("process_document") {
 		return nil, fmt.Errorf("process_document tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'process_document'")
@@ -108,7 +108,7 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 	}()
 
 	// Check for batch processing (sources array)
-	if sources, ok := args["sources"].([]interface{}); ok && len(sources) > 0 {
+	if sources, ok := args["sources"].([]any); ok && len(sources) > 0 {
 		return t.executeBatch(ctx, args, sources)
 	}
 
@@ -149,7 +149,7 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 
 	// Validate configuration
 	if err := t.config.Validate(); err != nil {
-		errorResult := map[string]interface{}{
+		errorResult := map[string]any{
 			"error":       fmt.Sprintf("Configuration error: %s", err.Error()),
 			"system_info": t.config.GetSystemInfo(),
 		}
@@ -179,7 +179,7 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 	// Process document
 	response, err := t.processDocument(req)
 	if err != nil {
-		errorResult := map[string]interface{}{
+		errorResult := map[string]any{
 			"error": err.Error(),
 		}
 		return t.newToolResultJSON(errorResult)
@@ -239,7 +239,7 @@ func (t *DocumentProcessorTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Process a PDF with text and images",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"source":  "/Users/username/documents/report.pdf",
 					"profile": "text-and-image",
 				},
@@ -247,7 +247,7 @@ func (t *DocumentProcessorTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Batch process multiple documents",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"sources": []string{
 						"/Users/username/docs/file1.pdf",
 						"/Users/username/docs/file2.docx",
@@ -259,7 +259,7 @@ func (t *DocumentProcessorTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Process scanned document with OCR",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"source":  "/Users/username/scanned/invoice.pdf",
 					"profile": "scanned",
 				},
@@ -267,7 +267,7 @@ func (t *DocumentProcessorTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Return content inline without saving file",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"source":             "/Users/username/docs/contract.docx",
 					"profile":            "text-and-image",
 					"return_inline_only": true,
@@ -276,7 +276,7 @@ func (t *DocumentProcessorTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Force cache refresh and save to custom location",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"source":           "/Users/username/docs/presentation.pptx",
 					"profile":          "text-and-image",
 					"clear_file_cache": true,

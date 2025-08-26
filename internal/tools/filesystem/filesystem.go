@@ -162,41 +162,41 @@ Functions and their required parameters:
 		),
 		mcp.WithObject("options",
 			mcp.Description("Function-specific options - see function description for parameters"),
-			mcp.Properties(map[string]interface{}{
-				"path": map[string]interface{}{
+			mcp.Properties(map[string]any{
+				"path": map[string]any{
 					"type":        "string",
 					"description": "File or directory path",
 				},
-				"paths": map[string]interface{}{
+				"paths": map[string]any{
 					"type":        "array",
 					"description": "Array of file paths",
-					"items": map[string]interface{}{
+					"items": map[string]any{
 						"type": "string",
 					},
 				},
-				"content": map[string]interface{}{
+				"content": map[string]any{
 					"type":        "string",
 					"description": "File content to write",
 				},
-				"head": map[string]interface{}{
+				"head": map[string]any{
 					"type":        "number",
 					"description": "Read only first N lines",
 				},
-				"tail": map[string]interface{}{
+				"tail": map[string]any{
 					"type":        "number",
 					"description": "Read only last N lines",
 				},
-				"edits": map[string]interface{}{
+				"edits": map[string]any{
 					"type":        "array",
 					"description": "Array of edit operations",
-					"items": map[string]interface{}{
+					"items": map[string]any{
 						"type": "object",
-						"properties": map[string]interface{}{
-							"oldText": map[string]interface{}{
+						"properties": map[string]any{
+							"oldText": map[string]any{
 								"type":        "string",
 								"description": "Text to search for",
 							},
-							"newText": map[string]interface{}{
+							"newText": map[string]any{
 								"type":        "string",
 								"description": "Text to replace with",
 							},
@@ -204,31 +204,31 @@ Functions and their required parameters:
 						"required": []string{"oldText", "newText"},
 					},
 				},
-				"dryRun": map[string]interface{}{
+				"dryRun": map[string]any{
 					"type":        "boolean",
 					"description": "Preview changes without applying",
 					"default":     false,
 				},
-				"source": map[string]interface{}{
+				"source": map[string]any{
 					"type":        "string",
 					"description": "Source path for move operation",
 				},
-				"destination": map[string]interface{}{
+				"destination": map[string]any{
 					"type":        "string",
 					"description": "Destination path for move operation",
 				},
-				"pattern": map[string]interface{}{
+				"pattern": map[string]any{
 					"type":        "string",
 					"description": "Search pattern",
 				},
-				"excludePatterns": map[string]interface{}{
+				"excludePatterns": map[string]any{
 					"type":        "array",
 					"description": "Patterns to exclude from search",
-					"items": map[string]interface{}{
+					"items": map[string]any{
 						"type": "string",
 					},
 				},
-				"sortBy": map[string]interface{}{
+				"sortBy": map[string]any{
 					"type":        "string",
 					"description": "Sort directory listing by name or size",
 					"enum":        []string{"name", "size"},
@@ -240,7 +240,7 @@ Functions and their required parameters:
 }
 
 // Execute executes the filesystem tool
-func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Check if filesystem tool is enabled (disabled by defaulty)
 	if !tools.IsToolEnabled("filesystem") {
 		return nil, fmt.Errorf("filesystem tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'filesystem'")
@@ -256,9 +256,9 @@ func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cac
 	}
 
 	// Parse options
-	options := make(map[string]interface{})
+	options := make(map[string]any)
 	if optionsRaw, ok := args["options"]; ok {
-		if optionsMap, ok := optionsRaw.(map[string]interface{}); ok {
+		if optionsMap, ok := optionsRaw.(map[string]any); ok {
 			options = optionsMap
 		}
 	}
@@ -379,7 +379,7 @@ func (t *FileSystemTool) isPathWithinAllowedReal(realPath, allowedClean string) 
 }
 
 // readFile reads the contents of a file
-func (t *FileSystemTool) readFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) readFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -507,10 +507,7 @@ func (t *FileSystemTool) readFileTail(path string, numLines int) (string, error)
 
 	for len(lines) < numLines && position > 0 {
 		// Calculate chunk size to read
-		readSize := int64(chunkSize)
-		if position < readSize {
-			readSize = position
-		}
+		readSize := min(position, int64(chunkSize))
 		position -= readSize
 
 		// Read chunk
@@ -553,13 +550,13 @@ func (t *FileSystemTool) readFileTail(path string, numLines int) (string, error)
 }
 
 // readMultipleFiles reads multiple files simultaneously
-func (t *FileSystemTool) readMultipleFiles(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) readMultipleFiles(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	pathsRaw, ok := options["paths"]
 	if !ok {
 		return nil, fmt.Errorf("missing required parameter: paths")
 	}
 
-	pathsInterface, ok := pathsRaw.([]interface{})
+	pathsInterface, ok := pathsRaw.([]any)
 	if !ok {
 		return nil, fmt.Errorf("paths must be an array")
 	}
@@ -616,7 +613,7 @@ func (t *FileSystemTool) readMultipleFiles(ctx context.Context, logger *logrus.L
 }
 
 // writeFile creates or overwrites a file
-func (t *FileSystemTool) writeFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) writeFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -663,7 +660,7 @@ func (t *FileSystemTool) writeFile(ctx context.Context, logger *logrus.Logger, o
 }
 
 // editFile performs line-based edits on a file
-func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -690,9 +687,9 @@ func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, op
 
 	// Parse edits
 	var edits []EditOperation
-	if editsArray, ok := editsRaw.([]interface{}); ok {
+	if editsArray, ok := editsRaw.([]any); ok {
 		for _, editRaw := range editsArray {
-			if editMap, ok := editRaw.(map[string]interface{}); ok {
+			if editMap, ok := editRaw.(map[string]any); ok {
 				oldText, oldOk := editMap["oldText"].(string)
 				newText, newOk := editMap["newText"].(string)
 				if oldOk && newOk {
@@ -786,12 +783,9 @@ func (t *FileSystemTool) createDiff(original, modified, filename string) string 
 	diff.WriteString(fmt.Sprintf("+++ %s (modified)\n", filename))
 
 	// Simple line-by-line diff
-	maxLines := len(originalLines)
-	if len(modifiedLines) > maxLines {
-		maxLines = len(modifiedLines)
-	}
+	maxLines := max(len(modifiedLines), len(originalLines))
 
-	for i := 0; i < maxLines; i++ {
+	for i := range maxLines {
 		var origLine, modLine string
 		if i < len(originalLines) {
 			origLine = originalLines[i]
@@ -814,7 +808,7 @@ func (t *FileSystemTool) createDiff(original, modified, filename string) string 
 }
 
 // createDirectory creates a directory
-func (t *FileSystemTool) createDirectory(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) createDirectory(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -833,7 +827,7 @@ func (t *FileSystemTool) createDirectory(ctx context.Context, logger *logrus.Log
 }
 
 // listDirectory lists directory contents
-func (t *FileSystemTool) listDirectory(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listDirectory(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -862,7 +856,7 @@ func (t *FileSystemTool) listDirectory(ctx context.Context, logger *logrus.Logge
 }
 
 // listDirectoryWithSizes lists directory contents with sizes
-func (t *FileSystemTool) listDirectoryWithSizes(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listDirectoryWithSizes(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -957,7 +951,7 @@ func (t *FileSystemTool) formatSize(bytes int64) string {
 }
 
 // directoryTree creates a recursive tree view of directories
-func (t *FileSystemTool) directoryTree(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) directoryTree(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1058,7 +1052,7 @@ func (t *FileSystemTool) formatDirectoryTree(entries []DirectoryEntry, indent in
 }
 
 // moveFile moves or renames files and directories
-func (t *FileSystemTool) moveFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) moveFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	source, ok := options["source"].(string)
 	if !ok || source == "" {
 		return nil, fmt.Errorf("missing required parameter: source")
@@ -1092,7 +1086,7 @@ func (t *FileSystemTool) moveFile(ctx context.Context, logger *logrus.Logger, op
 }
 
 // searchFiles recursively searches for files matching a pattern
-func (t *FileSystemTool) searchFiles(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) searchFiles(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1105,7 +1099,7 @@ func (t *FileSystemTool) searchFiles(ctx context.Context, logger *logrus.Logger,
 
 	var excludePatterns []string
 	if excludePatternsRaw, ok := options["excludePatterns"]; ok {
-		if excludePatternsArray, ok := excludePatternsRaw.([]interface{}); ok {
+		if excludePatternsArray, ok := excludePatternsRaw.([]any); ok {
 			for _, patternRaw := range excludePatternsArray {
 				if patternStr, ok := patternRaw.(string); ok {
 					excludePatterns = append(excludePatterns, patternStr)
@@ -1177,7 +1171,7 @@ func (t *FileSystemTool) performSearch(rootPath, pattern string, excludePatterns
 }
 
 // getFileInfo retrieves detailed file information
-func (t *FileSystemTool) getFileInfo(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) getFileInfo(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1226,7 +1220,7 @@ func (t *FileSystemTool) getFileInfo(ctx context.Context, logger *logrus.Logger,
 }
 
 // listAllowedDirectories returns the list of allowed directories
-func (t *FileSystemTool) listAllowedDirectories(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listAllowedDirectories(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
@@ -1257,9 +1251,9 @@ func (t *FileSystemTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Read a file with line limits",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function": "read_file",
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"path": "/Users/username/projects/myapp/config.json",
 						"head": 20,
 					},
@@ -1268,11 +1262,11 @@ func (t *FileSystemTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Edit a file with multiple replacements",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function": "edit_file",
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"path": "/Users/username/projects/myapp/src/config.js",
-						"edits": []map[string]interface{}{
+						"edits": []map[string]any{
 							{"oldText": "const API_URL = 'http://localhost:3000'", "newText": "const API_URL = 'https://api.production.com'"},
 							{"oldText": "debug: true", "newText": "debug: false"},
 						},
@@ -1283,9 +1277,9 @@ func (t *FileSystemTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Search for files with exclusions",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function": "search_files",
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"path":            "/Users/username/projects/webapp",
 						"pattern":         "component",
 						"excludePatterns": []string{"node_modules", "*.test.js", "dist"},
@@ -1295,9 +1289,9 @@ func (t *FileSystemTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "List directory with size information sorted by size",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function": "list_directory_with_sizes",
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"path":   "/Users/username/projects/myapp/src",
 						"sortBy": "size",
 					},
@@ -1306,9 +1300,9 @@ func (t *FileSystemTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Create directory structure and write file",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"function": "write_file",
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"path":    "/Users/username/projects/newapp/src/config/database.js",
 						"content": "module.exports = {\n  host: 'localhost',\n  port: 5432,\n  database: 'myapp'\n};",
 					},

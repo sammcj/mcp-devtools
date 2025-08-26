@@ -72,7 +72,7 @@ func (t *SearchPackagesTool) Definition() mcp.Tool {
 }
 
 // Execute executes the unified package search tool
-func (t *SearchPackagesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse ecosystem
 	ecosystem, ok := args["ecosystem"].(string)
 	if !ok || ecosystem == "" {
@@ -125,7 +125,7 @@ func (t *SearchPackagesTool) Execute(ctx context.Context, logger *logrus.Logger,
 }
 
 // handleNpm handles npm package searches
-func (t *SearchPackagesTool) handleNpm(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleNpm(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
@@ -134,7 +134,7 @@ func (t *SearchPackagesTool) handleNpm(ctx context.Context, logger *logrus.Logge
 		if strings.Contains(query, ",") {
 			// Split comma-separated packages and create dependencies object
 			packages := strings.Split(query, ",")
-			deps := make(map[string]interface{})
+			deps := make(map[string]any)
 			for _, pkg := range packages {
 				pkg = strings.TrimSpace(pkg)
 				if pkg != "" {
@@ -144,7 +144,7 @@ func (t *SearchPackagesTool) handleNpm(ctx context.Context, logger *logrus.Logge
 			args["dependencies"] = deps
 		} else {
 			// Convert single package query to dependencies object
-			args["dependencies"] = map[string]interface{}{
+			args["dependencies"] = map[string]any{
 				query: "latest",
 			}
 		}
@@ -159,13 +159,13 @@ func (t *SearchPackagesTool) handleNpm(ctx context.Context, logger *logrus.Logge
 }
 
 // handleGo handles Go module searches
-func (t *SearchPackagesTool) handleGo(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleGo(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
 	} else if query, ok := args["query"].(string); ok {
 		// Convert single package query to dependencies object
-		args["dependencies"] = map[string]interface{}{
+		args["dependencies"] = map[string]any{
 			query: "latest",
 		}
 	}
@@ -175,13 +175,13 @@ func (t *SearchPackagesTool) handleGo(ctx context.Context, logger *logrus.Logger
 }
 
 // handlePython handles Python package searches
-func (t *SearchPackagesTool) handlePython(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handlePython(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Convert query to requirements format if needed
 	if data, ok := args["data"]; ok {
 		args["requirements"] = data
 	} else if query, ok := args["query"].(string); ok {
 		// Convert single package query to requirements array
-		args["requirements"] = []interface{}{query}
+		args["requirements"] = []any{query}
 	}
 
 	tool := python.NewPythonTool(t.client)
@@ -189,14 +189,14 @@ func (t *SearchPackagesTool) handlePython(ctx context.Context, logger *logrus.Lo
 }
 
 // handlePythonPyproject handles Python pyproject.toml package searches
-func (t *SearchPackagesTool) handlePythonPyproject(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handlePythonPyproject(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
 	} else if query, ok := args["query"].(string); ok {
 		// Convert single package query to dependencies object
-		args["dependencies"] = map[string]interface{}{
-			"dependencies": map[string]interface{}{
+		args["dependencies"] = map[string]any{
+			"dependencies": map[string]any{
 				query: "latest",
 			},
 		}
@@ -207,15 +207,15 @@ func (t *SearchPackagesTool) handlePythonPyproject(ctx context.Context, logger *
 }
 
 // handleJavaMaven handles Maven dependency searches
-func (t *SearchPackagesTool) handleJavaMaven(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleJavaMaven(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
 	} else if query, ok := args["query"].(string); ok {
 		// Convert single package query to dependencies array
 		// For Maven, we need groupId and artifactId, so we'll try to parse
-		args["dependencies"] = []interface{}{
-			map[string]interface{}{
+		args["dependencies"] = []any{
+			map[string]any{
 				"groupId":    query,
 				"artifactId": query,
 			},
@@ -227,14 +227,14 @@ func (t *SearchPackagesTool) handleJavaMaven(ctx context.Context, logger *logrus
 }
 
 // handleJavaGradle handles Gradle dependency searches
-func (t *SearchPackagesTool) handleJavaGradle(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleJavaGradle(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
 	} else if query, ok := args["query"].(string); ok {
 		// Convert single package query to dependencies array
-		args["dependencies"] = []interface{}{
-			map[string]interface{}{
+		args["dependencies"] = []any{
+			map[string]any{
 				"configuration": "implementation",
 				"group":         query,
 				"name":          query,
@@ -247,7 +247,7 @@ func (t *SearchPackagesTool) handleJavaGradle(ctx context.Context, logger *logru
 }
 
 // handleSwift handles Swift package searches
-func (t *SearchPackagesTool) handleSwift(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleSwift(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
@@ -261,13 +261,13 @@ func (t *SearchPackagesTool) handleSwift(ctx context.Context, logger *logrus.Log
 }
 
 // handleGitHubActions handles GitHub Actions searches
-func (t *SearchPackagesTool) handleGitHubActions(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleGitHubActions(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Convert query to actions format if needed
 	if data, ok := args["data"]; ok {
 		args["actions"] = data
 	} else if query, ok := args["query"].(string); ok {
 		// Convert single query to actions array
-		args["actions"] = []interface{}{query}
+		args["actions"] = []any{query}
 	}
 
 	if includeDetails, ok := args["includeDetails"]; ok {
@@ -279,7 +279,7 @@ func (t *SearchPackagesTool) handleGitHubActions(ctx context.Context, logger *lo
 }
 
 // handleDocker handles Docker image searches
-func (t *SearchPackagesTool) handleDocker(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleDocker(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Use query as image name
 	if query, ok := args["query"].(string); ok {
 		args["image"] = query
@@ -301,7 +301,7 @@ func (t *SearchPackagesTool) handleDocker(ctx context.Context, logger *logrus.Lo
 }
 
 // handleBedrock handles AWS Bedrock model searches
-func (t *SearchPackagesTool) handleBedrock(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleBedrock(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Set default action if not provided
 	if _, ok := args["action"]; !ok {
 		if query, ok := args["query"].(string); ok && query != "" {
@@ -317,7 +317,7 @@ func (t *SearchPackagesTool) handleBedrock(ctx context.Context, logger *logrus.L
 }
 
 // handleRust handles Rust crate searches
-func (t *SearchPackagesTool) handleRust(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleRust(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
@@ -326,7 +326,7 @@ func (t *SearchPackagesTool) handleRust(ctx context.Context, logger *logrus.Logg
 		if strings.Contains(query, ",") {
 			// Split comma-separated crates and create dependencies object
 			crates := strings.Split(query, ",")
-			deps := make(map[string]interface{})
+			deps := make(map[string]any)
 			for _, crate := range crates {
 				crate = strings.TrimSpace(crate)
 				if crate != "" {
@@ -336,7 +336,7 @@ func (t *SearchPackagesTool) handleRust(ctx context.Context, logger *logrus.Logg
 			args["dependencies"] = deps
 		} else {
 			// Convert single crate query to dependencies object
-			args["dependencies"] = map[string]interface{}{
+			args["dependencies"] = map[string]any{
 				query: "latest",
 			}
 		}
@@ -354,7 +354,7 @@ func (t *SearchPackagesTool) handleRust(ctx context.Context, logger *logrus.Logg
 // validateAndEnhanceResult checks if the result contains useful information and provides helpful error messages
 func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult, query, ecosystem string) (*mcp.CallToolResult, error) {
 	if result == nil {
-		return packageversions.NewToolResultJSON(map[string]interface{}{
+		return packageversions.NewToolResultJSON(map[string]any{
 			"error":     fmt.Sprintf("No results for query '%s' in ecosystem '%s'", query, ecosystem),
 			"message":   "Try searching for the specific package name instead of a description.",
 			"query":     query,
@@ -369,7 +369,7 @@ func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult
 
 			// Check for various indicators of empty/failed results
 			if text == "null" || text == "[]" || text == "{}" {
-				return packageversions.NewToolResultJSON(map[string]interface{}{
+				return packageversions.NewToolResultJSON(map[string]any{
 					"error":     fmt.Sprintf("No results for query '%s' in ecosystem '%s'", query, ecosystem),
 					"message":   "Try searching for the specific package name instead of a description.",
 					"query":     query,
@@ -378,11 +378,11 @@ func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult
 			}
 
 			// Try to parse as JSON to check for empty arrays or objects with only skipped results
-			var jsonData interface{}
+			var jsonData any
 			if err := json.Unmarshal([]byte(text), &jsonData); err == nil {
-				if array, ok := jsonData.([]interface{}); ok {
+				if array, ok := jsonData.([]any); ok {
 					if len(array) == 0 {
-						return packageversions.NewToolResultJSON(map[string]interface{}{
+						return packageversions.NewToolResultJSON(map[string]any{
 							"error":     fmt.Sprintf("No results for query '%s' in ecosystem '%s'", query, ecosystem),
 							"message":   "Try searching for the specific package name instead of a description.",
 							"query":     query,
@@ -393,7 +393,7 @@ func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult
 					// Check if all results are skipped
 					allSkipped := true
 					for _, item := range array {
-						if itemMap, ok := item.(map[string]interface{}); ok {
+						if itemMap, ok := item.(map[string]any); ok {
 							if skipped, exists := itemMap["skipped"]; !exists || !skipped.(bool) {
 								allSkipped = false
 								break
@@ -402,7 +402,7 @@ func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult
 					}
 
 					if allSkipped {
-						return packageversions.NewToolResultJSON(map[string]interface{}{
+						return packageversions.NewToolResultJSON(map[string]any{
 							"error":     fmt.Sprintf("No valid results for query '%s' in ecosystem '%s'", query, ecosystem),
 							"message":   "The package was not found. Try searching for the specific package name instead of a description.",
 							"query":     query,
@@ -423,7 +423,7 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Examples: []tools.ToolExample{
 			{
 				Description: "Check single npm package version",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"ecosystem": "npm",
 					"query":     "react",
 				},
@@ -431,10 +431,10 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Check multiple npm packages efficiently",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"ecosystem": "npm",
 					"query":     "react,lodash,axios",
-					"data": map[string]interface{}{
+					"data": map[string]any{
 						"react":  "latest",
 						"lodash": "^4.0.0",
 						"axios":  "~1.0.0",
@@ -444,16 +444,16 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Search for Python packages",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"ecosystem": "python",
 					"query":     "requests",
-					"data":      []interface{}{"requests", "numpy", "pandas"},
+					"data":      []any{"requests", "numpy", "pandas"},
 				},
 				ExpectedResult: "Returns PyPI information for Python packages including latest versions and dependencies",
 			},
 			{
 				Description: "Find Docker image tags",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"ecosystem": "docker",
 					"query":     "nginx",
 					"action":    "tags",
@@ -463,7 +463,7 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Search AWS Bedrock models",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"ecosystem": "bedrock",
 					"query":     "anthropic",
 					"action":    "search",
@@ -472,10 +472,10 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Check Go module with specific version",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"ecosystem": "go",
 					"query":     "github.com/gin-gonic/gin",
-					"data": map[string]interface{}{
+					"data": map[string]any{
 						"github.com/gin-gonic/gin": "v1.9.0",
 					},
 				},
@@ -483,13 +483,13 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Description: "Check Rust crate versions",
-				Arguments: map[string]interface{}{
+				Arguments: map[string]any{
 					"ecosystem": "rust",
 					"query":     "serde",
-					"data": map[string]interface{}{
+					"data": map[string]any{
 						"serde": "1.0",
 						"tokio": "1.0",
-						"clap":  map[string]interface{}{"version": "4.0", "features": []string{"derive"}},
+						"clap":  map[string]any{"version": "4.0", "features": []string{"derive"}},
 					},
 				},
 				ExpectedResult: "Returns Rust crate information and latest versions from crates.io",

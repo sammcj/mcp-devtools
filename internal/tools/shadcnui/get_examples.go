@@ -31,7 +31,7 @@ func (t *GetComponentExamplesTool) Definition() mcp.Tool {
 }
 
 // Execute performs the tool's action.
-func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	componentName, ok := args["componentName"].(string)
 	if !ok || componentName == "" {
 		return nil, fmt.Errorf("componentName is a required argument and must be a non-empty string")

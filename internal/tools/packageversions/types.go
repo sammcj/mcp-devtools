@@ -165,7 +165,7 @@ type RustCrate struct {
 
 // CargoToml represents dependencies in a Cargo.toml file
 type CargoToml struct {
-	Dependencies      map[string]interface{} `json:"dependencies,omitempty"`
-	DevDependencies   map[string]interface{} `json:"dev-dependencies,omitempty"`
-	BuildDependencies map[string]interface{} `json:"build-dependencies,omitempty"`
+	Dependencies      map[string]any `json:"dependencies,omitempty"`
+	DevDependencies   map[string]any `json:"dev-dependencies,omitempty"`
+	BuildDependencies map[string]any `json:"build-dependencies,omitempty"`
 }

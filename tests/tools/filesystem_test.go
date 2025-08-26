@@ -62,9 +62,9 @@ func TestFileSystemTool_ListAllowedDirectories(t *testing.T) {
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests
 	cache := &sync.Map{}
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "list_allowed_directories",
-		"options":  map[string]interface{}{},
+		"options":  map[string]any{},
 	}
 
 	result, err := tool.Execute(context.Background(), logger, cache, args)
@@ -102,9 +102,9 @@ func TestFileSystemTool_CreateAndReadFile(t *testing.T) {
 	testContent := "Hello, World!\nThis is a test file."
 
 	// Test write_file
-	writeArgs := map[string]interface{}{
+	writeArgs := map[string]any{
 		"function": "write_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path":    testFile,
 			"content": testContent,
 		},
@@ -121,9 +121,9 @@ func TestFileSystemTool_CreateAndReadFile(t *testing.T) {
 	}
 
 	// Test read_file
-	readArgs := map[string]interface{}{
+	readArgs := map[string]any{
 		"function": "read_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path": testFile,
 		},
 	}
@@ -156,9 +156,9 @@ func TestFileSystemTool_CreateDirectory(t *testing.T) {
 	testDir := filepath.Join(tempDir, "subdir", "nested")
 
 	// Test create_directory
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "create_directory",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path": testDir,
 		},
 	}
@@ -205,9 +205,9 @@ func TestFileSystemTool_ListDirectory(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Test list_directory
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "list_directory",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path": tempDir,
 		},
 	}
@@ -249,9 +249,9 @@ func TestFileSystemTool_GetFileInfo(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Test get_file_info
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "get_file_info",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path": testFile,
 		},
 	}
@@ -299,9 +299,9 @@ func TestFileSystemTool_ReadFileHead(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Test read_file with head option
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "read_file",
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"path": testFile,
 			"head": float64(3), // JSON numbers are float64
 		},
@@ -325,9 +325,9 @@ func TestFileSystemTool_InvalidFunction(t *testing.T) {
 	logger.SetLevel(logrus.ErrorLevel)
 	cache := &sync.Map{}
 
-	args := map[string]interface{}{
+	args := map[string]any{
 		"function": "invalid_function",
-		"options":  map[string]interface{}{},
+		"options":  map[string]any{},
 	}
 
 	_, err := tool.Execute(context.Background(), logger, cache, args)
@@ -347,8 +347,8 @@ func TestFileSystemTool_MissingParameters(t *testing.T) {
 	cache := &sync.Map{}
 
 	// Test missing function parameter
-	args := map[string]interface{}{
-		"options": map[string]interface{}{},
+	args := map[string]any{
+		"options": map[string]any{},
 	}
 
 	_, err := tool.Execute(context.Background(), logger, cache, args)
@@ -357,9 +357,9 @@ func TestFileSystemTool_MissingParameters(t *testing.T) {
 	}
 
 	// Test missing path parameter for read_file
-	args = map[string]interface{}{
+	args = map[string]any{
 		"function": "read_file",
-		"options":  map[string]interface{}{},
+		"options":  map[string]any{},
 	}
 
 	_, err = tool.Execute(context.Background(), logger, cache, args)
