@@ -40,9 +40,10 @@ func init() {
 
 // Definition returns the tool's definition for MCP registration
 func (t *ThinkTool) Definition() mcp.Tool {
+	maxLen := getMaxThoughtLength()
 	return mcp.NewTool(
 		"think",
-		mcp.WithDescription(`Use the tool to think about something. It will not obtain new information or change the database, but just append the thought to the log. Use it when complex reasoning or some cache memory is needed.
+		mcp.WithDescription(fmt.Sprintf(`Use the tool to think about something. It will not obtain new information or change the database, but just append the thought to the log. Use it when complex reasoning or some cache memory is needed.
 
 This tool is particularly valuable for:
 - Analysing tool outputs before taking action
@@ -51,10 +52,12 @@ This tool is particularly valuable for:
 - Planning sequential actions where mistakes are costly
 - Processing and reflecting on information gathered from previous tool calls
 
-Use this tool as a structured thinking space during complex workflows, especially when you need to pause and reason about what you've learned before proceeding.`),
+Maximum thought length is %d characters.
+
+Use this tool as a structured thinking space during complex workflows, especially when you need to pause and reason about what you've learned before proceeding.`, maxLen)),
 		mcp.WithString("thought",
 			mcp.Required(),
-			mcp.MaxLength(getMaxThoughtLength()),
+			mcp.MaxLength(maxLen),
 			mcp.Description("A thought to think about."),
 		),
 		mcp.WithString("how_hard",

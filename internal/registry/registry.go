@@ -143,6 +143,12 @@ func GetToolNamesWithExtendedHelp() []string {
 		if disabledFunctions[name] {
 			continue
 		}
+
+		// Skip tools that require enablement but are not enabled
+		if requiresEnablement(name) && !isToolEnabled(name) {
+			continue
+		}
+
 		// Only include tools that implement ExtendedHelpProvider
 		if _, ok := tool.(tools.ExtendedHelpProvider); ok {
 			names = append(names, name)
