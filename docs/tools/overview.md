@@ -90,7 +90,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "ENABLE_ADDITIONAL_TOOLS": "aws,web_fetch,internet_search,think,memory,filesystem,shadcn_ui,security,claude-agent,gemini-agent,q-developer-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking",
+        "ENABLE_ADDITIONAL_TOOLS": "aws_documentation,web_fetch,internet_search,think,memory,filesystem,shadcn_ui,security,claude-agent,gemini-agent,q-developer-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking",
         "GOOGLE_CLOUD_PROJECT": "gemini-code-assist-123456",
         "BRAVE_API_KEY": "abc123",
         "SEARXNG_BASE_URL": "https://searxng.your.domain",
