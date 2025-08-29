@@ -55,6 +55,10 @@ func (t *AWSDocumentationTool) Definition() mcp.Tool {
 
 // Execute performs the specified action on AWS documentation
 func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+	// Check if aws_documentation tool is enabled (disabled by default)
+	if !tools.IsToolEnabled("aws_documentation") {
+		return nil, fmt.Errorf("AWS documentation tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'aws_documentation'")
+	}
 	// Initialise client and parser if needed
 	if t.client == nil {
 		t.client = NewClient(logger)

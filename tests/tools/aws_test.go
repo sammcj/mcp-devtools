@@ -47,9 +47,30 @@ func TestAWSDocumentationTool_Definition(t *testing.T) {
 	assert.Contains(t, schema.Required, "action")
 }
 
+func TestAWSDocumentationTool_Execute_ToolDisabled(t *testing.T) {
+	// Ensure aws_documentation tool is disabled by default
+	_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+
+	tool := &aws.AWSDocumentationTool{}
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel) // Suppress output during tests
+	cache := &sync.Map{}
+
+	args := map[string]any{
+		"action":        "search",
+		"search_phrase": "S3",
+	}
+
+	result, err := tool.Execute(context.Background(), logger, cache, args)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "AWS documentation tool is not enabled")
+	assert.Contains(t, err.Error(), "Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'aws_documentation'")
+	assert.Nil(t, result)
+}
+
 func TestAWSDocumentationTool_Execute_InvalidAction(t *testing.T) {
 	// Enable AWS tools for testing
-	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws")
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws_documentation")
 	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
 
 	tool := &aws.AWSDocumentationTool{}
@@ -88,7 +109,7 @@ func TestAWSDocumentationTool_Execute_InvalidAction(t *testing.T) {
 
 func TestAWSDocumentationTool_Execute_SearchAction(t *testing.T) {
 	// Enable AWS tools for testing
-	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws")
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws_documentation")
 	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
 
 	tool := &aws.AWSDocumentationTool{}
@@ -152,7 +173,7 @@ func TestAWSDocumentationTool_Execute_SearchAction(t *testing.T) {
 
 func TestAWSDocumentationTool_Execute_FetchAction(t *testing.T) {
 	// Enable AWS tools for testing
-	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws")
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws_documentation")
 	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
 
 	tool := &aws.AWSDocumentationTool{}
@@ -202,7 +223,7 @@ func TestAWSDocumentationTool_Execute_FetchAction(t *testing.T) {
 
 func TestAWSDocumentationTool_Execute_RecommendAction(t *testing.T) {
 	// Enable AWS tools for testing
-	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws")
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws_documentation")
 	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
 
 	tool := &aws.AWSDocumentationTool{}

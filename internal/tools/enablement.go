@@ -13,7 +13,7 @@ import (
 //
 // Supported tool names:
 // - api
-// - aws
+// - aws_documentation
 // - changelog
 // - claude-agent
 // - filesystem
@@ -26,6 +26,7 @@ import (
 // - security
 // - security_override
 // - sequential-thinking
+// - terraform_documentation
 // - vulnerability_scan
 
 func IsToolEnabled(toolName string) bool {

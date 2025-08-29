@@ -553,6 +553,7 @@ Tools with extended help:
 - Tools should have fast, concise unit tests that do not rely on external dependencies or services.
 - No tool should ever log to stdout or stderr when the MCP server is running in stdio mode as this breaks the MCP protocol.
 - Consider if the tool should be enabled or disabled by default, if unsure - make it disabled by default following existing patterns (Don't forget to enable it in tests).
+- **CRITICAL for disabled-by-default tools**: To properly disable a tool by default, you need to add it in TWO places: (1) Add an enablement check in the tool's `Execute()` method using `tools.IsToolEnabled("tool_name")`, AND (2) Add the tool name to the `additionalTools` list in `internal/registry/registry.go` `requiresEnablement()` function. Missing either will cause the tool to always show up.
 - You should update docs/tools/overview.md with adding or changing a tool.
 - **SECURITY**: All tools that access files or make HTTP requests MUST integrate with the security system. See [Security Integration](#6-security-integration) above and [Security System Documentation](security.md) for details.
 - Follow least privilege security principles.

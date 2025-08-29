@@ -173,7 +173,8 @@ func requiresEnablement(toolName string) bool {
 		"process_document",
 		"pdf",
 		"memory",
-		"aws",
+		"aws_documentation",
+		"terraform_documentation",
 		"shadcn",
 		"murican_to_english",
 	}
