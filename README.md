@@ -185,7 +185,7 @@ _Note: The `BRAVE_API_KEY` is optional and only needed if you want to use the Br
 **Streamable HTTP**
 
 ```shell
-mcp-devtools --transport http --port 8080
+mcp-devtools --transport http --port 18080
 ```
 
 ```json
@@ -193,7 +193,7 @@ mcp-devtools --transport http --port 8080
   "mcpServers": {
     "dev-tools": {
       "type": "streamableHttp",
-      "url": "http://localhost:8080/http"
+      "url": "http://localhost:18080/http"
     }
   }
 }
@@ -225,13 +225,13 @@ MCP DevTools supports three transport modes for different use cases:
 
 ```bash
 # Basic HTTP mode
-mcp-devtools --transport http --port 8080
+mcp-devtools --transport http --port 18080
 
 # With authentication
-mcp-devtools --transport http --port 8080 --auth-token mysecrettoken
+mcp-devtools --transport http --port 18080 --auth-token mysecrettoken
 
 # With OAuth (see OAuth documentation)
-mcp-devtools --transport http --port 8080 --oauth-enabled
+mcp-devtools --transport http --port 18080 --oauth-enabled
 ```
 
 **Client Configuration:**
@@ -240,29 +240,7 @@ mcp-devtools --transport http --port 8080 --oauth-enabled
   "mcpServers": {
     "dev-tools": {
       "type": "streamableHttp",
-      "url": "http://localhost:8080/http",
-      "headers": {
-        "Authorization": "Bearer mysecrettoken"
-      }
-    }
-  }
-}
-```
-
-### SSE Transport
-**Best for**: Real-time applications, web dashboards
-
-```bash
-mcp-devtools --transport sse --port 18080 --base-url http://localhost
-```
-
-**Client Configuration:**
-```json
-{
-  "mcpServers": {
-    "dev-tools": {
-      "type": "sse",
-      "url": "http://localhost:18080/sse"
+      "url": "http://localhost:18080/http",
     }
   }
 }
@@ -373,11 +351,12 @@ mcp-devtools --transport http --oauth-enabled --oauth-issuer="https://auth.examp
 ### Docker Support
 
 ```bash
-# Pull latest image
-docker pull ghcr.io/sammcj/mcp-devtools:latest
+# Pull the image (main is latest)
+docker pull ghcr.io/sammcj/mcp-devtools:main
 
-# Run with environment variables
-docker run -e BRAVE_API_KEY="your-key" ghcr.io/sammcj/mcp-devtools:latest
+# Run
+docker run -e BRAVE_API_KEY="your-key" ghcr.io/sammcj/mcp-devtools:main
+docker run -d --name mcp-devtools -p 18080:18080 --restart always docker.io/library/mcp-devtools:main
 ```
 
 ### Creating New Tools
