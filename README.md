@@ -355,8 +355,7 @@ mcp-devtools --transport http --oauth-enabled --oauth-issuer="https://auth.examp
 docker pull ghcr.io/sammcj/mcp-devtools:main
 
 # Run
-docker run -e BRAVE_API_KEY="your-key" ghcr.io/sammcj/mcp-devtools:main
-docker run -d --name mcp-devtools -p 18080:18080 --restart always docker.io/library/mcp-devtools:main
+docker run -d --name mcp-devtools -p 18080:18080 --restart always ghcr.io/sammcj/mcp-devtools:main
 ```
 
 ### Creating New Tools
