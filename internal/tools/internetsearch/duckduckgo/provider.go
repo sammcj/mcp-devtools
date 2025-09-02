@@ -84,8 +84,7 @@ func (p *DuckDuckGoProvider) executeWebSearch(ctx context.Context, logger *logru
 	safeResp, err := ops.SafeHTTPPost("https://html.duckduckgo.com/html", strings.NewReader(formData.Encode()))
 	if err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
-			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+			return nil, security.FormatSecurityBlockError(secErr)
 		}
 		return nil, fmt.Errorf("search request failed: %w", err)
 	}

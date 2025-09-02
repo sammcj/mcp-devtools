@@ -249,8 +249,7 @@ safeResp, err := ops.SafeHTTPGet(urlStr)
 if err != nil {
     // Handle security blocks or network errors
     if secErr, ok := err.(*security.SecurityError); ok {
-        return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-            secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+        return nil, security.FormatSecurityBlockError(secErr)
     }
     return nil, err
 }
@@ -277,8 +276,7 @@ safeFile, err := ops.SafeFileRead(filePath)
 if err != nil {
     // Handle security blocks or file errors
     if secErr, ok := err.(*security.SecurityError); ok {
-        return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-            secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+        return nil, security.FormatSecurityBlockError(secErr)
     }
     return nil, err
 }

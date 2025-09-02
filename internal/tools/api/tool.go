@@ -229,8 +229,7 @@ func (t *DynamicAPITool) Execute(ctx context.Context, logger *logrus.Logger, cac
 	if err != nil {
 		// Check if it's a security error
 		if secErr, ok := err.(*security.SecurityError); ok {
-			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-				secErr.GetSecurityID(), err.Error(), secErr.GetSecurityID())
+			return nil, security.FormatSecurityBlockError(secErr)
 		}
 		return nil, err
 	}

@@ -213,9 +213,9 @@ func (t *GitHubTool) handleSearchRepositories(ctx context.Context, client *GitHu
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
+			return nil, security.FormatSecurityBlockErrorFromResult(result)
 		case security.ActionWarn:
-			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+			jsonString = security.FormatSecurityWarningPrefix(result) + jsonString
 		}
 	}
 
@@ -276,9 +276,9 @@ func (t *GitHubTool) handleSearchIssues(ctx context.Context, client *GitHubClien
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
+			return nil, security.FormatSecurityBlockErrorFromResult(result)
 		case security.ActionWarn:
-			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+			jsonString = security.FormatSecurityWarningPrefix(result) + jsonString
 		}
 	}
 
@@ -339,9 +339,9 @@ func (t *GitHubTool) handleSearchPullRequests(ctx context.Context, client *GitHu
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
+			return nil, security.FormatSecurityBlockErrorFromResult(result)
 		case security.ActionWarn:
-			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+			jsonString = security.FormatSecurityWarningPrefix(result) + jsonString
 		}
 	}
 
@@ -414,9 +414,9 @@ func (t *GitHubTool) handleGetIssue(ctx context.Context, client *GitHubClient, r
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
+			return nil, security.FormatSecurityBlockErrorFromResult(result)
 		case security.ActionWarn:
-			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+			jsonString = security.FormatSecurityWarningPrefix(result) + jsonString
 		}
 	}
 
@@ -489,9 +489,9 @@ func (t *GitHubTool) handleGetPullRequest(ctx context.Context, client *GitHubCli
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
+			return nil, security.FormatSecurityBlockErrorFromResult(result)
 		case security.ActionWarn:
-			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+			jsonString = security.FormatSecurityWarningPrefix(result) + jsonString
 		}
 	}
 
@@ -564,9 +564,9 @@ func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubCl
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
+			return nil, security.FormatSecurityBlockErrorFromResult(result)
 		case security.ActionWarn:
-			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+			jsonString = security.FormatSecurityWarningPrefix(result) + jsonString
 		}
 	}
 
@@ -619,9 +619,9 @@ func (t *GitHubTool) handleListDirectory(ctx context.Context, client *GitHubClie
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
+			return nil, security.FormatSecurityBlockErrorFromResult(result)
 		case security.ActionWarn:
-			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+			jsonString = security.FormatSecurityWarningPrefix(result) + jsonString
 		}
 	}
 
@@ -670,9 +670,9 @@ func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubCl
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
+			return nil, security.FormatSecurityBlockErrorFromResult(result)
 		case security.ActionWarn:
-			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+			jsonString = security.FormatSecurityWarningPrefix(result) + jsonString
 		}
 	}
 
@@ -745,9 +745,9 @@ func (t *GitHubTool) handleGetWorkflowRun(ctx context.Context, client *GitHubCli
 	if result, err := security.AnalyseContent(jsonString, source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
+			return nil, security.FormatSecurityBlockErrorFromResult(result)
 		case security.ActionWarn:
-			jsonString = "⚠️  Security Notice: " + result.Message + "\n\n" + jsonString
+			jsonString = security.FormatSecurityWarningPrefix(result) + jsonString
 		}
 	}
 

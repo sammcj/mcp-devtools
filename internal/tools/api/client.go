@@ -79,7 +79,7 @@ func (c *HTTPClient) ExecuteRequest(ctx context.Context, endpoint EndpointConfig
 	if result, err := security.AnalyseContent(string(bodyBytes), source); err == nil {
 		switch result.Action {
 		case security.ActionBlock:
-			return nil, fmt.Errorf("content blocked by security policy [ID: %s]: %s. Check with the user if you may use security_override tool with ID %s", result.ID, result.Message, result.ID)
+			return nil, security.FormatSecurityBlockErrorFromResult(result)
 		case security.ActionWarn:
 		}
 	}

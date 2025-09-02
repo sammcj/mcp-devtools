@@ -188,28 +188,37 @@ Components:
 
 ```mermaid
 flowchart TD
-    A[Content Input] --> B{Security Check}
-    B -->|Match Found| C{Action Type}
-    B -->|No Match| D[Allow Content]
+    U[User/Agent] --> T[MCP Tool]
+    T --> SM[Security Middleware]
 
-    C -->|allow/ignore| D
-    C -->|warn/warn_high| E[Log Warning]
-    C -->|block| F[Block Content]
-    C -->|notify| G[Send Notification]
+    SM --> D{Security<br>Decision}
 
-    E --> H[Return Content + Warning]
-    F --> I[Return Error]
-    G --> J[Return Content + Notice]
+    D -->|Allow| A[✓ Return Content]
+    D -->|Warn| W[⚠ Log Warning<br>+ Return Content]
+    D -->|Block| B[🚫 Block Request<br>+ Security ID]
 
-    classDef allow fill:#31A354
-    classDef warn fill:#E6550D
-    classDef block fill:#EE2E2E
-    classDef notify fill:#756BB1
+    A --> U
+    W --> U
+    B --> OV[Override Available<br>with Security ID]
+    OV --> U
 
-    class D,H,J allow
-    class E warn
-    class F,I block
-    class G notify
+    classDef userAgent fill:#E6F3FF,stroke:#4A90E2,color:#4A90E2
+    classDef tool fill:#F0E6FF,stroke:#8E44AD,color:#8E44AD
+    classDef security fill:#FFF0E6,stroke:#E67E22,color:#E67E22
+    classDef decision fill:#E8F5E8,stroke:#27AE60,color:#27AE60
+    classDef allow fill:#E8F5E8,stroke:#27AE60,color:#27AE60
+    classDef warn fill:#FFF3CD,stroke:#F39C12,color:#F39C12
+    classDef block fill:#F8D7DA,stroke:#E74C3C,color:#E74C3C
+    classDef override fill:#E1ECFF,stroke:#6C7B7F,color:#6C7B7F
+
+    class U userAgent
+    class T tool
+    class SM security
+    class D decision
+    class A allow
+    class W warn
+    class B block
+    class OV override
 ```
 
 ## Configuration

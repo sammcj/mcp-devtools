@@ -1,6 +1,7 @@
 package security
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -478,4 +479,19 @@ func (e *SecurityError) Error() string {
 // GetSecurityID returns the security ID for override purposes
 func (e *SecurityError) GetSecurityID() string {
 	return e.ID
+}
+
+// FormatSecurityBlockError creates a standardised security block error message
+func FormatSecurityBlockError(secErr *SecurityError) error {
+	return fmt.Errorf("%s", secErr.Error())
+}
+
+// FormatSecurityBlockErrorFromResult creates a standardised security block error from a SecurityResult
+func FormatSecurityBlockErrorFromResult(result *SecurityResult) error {
+	return fmt.Errorf("%s", result.Message)
+}
+
+// FormatSecurityWarningPrefix creates a standardised security warning prefix for content
+func FormatSecurityWarningPrefix(result *SecurityResult) string {
+	return fmt.Sprintf("⚠️  Security Notice: %s\n\n", result.Message)
 }

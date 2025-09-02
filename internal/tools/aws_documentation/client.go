@@ -51,8 +51,7 @@ func (c *Client) FetchDocumentation(url string) (string, error) {
 	resp, err := c.ops.SafeHTTPGet(urlWithSession)
 	if err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
-			return "", fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+			return "", security.FormatSecurityBlockError(secErr)
 		}
 		return "", fmt.Errorf("failed to fetch documentation: %w", err)
 	}

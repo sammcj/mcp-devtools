@@ -157,8 +157,7 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 	// Check domain access security before making request
 	if err := security.CheckDomainAccess(searchURL.Hostname()); err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
-			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+			return nil, security.FormatSecurityBlockError(secErr)
 		}
 		return nil, err
 	}
@@ -207,8 +206,7 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 		if secResult, err := security.AnalyseContent(string(body), sourceCtx); err == nil {
 			switch secResult.Action {
 			case security.ActionBlock:
-				return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-					secResult.ID, secResult.Message, secResult.ID)
+				return nil, security.FormatSecurityBlockErrorFromResult(secResult)
 			case security.ActionWarn:
 				logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
 			}

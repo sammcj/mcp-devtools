@@ -426,8 +426,7 @@ func (t *FileSystemTool) readFile(ctx context.Context, logger *logrus.Logger, op
 		if err != nil {
 			// Handle security errors properly
 			if secErr, ok := err.(*security.SecurityError); ok {
-				return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-					secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+				return nil, security.FormatSecurityBlockError(secErr)
 			}
 			return nil, fmt.Errorf("failed to read file: %w", err)
 		}
@@ -585,8 +584,7 @@ func (t *FileSystemTool) readMultipleFiles(ctx context.Context, logger *logrus.L
 		if err != nil {
 			// Handle security errors properly
 			if secErr, ok := err.(*security.SecurityError); ok {
-				results = append(results, fmt.Sprintf("%s: Security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-					path, secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID()))
+				results = append(results, fmt.Sprintf("%s: %s", path, security.FormatSecurityBlockError(secErr).Error()))
 				continue
 			}
 			results = append(results, fmt.Sprintf("%s: Error - %s", path, err.Error()))
@@ -645,8 +643,7 @@ func (t *FileSystemTool) writeFile(ctx context.Context, logger *logrus.Logger, o
 	// First check security access control
 	if err := security.CheckFileAccess(validPath); err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
-			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+			return nil, security.FormatSecurityBlockError(secErr)
 		}
 		return nil, fmt.Errorf("security check failed: %w", err)
 	}
@@ -711,8 +708,7 @@ func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, op
 	if err != nil {
 		// Handle security errors properly
 		if secErr, ok := err.(*security.SecurityError); ok {
-			return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-				secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+			return nil, security.FormatSecurityBlockError(secErr)
 		}
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
@@ -754,8 +750,7 @@ func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, op
 		// First check security access control
 		if err := security.CheckFileAccess(validPath); err != nil {
 			if secErr, ok := err.(*security.SecurityError); ok {
-				return nil, fmt.Errorf("security block [ID: %s]: %s Check with the user if you may use security_override tool with ID %s",
-					secErr.GetSecurityID(), secErr.Error(), secErr.GetSecurityID())
+				return nil, security.FormatSecurityBlockError(secErr)
 			}
 			return nil, fmt.Errorf("security check failed: %w", err)
 		}

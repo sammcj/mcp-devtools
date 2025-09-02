@@ -106,7 +106,7 @@ rules:
     # Only applies to these trusted domains
     exceptions: [trusted_domains]
   content_badware_block:
-    description: "Default malicious patterns"
+    description: "Malicious commands"
     patterns:
       - literal: "rm -rf /"
       - literal: ":(){ :|:& };:"

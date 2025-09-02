@@ -3,6 +3,7 @@ package security
 import (
 	_ "embed"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -833,7 +834,7 @@ func (r *YAMLRuleEngine) formatSecurityMessage(rule Rule, ruleName, securityID s
 
 	switch action {
 	case ActionBlock:
-		return fmt.Sprintf("Security Block [ID: %s]: %s. Check with the user if you may use security_override tool with ID %s and justification.", securityID, rule.Description, securityID)
+		return fmt.Sprintf("Security Block [ID: %s]: %s.", securityID, rule.Description)
 	case ActionWarn:
 		return fmt.Sprintf("Security Warning [ID: %s]: %s. Use security_override tool with ID %s if this is intentional.", securityID, rule.Description, securityID)
 	default:
@@ -850,11 +851,10 @@ func GenerateSecurityID(action string) string {
 
 // generateRandomString generates a random string for security IDs
 func generateRandomString(length int) string {
-	// Simple random string generation
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 	result := make([]byte, length)
 	for i := range result {
-		result[i] = charset[time.Now().UnixNano()%int64(len(charset))]
+		result[i] = charset[rand.Intn(len(charset))]
 	}
 	return string(result)
 }
