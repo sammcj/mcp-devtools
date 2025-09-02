@@ -26,7 +26,7 @@ jobs:
       contents: write
     steps:
       - name: Check out code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -54,7 +54,7 @@ jobs:
           check-latest: true
 
       - name: Check out code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Set up Go cache
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
@@ -126,7 +126,7 @@ jobs:
           check-latest: true
 
       - name: Check out code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Set up Go cache
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
@@ -195,7 +195,7 @@ jobs:
           check-latest: true
 
       - name: Check out code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Set up Go cache
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
@@ -263,7 +263,7 @@ jobs:
       contents: write
     steps:
       - name: Check out code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
 
@@ -274,7 +274,7 @@ jobs:
           check-latest: true
 
       - name: Download all build artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           path: artifacts/
 
@@ -391,7 +391,7 @@ jobs:
       packages: write
     steps:
       - name: Check out code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
