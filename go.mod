@@ -4,6 +4,7 @@ go 1.25
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
+	github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/anchore/chronicle v0.8.0
 	github.com/anchore/go-logger v0.0.0-20250813181427-74728f89a619
@@ -15,17 +16,20 @@ require (
 	github.com/gofrs/flock v0.12.1
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/go-github/v73 v73.0.0
+	github.com/google/go-github/v74 v74.0.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/mark3labs/mcp-go v0.38.0
 	github.com/openai/openai-go v1.12.0
+	github.com/openai/openai-go/v2 v2.3.1
 	github.com/pdfcpu/pdfcpu v0.11.0
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/sammcj/m2e v0.0.27
 	github.com/sirupsen/logrus v1.9.4-0.20230606125235-dd1b4c2e81af
 	github.com/stretchr/testify v1.10.0
-	github.com/urfave/cli/v2 v2.27.7
+	github.com/urfave/cli/v2 v2.27.5
+	github.com/urfave/cli/v3 v3.4.1
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/text v0.28.0
 	golang.org/x/time v0.12.0
@@ -278,7 +282,7 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
-	github.com/yuin/goldmark v1.7.8 // indirect
+	github.com/yuin/goldmark v1.7.13 // indirect
 	github.com/zclconf/go-cty v1.16.4 // indirect
 	github.com/zeebo/errs v1.4.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
