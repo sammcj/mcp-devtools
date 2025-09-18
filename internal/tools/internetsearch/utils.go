@@ -13,6 +13,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 )
 
 const (
@@ -54,13 +55,15 @@ func getInternetSearchRateLimit() float64 {
 	return DefaultInternetSearchRateLimit
 }
 
-// NewRateLimitedHTTPClient creates a new rate-limited HTTP client for internet search
+// NewRateLimitedHTTPClient creates a new rate-limited HTTP client for internet search with proxy support
 func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 	rateLimit := getInternetSearchRateLimit()
+
+	// Use shared HTTP client factory with proxy support
+	client := httpclient.NewHTTPClientWithProxy(30 * time.Second)
+
 	return &RateLimitedHTTPClient{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client:  client,
 		limiter: rate.NewLimiter(rate.Limit(rateLimit), 1), // Allow burst of 1
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/sammcj/mcp-devtools/internal/security"
+	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 )
 
 const (
@@ -48,13 +49,15 @@ func getShadcnRateLimit() float64 {
 	return DefaultShadcnRateLimit
 }
 
-// NewRateLimitedHTTPClient creates a new rate-limited HTTP client
+// NewRateLimitedHTTPClient creates a new rate-limited HTTP client with proxy support
 func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 	rateLimit := getShadcnRateLimit()
+
+	// Use shared HTTP client factory with proxy support
+	client := httpclient.NewHTTPClientWithProxy(30 * time.Second)
+
 	return &RateLimitedHTTPClient{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client:  client,
 		limiter: rate.NewLimiter(rate.Limit(rateLimit), 1), // Allow burst of 1
 	}
 }

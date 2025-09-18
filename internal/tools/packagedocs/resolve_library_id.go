@@ -117,7 +117,7 @@ func (t *ResolveLibraryIDTool) formatResponse(libraryName string, results []*Sea
 		builder.WriteString(fmt.Sprintf("- Trust Score: %.1f/10 (higher scores indicate more authoritative sources)\n", bestMatch.TrustScore))
 	}
 	if bestMatch.Stars > 0 {
-		builder.WriteString(fmt.Sprintf("- GitHub Stars: %d\n", bestMatch.Stars))
+		builder.WriteString(fmt.Sprintf("- GitHub Stars: %d (legacy metric)\n", bestMatch.Stars))
 	}
 	if bestMatch.TotalSnippets > 0 {
 		builder.WriteString(fmt.Sprintf("- Documentation Coverage: %d code snippets, %d tokens\n", bestMatch.TotalSnippets, bestMatch.TotalTokens))

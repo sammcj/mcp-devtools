@@ -41,6 +41,7 @@ Tools are organised into categories under `internal/tools/`, e.g:
 - `shadcnui/` - shadcn/ui component information and examples
 - `think/` - Structured reasoning tool for AI agents
 - `webfetch/` - Web content fetching and conversion to markdown
+- `utils/` - Shared utilities for tools (e.g. proxy)
 - etc..
 
 ### Adding New Tools

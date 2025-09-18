@@ -3,11 +3,12 @@ package github
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/google/go-github/v73/github"
+	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"golang.org/x/oauth2"
 )
 
@@ -91,12 +92,12 @@ func NewGitHubClient(ctx context.Context, config *AuthConfig) (*github.Client, e
 	case "ssh":
 		// For SSH, we still need to use the REST API for most operations
 		// SSH is primarily for git operations (cloning, etc.)
-		// We'll create a client without authentication for API calls
-		return github.NewClient(&http.Client{}), nil
+		// We'll create a client without authentication for API calls with proxy support
+		return github.NewClient(httpclient.NewHTTPClientWithProxy(30 * time.Second)), nil
 
 	case "none":
-		// No authentication - public repos only
-		return github.NewClient(&http.Client{}), nil
+		// No authentication - public repos only with proxy support
+		return github.NewClient(httpclient.NewHTTPClientWithProxy(30 * time.Second)), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported authentication method: %s", config.Method)

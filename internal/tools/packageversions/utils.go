@@ -18,6 +18,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/security"
+	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"github.com/sirupsen/logrus"
 )
 
@@ -50,13 +51,15 @@ func getPackagesRateLimit() float64 {
 	return DefaultPackagesRateLimit
 }
 
-// NewRateLimitedHTTPClient creates a new rate-limited HTTP client
+// NewRateLimitedHTTPClient creates a new rate-limited HTTP client with proxy support
 func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 	rateLimit := getPackagesRateLimit()
+
+	// Use shared HTTP client factory with proxy support
+	client := httpclient.NewHTTPClientWithProxy(30 * time.Second)
+
 	return &RateLimitedHTTPClient{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client:  client,
 		limiter: rate.NewLimiter(rate.Limit(rateLimit), 1), // Allow burst of 1
 	}
 }
