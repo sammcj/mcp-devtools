@@ -31,6 +31,8 @@ const (
 	PackageDocsRateLimitEnvVar = "PACKAGE_DOCS_RATE_LIMIT"
 	// Context7APIKeyEnvVar is the environment variable for the Context7 API key
 	Context7APIKeyEnvVar = "CONTEXT7_API_KEY"
+	// Context7SourceIdentifier is the source identifier sent in API requests
+	Context7SourceIdentifier = "mcp-devtools"
 )
 
 // RateLimitedHTTPClient implements a rate-limited HTTP client
@@ -300,7 +302,7 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 	}
 
 	// Add source identification header
-	headers["X-Context7-Source"] = "mcp-devtools"
+	headers["X-Context7-Source"] = Context7SourceIdentifier
 
 	// Use security helper for HTTP operations with custom headers
 	ops := security.NewOperations("packagedocs")

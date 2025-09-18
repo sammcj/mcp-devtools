@@ -29,9 +29,10 @@ func NewHTTPClientWithProxy(timeout time.Duration) *http.Client {
 	// Only configure proxy if environment variables are set
 	if proxyURL := getProxyURL(); proxyURL != "" {
 		if parsedProxy, err := url.Parse(proxyURL); err == nil {
-			client.Transport = &http.Transport{
-				Proxy: http.ProxyURL(parsedProxy),
-			}
+			// Use default transport as base to preserve important settings
+			transport := http.DefaultTransport.(*http.Transport).Clone()
+			transport.Proxy = http.ProxyURL(parsedProxy)
+			client.Transport = transport
 		}
 	}
 
@@ -47,9 +48,10 @@ func NewHTTPClientWithProxyAndLogger(timeout time.Duration, logger *logrus.Logge
 	// Only configure proxy if environment variables are set
 	if proxyURL := getProxyURL(); proxyURL != "" {
 		if parsedProxy, err := url.Parse(proxyURL); err == nil {
-			client.Transport = &http.Transport{
-				Proxy: http.ProxyURL(parsedProxy),
-			}
+			// Use default transport as base to preserve important settings
+			transport := http.DefaultTransport.(*http.Transport).Clone()
+			transport.Proxy = http.ProxyURL(parsedProxy)
+			client.Transport = transport
 			if logger != nil {
 				logger.WithField("proxy_url", redactProxyCredentials(proxyURL)).Debug("HTTP client configured with proxy")
 			}
