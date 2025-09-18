@@ -78,3 +78,9 @@ semgrep.out
 .serena/memories
 .serena/cache
 .serena/logs
+
+# specify, just testing it out for now
+.specify
+.claude/commands/plan.md
+.claude/commands/specify.md
+.claude/commands/tasks.md
