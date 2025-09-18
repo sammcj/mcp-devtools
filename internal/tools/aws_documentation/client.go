@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sammcj/mcp-devtools/internal/security"
+	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,15 +29,13 @@ type Client struct {
 	ops         *security.Operations
 }
 
-// NewClient creates a new AWS documentation API client
+// NewClient creates a new AWS documentation API client with proxy support
 func NewClient(logger *logrus.Logger) *Client {
 	return &Client{
 		sessionUUID: uuid.New().String(),
-		httpClient: &http.Client{
-			Timeout: requestTimeout,
-		},
-		logger: logger,
-		ops:    security.NewOperations("aws"),
+		httpClient:  httpclient.NewHTTPClientWithProxyAndLogger(requestTimeout, logger),
+		logger:      logger,
+		ops:         security.NewOperations("aws"),
 	}
 }
 

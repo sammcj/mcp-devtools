@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/sammcj/mcp-devtools/internal/security"
+	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,22 +34,25 @@ type WebClient struct {
 	userAgent  string
 }
 
-// NewWebClient creates a new web client with proper timeouts and context support
+// NewWebClient creates a new web client with proper timeouts, context support and proxy configuration
 func NewWebClient() *WebClient {
+	// Use shared HTTP client factory with proxy support
+	client := httpclient.NewHTTPClientWithProxy(DefaultTimeout)
+
+	// Configure redirect handling
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		// Allow up to 10 redirects
+		if len(via) >= 10 {
+			return fmt.Errorf("too many redirects")
+		}
+		// Preserve User-Agent on redirects
+		req.Header.Set("User-Agent", UserAgent)
+		return nil
+	}
+
 	return &WebClient{
-		httpClient: &http.Client{
-			Timeout: DefaultTimeout,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				// Allow up to 10 redirects
-				if len(via) >= 10 {
-					return fmt.Errorf("too many redirects")
-				}
-				// Preserve User-Agent on redirects
-				req.Header.Set("User-Agent", UserAgent)
-				return nil
-			},
-		},
-		userAgent: UserAgent,
+		httpClient: client,
+		userAgent:  UserAgent,
 	}
 }
 

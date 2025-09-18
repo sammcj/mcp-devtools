@@ -12,6 +12,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/security"
+	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,14 +32,12 @@ type Client struct {
 	ops        *security.Operations
 }
 
-// NewClient creates a new Terraform Registry API client
+// NewClient creates a new Terraform Registry API client with proxy support
 func NewClient(logger *logrus.Logger) *Client {
 	return &Client{
-		httpClient: &http.Client{
-			Timeout: defaultTimeout,
-		},
-		logger: logger,
-		ops:    security.NewOperations("terraform_documentation"),
+		httpClient: httpclient.NewHTTPClientWithProxyAndLogger(defaultTimeout, logger),
+		logger:     logger,
+		ops:        security.NewOperations("terraform_documentation"),
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/sammcj/mcp-devtools/internal/security"
+	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 )
 
 // HTTPClient wraps http.Client with API-specific configuration
@@ -21,12 +22,13 @@ type HTTPClient struct {
 	security *security.Operations
 }
 
-// NewHTTPClient creates a new HTTP client for an API
+// NewHTTPClient creates a new HTTP client for an API with proxy support
 func NewHTTPClient(apiDef APIDefinition) *HTTPClient {
+	// Use shared HTTP client factory with proxy support
+	client := httpclient.NewHTTPClientWithProxy(time.Duration(apiDef.Timeout) * time.Second)
+
 	return &HTTPClient{
-		client: &http.Client{
-			Timeout: time.Duration(apiDef.Timeout) * time.Second,
-		},
+		client:   client,
 		apiDef:   apiDef,
 		security: security.NewOperations("api_tool"),
 	}

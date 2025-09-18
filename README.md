@@ -348,6 +348,28 @@ mcp-devtools --transport http --oauth-browser-auth --oauth-client-id="your-clien
 mcp-devtools --transport http --oauth-enabled --oauth-issuer="https://auth.example.com"
 ```
 
+### Proxy Support
+
+All HTTP-based tools automatically support proxy configuration through standard environment variables:
+
+```bash
+# HTTPS proxy (preferred)
+export HTTPS_PROXY="http://proxy.company.com:8080"
+
+# HTTP proxy (fallback)
+export HTTP_PROXY="http://proxy.company.com:8080"
+
+# With authentication
+export HTTPS_PROXY="http://username:password@proxy.company.com:8080"
+
+# Run with proxy
+./bin/mcp-devtools stdio
+```
+
+**Supported tools**: All network-based tools including `package_docs`, `internet_search`, `webfetch`, `github`, `aws_docs`, and others automatically respect proxy settings when configured.
+
+**Security**: Proxy credentials are automatically redacted from logs for security.
+
 ### Docker Support
 
 ```bash
@@ -356,6 +378,11 @@ docker pull ghcr.io/sammcj/mcp-devtools:main
 
 # Run
 docker run -d --name mcp-devtools -p 18080:18080 --restart always ghcr.io/sammcj/mcp-devtools:main
+
+# Run with proxy support
+docker run -d --name mcp-devtools -p 18080:18080 \
+  -e HTTPS_PROXY="http://proxy.company.com:8080" \
+  --restart always ghcr.io/sammcj/mcp-devtools:main
 ```
 
 ### Creating New Tools

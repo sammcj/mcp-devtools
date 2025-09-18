@@ -16,6 +16,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/sammcj/mcp-devtools/internal/security"
+	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,6 +31,8 @@ const (
 	PackageDocsRateLimitEnvVar = "PACKAGE_DOCS_RATE_LIMIT"
 	// Context7APIKeyEnvVar is the environment variable for the Context7 API key
 	Context7APIKeyEnvVar = "CONTEXT7_API_KEY"
+	// Context7SourceIdentifier is the source identifier sent in API requests
+	Context7SourceIdentifier = "mcp-devtools"
 )
 
 // RateLimitedHTTPClient implements a rate-limited HTTP client
@@ -63,13 +66,14 @@ func getPackageDocsRateLimit() float64 {
 	return DefaultPackageDocsRateLimit
 }
 
-// newRateLimitedHTTPClient creates a new rate-limited HTTP client
+// newRateLimitedHTTPClient creates a new rate-limited HTTP client with proxy support
 func newRateLimitedHTTPClient() *RateLimitedHTTPClient {
+	// Use shared HTTP client factory with proxy support
+	client := httpclient.NewHTTPClientWithProxy(30 * time.Second)
+
 	rateLimit := getPackageDocsRateLimit()
 	return &RateLimitedHTTPClient{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client:  client,
 		limiter: rate.NewLimiter(rate.Limit(rateLimit), 1), // Allow burst of 1
 	}
 }
@@ -296,6 +300,9 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 		// Also add Context7-specific header for compatibility
 		headers["Context7-API-Key"] = c.apiKey
 	}
+
+	// Add source identification header
+	headers["X-Context7-Source"] = Context7SourceIdentifier
 
 	// Use security helper for HTTP operations with custom headers
 	ops := security.NewOperations("packagedocs")
