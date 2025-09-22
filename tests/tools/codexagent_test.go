@@ -512,8 +512,8 @@ func TestCodexTool_ParameterValidation_AllCombinations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test only parameter validation logic by checking what happens when tool is disabled
-			// This avoids calling the actual CLI while still testing parameter parsing
+			// By default, test parameter validation logic with the tool disabled to avoid CLI execution.
+			// For specific validation error checks, the tool is temporarily enabled, which may invoke the CLI.
 			originalValue := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
 			defer func() {
 				if originalValue == "" {

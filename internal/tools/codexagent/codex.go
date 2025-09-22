@@ -98,7 +98,10 @@ func (t *CodexTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 
 	// Validate required prompt parameter
 	prompt, ok := args["prompt"].(string)
-	if !ok || strings.TrimSpace(prompt) == "" {
+	if !ok {
+		return nil, fmt.Errorf("prompt is a required parameter")
+	}
+	if strings.TrimSpace(prompt) == "" {
 		return nil, fmt.Errorf("prompt is a required parameter and cannot be empty")
 	}
 
