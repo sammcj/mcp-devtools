@@ -16,6 +16,7 @@ import (
 // - aws_documentation
 // - changelog
 // - claude-agent
+// - codex-agent
 // - filesystem
 // - gemini-agent
 // - memory

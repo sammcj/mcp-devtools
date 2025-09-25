@@ -167,6 +167,7 @@ func requiresEnablement(toolName string) bool {
 		"sbom",
 		"vulnerability_scan",
 		"claude-agent",
+		"codex-agent",
 		"gemini-agent",
 		"q-developer-agent",
 		"generate_changelog",
