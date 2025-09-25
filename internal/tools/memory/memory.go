@@ -69,7 +69,7 @@ This can be useful if the user asks you to store or retrieve something specific 
 		// Non-destructive writing annotations (note: has some destructive operations)
 		mcp.WithReadOnlyHintAnnotation(false),   // Stores and modifies memory data
 		mcp.WithDestructiveHintAnnotation(true), // Has delete operations
-		mcp.WithIdempotentHintAnnotation(true),  // Storing same data produces same result
+		mcp.WithIdempotentHintAnnotation(false), // Not idempotent: destructive and duplicative operations
 		mcp.WithOpenWorldHintAnnotation(false),  // Works with local memory storage
 	)
 	return tool
