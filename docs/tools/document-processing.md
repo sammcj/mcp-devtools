@@ -267,7 +267,7 @@ The `llm-external` profile converts diagrams to Mermaid syntax:
 #### LLM Configuration
 ```bash
 DOCLING_VLM_API_URL="http://localhost:11434/v1"
-DOCLING_VLM_MODEL="granite_docling"  # Default VLM model (other options: qwen2.5vl:7b-q8_0, gpt-4-vision-preview)
+DOCLING_VLM_MODEL="granite_docling"  # Default VLM model (qwen2.5vl:7b-q8_0, or any other vision-capable model)
 DOCLING_VLM_API_KEY="your-api-key"
 DOCLING_LLM_MAX_TOKENS="16384"
 DOCLING_LLM_TEMPERATURE="0.1"
