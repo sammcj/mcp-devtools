@@ -1770,7 +1770,7 @@ def analyze_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
         try:
             # Try to use the specified VLM model
             model = SmolDoclingVisionModel(vlm_model=vlm_model_name)
-        except Exception as e:
+        except (ValueError, OSError, RuntimeError, ImportError) as e:
             logger.warning(f"Failed to initialize SmolDocling with model '{vlm_model_name}': {e}")
             # Fallback to default initialization
             model = SmolDoclingVisionModel()
