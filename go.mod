@@ -4,6 +4,7 @@ go 1.25.1
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
+	github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/anchore/chronicle v0.8.0
 	github.com/anchore/go-logger v0.0.0-20250813181427-74728f89a619
@@ -15,17 +16,20 @@ require (
 	github.com/gofrs/flock v0.12.1
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/go-github/v73 v73.0.0
+	github.com/google/go-github/v75 v75.0.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/mark3labs/mcp-go v0.40.0
 	github.com/openai/openai-go v1.12.0
+	github.com/openai/openai-go/v2 v2.7.0
 	github.com/pdfcpu/pdfcpu v0.11.0
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/sammcj/m2e v0.0.27
 	github.com/sirupsen/logrus v1.9.4-0.20230606125235-dd1b4c2e81af
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
+	github.com/urfave/cli/v3 v3.4.1
 	golang.org/x/oauth2 v0.31.0
 	golang.org/x/text v0.29.0
 	golang.org/x/time v0.13.0
