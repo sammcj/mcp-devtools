@@ -69,6 +69,11 @@ func (t *FindLongFilesTool) Definition() mcp.Tool {
 		mcp.WithArray("additional_excludes",
 			mcp.Description("Additional glob patterns to exclude"),
 		),
+		// Read-only annotations for file analysis tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Only analyses existing files, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same path and threshold return same results
+		mcp.WithOpenWorldHintAnnotation(false),   // Analyses local files only, no external interactions
 	)
 }
 

@@ -71,6 +71,11 @@ func (t *TerraformDocumentationTool) Definition() mcp.Tool {
 			mcp.Description("Maximum number of results to return for search operations"),
 			mcp.DefaultNumber(5),
 		),
+		// Read-only annotations for Terraform documentation fetching tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches Terraform documentation, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same queries return same documentation results
+		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external Terraform Registry APIs
 	)
 }
 

@@ -50,6 +50,11 @@ func (t *AWSDocumentationTool) Definition() mcp.Tool {
 		mcp.WithNumber("start_index",
 			mcp.Description("Starting character index for pagination in fetch (Optional, default: 0)"),
 		),
+		// Read-only annotations for AWS documentation fetching tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches AWS documentation, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same queries return same documentation results
+		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external AWS documentation
 	)
 }
 

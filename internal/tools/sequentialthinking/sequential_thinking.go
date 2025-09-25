@@ -42,7 +42,7 @@ func init() {
 
 // Definition returns the tool's definition for MCP registration
 func (t *SequentialThinkingTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+	tool := mcp.NewTool(
 		"sequential_thinking",
 		mcp.WithDescription(`Solve complex problems step-by-step with automatic thought tracking, revision detection, and branch management. Ideal for multi-step reasoning, planning, and iterative refinement. Use 'get_usage' action for detailed instructions.`),
 		mcp.WithString("action",
@@ -61,7 +61,14 @@ func (t *SequentialThinkingTool) Definition() mcp.Tool {
 		mcp.WithString("explore",
 			mcp.Description("Label for exploring alternative approach (optional)"),
 		),
+
+		// Non-destructive writing annotations
+		mcp.WithReadOnlyHintAnnotation(false),    // Stores thinking state and history
+		mcp.WithDestructiveHintAnnotation(false), // Doesn't destroy previous thoughts
+		mcp.WithIdempotentHintAnnotation(false),  // Each thought adds new content
+		mcp.WithOpenWorldHintAnnotation(false),   // Works with local state management
 	)
+	return tool
 }
 
 // Execute executes the tool's logic

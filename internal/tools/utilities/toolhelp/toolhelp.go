@@ -54,6 +54,11 @@ func (t *ToolHelpTool) Definition() mcp.Tool {
 			mcp.Description(fmt.Sprintf("Name of the DevTools tool that provides extended help. MUST be one of: %s", toolList)),
 			mcp.Enum(enumValues...),
 		),
+		// Read-only annotations for help information tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Only provides help information, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same tool name returns same help information
+		mcp.WithOpenWorldHintAnnotation(false),   // Provides local help information only, no external interactions
 	)
 }
 

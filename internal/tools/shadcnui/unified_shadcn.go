@@ -59,6 +59,11 @@ Examples:
 		mcp.WithString("componentName",
 			mcp.Description("Component name (required for 'details' and 'examples' actions)"),
 		),
+		// Read-only annotations for UI component data tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches UI component data, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same component queries return same results
+		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external shadcn/ui data sources
 	)
 }
 

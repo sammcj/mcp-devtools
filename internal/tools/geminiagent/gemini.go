@@ -56,6 +56,11 @@ func (t *GeminiTool) Definition() mcp.Tool {
 			mcp.Description("Recursively includes all files within the current directory as context for the prompt."),
 			mcp.DefaultBool(false),
 		),
+		// Destructive tool annotations
+		mcp.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Gemini
+		mcp.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
+		mcp.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
+		mcp.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
 	)
 }
 

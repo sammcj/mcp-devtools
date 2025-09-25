@@ -49,6 +49,11 @@ For ambiguous queries, request clarification before proceeding with a best-guess
 			mcp.Required(),
 			mcp.Description("Library name to search for and retrieve a Context7-compatible library ID."),
 		),
+		// Read-only annotations for library ID resolution tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Only queries package registries, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same library name returns same results
+		mcp.WithOpenWorldHintAnnotation(true),    // Queries external package registries
 	)
 }
 

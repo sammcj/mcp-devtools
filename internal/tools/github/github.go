@@ -108,6 +108,11 @@ Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow
 				},
 			}),
 		),
+		// Destructive tool annotations
+		mcp.WithReadOnlyHintAnnotation(false),   // Can modify GitHub repositories via cloning and API calls
+		mcp.WithDestructiveHintAnnotation(true), // Can clone repositories and potentially modify GitHub resources
+		mcp.WithIdempotentHintAnnotation(false), // GitHub operations are generally not idempotent
+		mcp.WithOpenWorldHintAnnotation(true),   // Makes external GitHub API calls
 	)
 }
 

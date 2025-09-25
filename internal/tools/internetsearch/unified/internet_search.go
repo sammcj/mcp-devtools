@@ -190,6 +190,14 @@ After you have received the results you can fetch the url if you want to read th
 		)
 	}
 
+	// Add read-only annotations for internet search tool
+	toolOptions = append(toolOptions,
+		mcp.WithReadOnlyHintAnnotation(true),     // Only queries external APIs, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same query returns similar results
+		mcp.WithOpenWorldHintAnnotation(true),    // Interacts with external internet APIs
+	)
+
 	return mcp.NewTool("internet_search", toolOptions...)
 }
 

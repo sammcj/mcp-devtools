@@ -27,7 +27,7 @@ func init() {
 
 // Definition returns the tool's definition for MCP registration
 func (t *GenerateChangelogTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+	tool := mcp.NewTool(
 		"generate_changelog",
 		mcp.WithDescription("Generate changelogs from git repositories using commit history. Requires absolute paths to local repositories (not URLs). Analyses git repository and creates structured changelogs based on commit patterns and semantic versioning. Supports optional GitHub integration for enhanced metadata and URLs."),
 
@@ -64,7 +64,14 @@ func (t *GenerateChangelogTool) Definition() mcp.Tool {
 			mcp.Description("Enable GitHub integration for enhanced changelog generation with PR/issue data"),
 			mcp.DefaultBool(false),
 		),
+
+		// Non-destructive writing annotations
+		mcp.WithReadOnlyHintAnnotation(false),    // Creates new changelog files
+		mcp.WithDestructiveHintAnnotation(false), // Doesn't destroy existing data
+		mcp.WithIdempotentHintAnnotation(false),  // Creates new content each run
+		mcp.WithOpenWorldHintAnnotation(true),    // Can interact with external systems (GitHub)
 	)
+	return tool
 }
 
 // Execute executes the generate_changelog tool

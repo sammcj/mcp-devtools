@@ -54,6 +54,11 @@ This tool is useful for fetching web content - for example to get documentation,
 		mcp.WithBoolean("raw",
 			mcp.Description("Return raw HTML content without markdown conversion (default: false)"),
 		),
+		// Read-only annotations for web content fetching tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches content, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same URL returns same content
+		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external URLs
 	)
 }
 

@@ -64,6 +64,11 @@ Use this tool as a structured thinking space during complex workflows, especiall
 			mcp.Description("How hard to think about the problem. Options: 'hard' (default), 'harder', 'ultra'."),
 			mcp.Enum("hard", "harder", "ultra"),
 		),
+		// Read-only annotations for internal thought processing tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Only processes thoughts internally, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Stateless: same input produces same output
+		mcp.WithOpenWorldHintAnnotation(false),   // No external interactions, internal processing only
 	)
 }
 

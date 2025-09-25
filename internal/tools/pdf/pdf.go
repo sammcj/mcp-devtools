@@ -39,7 +39,7 @@ func init() {
 
 // Definition returns the tool's definition for MCP registration
 func (t *PDFTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+	tool := mcp.NewTool(
 		"pdf",
 		mcp.WithDescription(`Extract text, tables & images from PDFs. The text extraction quality depends on the PDF structure. This PDF extraction tool is simpler & faster than the document processing tool, in general try this tool for PDFs first`),
 		mcp.WithString("file_path",
@@ -57,7 +57,14 @@ func (t *PDFTool) Definition() mcp.Tool {
 			mcp.Description("Page range to process (e.g., '1-5', '1,3,5', or 'all' for all pages, default: all)"),
 			mcp.DefaultString("all"),
 		),
+
+		// Non-destructive writing annotations
+		mcp.WithReadOnlyHintAnnotation(false),    // Extracts text to new format
+		mcp.WithDestructiveHintAnnotation(false), // Doesn't modify source PDF
+		mcp.WithIdempotentHintAnnotation(true),   // Same PDF produces same output
+		mcp.WithOpenWorldHintAnnotation(false),   // Works with local files only
 	)
+	return tool
 }
 
 // Execute processes the PDF file

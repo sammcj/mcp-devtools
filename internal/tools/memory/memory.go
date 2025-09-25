@@ -25,7 +25,7 @@ func init() {
 
 // Definition returns the tool's definition for MCP registration
 func (m *MemoryTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+	tool := mcp.NewTool(
 		"memory",
 		mcp.WithDescription(`Persistent knowledge graph memory system. Stores entities, relations, and observations across sessions.
 
@@ -65,7 +65,14 @@ This can be useful if the user asks you to store or retrieve something specific 
 			mcp.Description("Memory namespace for organising memories into separate projects/contexts (default: 'default')"),
 			mcp.DefaultString("default"),
 		),
+
+		// Non-destructive writing annotations (note: has some destructive operations)
+		mcp.WithReadOnlyHintAnnotation(false),   // Stores and modifies memory data
+		mcp.WithDestructiveHintAnnotation(true), // Has delete operations
+		mcp.WithIdempotentHintAnnotation(false), // Not idempotent: destructive and duplicative operations
+		mcp.WithOpenWorldHintAnnotation(false),  // Works with local memory storage
 	)
+	return tool
 }
 
 // Execute executes the memory tool operations

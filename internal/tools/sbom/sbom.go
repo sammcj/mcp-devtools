@@ -38,7 +38,7 @@ func init() {
 
 // Definition returns the tool's definition for MCP registration
 func (t *SBOMTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+	tool := mcp.NewTool(
 		"sbom",
 		mcp.WithDescription("Generate Software Bill of Materials (SBOM) from source code projects using Syft. Analyses current project dependencies and components. Always saves to specified file and returns summary."),
 
@@ -62,7 +62,14 @@ func (t *SBOMTool) Definition() mcp.Tool {
 			mcp.Required(),
 			mcp.Description("Absolute file path to save SBOM output. Creates directories as needed."),
 		),
+
+		// Non-destructive writing annotations
+		mcp.WithReadOnlyHintAnnotation(false),    // Creates new SBOM files
+		mcp.WithDestructiveHintAnnotation(false), // Doesn't modify source code
+		mcp.WithIdempotentHintAnnotation(false),  // May vary based on dependency versions
+		mcp.WithOpenWorldHintAnnotation(true),    // May scan external package registries
 	)
+	return tool
 }
 
 // Execute executes the SBOM tool

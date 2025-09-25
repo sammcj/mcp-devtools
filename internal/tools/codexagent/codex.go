@@ -81,6 +81,11 @@ func (t *CodexTool) Definition() mcp.Tool {
 			mcp.Description("Skip git repository validation checks."),
 			mcp.DefaultBool(false),
 		),
+		// Destructive tool annotations
+		mcp.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Codex
+		mcp.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
+		mcp.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
+		mcp.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
 	)
 }
 

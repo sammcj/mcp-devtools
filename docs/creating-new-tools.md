@@ -20,6 +20,9 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
     - [Extended Help Structure](#extended-help-structure)
     - [When to Add Extended Help](#when-to-add-extended-help)
     - [Extended Help Benefits](#extended-help-benefits)
+  - [Tool Annotations](#tool-annotations)
+    - [Annotation Types](#annotation-types)
+    - [Tool Categories](#tool-categories)
   - [Additional Considerations](#additional-considerations)
 
 ## Tool Interface
@@ -540,6 +543,32 @@ Tools with extended help:
 - Provide rich context for AI agents to use tools more effectively
 - Reduce trial-and-error by providing clear examples and patterns
 - Prevent common mistakes through proactive troubleshooting guidance
+
+## Tool Annotations
+
+Annotations help MCP clients understand tool behaviour and make informed decisions about tool usage.
+
+### Annotation Types
+
+- **ReadOnlyHint**: Indicates whether a tool modifies its environment
+- **DestructiveHint**: Marks tools that may perform destructive operations
+- **IdempotentHint**: Shows if repeated calls with same arguments have additional effects
+- **OpenWorldHint**: Indicates whether tools interact with external systems
+
+### Tool Categories
+
+**Read-Only Tools** (safe, no side effects):
+- Calculator, Internet Search, Web Fetch, Package Documentation, Think Tool
+- Annotations: `readOnly: true, destructive: false, openWorld: varies`
+
+**Non-Destructive Writing Tools** (create content, don't destroy):
+- Generate Changelog, Document Processing, PDF Processing, Memory Storage
+- Annotations: `readOnly: false, destructive: false/true, openWorld: varies`
+
+**Potentially Destructive Tools** (can modify/delete files or execute commands):
+- Filesystem Operations, Security Override, Agent Tools (Claude, Codex, Gemini, Q Developer)
+- Annotations: `readOnly: false, destructive: true, openWorld: true`
+- **Note**: These tools require `ENABLE_ADDITIONAL_TOOLS` environment variable
 
 ## Additional Considerations
 
