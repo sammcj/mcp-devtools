@@ -47,14 +47,14 @@ jobs:
     needs: [bump-version]
     if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') && !contains(github.event.head_commit.message, '[skip-ci]')
     steps:
+      - name: Check out code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
           go-version: '1.25.1'
           check-latest: true
-
-      - name: Check out code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Set up Go cache
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
@@ -119,14 +119,14 @@ jobs:
     needs: [bump-version]
     if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') && github.event_name != 'pull_request' && !contains(github.event.head_commit.message, '[skip-ci]')
     steps:
+      - name: Check out code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
           go-version: '1.25.1'
           check-latest: true
-
-      - name: Check out code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Set up Go cache
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
@@ -188,14 +188,14 @@ jobs:
     needs: [bump-version]
     if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') && github.event_name != 'pull_request' && !contains(github.event.head_commit.message, '[skip-ci]')
     steps:
+      - name: Check out code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
           go-version: '1.25.1'
           check-latest: true
-
-      - name: Check out code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Set up Go cache
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
