@@ -69,7 +69,7 @@ func (t *GenerateChangelogTool) Definition() mcp.Tool {
 		mcp.WithReadOnlyHintAnnotation(false),    // Creates new changelog files
 		mcp.WithDestructiveHintAnnotation(false), // Doesn't destroy existing data
 		mcp.WithIdempotentHintAnnotation(false),  // Creates new content each run
-		mcp.WithOpenWorldHintAnnotation(false),   // Works with local git repositories
+		mcp.WithOpenWorldHintAnnotation(true),    // Can interact with external systems (GitHub)
 	)
 	return tool
 }
