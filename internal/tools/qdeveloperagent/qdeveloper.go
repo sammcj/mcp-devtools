@@ -62,6 +62,11 @@ func (t *QDeveloperTool) Definition() mcp.Tool {
 			mcp.Description("Enable verbose logging for detailed output."),
 			mcp.DefaultBool(false),
 		),
+		// Destructive tool annotations
+		mcp.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Q Developer
+		mcp.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
+		mcp.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
+		mcp.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
 	)
 }
 

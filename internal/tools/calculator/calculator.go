@@ -37,6 +37,11 @@ func (c *Calculator) Definition() mcp.Tool {
 				"type": "string",
 			}),
 		),
+		// Read-only annotations for pure computation tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same inputs give same outputs
+		mcp.WithOpenWorldHintAnnotation(false),   // No external interactions
 	)
 }
 

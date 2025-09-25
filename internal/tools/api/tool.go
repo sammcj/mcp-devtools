@@ -125,6 +125,14 @@ func (t *DynamicAPITool) Definition() mcp.Tool {
 		}
 	}
 
+	// Add destructive tool annotations
+	toolOptions = append(toolOptions,
+		mcp.WithReadOnlyHintAnnotation(false),   // Can make any HTTP request including destructive ones
+		mcp.WithDestructiveHintAnnotation(true), // Can perform destructive operations via HTTP requests
+		mcp.WithIdempotentHintAnnotation(false), // HTTP requests are generally not idempotent
+		mcp.WithOpenWorldHintAnnotation(true),   // Makes external HTTP requests
+	)
+
 	return mcp.NewTool(t.toolName, toolOptions...)
 }
 

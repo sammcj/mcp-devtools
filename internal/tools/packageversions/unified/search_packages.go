@@ -68,6 +68,11 @@ func (t *SearchPackagesTool) Definition() mcp.Tool {
 		mcp.WithBoolean("includeDetails",
 			mcp.Description("Include additional details in results (where applicable) (Optional)"),
 		),
+		// Read-only annotations for package search tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Only searches packages, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same search query returns same results
+		mcp.WithOpenWorldHintAnnotation(true),    // Searches external package registries
 	)
 }
 

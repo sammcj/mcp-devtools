@@ -236,6 +236,11 @@ Functions and their required parameters:
 				},
 			}),
 		),
+		// Destructive tool annotations
+		mcp.WithReadOnlyHintAnnotation(false),   // Can modify files and directories
+		mcp.WithDestructiveHintAnnotation(true), // Can delete/overwrite files
+		mcp.WithIdempotentHintAnnotation(false), // File operations are not idempotent
+		mcp.WithOpenWorldHintAnnotation(false),  // Works with local filesystem only
 	)
 }
 

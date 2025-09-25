@@ -43,7 +43,7 @@ func init() {
 
 // Definition returns the tool's definition for MCP registration
 func (m *M2ETool) Definition() mcp.Tool {
-	return mcp.NewTool(
+	tool := mcp.NewTool(
 		"murican_to_english",
 		mcp.WithDescription(`Convert American English text to standard International / British English spelling.
 
@@ -59,7 +59,14 @@ Inline mode: Provide text parameter instead to get converted text returned direc
 		mcp.WithBoolean("keep_smart_quotes",
 			mcp.Description("Whether to keep smart quotes and em-dashes as-is (default: false, as we usually want to normalise them)"),
 		),
+
+		// Non-destructive writing annotations (note: file mode updates files in place)
+		mcp.WithReadOnlyHintAnnotation(false),   // Modifies text/files
+		mcp.WithDestructiveHintAnnotation(true), // File mode updates files in place
+		mcp.WithIdempotentHintAnnotation(true),  // Converting same text produces same result
+		mcp.WithOpenWorldHintAnnotation(false),  // Works with local text/files only
 	)
+	return tool
 }
 
 // Execute executes the m2e tool

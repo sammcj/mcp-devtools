@@ -41,6 +41,11 @@ func (t *GetLibraryDocsTool) Definition() mcp.Tool {
 			mcp.Description("Maximum number of tokens of documentation to retrieve (default: 10000). Higher values provide more context but consume more tokens."),
 			mcp.DefaultNumber(10000),
 		),
+		// Read-only annotations for library documentation fetching tool
+		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches documentation, doesn't modify environment
+		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcp.WithIdempotentHintAnnotation(true),   // Same library ID returns same documentation
+		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external documentation APIs
 	)
 }
 

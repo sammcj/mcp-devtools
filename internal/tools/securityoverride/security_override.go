@@ -40,6 +40,11 @@ func (t *SecurityOverrideTool) Definition() mcp.Tool {
 			mcp.DefaultString("bypass"),
 			mcp.Enum("bypass", "allowlist"),
 		),
+		// Destructive tool annotations
+		mcp.WithReadOnlyHintAnnotation(false),   // Modifies security configuration
+		mcp.WithDestructiveHintAnnotation(true), // Can override security controls
+		mcp.WithIdempotentHintAnnotation(false), // Override effects are not reversible
+		mcp.WithOpenWorldHintAnnotation(false),  // Works with local security system
 	)
 }
 

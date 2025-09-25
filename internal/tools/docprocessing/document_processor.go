@@ -51,7 +51,7 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 		profileDesc += ", 'llm-external' (external LLM for chart / diagram conversion to mermaid)"
 	}
 
-	return mcp.NewTool(
+	tool := mcp.NewTool(
 		"process_document",
 		mcp.WithDescription("Process documents (PDF, DOCX, DOC, XLSX, XLS, PPTX, PPT, TXT, MD, RTF, HTML, CSV, PNG, JPG, JPEG, GIF, BMP, TIFF) and convert them to structured Markdown with optional OCR, image extraction, and table processing. Supports hardware acceleration, intelligent caching, and batch processing."),
 		mcp.WithString("source",
@@ -79,7 +79,14 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 		mcp.WithBoolean("debug",
 			mcp.Description("Return debug information including environment variables (secrets masked)"),
 		),
+
+		// Non-destructive writing annotations
+		mcp.WithReadOnlyHintAnnotation(false),    // Converts documents to new formats
+		mcp.WithDestructiveHintAnnotation(false), // Doesn't destroy source documents
+		mcp.WithIdempotentHintAnnotation(false),  // Creates new content each run
+		mcp.WithOpenWorldHintAnnotation(true),    // May fetch from external URLs
 	)
+	return tool
 }
 
 // Execute processes the document using the Python wrapper
