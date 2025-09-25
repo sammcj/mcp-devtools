@@ -1454,7 +1454,7 @@ def analyze_with_vlm_pipeline(image_data: bytes, figure, pipeline_type: str) -> 
 
         # Get VLM Pipeline configuration from environment variables
         vlm_api_url = os.getenv('DOCLING_VLM_API_URL')
-        vlm_model = os.getenv('DOCLING_VLM_MODEL', 'gpt-4-vision-preview')
+        vlm_model = os.getenv('DOCLING_VLM_MODEL', 'granite_docling')
         vlm_api_key = os.getenv('DOCLING_VLM_API_KEY')
         vlm_timeout = int(os.getenv('DOCLING_VLM_TIMEOUT', '240'))
         vlm_fallback_local = os.getenv('DOCLING_VLM_FALLBACK_LOCAL', 'true').lower() == 'true'
@@ -1765,8 +1765,15 @@ def analyze_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
         # Import SmolDocling components if available
         from docling.models.vision import SmolDoclingVisionModel
 
-        # Initialize SmolDocling model
-        model = SmolDoclingVisionModel()
+        # Initialize SmolDocling model with configurable VLM model
+        vlm_model_name = os.getenv('DOCLING_VLM_MODEL', 'granite_docling')
+        try:
+            # Try to use the specified VLM model
+            model = SmolDoclingVisionModel(vlm_model=vlm_model_name)
+        except Exception as e:
+            logger.warning(f"Failed to initialize SmolDocling with model '{vlm_model_name}': {e}")
+            # Fallback to default initialization
+            model = SmolDoclingVisionModel()
 
         # Analyze the image
         result = model.analyze_image(image_data,

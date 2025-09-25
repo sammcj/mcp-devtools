@@ -92,7 +92,7 @@ func DefaultConfig() *Config {
 		MaxFileSize:          DefaultMaxFileSizeMB,  // 100 MB
 		MaxMemoryLimit:       DefaultMaxMemoryLimit, // 5GB
 		OCRLanguages:         []string{"en"},
-		VisionModel:          "SmolDocling",
+		VisionModel:          "granite_docling",
 	}
 }
 
