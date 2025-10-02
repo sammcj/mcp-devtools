@@ -253,15 +253,19 @@ mcp-devtools --transport http --port 18080 --oauth-enabled
 
 All environment variables are optional, but if you want to use specific search providers or document processing features, you may need to provide the the appropriate variables.
 
+**General:**
+- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,sbom,vulnerability_scan,filesystem,claude-agent,codex-agent,gemini-agent,q-developer-agent,generate_changelog,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
+- `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
+
 **Core Tools:**
 - `BRAVE_API_KEY` - Enable Brave Search provider by providing a ([free Brave search API key](https://brave.com/search/api/))
+- `GOOGLE_SEARCH_API_KEY` - Enable Google search with API key from [Cloud Console](https://console.cloud.google.com/apis/credentials) (requires Custom Search API to be enabled)
+- `GOOGLE_SEARCH_ID` - Google Search Engine ID from [Programmable Search Engine](https://programmablesearchengine.google.com/) (required with `GOOGLE_SEARCH_API_KEY`, select "Search the entire web")
 - `SEARXNG_BASE_URL` - Enable SearXNG search provider by providing the base URL (e.g. `https://searxng.example.com`)
 - `CONTEXT7_API_KEY` - Optional Context7 API key for higher rate limits and authentication with package documentation tools
 - `MEMORY_FILE_PATH` - Memory storage location (default: `~/.mcp-devtools/`)
-- `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
-**Security-Sensitive Tools:**
-- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,sbom,vulnerability_scan,filesystem,claude-agent,codex-agent,gemini-agent,q-developer-agent,generate_changelog,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
+**Security Configuration:**
 - `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories (only for filesystem tool)
 
 **Document Processing:**

@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
@@ -14,6 +15,7 @@ import (
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/brave"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/duckduckgo"
+	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/google"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/searxng"
 	"github.com/sirupsen/logrus"
 )
@@ -39,6 +41,10 @@ func init() {
 	// Register available providers
 	if braveProvider := brave.NewBraveProvider(); braveProvider != nil && braveProvider.IsAvailable() {
 		tool.providers["brave"] = braveProvider
+	}
+
+	if googleProvider := google.NewGoogleProvider(); googleProvider != nil && googleProvider.IsAvailable() {
+		tool.providers["google"] = googleProvider
 	}
 
 	if searxngProvider := searxng.NewSearXNGProvider(); searxngProvider != nil && searxngProvider.IsAvailable() {
@@ -77,10 +83,12 @@ func (t *InternetSearchTool) Definition() mcp.Tool {
 		typesList = append(typesList, searchType)
 	}
 
-	// Default provider priority: brave > searxng > duckduckgo
+	// Default provider priority: brave > google > searxng > duckduckgo
 	var defaultProvider string
 	if _, exists := t.providers["brave"]; exists {
 		defaultProvider = "brave"
+	} else if _, exists := t.providers["google"]; exists {
+		defaultProvider = "google"
 	} else if _, exists := t.providers["searxng"]; exists {
 		defaultProvider = "searxng"
 	} else if _, exists := t.providers["duckduckgo"]; exists {
@@ -95,12 +103,16 @@ func (t *InternetSearchTool) Definition() mcp.Tool {
 
 	// Check which providers are available
 	_, hasBrave := t.providers["brave"]
+	_, hasGoogle := t.providers["google"]
 	_, hasSearXNG := t.providers["searxng"]
 
 	// Build provider-specific parameter description
 	var providerSpecificParams []string
 	if hasBrave {
 		providerSpecificParams = append(providerSpecificParams, "- Brave: freshness (pd/pw/pm/py), offset (web search only)")
+	}
+	if hasGoogle {
+		providerSpecificParams = append(providerSpecificParams, "- Google: start (pagination offset)")
 	}
 	if hasSearXNG {
 		providerSpecificParams = append(providerSpecificParams, "- SearXNG: pageno, time_range (day/month/year), language, safesearch")
@@ -166,6 +178,15 @@ After you have received the results you can fetch the url if you want to read th
 			),
 			mcp.WithString("freshness",
 				mcp.Description("Time filter for Brave (pd/pw/pm/py or custom range)"),
+			),
+		)
+	}
+
+	if hasGoogle {
+		toolOptions = append(toolOptions,
+			mcp.WithNumber("start",
+				mcp.Description("Start index for Google search pagination (default: 0)"),
+				mcp.DefaultNumber(0),
 			),
 		)
 	}
@@ -236,6 +257,13 @@ func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 		// Check if context has been cancelled
 		if err := ctx.Err(); err != nil {
 			return nil, fmt.Errorf("search cancelled: %w", err)
+		}
+
+		// Add delay between fallback attempts to avoid rapid-fire rate limiting
+		if i > 0 {
+			delay := time.Duration(i) * time.Second // 1s, 2s, 3s, etc.
+			logger.WithField("delay", delay).Debug("Delaying before fallback attempt")
+			time.Sleep(delay)
 		}
 
 		provider, exists := t.providers[providerName]
@@ -358,7 +386,7 @@ func (t *InternetSearchTool) getOrderedProviders(searchType, userRequestedProvid
 	}
 
 	// Define provider priority order
-	priorityOrder := []string{"brave", "searxng", "duckduckgo"}
+	priorityOrder := []string{"brave", "google", "searxng", "duckduckgo"}
 
 	// Build ordered list of providers that support the search type
 	var orderedProviders []string

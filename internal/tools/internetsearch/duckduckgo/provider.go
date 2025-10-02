@@ -3,6 +3,7 @@ package duckduckgo
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -73,33 +74,79 @@ func (p *DuckDuckGoProvider) executeWebSearch(ctx context.Context, logger *logru
 		}
 	}
 
+	// Security check: verify domain access before making request
+	if err := security.CheckDomainAccess("html.duckduckgo.com"); err != nil {
+		return nil, err
+	}
+
 	// Create form data for POST request
 	formData := url.Values{}
 	formData.Set("q", query)
 	formData.Set("b", "")
 	formData.Set("kl", "")
 
-	// Use security helper for safe HTTP POST
-	ops := security.NewOperations("internetsearch")
-	safeResp, err := ops.SafeHTTPPost("https://html.duckduckgo.com/html", strings.NewReader(formData.Encode()))
+	// Create POST request with proper headers
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://html.duckduckgo.com/html", strings.NewReader(formData.Encode()))
 	if err != nil {
-		if secErr, ok := err.(*security.SecurityError); ok {
-			return nil, security.FormatSecurityBlockError(secErr)
-		}
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set headers to appear more like a browser
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MCP-DevTools/1.0)")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "en-GB,en;q=0.9")
+
+	// Execute request with rate limiting
+	resp, err := p.client.Do(req)
+	if err != nil {
 		return nil, fmt.Errorf("search request failed: %w", err)
 	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logger.WithError(closeErr).Warn("Failed to close response body")
+		}
+	}()
 
-	// Handle security warnings
-	if safeResp.SecurityResult != nil && safeResp.SecurityResult.Action == security.ActionWarn {
-		logger.Warnf("Security warning [ID: %s]: %s", safeResp.SecurityResult.ID, safeResp.SecurityResult.Message)
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	if safeResp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("DuckDuckGo search error: %d", safeResp.StatusCode)
+	// Check for rate limiting (202 is DuckDuckGo's rate limit response)
+	if resp.StatusCode == http.StatusAccepted {
+		return nil, fmt.Errorf("rate limit exceeded: DuckDuckGo detected automated requests, please wait before retrying")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("DuckDuckGo search error: status %d", resp.StatusCode)
+	}
+
+	// Security analysis: check response content for threats
+	if security.IsEnabled() {
+		source := security.SourceContext{
+			Tool:        "internet_search",
+			Domain:      "html.duckduckgo.com",
+			ContentType: "text/html",
+			URL:         "https://html.duckduckgo.com/html",
+		}
+		if secResult, err := security.AnalyseContent(string(body), source); err == nil {
+			switch secResult.Action {
+			case security.ActionBlock:
+				return nil, security.FormatSecurityBlockError(&security.SecurityError{
+					ID:      secResult.ID,
+					Message: secResult.Message,
+					Action:  security.ActionBlock,
+				})
+			case security.ActionWarn:
+				logger.Warnf("Security warning [ID: %s]: %s", secResult.ID, secResult.Message)
+			}
+		}
 	}
 
 	// Parse HTML response using goquery
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(safeResp.Content)))
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML response: %w", err)
 	}
