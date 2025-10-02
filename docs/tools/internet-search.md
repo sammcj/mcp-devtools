@@ -6,6 +6,8 @@ The Internet Search tool provides a unified interface for searching across multi
 
 Instead of managing separate tools for different search providers, the Internet Search tool gives you access to multiple search engines through a single interface. It automatically handles provider-specific requirements and normalises results.
 
+**Automatic Fallback**: The tool includes automatic fallback functionality. If a provider fails (e.g., rate limited, network error), it automatically retries with other available providers that support the requested search type. This ensures reliable search results even when primary providers are temporarily unavailable.
+
 ## Supported Providers
 
 ### Brave Search
@@ -62,6 +64,27 @@ SEARXNG_PASSWORD="your-password"
 
 ### DuckDuckGo
 No configuration required - works out of the box.
+
+### Provider Registration
+
+Providers are **only registered if properly configured**:
+
+- **Brave**: Registered only if `BRAVE_API_KEY` is set
+- **SearXNG**: Registered only if `SEARXNG_BASE_URL` is set and valid
+- **DuckDuckGo**: Always registered (no configuration required)
+
+The fallback chain automatically adjusts based on which providers are available:
+
+**Example Scenarios:**
+
+| Configuration                   | Fallback Order               | Behaviour                                     |
+|---------------------------------|------------------------------|-----------------------------------------------|
+| Only `BRAVE_API_KEY` set        | Brave → DuckDuckGo           | If Brave fails, falls back to DuckDuckGo      |
+| Only `SEARXNG_BASE_URL` set     | SearXNG → DuckDuckGo         | If SearXNG fails, falls back to DuckDuckGo    |
+| Both Brave & SearXNG configured | Brave → SearXNG → DuckDuckGo | Maximum resilience: tries all three in order  |
+| Nothing configured              | DuckDuckGo only              | Only DuckDuckGo available, no fallback needed |
+
+**Important**: Unconfigured providers are **not** included in the fallback chain. The tool won't waste time attempting to use providers that aren't properly set up.
 
 ### Rate Limiting Configuration
 
@@ -229,6 +252,37 @@ Find local businesses, restaurants, and services (Brave Pro API required).
 - Addresses and contact information
 - Ratings and reviews
 - Opening hours
+
+## Fallback Behaviour
+
+The Internet Search tool automatically handles provider failures with intelligent fallback:
+
+### How Fallback Works
+
+1. **Default Mode** (no provider specified):
+   - Tries providers in priority order: Brave → SearXNG → DuckDuckGo
+   - Automatically retries with next available provider if current one fails
+   - Only tries providers that support the requested search type
+   - Adds metadata to results indicating fallback occurred
+
+2. **Explicit Provider Mode** (provider parameter specified):
+   - Uses only the specified provider
+   - No automatic fallback
+   - Returns error if provider fails
+
+### Fallback Priority
+
+The tool uses this priority order when selecting providers:
+1. **Brave** - Best performance and features (when API key configured)
+2. **SearXNG** - Privacy-focused with language options (when instance configured)
+3. **DuckDuckGo** - Always available fallback (no configuration needed)
+
+### Metadata in Fallback Results
+
+When fallback occurs, search results include additional metadata:
+- `fallback_used: true` - Indicates a fallback provider was used
+- `original_provider_errors: [...]` - Lists errors from failed providers
+- `provider: "provider_name"` - Shows which provider ultimately succeeded
 
 ## Provider Selection Guide
 
