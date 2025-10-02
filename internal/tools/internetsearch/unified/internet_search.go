@@ -263,7 +263,14 @@ func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 		if i > 0 {
 			delay := time.Duration(i) * time.Second // 1s, 2s, 3s, etc.
 			logger.WithField("delay", delay).Debug("Delaying before fallback attempt")
-			time.Sleep(delay)
+
+			// Use context-aware sleep to allow cancellation
+			select {
+			case <-time.After(delay):
+				// Delay elapsed, continue to next provider
+			case <-ctx.Done():
+				return nil, fmt.Errorf("search cancelled during fallback delay: %w", ctx.Err())
+			}
 		}
 
 		provider, exists := t.providers[providerName]

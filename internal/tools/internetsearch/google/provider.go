@@ -44,9 +44,31 @@ func (p *GoogleProvider) GetSupportedTypes() []string {
 	return []string{"web", "image"}
 }
 
+// extractQuery safely extracts and validates the query parameter
+func (p *GoogleProvider) extractQuery(args map[string]any) (string, error) {
+	queryVal, exists := args["query"]
+	if !exists {
+		return "", fmt.Errorf("missing required parameter: query")
+	}
+
+	query, ok := queryVal.(string)
+	if !ok {
+		return "", fmt.Errorf("invalid query parameter: expected string, got %T", queryVal)
+	}
+
+	if query == "" {
+		return "", fmt.Errorf("query parameter cannot be empty")
+	}
+
+	return query, nil
+}
+
 // Search executes a search using the Google provider
 func (p *GoogleProvider) Search(ctx context.Context, logger *logrus.Logger, searchType string, args map[string]any) (*internetsearch.SearchResponse, error) {
-	query := args["query"].(string)
+	query, err := p.extractQuery(args)
+	if err != nil {
+		return nil, err
+	}
 
 	logger.WithFields(logrus.Fields{
 		"provider": "google",
@@ -66,7 +88,10 @@ func (p *GoogleProvider) Search(ctx context.Context, logger *logrus.Logger, sear
 
 // executeWebSearch handles web search
 func (p *GoogleProvider) executeWebSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
-	query := args["query"].(string)
+	query, err := p.extractQuery(args)
+	if err != nil {
+		return nil, err
+	}
 
 	// Parse optional parameters
 	count := 10
@@ -116,7 +141,10 @@ func (p *GoogleProvider) executeWebSearch(ctx context.Context, logger *logrus.Lo
 
 // executeImageSearch handles image search
 func (p *GoogleProvider) executeImageSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
-	query := args["query"].(string)
+	query, err := p.extractQuery(args)
+	if err != nil {
+		return nil, err
+	}
 
 	// Parse optional parameters
 	count := 10
