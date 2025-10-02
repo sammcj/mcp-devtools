@@ -33,6 +33,9 @@ type SearchProvider interface {
 	GetSupportedTypes() []string
 }
 
+// providerPriorityOrder defines the order providers are tried during fallback
+var providerPriorityOrder = []string{"brave", "google", "searxng", "duckduckgo"}
+
 func init() {
 	tool := &InternetSearchTool{
 		providers: make(map[string]SearchProvider),
@@ -83,18 +86,17 @@ func (t *InternetSearchTool) Definition() mcp.Tool {
 		typesList = append(typesList, searchType)
 	}
 
-	// Default provider priority: brave > google > searxng > duckduckgo
+	// Default provider based on priority order
 	var defaultProvider string
-	if _, exists := t.providers["brave"]; exists {
-		defaultProvider = "brave"
-	} else if _, exists := t.providers["google"]; exists {
-		defaultProvider = "google"
-	} else if _, exists := t.providers["searxng"]; exists {
-		defaultProvider = "searxng"
-	} else if _, exists := t.providers["duckduckgo"]; exists {
-		defaultProvider = "duckduckgo"
-	} else {
-		// Fallback to first available provider
+	for _, providerName := range providerPriorityOrder {
+		if _, exists := t.providers[providerName]; exists {
+			defaultProvider = providerName
+			break
+		}
+	}
+
+	// If no provider from priority list, use first available
+	if defaultProvider == "" {
 		for name := range t.providers {
 			defaultProvider = name
 			break
@@ -392,12 +394,9 @@ func (t *InternetSearchTool) getOrderedProviders(searchType, userRequestedProvid
 		return []string{}
 	}
 
-	// Define provider priority order
-	priorityOrder := []string{"brave", "google", "searxng", "duckduckgo"}
-
 	// Build ordered list of providers that support the search type
 	var orderedProviders []string
-	for _, providerName := range priorityOrder {
+	for _, providerName := range providerPriorityOrder {
 		if provider, exists := t.providers[providerName]; exists {
 			if t.providerSupportsType(provider, searchType) {
 				orderedProviders = append(orderedProviders, providerName)

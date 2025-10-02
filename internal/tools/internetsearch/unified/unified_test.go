@@ -31,7 +31,10 @@ func (m *mockProvider) Search(ctx context.Context, logger *logrus.Logger, search
 		return nil, fmt.Errorf("mock provider %s failed", m.name)
 	}
 
-	query := args["query"].(string)
+	query, ok := args["query"].(string)
+	if !ok {
+		return nil, fmt.Errorf("mockProvider: expected 'query' argument of type string, got %T", args["query"])
+	}
 	return &internetsearch.SearchResponse{
 		Query:       query,
 		ResultCount: 1,

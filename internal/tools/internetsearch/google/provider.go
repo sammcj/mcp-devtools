@@ -193,10 +193,16 @@ func (p *GoogleProvider) executeImageSearch(ctx context.Context, logger *logrus.
 			}
 		}
 
+		// Use snippet if available, otherwise fall back to title-based description
+		description := item.Snippet
+		if description == "" {
+			description = fmt.Sprintf("Image: %s", item.Title)
+		}
+
 		results = append(results, internetsearch.SearchResult{
 			Title:       item.Title,
 			URL:         item.Link,
-			Description: fmt.Sprintf("Image: %s", item.Title),
+			Description: description,
 			Type:        "image",
 			Metadata:    metadata,
 		})

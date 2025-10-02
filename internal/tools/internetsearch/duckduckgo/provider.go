@@ -116,7 +116,7 @@ func (p *DuckDuckGoProvider) executeWebSearch(ctx context.Context, logger *logru
 
 	// Check for rate limiting (202 is DuckDuckGo's rate limit response)
 	if resp.StatusCode == http.StatusAccepted {
-		return nil, fmt.Errorf("rate limit exceeded: DuckDuckGo detected automated requests, please wait before retrying")
+		return nil, fmt.Errorf("rate limit exceeded: DuckDuckGo, please wait before retrying")
 	}
 
 	if resp.StatusCode != http.StatusOK {
