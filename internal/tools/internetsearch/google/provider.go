@@ -10,6 +10,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	// Google Custom Search API result limits
+	googleMinResults = 1
+	googleMaxResults = 10
+)
+
 // GoogleProvider implements the unified SearchProvider interface
 type GoogleProvider struct {
 	client *GoogleClient
@@ -94,11 +100,11 @@ func (p *GoogleProvider) executeWebSearch(ctx context.Context, logger *logrus.Lo
 	}
 
 	// Parse optional parameters
-	count := 10
+	count := googleMaxResults
 	if countRaw, ok := args["count"].(float64); ok {
 		count = int(countRaw)
-		if count < 1 || count > 10 {
-			return nil, fmt.Errorf("count must be between 1 and 10 for Google search, got %d", count)
+		if count < googleMinResults || count > googleMaxResults {
+			return nil, fmt.Errorf("count must be between %d and %d for Google search, got %d", googleMinResults, googleMaxResults, count)
 		}
 	}
 
@@ -147,11 +153,11 @@ func (p *GoogleProvider) executeImageSearch(ctx context.Context, logger *logrus.
 	}
 
 	// Parse optional parameters
-	count := 10
+	count := googleMaxResults
 	if countRaw, ok := args["count"].(float64); ok {
 		count = int(countRaw)
-		if count < 1 || count > 10 {
-			return nil, fmt.Errorf("count must be between 1 and 10 for Google image search, got %d", count)
+		if count < googleMinResults || count > googleMaxResults {
+			return nil, fmt.Errorf("count must be between %d and %d for Google image search, got %d", googleMinResults, googleMaxResults, count)
 		}
 	}
 

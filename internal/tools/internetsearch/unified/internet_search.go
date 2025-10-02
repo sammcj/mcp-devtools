@@ -33,6 +33,11 @@ type SearchProvider interface {
 	GetSupportedTypes() []string
 }
 
+const (
+	// fallbackBaseDelay is the base delay between fallback attempts (multiplied by attempt number)
+	fallbackBaseDelay = 1 * time.Second
+)
+
 // providerPriorityOrder defines the order providers are tried during fallback
 var providerPriorityOrder = []string{"brave", "google", "searxng", "duckduckgo"}
 
@@ -263,7 +268,7 @@ func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 
 		// Add delay between fallback attempts to avoid rapid-fire rate limiting
 		if i > 0 {
-			delay := time.Duration(i) * time.Second // 1s, 2s, 3s, etc.
+			delay := time.Duration(i) * fallbackBaseDelay // 1s, 2s, 3s, etc.
 			logger.WithField("delay", delay).Debug("Delaying before fallback attempt")
 
 			// Use context-aware sleep to allow cancellation
