@@ -23,7 +23,7 @@ graph LR
 
     F --> F_Tools[🧮 Calculator<br>🇬🇧 American→English<br>📁 Filesystem<br>📝 Changelog Generation]
 
-    G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
+    G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
     classDef inputOutput fill:#FEE0D2,stroke:#E6550D,color:#E6550D
     classDef llm fill:#E5F5E0,stroke:#31A354,color:#31A354
@@ -133,12 +133,13 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 
 **Agents as Tools** - In addition to the above tools, MCP DevTools can provide access to AI agents as tools by integrating with external LLMs.
 
-| Agent                                                    | Purpose                   | `ENABLE_ADDITIONAL_TOOLS` |
-|----------------------------------------------------------|---------------------------|---------------------------|
-| **[Claude Agent](docs/tools/claude-agent.md)**           | Claude Code CLI Agent     | `claude-agent`            |
-| **[Codex Agent](docs/tools/codex-agent.md)**             | Codex CLI Agent           | `codex-agent`             |
-| **[Gemini Agent](docs/tools/gemini-agent.md)**           | Gemini CLI Agent          | `gemini-agent`            |
-| **[Q Developer Agent](docs/tools/q-developer-agent.md)** | AWS Q Developer CLI Agent | `q-developer-agent`       |
+| Agent                                                    | Purpose                      | `ENABLE_ADDITIONAL_TOOLS` |
+|----------------------------------------------------------|------------------------------|---------------------------|
+| **[Claude Agent](docs/tools/claude-agent.md)**           | Claude Code CLI Agent        | `claude-agent`            |
+| **[Codex Agent](docs/tools/codex-agent.md)**             | Codex CLI Agent              | `codex-agent`             |
+| **[Copilot Agent](docs/tools/copilot-agent.md)**         | GitHub Copilot CLI Agent     | `copilot-agent`           |
+| **[Gemini Agent](docs/tools/gemini-agent.md)**           | Gemini CLI Agent             | `gemini-agent`            |
+| **[Q Developer Agent](docs/tools/q-developer-agent.md)** | AWS Q Developer CLI Agent    | `q-developer-agent`       |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
