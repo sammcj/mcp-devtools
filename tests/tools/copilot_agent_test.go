@@ -729,7 +729,7 @@ func TestCopilotTool_ResponseSizeLimit_EdgeCases(t *testing.T) {
 			result := tool.ApplyResponseSizeLimit(tt.input, logger)
 
 			if tt.expectedTrunc {
-				testutils.AssertTrue(t, len(result) >= len(tt.input) || strings.Contains(result, "RESPONSE TRUNCATED"))
+				testutils.AssertTrue(t, len(result) < len(tt.input) || strings.Contains(result, "RESPONSE TRUNCATED"))
 				testutils.AssertTrue(t, strings.Contains(result, tt.expectedMsg))
 			} else {
 				testutils.AssertEqual(t, tt.expectedMsg, result)
