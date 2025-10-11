@@ -37,6 +37,7 @@ func (t *PythonTool) Definition() mcp.Tool {
 		mcp.WithArray("requirements",
 			mcp.Description("Array of requirements from requirements.txt"),
 			mcp.Required(),
+			mcp.WithStringItems(),
 		),
 	)
 }

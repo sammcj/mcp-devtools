@@ -25,6 +25,7 @@ func (t *GradleTool) Definition() mcp.Tool {
 		mcp.WithArray("dependencies",
 			mcp.Description("Array of Gradle dependencies"),
 			mcp.Required(),
+			mcp.Items(map[string]any{"type": "object"}),
 		),
 	)
 }

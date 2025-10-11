@@ -27,6 +27,7 @@ func (t *GitHubActionsTool) Definition() mcp.Tool {
 		mcp.WithArray("actions",
 			mcp.Description("Array of GitHub Actions to check"),
 			mcp.Required(),
+			mcp.WithStringItems(),
 		),
 		mcp.WithBoolean("includeDetails",
 			mcp.Description("Include additional details like published date and URL"),

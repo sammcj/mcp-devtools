@@ -57,6 +57,7 @@ func (t *ClaudeTool) Definition() mcp.Tool {
 		),
 		mcp.WithArray("include-directories",
 			mcp.Description("Optional: Fully qualified paths to additional directories to allow the agent to access."),
+			mcp.WithStringItems(),
 		),
 		// Destructive tool annotations
 		mcp.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands
