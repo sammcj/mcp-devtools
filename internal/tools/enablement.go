@@ -17,6 +17,7 @@ import (
 // - changelog
 // - claude-agent
 // - codex-agent
+// - copilot-agent
 // - filesystem
 // - gemini-agent
 // - memory
