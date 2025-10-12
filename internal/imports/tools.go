@@ -7,6 +7,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/calculator"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/claudeagent"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/codexagent"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/copilotagent"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/docprocessing"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/filelength"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/filesystem"
