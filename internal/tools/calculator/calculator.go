@@ -33,9 +33,7 @@ func (c *Calculator) Definition() mcp.Tool {
 		),
 		mcp.WithArray("expressions",
 			mcp.Description("Array of mathematical expressions to evaluate"),
-			mcp.Items(map[string]any{
-				"type": "string",
-			}),
+			mcp.WithStringItems(),
 		),
 		// Read-only annotations for pure computation tool
 		mcp.WithReadOnlyHintAnnotation(true),     // Doesn't modify environment

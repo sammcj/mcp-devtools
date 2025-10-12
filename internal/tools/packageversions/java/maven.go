@@ -26,6 +26,7 @@ func (t *MavenTool) Definition() mcp.Tool {
 		mcp.WithArray("dependencies",
 			mcp.Description("Array of Maven dependencies"),
 			mcp.Required(),
+			mcp.Items(map[string]any{"type": "object"}),
 		),
 	)
 }

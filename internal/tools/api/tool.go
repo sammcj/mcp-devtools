@@ -110,7 +110,10 @@ func (t *DynamicAPITool) Definition() mcp.Tool {
 			toolOptions = append(toolOptions, mcp.WithBoolean(param.Name, boolOptions...))
 
 		case "array":
-			arrayOptions := []mcp.PropertyOption{mcp.Description(param.Description)}
+			arrayOptions := []mcp.PropertyOption{
+				mcp.Description(param.Description),
+				mcp.WithStringItems(), // Default to string items for arrays
+			}
 			if param.Required {
 				arrayOptions = append(arrayOptions, mcp.Required())
 			}

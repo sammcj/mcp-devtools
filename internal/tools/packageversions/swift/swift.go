@@ -27,6 +27,7 @@ func (t *SwiftTool) Definition() mcp.Tool {
 		mcp.WithArray("dependencies",
 			mcp.Description("Array of Swift package dependencies"),
 			mcp.Required(),
+			mcp.WithStringItems(),
 		),
 		mcp.WithObject("constraints",
 			mcp.Description("Optional constraints for specific packages"),

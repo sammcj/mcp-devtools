@@ -54,6 +54,7 @@ func (t *DockerTool) Definition() mcp.Tool {
 		),
 		mcp.WithArray("filterTags",
 			mcp.Description("Array of regex patterns to filter tags"),
+			mcp.WithStringItems(),
 		),
 		mcp.WithBoolean("includeDigest",
 			mcp.Description("Include image digest in results"),
