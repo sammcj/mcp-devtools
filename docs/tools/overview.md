@@ -22,13 +22,6 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 3. Think → Plan integration approach
 ```
 
-#### Release Management Workflow
-```
-1. Generate Changelog → Create release documentation
-2. SBOM Generation → Analyse dependencies
-3. Vulnerability Scan → Check security issues
-```
-
 #### Research Workflow
 ```
 1. Internet Search → Find relevant information
