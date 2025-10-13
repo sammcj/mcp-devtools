@@ -26,19 +26,13 @@ func NewMarkdownConverter() *MarkdownConverter {
 
 	// Remove unnecessary elements that don't add value for AI consumption
 	// Note: script, style, noscript, and iframe are already removed by base plugin
-	conv.Register.TagType("embed", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("object", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("nav", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("header", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("footer", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("aside", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("form", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("button", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("select", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("canvas", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("svg", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("video", converter.TagTypeRemove, converter.PriorityStandard)
-	conv.Register.TagType("audio", converter.TagTypeRemove, converter.PriorityStandard)
+	tagsToRemove := []string{
+		"embed", "object", "nav", "header", "footer", "aside",
+		"form", "button", "select", "canvas", "svg", "video", "audio",
+	}
+	for _, tag := range tagsToRemove {
+		conv.Register.TagType(tag, converter.TagTypeRemove, converter.PriorityStandard)
+	}
 
 	return &MarkdownConverter{
 		converter: conv,
