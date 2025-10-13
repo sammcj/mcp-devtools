@@ -24,7 +24,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
   -o mcp-devtools .
 
 # Final stage
-FROM python:3.13-alpine
+FROM python:3.14-alpine
 
 # Set working directory
 WORKDIR /app
