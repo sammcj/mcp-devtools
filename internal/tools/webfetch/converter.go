@@ -4,24 +4,35 @@ import (
 	"fmt"
 	"strings"
 
-	md "github.com/JohannesKaufmann/html-to-markdown"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
 	"github.com/sirupsen/logrus"
 )
 
 // MarkdownConverter handles HTML to markdown conversion with custom rules
 type MarkdownConverter struct {
-	converter *md.Converter
+	converter *converter.Converter
 }
 
 // NewMarkdownConverter creates a new converter with AI-friendly settings
 func NewMarkdownConverter() *MarkdownConverter {
-	conv := md.NewConverter("", true, nil)
+	conv := converter.NewConverter(
+		converter.WithPlugins(
+			base.NewBasePlugin(),
+			commonmark.NewCommonmarkPlugin(),
+		),
+	)
 
 	// Remove unnecessary elements that don't add value for AI consumption
-	conv = conv.Remove("script", "style", "noscript", "iframe", "embed", "object")
-	conv = conv.Remove("nav", "header", "footer", "aside")              // Remove navigation elements
-	conv = conv.Remove("form", "input", "button", "select", "textarea") // Remove form elements
-	conv = conv.Remove("canvas", "svg", "video", "audio")               // Remove media elements
+	// Note: script, style, noscript, and iframe are already removed by base plugin
+	tagsToRemove := []string{
+		"embed", "object", "nav", "header", "footer", "aside",
+		"form", "button", "select", "canvas", "svg", "video", "audio",
+	}
+	for _, tag := range tagsToRemove {
+		conv.Register.TagType(tag, converter.TagTypeRemove, converter.PriorityStandard)
+	}
 
 	return &MarkdownConverter{
 		converter: conv,
