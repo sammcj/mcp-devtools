@@ -5,21 +5,28 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/JohannesKaufmann/html-to-markdown"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
 	"github.com/PuerkitoBio/goquery"
 )
 
 // Parser handles HTML parsing and markdown conversion for AWS documentation
 type Parser struct {
-	converter *md.Converter
+	converter *converter.Converter
 }
 
 // NewParser creates a new HTML parser for AWS documentation
 func NewParser() *Parser {
-	converter := md.NewConverter("", true, nil)
+	conv := converter.NewConverter(
+		converter.WithPlugins(
+			base.NewBasePlugin(),
+			commonmark.NewCommonmarkPlugin(),
+		),
+	)
 
 	return &Parser{
-		converter: converter,
+		converter: conv,
 	}
 }
 

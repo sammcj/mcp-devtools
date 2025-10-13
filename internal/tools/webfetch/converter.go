@@ -4,24 +4,41 @@ import (
 	"fmt"
 	"strings"
 
-	md "github.com/JohannesKaufmann/html-to-markdown"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
 	"github.com/sirupsen/logrus"
 )
 
 // MarkdownConverter handles HTML to markdown conversion with custom rules
 type MarkdownConverter struct {
-	converter *md.Converter
+	converter *converter.Converter
 }
 
 // NewMarkdownConverter creates a new converter with AI-friendly settings
 func NewMarkdownConverter() *MarkdownConverter {
-	conv := md.NewConverter("", true, nil)
+	conv := converter.NewConverter(
+		converter.WithPlugins(
+			base.NewBasePlugin(),
+			commonmark.NewCommonmarkPlugin(),
+		),
+	)
 
 	// Remove unnecessary elements that don't add value for AI consumption
-	conv = conv.Remove("script", "style", "noscript", "iframe", "embed", "object")
-	conv = conv.Remove("nav", "header", "footer", "aside")              // Remove navigation elements
-	conv = conv.Remove("form", "input", "button", "select", "textarea") // Remove form elements
-	conv = conv.Remove("canvas", "svg", "video", "audio")               // Remove media elements
+	// Note: script, style, noscript, and iframe are already removed by base plugin
+	conv.Register.TagType("embed", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("object", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("nav", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("header", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("footer", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("aside", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("form", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("button", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("select", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("canvas", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("svg", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("video", converter.TagTypeRemove, converter.PriorityStandard)
+	conv.Register.TagType("audio", converter.TagTypeRemove, converter.PriorityStandard)
 
 	return &MarkdownConverter{
 		converter: conv,
