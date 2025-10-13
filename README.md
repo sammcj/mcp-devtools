@@ -8,20 +8,17 @@ graph LR
 
     A --> B[Search &<br>Discovery]
     A --> C[Document<br>Processing]
-    A --> D[Security<br>Analysis]
     A --> E[Intelligence &<br>Memory]
     A --> F[Utilities]
     A --> G[Agents]
 
-    B --> B_Tools[🌐 Internet Search<br>📡 Web Fetch<br>📦 Package Search<br>📚 Package Documentation<br>🐙 GitHub<br>🎨 ShadCN UI Components<br>🔌 API Integration<br>☁️ AWS Documentation<br📝>Terraform Documentation]
+    B --> B_Tools[🌐 Internet Search<br>📡 Web Fetch<br>📦 Package Search<br>📚 Package Documentation<br>🐙 GitHub<br>🎨 ShadCN UI Components<br>🔌 API Integration<br>☁️ AWS Docs<br>📝 Terraform Docs]
 
     C --> C_Tools[📄 Document Processing<br>📑 PDF Processing]
 
-    D --> D_Tools[📋 SBOM Generation<br>🛡️ Vulnerability Scan<br>🔒 Security Framework<br>🛠️ Security Override]
-
     E --> E_Tools[🧠 Think Tool<br>🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
-    F --> F_Tools[🧮 Calculator<br>🇬🇧 American→English<br>📁 Filesystem<br>📝 Changelog Generation]
+    F --> F_Tools[🧮 Calculator<br>🇬🇧 American→English<br>📁 Filesystem]
 
     G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
@@ -86,7 +83,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "command": "/path/to/mcp-devtools",
       "env": {
         "DISABLED_FUNCTIONS": "think", // Optional, disable specific tools if not needed
-        "ENABLE_ADDITIONAL_TOOLS": "security,security_override,sbom,vulnerability_scan,memory" // Optional, enable security and analysis tools
+        "ENABLE_ADDITIONAL_TOOLS": "security,security_override,memory" // Optional, enable security and analysis tools
       }
     }
   }
@@ -118,9 +115,6 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                                        | `murican_to_english`      | Organise, colour, centre                    |
 | **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                              | `shadcn`                  | Button, Dialog, Form components             |
 | **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            |
-| **[SBOM Generation](docs/tools/sbom.md)**                            | Generate Software Bill of Materials                                | `sbom`                    | Analyse project dependencies                |
-| **[Vulnerability Scan](docs/tools/vulnerability_scan.md)**           | Security vulnerability scanning                                    | `vulnerability_scan`      | Find security issues                        |
-| **[Generate Changelog](docs/tools/changelog.md)**                    | Generate changelogs from git commits                               | `generate_changelog`      | Release notes from local/remote repos       |
 | **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                                      | `process_document`        | PDF, DOCX → Markdown with OCR               |
 | **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                           | `pdf`                     | Quick PDF to Markdown                       |
 | **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                             | `aws_documentation`       | Search and read AWS docs, recommendations   |
@@ -255,7 +249,7 @@ mcp-devtools --transport http --port 18080 --oauth-enabled
 All environment variables are optional, but if you want to use specific search providers or document processing features, you may need to provide the the appropriate variables.
 
 **General:**
-- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,sbom,vulnerability_scan,filesystem,claude-agent,codex-agent,gemini-agent,q-developer-agent,generate_changelog,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
+- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,filesystem,claude-agent,codex-agent,gemini-agent,q-developer-agent,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
 - `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
 **Core Tools:**
@@ -327,18 +321,6 @@ Configuration is managed through `~/.mcp-devtools/security.yaml` with sensible d
 👉 **[Complete Security Documentation](docs/security.md)**
 
 ## Advanced Features
-
-### SBOM/Vulnerability Tools Build (Increases File Size)
-Includes all tools including SBOM generation and vulnerability scanning capabilities with Anchore Syft/Grype dependencies (~170MB binary).
-
-```bash
-# Build with SBOM and vulnerability tools
-make build-sbom-vuln-tools
-```
-
-**Additional tools**: `sbom`, `vulnerability_scan`
-
-The SBOM and vulnerability scanning tools are disabled by default in both builds but can be enabled via the `ENABLE_ADDITIONAL_TOOLS` environment variable. In the standard build, these tools will return appropriate error messages indicating they require the SBOM/vulnerability tools build variant.
 
 ### OAuth 2.0/2.1 Authentication
 For production deployments requiring centralised user authentication:

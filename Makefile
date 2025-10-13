@@ -14,21 +14,11 @@ DOCKER_IMAGE=$(BINARY_NAME)
 .PHONY: all
 all: build
 
-# Build the server (without SBOM and vuln checking tools)
+# Build the server
 .PHONY: build
 build:
 	mkdir -p bin
 	$(GO) build $(GOFLAGS) -o $(BINARY_PATH) \
-		-ldflags "-w -s -X main.Version=$(shell git describe --tags --always --dirty 2>/dev/null || echo '0.1.0-dev') \
-		-X main.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo 'unknown') \
-		-X main.BuildDate=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-		.
-
-# Build the server with SBOM and vulnerability scanning tools (includes heavy dependencies, adds to file size)
-.PHONY: build-sbom-vuln-tools
-build-sbom-vuln-tools:
-	mkdir -p bin
-	$(GO) build $(GOFLAGS) -tags sbom_vuln_tools -o $(BINARY_PATH) \
 		-ldflags "-w -s -X main.Version=$(shell git describe --tags --always --dirty 2>/dev/null || echo '0.1.0-dev') \
 		-X main.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo 'unknown') \
 		-X main.BuildDate=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")" \
@@ -43,11 +33,6 @@ run: build
 .PHONY: run-http
 run-http: build
 	./$(BINARY_PATH) --transport http --port 18080 --base-url http://localhost
-
-# Run the server with SBOM and vulnerability scanning tools enabled
-.PHONY: run-sbom-vuln-tools
-run-sbom-vuln-tools: build-sbom-vuln-tools
-	./$(BINARY_PATH)
 
 # Run tests (all tests including external dependencies)
 .PHONY: test
@@ -188,11 +173,9 @@ inspect:
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  build			: Build the server (Without SBOM/vulnerability tools)"
-	@echo "  build-sbom-vuln-tools	: Build the server with SBOM and vulnerability scanning tools"
+	@echo "  build			: Build the server"
 	@echo "  run			: Run the server with stdio transport (default)"
 	@echo "  run-http		: Run the server with Streamable HTTP transport"
-	@echo "  run-sbom-vuln-tools	: Run the server with SBOM and vulnerability tools enabled"
 	@echo "  test 			: Run all tests (including external dependencies)"
 	@echo "  test-fast		: Run fast tests (no external dependencies)"
 	@echo "  test-docling-vlm	: Run VLM/LLM integration tests (requires .env configuration)"
