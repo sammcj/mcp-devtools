@@ -115,8 +115,8 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "DISABLED_FUNCTIONS": "think", // Optional, disable specific tools if not needed
-        "ENABLE_ADDITIONAL_TOOLS": "security,security_override,memory" // Optional, enable security and analysis tools
+        "DISABLED_FUNCTIONS": "", // Optional, disable specific tools if not needed
+        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn" // Optional, enable security and analysis tools
       }
     }
   }
