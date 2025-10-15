@@ -129,17 +129,17 @@ See below for various environment variables you can set to configure specific fe
 
 These tools can be disabled by adding their function name to the `DISABLED_FUNCTIONS` environment variable in your MCP configuration.
 
-| Tool                                                             | Purpose                            | Dependencies                  | Example Usage                   |
-|------------------------------------------------------------------|------------------------------------|-------------------------------|---------------------------------|
-| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search          | None (Provider keys optional) | Web, image, news, video search  |
-| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown   | None                          | Documentation and articles      |
-| **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data       | None (GitHub token optional)  | Issues, PRs, repos, cloning     |
-| **[Package Documentation](docs/tools/package-documentation.md)** | Library documentation lookup       | None                          | React, Django, TensorFlow docs  |
-| **[Package Search](docs/tools/package-search.md)**               | Check package versions             | None                          | NPM, Python, Go, Java, Docker   |
-| **[Think](docs/tools/think.md)**                                 | Structured reasoning space         | None                          | Complex problem analysis        |
-| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring | None                          | Find files over 700 lines       |
-| **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations      | None                          | 2 + 3 * 4, batch processing     |
-| **[DevTools Help](docs/tools/devtools_help.md)**                 | Extended info about DevTools tools | None                          | Usage examples, troubleshooting |
+| Tool                                                             | Purpose                               | Dependencies                  | Example Usage                   |
+|------------------------------------------------------------------|---------------------------------------|-------------------------------|---------------------------------|
+| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search             | None (Provider keys optional) | Web, image, news, video search  |
+| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown      | None                          | Documentation and articles      |
+| **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data          | None (GitHub token optional)  | Issues, PRs, repos, cloning     |
+| **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, Django, TensorFlow docs  |
+| **[Package Search](docs/tools/package-search.md)**               | Check package versions                | None                          | NPM, Python, Go, Java, Docker   |
+| **[Think](docs/tools/think.md)**                                 | Structured reasoning space            | None                          | Complex problem analysis        |
+| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    | None                          | Find files over 700 lines       |
+| **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations         | None                          | 2 + 3 * 4, batch processing     |
+| **[DevTools Help](docs/tools/devtools_help.md)**                 | Extended info about DevTools tools    | None                          | Usage examples, troubleshooting |
 
 ### Additional Tools (Disabled By Default)
 
@@ -154,7 +154,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                           | `pdf`                     | Quick PDF to Markdown                       |
 | **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                             | `aws_documentation`       | Search and read AWS docs, recommendations   |
 | **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API access for providers, modules, and policies | `terraform_documentation` | Provider docs, module search, policy lookup |
-| **[Security Framework](docs/security.md)**                    | Context injection security protections                             | `security`                | Content analysis, access control            |
+| **[Security Framework](docs/security.md)**                           | Context injection security protections                             | `security`                | Content analysis, access control            |
 | **[Security Override](docs/security.md)**                            | Agent managed security warning overrides                           | `security_override`       | Bypass false positives                      |
 | **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts                | `sequential-thinking`     | Step-by-step analysis, revision, branching  |
 | **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                                       | `api`                     | Configure any REST API via YAML             |
