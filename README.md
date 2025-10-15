@@ -62,6 +62,39 @@ graph LR
 
 ## Quickstart
 
+### Quick Run
+
+Assuming you have Golang installed, you can use `go run` (similar to npx / uvx) to add MCP DevTools as a tool in your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "dev-tools": {
+      "type": "stdio",
+      "command": "go",
+      "args": [
+        "run",
+        "github.com/sammcj/mcp-devtools@HEAD"
+      ],
+      "env": {
+        "DISABLED_FUNCTIONS": "", // Optional, disable specific tools if not needed
+        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn" // Optional, enable security and analysis tools
+      }
+    }
+  }
+}
+```
+
+Or if you're using Claude Code you can also add it via the CLI:
+
+```bash
+claude mcp add --transport stdio mcp-devtools go run github.com/sammcj/mcp-devtools@HEAD
+```
+
+Note: This is easy, but it does mean every time your client starts it might download the tool, so I usually recommend the manual installation below for anything other than testing.
+
+### Installation
+
 You must have a recent version of Go installed.
 
 1. Install the latest MCP DevTools binary:
