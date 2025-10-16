@@ -100,7 +100,11 @@ func (gc *GitHubClient) SearchIssues(ctx context.Context, owner, repo, query str
 		return nil, fmt.Errorf("search API rate limit wait failed: %w", err)
 	}
 
-	searchQuery := fmt.Sprintf("repo:%s/%s %s", owner, repo, query)
+	// GitHub API requires 'type:issue' or 'is:issue' qualifier in search queries
+	// to differentiate between issues and pull requests (which are both returned
+	// by the /search/issues endpoint). Without this qualifier, GitHub returns a
+	// 422 error: "Query must include 'is:issue' or 'is:pull-request'"
+	searchQuery := fmt.Sprintf("repo:%s/%s type:issue %s", owner, repo, query)
 	if !includeClosed {
 		searchQuery += " state:open"
 	}
