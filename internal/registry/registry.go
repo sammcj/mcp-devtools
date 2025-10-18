@@ -168,6 +168,7 @@ func requiresEnablement(toolName string) bool {
 		"vulnerability_scan",
 		"claude-agent",
 		"codex-agent",
+		"copilot-agent",
 		"gemini-agent",
 		"q-developer-agent",
 		"generate_changelog",
