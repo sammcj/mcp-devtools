@@ -69,7 +69,7 @@ func (t *ResolveLibraryIDTool) Execute(ctx context.Context, logger *logrus.Logge
 	// Parse library name
 	libraryName, ok := args["libraryName"].(string)
 	if !ok || strings.TrimSpace(libraryName) == "" {
-		return nil, fmt.Errorf("missing or invalid required parameter: libraryName")
+		return nil, fmt.Errorf("missing required parameter 'libraryName'. Provide the library or package name to search for (e.g., {\"libraryName\": \"React\"}, {\"libraryName\": \"Next.js\"}, or {\"libraryName\": \"aws-sdk\"})")
 	}
 
 	libraryName = strings.TrimSpace(libraryName)

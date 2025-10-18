@@ -78,7 +78,7 @@ func TestThinkTool_Execute_EmptyThought(t *testing.T) {
 	_, err := tool.Execute(ctx, logger, cache, args)
 
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "missing or invalid required parameter: thought")
+	testutils.AssertErrorContains(t, err, "missing required parameter")
 }
 
 func TestThinkTool_Execute_MissingThought(t *testing.T) {
@@ -92,7 +92,7 @@ func TestThinkTool_Execute_MissingThought(t *testing.T) {
 	_, err := tool.Execute(ctx, logger, cache, args)
 
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "missing or invalid required parameter: thought")
+	testutils.AssertErrorContains(t, err, "missing required parameter")
 }
 
 func TestThinkTool_Execute_InvalidThoughtType(t *testing.T) {
@@ -108,7 +108,7 @@ func TestThinkTool_Execute_InvalidThoughtType(t *testing.T) {
 	_, err := tool.Execute(ctx, logger, cache, args)
 
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "missing or invalid required parameter: thought")
+	testutils.AssertErrorContains(t, err, "missing required parameter")
 }
 
 func TestThinkTool_Execute_LongThought(t *testing.T) {
@@ -165,7 +165,7 @@ func TestThinkTool_Execute_ExcessivelyLongThought(t *testing.T) {
 	_, err := tool.Execute(ctx, logger, cache, args)
 
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "thought exceeds maximum length of 2000 characters")
+	testutils.AssertErrorContains(t, err, "'thought' exceeds maximum length")
 }
 
 func TestThinkTool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
@@ -200,7 +200,7 @@ func TestThinkTool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
 	_, execErr := tool.Execute(ctx, logger, cache, args)
 
 	testutils.AssertError(t, execErr)
-	testutils.AssertErrorContains(t, execErr, "thought exceeds maximum length of 100 characters")
+	testutils.AssertErrorContains(t, execErr, "'thought' exceeds maximum length")
 
 	// Test with a thought within the custom limit (should succeed)
 	shortThought := "This is within the custom limit."
@@ -303,7 +303,7 @@ func TestThinkTool_Execute_InvalidHowHardParameter(t *testing.T) {
 	_, err := tool.Execute(ctx, logger, cache, args)
 
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "invalid how_hard parameter: must be 'hard', 'harder', or 'ultra', got 'invalid'")
+	testutils.AssertErrorContains(t, err, "invalid 'how_hard' parameter")
 
 	// Test with invalid type
 	args = map[string]any{
@@ -314,5 +314,5 @@ func TestThinkTool_Execute_InvalidHowHardParameter(t *testing.T) {
 	_, err = tool.Execute(ctx, logger, cache, args)
 
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "invalid how_hard parameter: must be a string")
+	testutils.AssertErrorContains(t, err, "invalid 'how_hard' parameter")
 }

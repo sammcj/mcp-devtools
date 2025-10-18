@@ -61,7 +61,7 @@ func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger,
 	// Parse required parameters
 	libraryID, ok := args["context7CompatibleLibraryID"].(string)
 	if !ok || strings.TrimSpace(libraryID) == "" {
-		return nil, fmt.Errorf("missing or invalid required parameter: context7CompatibleLibraryID")
+		return nil, fmt.Errorf("missing required parameter 'context7CompatibleLibraryID'. First call 'resolve_library_id' to get the correct library ID (e.g., '/vercel/next.js'), or if the user provided a library ID directly, ensure it starts with '/' and follows the format '/org/project' or '/org/project/version'")
 	}
 
 	libraryID = strings.TrimSpace(libraryID)
@@ -81,10 +81,10 @@ func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger,
 	if tokensRaw, ok := args["tokens"].(float64); ok {
 		tokens = int(tokensRaw)
 		if tokens < 1000 {
-			return nil, fmt.Errorf("tokens must be at least 1000")
+			return nil, fmt.Errorf("'tokens' must be at least 1000 (you provided %d). Use 1000-5000 for quick overviews, 10000-25000 for comprehensive documentation", tokens)
 		}
 		if tokens > 100000 {
-			return nil, fmt.Errorf("tokens cannot exceed 100,000")
+			return nil, fmt.Errorf("'tokens' cannot exceed 100,000 (you provided %d). For large libraries, make multiple calls with different 'topic' values instead", tokens)
 		}
 	}
 

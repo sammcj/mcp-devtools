@@ -134,7 +134,7 @@ These tools can be disabled by adding their function name to the `DISABLED_FUNCT
 | **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search             | None (Provider keys optional) | Web, image, news, video search  |
 | **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown      | None                          | Documentation and articles      |
 | **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data          | None (GitHub token optional)  | Issues, PRs, repos, cloning     |
-| **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, Django, TensorFlow docs  |
+| **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, mark3labs/mcp-go         |
 | **[Package Search](docs/tools/package-search.md)**               | Check package versions                | None                          | NPM, Python, Go, Java, Docker   |
 | **[Think](docs/tools/think.md)**                                 | Structured reasoning space            | None                          | Complex problem analysis        |
 | **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    | None                          | Find files over 700 lines       |

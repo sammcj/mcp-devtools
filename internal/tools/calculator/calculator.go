@@ -52,7 +52,7 @@ func (c *Calculator) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		// Single expression mode
 		expression, ok := expressionRaw.(string)
 		if !ok {
-			return nil, fmt.Errorf("expression must be a string")
+			return nil, fmt.Errorf("invalid 'expression' parameter: must be a string. Example: {\"expression\": \"2 + 3 * 4\"} or {\"expression\": \"(10 + 5) / 3\"}")
 		}
 
 		result, err := c.evaluateExpression(expression)
@@ -71,11 +71,11 @@ func (c *Calculator) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		// Array mode
 		expressions, ok := expressionsRaw.([]any)
 		if !ok {
-			return nil, fmt.Errorf("expressions must be an array")
+			return nil, fmt.Errorf("invalid 'expressions' parameter: must be an array of strings. Example: {\"expressions\": [\"2 + 3\", \"10 * 5\", \"100 / 4\"]}")
 		}
 
 		if len(expressions) == 0 {
-			return nil, fmt.Errorf("expressions array cannot be empty")
+			return nil, fmt.Errorf("'expressions' array cannot be empty. Provide at least one expression, e.g., {\"expressions\": [\"2 + 3\"]}")
 		}
 
 		results := make([]map[string]any, 0, len(expressions))
@@ -83,7 +83,7 @@ func (c *Calculator) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		for i, exprRaw := range expressions {
 			expression, ok := exprRaw.(string)
 			if !ok {
-				return nil, fmt.Errorf("expression at index %d must be a string", i)
+				return nil, fmt.Errorf("invalid expression at index %d: must be a string (e.g., \"2 + 3\"). Check that all array elements are valid expression strings", i)
 			}
 
 			result, err := c.evaluateExpression(expression)
@@ -104,7 +104,7 @@ func (c *Calculator) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		return c.newToolResultJSON(response)
 
 	} else {
-		return nil, fmt.Errorf("either 'expression' or 'expressions' parameter is required")
+		return nil, fmt.Errorf("missing required parameter. Provide either:\n  - 'expression': string for single calculation (e.g., {\"expression\": \"2 + 3 * 4\"})\n  - 'expressions': array for batch calculations (e.g., {\"expressions\": [\"10 * 5\", \"100 / 4\"]})")
 	}
 }
 
@@ -113,7 +113,7 @@ func (c *Calculator) evaluateExpression(expression string) (any, error) {
 	// Clean the expression
 	expression = strings.TrimSpace(expression)
 	if expression == "" {
-		return nil, fmt.Errorf("expression cannot be empty")
+		return nil, fmt.Errorf("expression cannot be empty. Provide a valid mathematical expression (e.g., \"2 + 3\" or \"(10 + 5) * 2\")")
 	}
 
 	// Parse and evaluate the expression
@@ -125,7 +125,7 @@ func (c *Calculator) evaluateExpression(expression string) (any, error) {
 
 	// Check if we consumed all tokens
 	if !parser.isAtEnd() {
-		return nil, fmt.Errorf("unexpected characters after expression: %s", parser.remaining())
+		return nil, fmt.Errorf("unexpected characters after expression: '%s'. Check for typos or unsupported operators (only +, -, *, /, %%, parentheses supported)", parser.remaining())
 	}
 
 	// Format result appropriately
@@ -197,7 +197,7 @@ func (p *parser) parseNumber() (float64, error) {
 	if p.current == '.' {
 		p.advance()
 		if !unicode.IsDigit(p.current) {
-			return 0, fmt.Errorf("expected digit after decimal point")
+			return 0, fmt.Errorf("expected digit after decimal point (e.g., '3.14' not '3.')")
 		}
 		for unicode.IsDigit(p.current) {
 			p.advance()
@@ -267,7 +267,7 @@ func (p *parser) parseTerm() (float64, error) {
 				return 0, err
 			}
 			if right == 0 {
-				return 0, fmt.Errorf("division by zero")
+				return 0, fmt.Errorf("division by zero - cannot divide by zero. Check your expression for '/ 0'")
 			}
 			left /= right
 		case '%':
@@ -277,7 +277,7 @@ func (p *parser) parseTerm() (float64, error) {
 				return 0, err
 			}
 			if right == 0 {
-				return 0, fmt.Errorf("modulo by zero")
+				return 0, fmt.Errorf("modulo by zero - cannot calculate remainder when dividing by zero. Check your expression for '%% 0'")
 			}
 			// Go's modulo operator behaviour for floats
 			left = float64(int64(left) % int64(right))
@@ -300,7 +300,7 @@ func (p *parser) parseFactor() (float64, error) {
 		}
 		p.skipWhitespace()
 		if p.current != ')' {
-			return 0, fmt.Errorf("expected closing parenthesis")
+			return 0, fmt.Errorf("expected closing parenthesis ')' - check that all opening '(' have matching closing ')'")
 		}
 		p.advance()
 		return result, nil
@@ -327,7 +327,7 @@ func (p *parser) parseFactor() (float64, error) {
 		return p.parseNumber()
 	}
 
-	return 0, fmt.Errorf("unexpected character '%c'", p.current)
+	return 0, fmt.Errorf("unexpected character '%c' - only numbers and operators (+, -, *, /, %%, parentheses) are supported", p.current)
 }
 
 // newToolResultJSON creates a new tool result with JSON content
