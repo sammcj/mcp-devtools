@@ -27,7 +27,7 @@ func init() {
 func (c *Calculator) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"calculator",
-		mcp.WithDescription("Calculator - performs accurate arithmetic calculations. Use when performing arithmetic e.g. calculating percentages, ratios, large sums of numbers to ensure accuracy. Supports +, -, *, /, %, parentheses, and decimal numbers."),
+		mcp.WithDescription("Use when performing arithmetic (e.g., calculating percentages, ratios, or large sums of numbers) to ensure accuracy. Supports +, -, *, /, %, parentheses, and decimal numbers."),
 		mcp.WithString("expression",
 			mcp.Description("Single mathematical expression to evaluate (e.g., '2 + 3 * 4', '(10 + 5) / 3', '12.5 * 2')"),
 		),
