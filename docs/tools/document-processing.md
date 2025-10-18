@@ -197,8 +197,29 @@ DOCLING_HARDWARE_ACCELERATION="auto"  # auto, mps, cuda, cpu
 
 #### Processing Configuration
 ```bash
-DOCLING_TIMEOUT="300"        # 5 minutes
-DOCLING_MAX_FILE_SIZE="100"  # 100 MB
+DOCLING_TIMEOUT="300"              # Processing timeout in seconds (default: 300 = 5 minutes)
+DOCLING_MAX_FILE_SIZE="100"        # Maximum file size in MB (default: 100 MB)
+DOCLING_MAX_MEMORY_LIMIT="5368709120"  # Memory limit in bytes (default: 5GB)
+MCP_DEVTOOLS_MEMORY_LIMIT="5368709120" # Go application memory limit in bytes (default: 5GB)
+```
+
+#### Memory Management
+
+The tool implements memory limits to prevent runaway memory usage during document processing:
+
+- **Go Application Limit**: Set via `MCP_DEVTOOLS_MEMORY_LIMIT` (default: 5GB)
+  - Soft limit enforced by Go runtime's garbage collector
+  - Automatically triggers more aggressive GC when approaching limit
+
+- **Python Process Limit**: Set via `DOCLING_MAX_MEMORY_LIMIT` (default: 5GB)
+  - Hard limit enforced by OS resource limits
+  - Process terminated if limit exceeded
+
+Example configuration for stricter limits:
+```bash
+# Limit to 2GB for both Go and Python
+MCP_DEVTOOLS_MEMORY_LIMIT="2147483648"
+DOCLING_MAX_MEMORY_LIMIT="2147483648"
 ```
 
 #### OCR Configuration

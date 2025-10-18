@@ -58,6 +58,43 @@ console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s
 console_handler.setFormatter(console_formatter)
 logger.addHandler(console_handler)
 
+def set_memory_limit():
+    """Set memory limit for the Python process based on environment variable."""
+    try:
+        import resource
+
+        # Get memory limit from environment variable (in bytes)
+        max_memory = os.getenv('DOCLING_MAX_MEMORY_LIMIT')
+        if not max_memory:
+            return
+
+        try:
+            max_memory_bytes = int(max_memory)
+        except ValueError:
+            logger.warning(f"Invalid DOCLING_MAX_MEMORY_LIMIT value: {max_memory}")
+            return
+
+        if max_memory_bytes <= 0:
+            return
+
+        # Set soft and hard limits for address space (RLIMIT_AS)
+        # This limits the maximum size of the process's virtual memory
+        try:
+            resource.setrlimit(resource.RLIMIT_AS, (max_memory_bytes, max_memory_bytes))
+            logger.info(f"Memory limit set to {max_memory_bytes} bytes ({max_memory_bytes / (1024**3):.2f} GB)")
+        except (ValueError, OSError) as e:
+            # If we can't set RLIMIT_AS, try RLIMIT_DATA (data segment)
+            try:
+                resource.setrlimit(resource.RLIMIT_DATA, (max_memory_bytes, max_memory_bytes))
+                logger.info(f"Data segment limit set to {max_memory_bytes} bytes ({max_memory_bytes / (1024**3):.2f} GB)")
+            except (ValueError, OSError) as e2:
+                logger.warning(f"Failed to set memory limits: AS={e}, DATA={e2}")
+
+    except ImportError:
+        logger.warning("resource module not available, memory limits not set")
+    except Exception as e:
+        logger.warning(f"Failed to set memory limit: {e}")
+
 def configure_accelerator():
     """Configure the accelerator device for Docling with configurable process count."""
     try:
@@ -3011,6 +3048,9 @@ def get_system_info() -> Dict[str, Any]:
 
 def main():
     """Main entry point for the script."""
+    # Set memory limit for the Python process
+    set_memory_limit()
+
     parser = argparse.ArgumentParser(description='Docling Document Processing Wrapper')
 
     # Command selection
