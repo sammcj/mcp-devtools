@@ -109,7 +109,49 @@ All tools follow this pattern:
 - When creating new MCP tools make sure descriptions are clear and concise as they are what is used as hints to the AI coding agent using the tool, you should also make good use of MCP's annotations.
 - The mcp-go package documentation contains useful examples of using the package which you can lookup when asked to implement specific MCP features https://mcp-go.dev/servers/tools
 
-### Quick Debugging Tips
+---
+
+## MCP Development Best Practices
+
+**Build for Workflows, Not Just API Endpoints:**
+- Don't simply wrap existing API endpoints - build thoughtful, high-impact workflow tools
+- Consolidate related operations (e.g., `schedule_event` that both checks availability and creates event)
+- Focus on tools that enable complete tasks, not just individual API calls
+- Consider what workflows agents actually need to accomplish
+
+**Optimise for Limited Context:**
+- Agents have constrained context windows - make every token count
+- Return high-signal information, not exhaustive data dumps
+- Provide "concise" vs "detailed" response format options
+- Default to human-readable identifiers over technical codes (names over IDs)
+- Consider the agent's context budget as a scarce resource
+
+**Design Actionable Error Messages:**
+- Error messages should guide agents toward correct usage patterns
+- Suggest specific next steps: "Try using filter='active_only' to reduce results"
+- Make errors educational, not just diagnostic
+- Help agents learn proper tool usage through clear feedback
+
+**Follow Natural Task Subdivisions:**
+- Tool names should reflect how humans think about tasks
+- Group related tools with consistent prefixes for discoverability
+- Design tools around natural workflows, not just API structure
+
+**Use Evaluation-Driven Development:**
+- Create realistic evaluation scenarios early
+- Let agent feedback drive tool improvements
+- Prototype quickly and iterate based on actual agent performance
+
+To ensure quality, review the code for:
+- **DRY Principle**: No duplicated code between tools
+- **Composability**: Shared logic extracted into functions
+- **Consistency**: Similar operations return similar formats
+- **Error Handling**: All external calls have error handling
+- **Documentation**: Every tool has comprehensive docstrings/descriptions
+
+---
+
+## Quick Debugging Tips
 
 - You can debug the tool by running it in debug mode interactively, e.g. `rm -f debug.log; pkill -f "mcp-devtools.*" ; echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "fetch_url", "arguments": {"url": "https://go.dev", "max_length": 500, "raw": false}}}' | ./bin/mcp-devtools stdio`, or `BRAVE_API_KEY="ask the user if you need this" ./bin/mcp-devtools stdio <<< '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "brave_search", "arguments": {"type": "web", "query": "cat facts", "count": 1}}}'`
 

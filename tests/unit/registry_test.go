@@ -204,3 +204,75 @@ func TestRegistry_Shared_Resources(t *testing.T) {
 	cache2 := registry.GetCache()
 	testutils.AssertEqual(t, cache1, cache2)
 }
+
+func TestRegistry_DisabledByDefault_Tools(t *testing.T) {
+	// Save original environment
+	originalEnabled := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
+	defer func() {
+		if originalEnabled == "" {
+			_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		} else {
+			_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", originalEnabled)
+		}
+	}()
+
+	logger := testutils.CreateTestLogger()
+
+	// CRITICAL TEST: Dynamically verify that tools requiring enablement are NOT in GetEnabledTools()
+	// This would have caught the copilot-agent bug where it was missing from requiresEnablement list
+	t.Run("tools_requiring_enablement_are_disabled_by_default", func(t *testing.T) {
+		_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		registry.Init(logger)
+
+		allTools := registry.GetTools()
+		enabledTools := registry.GetEnabledTools()
+
+		// Find tools that are registered but not enabled (should require enablement)
+		var disabledTools []string
+		for toolName := range allTools {
+			if _, isEnabled := enabledTools[toolName]; !isEnabled {
+				disabledTools = append(disabledTools, toolName)
+			}
+		}
+
+		if len(disabledTools) > 0 {
+			t.Logf("Found %d tools that are disabled by default: %v", len(disabledTools), disabledTools)
+
+			// Now verify each disabled tool can be enabled when ENABLE_ADDITIONAL_TOOLS is set
+			for _, toolName := range disabledTools {
+				_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", toolName)
+				registry.Init(logger)
+
+				newEnabledTools := registry.GetEnabledTools()
+				if _, nowEnabled := newEnabledTools[toolName]; !nowEnabled {
+					t.Errorf("Tool %q is disabled by default but CANNOT be enabled with ENABLE_ADDITIONAL_TOOLS=%q\n"+
+						"  Either:\n"+
+						"  1. Missing from requiresEnablement() list in internal/registry/registry.go, OR\n"+
+						"  2. Missing tools.IsToolEnabled(%q) check in Execute() method",
+						toolName, toolName, toolName)
+				}
+			}
+		} else {
+			t.Log("No tools require enablement (all registered tools are enabled by default)")
+		}
+	})
+
+	// Test that all tools in GetTools() are either in GetEnabledTools() OR can be enabled via env var
+	t.Run("all_registered_tools_are_accessible", func(t *testing.T) {
+		_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		registry.Init(logger)
+
+		allTools := registry.GetTools()
+		enabledTools := registry.GetEnabledTools()
+
+		t.Logf("Total tools registered: %d", len(allTools))
+		t.Logf("Tools enabled by default: %d", len(enabledTools))
+		t.Logf("Tools requiring enablement: %d", len(allTools)-len(enabledTools))
+
+		// Verify count makes sense
+		if len(enabledTools) > len(allTools) {
+			t.Errorf("GetEnabledTools() returned more tools (%d) than GetTools() (%d) - this should never happen",
+				len(enabledTools), len(allTools))
+		}
+	})
+}

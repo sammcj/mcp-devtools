@@ -3,7 +3,7 @@
 The AWS documentation tool provides unified access to AWS official documentation through three action modes: search, fetch, and recommend.
 
 - AWS documentation tool: "What is this service and how does it work?"
-- Context7 tools (`resolve_library_id` & `get_library_docs`): "How do I code against this service?"
+- Context7 tools (`resolve_library_id` & `get_library_documentation`): "How do I code against this service?"
 
 ## Tool Overview
 
@@ -119,7 +119,7 @@ The AWS tools are **disabled by default** for security purposes. Enable them by 
 
 ### AWS Strands Agents SDK Learning
 1. Use `resolve_library_id` with 'strands agents' to find available library IDs
-2. Use `get_library_docs` with the appropriate library ID (e.g., '/strands-agents/sdk-python')
+2. Use `get_library_documentation` with the appropriate library ID (e.g., '/strands-agents/sdk-python')
 3. Available library IDs include:
    - `/strands-agents/docs` - General documentation
    - `/strands-agents/sdk-python` - Python SDK
@@ -154,7 +154,7 @@ The AWS tools are **disabled by default** for security purposes. Enable them by 
 
 ### Strands SDK Usage
 - Use `resolve_library_id` tool to find appropriate Strands library IDs
-- Use `get_library_docs` with specific topics for focused documentation
+- Use `get_library_documentation` with specific topics for focused documentation
 - Library IDs are in format '/strands-agents/[component]'
 
 ## URL Requirements
@@ -199,7 +199,7 @@ This tool provides a consistent interface for AWS documentation needs.
 The AWS documentation tool focuses on official AWS service documentation. For AWS Strands Agents SDK documentation, use these complementary tools:
 
 1. **resolve_library_id**: Find the correct Context7 library ID for Strands components
-2. **get_library_docs**: Retrieve comprehensive documentation for specific Strands libraries
+2. **get_library_documentation**: Retrieve comprehensive documentation for specific Strands libraries
 
 Available Strands Library IDs:
 

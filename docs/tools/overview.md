@@ -125,7 +125,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 
 ## Getting Help
 
-- **Extended tool information**: Use [Get DevTools Tool Info](devtools_help.md) for detailed usage examples and troubleshooting
+- **Extended tool information**: Use [Get DevTools Tool Info](get_tool_help.md) for detailed usage examples and troubleshooting
 - **Tool-specific documentation**: Click tool names above for detailed guides
 - **Development**: See [Creating New Tools](../creating-new-tools.md)
 - **Issues**: Report problems on the [GitHub repository](https://github.com/sammcj/mcp-devtools/issues)

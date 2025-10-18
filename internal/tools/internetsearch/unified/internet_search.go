@@ -241,7 +241,7 @@ func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 
 	query, ok := args["query"].(string)
 	if !ok || query == "" {
-		return nil, fmt.Errorf("missing or invalid required parameter: query")
+		return nil, fmt.Errorf("missing required parameter 'query'. Provide search terms (e.g., {\"query\": \"golang best practices\"} or {\"query\": \"how to optimise React performance\"})")
 	}
 
 	// Determine if user explicitly requested a specific provider

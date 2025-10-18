@@ -46,7 +46,6 @@ func (t *ThinkTool) Definition() mcp.Tool {
 		mcp.WithDescription(fmt.Sprintf(`Use the tool to think about something. It will not obtain new information or change the database, but just append the thought to the log. Use it when complex reasoning or some cache memory is needed.
 
 This tool is particularly valuable for:
-- Analysing tool outputs before taking action
 - Breaking down complex multi-step problems
 - Reasoning through policy decisions or constraints
 - Planning sequential actions where mistakes are costly
@@ -94,13 +93,13 @@ func (t *ThinkTool) parseRequest(args map[string]any) (*ThinkRequest, error) {
 	// Parse thought (required)
 	thought, ok := args["thought"].(string)
 	if !ok || thought == "" {
-		return nil, fmt.Errorf("missing or invalid required parameter: thought")
+		return nil, fmt.Errorf("missing required parameter 'thought'. Provide your reasoning or analysis as a string (e.g., {\"thought\": \"Need to analyse the API response structure before processing\"})")
 	}
 
 	// Validate thought length
 	maxLength := getMaxThoughtLength()
 	if len(thought) > maxLength {
-		return nil, fmt.Errorf("thought exceeds maximum length of %d characters (got %d)", maxLength, len(thought))
+		return nil, fmt.Errorf("'thought' exceeds maximum length of %d characters (you provided %d). Break your reasoning into smaller chunks or use sequential_thinking tool for complex multi-step analysis", maxLength, len(thought))
 	}
 
 	// Parse how_hard (optional, defaults to "hard")
@@ -111,10 +110,10 @@ func (t *ThinkTool) parseRequest(args map[string]any) (*ThinkRequest, error) {
 			case "hard", "harder", "ultra":
 				howHard = howHardStr
 			default:
-				return nil, fmt.Errorf("invalid how_hard parameter: must be 'hard', 'harder', or 'ultra', got '%s'", howHardStr)
+				return nil, fmt.Errorf("invalid 'how_hard' parameter: must be 'hard' (default), 'harder', or 'ultra', but got '%s'. Use 'harder' or 'ultra' for more complex reasoning", howHardStr)
 			}
 		} else {
-			return nil, fmt.Errorf("invalid how_hard parameter: must be a string")
+			return nil, fmt.Errorf("invalid 'how_hard' parameter: must be a string ('hard', 'harder', or 'ultra')")
 		}
 	}
 

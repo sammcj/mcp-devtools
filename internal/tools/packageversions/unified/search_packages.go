@@ -545,6 +545,6 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"includeDetails": "Whether to include additional metadata like descriptions, download stats, etc. Increases response size but provides richer information for decision-making.",
 		},
 		WhenToUse:    "Use when adding dependencies to projects, checking for updates, comparing package versions, or researching available packages. Essential for maintaining up-to-date and secure dependencies in software projects.",
-		WhenNotToUse: "Don't use for packages not in public registries, for general software discovery (use web search instead), or when you need detailed API documentation (use get_library_docs tool for that).",
+		WhenNotToUse: "Don't use for packages not in public registries, for general software discovery (use web search instead), or when you need detailed API documentation (use get_library_documentation tool for that).",
 	}
 }

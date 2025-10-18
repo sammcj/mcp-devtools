@@ -280,7 +280,7 @@ func TestCalculator_Execute_MissingParameter(t *testing.T) {
 	_, err := tool.Execute(ctx, logger, cache, args)
 
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "either 'expression' or 'expressions' parameter is required")
+	testutils.AssertErrorContains(t, err, "missing required parameter")
 }
 
 func TestCalculator_Execute_InvalidParameterType(t *testing.T) {
@@ -296,7 +296,7 @@ func TestCalculator_Execute_InvalidParameterType(t *testing.T) {
 	_, err := tool.Execute(ctx, logger, cache, args)
 
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "expression must be a string")
+	testutils.AssertErrorContains(t, err, "invalid 'expression' parameter")
 }
 
 func TestCalculator_Execute_ArrayMode(t *testing.T) {
@@ -362,7 +362,7 @@ func TestCalculator_Execute_ArrayMode_EmptyArray(t *testing.T) {
 
 	_, err := tool.Execute(ctx, logger, cache, args)
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "expressions array cannot be empty")
+	testutils.AssertErrorContains(t, err, "'expressions' array cannot be empty")
 }
 
 func TestCalculator_Execute_ArrayMode_InvalidType(t *testing.T) {
@@ -380,7 +380,7 @@ func TestCalculator_Execute_ArrayMode_InvalidType(t *testing.T) {
 
 	_, err := tool.Execute(ctx, logger, cache, args)
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "expression at index 1 must be a string")
+	testutils.AssertErrorContains(t, err, "invalid expression at index 1")
 }
 
 func TestCalculator_Execute_ArrayMode_WithError(t *testing.T) {
@@ -412,7 +412,7 @@ func TestCalculator_Execute_NoParameters(t *testing.T) {
 
 	_, err := tool.Execute(ctx, logger, cache, args)
 	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "either 'expression' or 'expressions' parameter is required")
+	testutils.AssertErrorContains(t, err, "missing required parameter")
 }
 
 func TestCalculator_Execute_ComplexExpressions(t *testing.T) {

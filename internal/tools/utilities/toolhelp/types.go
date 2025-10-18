@@ -1,11 +1,11 @@
 package toolhelp
 
-// ToolHelpRequest represents the input parameters for the devtools_help tool
+// ToolHelpRequest represents the input parameters for the get_tool_help tool
 type ToolHelpRequest struct {
 	ToolName string `json:"tool_name"`
 }
 
-// ToolHelpResponse represents the output of the devtools_help tool
+// ToolHelpResponse represents the output of the get_tool_help tool
 type ToolHelpResponse struct {
 	ToolName        string            `json:"tool_name"`
 	BasicInfo       map[string]any    `json:"basic_info"`

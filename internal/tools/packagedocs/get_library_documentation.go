@@ -17,7 +17,7 @@ type GetLibraryDocsTool struct {
 	client *Client
 }
 
-// init registers the get_library_docs tool
+// init registers the get_library_documentation tool
 func init() {
 	registry.Register(&GetLibraryDocsTool{})
 }
@@ -25,7 +25,7 @@ func init() {
 // Definition returns the tool's definition for MCP registration
 func (t *GetLibraryDocsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
-		"get_library_docs",
+		"get_library_documentation",
 		mcp.WithDescription(`Fetches up to date documentation for a library / package. You must call 'resolve_library_id' first to obtain the exact Context7-compatible library ID required to use this tool, UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.
 
 		You should use this tool in combination with resolve_library_id when looking up software documentation and examples to understand how to implement a specific library or package in your code.
@@ -49,19 +49,19 @@ func (t *GetLibraryDocsTool) Definition() mcp.Tool {
 	)
 }
 
-// Execute executes the get_library_docs tool
+// Execute executes the get_library_documentation tool
 func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Lazy initialise client
 	if t.client == nil {
 		t.client = NewClient(logger)
 	}
 
-	logger.Info("Executing get_library_docs tool")
+	logger.Info("Executing get_library_documentation tool")
 
 	// Parse required parameters
 	libraryID, ok := args["context7CompatibleLibraryID"].(string)
 	if !ok || strings.TrimSpace(libraryID) == "" {
-		return nil, fmt.Errorf("missing or invalid required parameter: context7CompatibleLibraryID")
+		return nil, fmt.Errorf("missing required parameter 'context7CompatibleLibraryID'. First call 'resolve_library_id' to get the correct library ID (e.g., '/vercel/next.js'), or if the user provided a library ID directly, ensure it starts with '/' and follows the format '/org/project' or '/org/project/version'")
 	}
 
 	libraryID = strings.TrimSpace(libraryID)
@@ -81,10 +81,10 @@ func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger,
 	if tokensRaw, ok := args["tokens"].(float64); ok {
 		tokens = int(tokensRaw)
 		if tokens < 1000 {
-			return nil, fmt.Errorf("tokens must be at least 1000")
+			return nil, fmt.Errorf("'tokens' must be at least 1000 (you provided %d). Use 1000-5000 for quick overviews, 10000-25000 for comprehensive documentation", tokens)
 		}
 		if tokens > 100000 {
-			return nil, fmt.Errorf("tokens cannot exceed 100,000")
+			return nil, fmt.Errorf("'tokens' cannot exceed 100,000 (you provided %d). For large libraries, make multiple calls with different 'topic' values instead", tokens)
 		}
 	}
 
@@ -150,7 +150,7 @@ func (t *GetLibraryDocsTool) formatResponse(libraryID, topic string, tokens int,
 	return builder.String()
 }
 
-// ProvideExtendedInfo provides detailed usage information for the get_library_docs tool
+// ProvideExtendedInfo provides detailed usage information for the get_library_documentation tool
 func (t *GetLibraryDocsTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	return &tools.ExtendedHelp{
 		Examples: []tools.ToolExample{
@@ -192,7 +192,7 @@ func (t *GetLibraryDocsTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"Always call 'resolve_library_id' first to get the correct Context7-compatible library ID",
 			"Use specific topic focus to get targeted documentation (e.g., 'authentication', 'routing', 'database')",
 			"Start with lower token counts (5000-10000) for quick overviews, increase (15000-25000) for comprehensive docs",
-			"Common workflow: resolve_library_id → get_library_docs → implement based on documentation",
+			"Common workflow: resolve_library_id → get_library_documentation → implement based on documentation",
 			"Combine with package version tools to ensure you're using compatible API versions",
 			"Use topic parameter to avoid overwhelming responses for large libraries",
 		},

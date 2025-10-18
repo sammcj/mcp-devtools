@@ -29,7 +29,7 @@ func init() {
 func (t *AWSDocumentationTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"aws_documentation",
-		mcp.WithDescription("Access AWS documentation with search, fetch, recommendation capabilities. For AWS Strands Agents SDK documentation, use resolve_library_id with 'strands agents' then get_library_docs."),
+		mcp.WithDescription("Access AWS documentation with search, fetch, recommendation capabilities. For AWS Strands Agents SDK documentation, use resolve_library_id with 'strands agents' then get_library_documentation."),
 		mcp.WithString("action",
 			mcp.Required(),
 			mcp.Description("Action to perform: 'search', 'fetch', or 'recommend'"),

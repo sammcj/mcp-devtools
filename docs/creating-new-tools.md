@@ -473,7 +473,7 @@ make test-fast
 
 ## Extended Help for Complex Tools
 
-For tools with complex parameter structures or usage patterns, you can implement the optional `ExtendedHelpProvider` interface to provide detailed usage information accessible through the `devtools_help` tool.
+For tools with complex parameter structures or usage patterns, you can implement the optional `ExtendedHelpProvider` interface to provide detailed usage information accessible through the `get_tool_help` tool.
 
 ### Implementing Extended Help
 
@@ -539,7 +539,7 @@ Consider adding extended help for tools that have:
 
 Tools with extended help:
 
-- Appear in the `devtools_help` tool for discoverability
+- Appear in the `get_tool_help` tool for discoverability
 - Provide rich context for AI agents to use tools more effectively
 - Reduce trial-and-error by providing clear examples and patterns
 - Prevent common mistakes through proactive troubleshooting guidance

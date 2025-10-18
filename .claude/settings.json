@@ -13,7 +13,7 @@
       "mcp__dev-tools__internet_search",
       "mcp__dev-tools__think",
       "mcp__dev-tools__help",
-      "mcp__dev-tools__get_library_docs",
+      "mcp__dev-tools__get_library_documentation",
       "mcp__dev-tools__resolve_library_id",
       "mcp__dev-tools__search_packages",
       "mcp__dev-tools__github"
