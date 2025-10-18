@@ -58,11 +58,13 @@ func setMemoryLimit() {
 
 	// Log the memory limit (but only to stderr in a way that won't break stdio mode)
 	// We'll use a simple approach - write to a log file
-	if logFile, err := os.OpenFile(filepath.Join(os.Getenv("HOME"), ".mcp-devtools", "debug.log"),
-		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
-		defer func() { _ = logFile.Close() }()
-		_, _ = fmt.Fprintf(logFile, "[%s] Memory limit set to %d bytes (%.2f GB)\n",
-			time.Now().Format("2006-01-02 15:04:05"), memLimit, float64(memLimit)/(1024*1024*1024))
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		logPath := filepath.Join(homeDir, ".mcp-devtools", "debug.log")
+		if logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
+			defer func() { _ = logFile.Close() }()
+			_, _ = fmt.Fprintf(logFile, "[%s] Memory limit set to %d bytes (%.2f GB)\n",
+				time.Now().Format("2006-01-02 15:04:05"), memLimit, float64(memLimit)/(1024*1024*1024))
+		}
 	}
 }
 

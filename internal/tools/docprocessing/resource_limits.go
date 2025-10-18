@@ -2,6 +2,7 @@ package docprocessing
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"syscall"
 )
@@ -29,7 +30,8 @@ func setProcessResourceLimits(cmd *exec.Cmd, maxMemoryBytes int64) error {
 	// For now, we'll rely on the Python script to honour the memory limit
 	// through environment variables
 	if cmd.Env == nil {
-		cmd.Env = []string{}
+		// Defensive: if somehow Env is nil, use current environment as base
+		cmd.Env = os.Environ()
 	}
 
 	// Set environment variable for Python to read
