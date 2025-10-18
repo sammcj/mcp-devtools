@@ -47,7 +47,7 @@ func (t *ToolHelpTool) Definition() mcp.Tool {
 	}
 
 	return mcp.NewTool(
-		"devtools_help",
+		"get_tool_help",
 		mcp.WithDescription(description),
 		mcp.WithString("tool_name",
 			mcp.Required(),
@@ -62,7 +62,7 @@ func (t *ToolHelpTool) Definition() mcp.Tool {
 	)
 }
 
-// Execute executes the devtools_help tool
+// Execute executes the get_tool_help tool
 func (t *ToolHelpTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse and validate parameters
 	toolName, err := t.parseRequest(args)

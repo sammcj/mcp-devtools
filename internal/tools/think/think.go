@@ -46,7 +46,6 @@ func (t *ThinkTool) Definition() mcp.Tool {
 		mcp.WithDescription(fmt.Sprintf(`Use the tool to think about something. It will not obtain new information or change the database, but just append the thought to the log. Use it when complex reasoning or some cache memory is needed.
 
 This tool is particularly valuable for:
-- Analysing tool outputs before taking action
 - Breaking down complex multi-step problems
 - Reasoning through policy decisions or constraints
 - Planning sequential actions where mistakes are costly

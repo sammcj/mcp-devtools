@@ -74,7 +74,7 @@ func TestToolHelpTool_Definition(t *testing.T) {
 	definition := tool.Definition()
 
 	// Test basic definition properties
-	testutils.AssertEqual(t, "devtools_help", definition.Name)
+	testutils.AssertEqual(t, "get_tool_help", definition.Name)
 	testutils.AssertNotNil(t, definition.Description)
 
 	// Test that description contains key phrases (when tools with extended help exist)

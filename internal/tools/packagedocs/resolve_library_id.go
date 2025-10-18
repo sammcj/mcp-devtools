@@ -28,7 +28,7 @@ func (t *ResolveLibraryIDTool) Definition() mcp.Tool {
 		"resolve_library_id",
 		mcp.WithDescription(`Resolves a package/product name to a Context7-compatible library ID and returns a list of matching libraries.
 
-You MUST call this function before 'get_library_docs' to obtain a valid Context7-compatible library ID UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.
+You MUST call this function before 'get_library_documentation' to obtain a valid Context7-compatible library ID UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.
 
 Selection Process:
 1. Analyse the query to understand what library/package the user is looking for
@@ -201,11 +201,11 @@ func (t *ResolveLibraryIDTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 		},
 		CommonPatterns: []string{
-			"Always use this tool BEFORE calling get_library_docs to find the correct library ID format",
+			"Always use this tool BEFORE calling get_library_documentation to find the correct library ID format",
 			"Use specific library names rather than generic terms (e.g., 'React' not 'frontend framework')",
 			"Include version or variant info in search (e.g., 'vue 3', 'aws-sdk-js')",
 			"Check alternative matches if the selected library doesn't match your needs",
-			"Use the exact library ID returned in subsequent get_library_docs calls",
+			"Use the exact library ID returned in subsequent get_library_documentation calls",
 			"For ambiguous results, try more specific search terms or library variants",
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
@@ -222,7 +222,7 @@ func (t *ResolveLibraryIDTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				Solution: "Look at trust scores, GitHub stars, and documentation coverage to choose the most appropriate option. Higher trust scores (7-10) indicate more authoritative sources.",
 			},
 			{
-				Problem:  "Library ID format doesn't work with get_library_docs",
+				Problem:  "Library ID format doesn't work with get_library_documentation",
 				Solution: "Ensure you're using the exact library ID returned (e.g., '/facebook/react'), not the library title. The library ID always starts with '/' and follows '/org/project' format.",
 			},
 			{

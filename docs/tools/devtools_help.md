@@ -47,7 +47,7 @@ While standard MCP tool definitions provide basic parameter information, some to
 
 ```json
 {
-  "name": "devtools_help",
+  "name": "get_tool_help",
   "arguments": {
     "tool_name": "internet_search"
   }
@@ -64,7 +64,7 @@ While standard MCP tool definitions provide basic parameter information, some to
 
 ```json
 {
-  "name": "devtools_help",
+  "name": "get_tool_help",
   "arguments": {
     "tool_name": "document_processing"
   }
@@ -81,7 +81,7 @@ While standard MCP tool definitions provide basic parameter information, some to
 
 ```json
 {
-  "name": "devtools_help",
+  "name": "get_tool_help",
   "arguments": {
     "tool_name": "package_search"
   }
@@ -103,7 +103,7 @@ package_search --ecosystem "npm" --query "malformed-query-here"
 # Error: Invalid query format
 
 # 2. Get detailed information
-devtools_help --tool_name "package_search"
+get_tool_help --tool_name "package_search"
 
 # 3. Apply learned patterns
 package_search --ecosystem "npm" --query "react"
@@ -113,13 +113,13 @@ package_search --ecosystem "npm" --query "react"
 
 ```bash
 # 1. Check tool capabilities before using
-devtools_help --tool_name "document_processing"
+get_tool_help --tool_name "document_processing"
 
 # 2. Use tool with proper configuration
 document_processing --source "document.pdf" --profile "llm"
 
 # 3. If issues arise, check troubleshooting
-devtools_help --tool_name "document_processing" --include_examples false
+get_tool_help --tool_name "document_processing" --include_examples false
 ```
 
 ## Response Format
@@ -219,14 +219,14 @@ internet_search --query "complex query" --type "invalid_type"
 # Error: invalid search type
 
 # Get help and retry
-devtools_help --tool_name "internet_search"
+get_tool_help --tool_name "internet_search"
 internet_search --query "complex query" --type "web"
 ```
 
 **Complex Tool Exploration**:
 ```bash
 # Before using unfamiliar complex tools
-devtools_help --tool_name "document_processing"
+get_tool_help --tool_name "document_processing"
 
 # Apply learned configuration
 document_processing --source "file.pdf" --profile "llm" --hardware_acceleration "auto"

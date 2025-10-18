@@ -139,7 +139,7 @@ These tools can be disabled by adding their function name to the `DISABLED_FUNCT
 | **[Think](docs/tools/think.md)**                                 | Structured reasoning space            | None                          | Complex problem analysis        |
 | **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    | None                          | Find files over 700 lines       |
 | **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations         | None                          | 2 + 3 * 4, batch processing     |
-| **[DevTools Help](docs/tools/devtools_help.md)**                 | Extended info about DevTools tools    | None                          | Usage examples, troubleshooting |
+| **[DevTools Help](docs/tools/get_tool_help.md)**                 | Extended info about DevTools tools    | None                          | Usage examples, troubleshooting |
 
 ### Additional Tools (Disabled By Default)
 
