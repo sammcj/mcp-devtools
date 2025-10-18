@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,7 +34,44 @@ var (
 	BuildDate = "unknown"
 )
 
+const (
+	// DefaultMemoryLimit is the default memory limit for the Go application (5GB)
+	DefaultMemoryLimit = 5 * 1024 * 1024 * 1024
+)
+
+// setMemoryLimit configures the Go runtime memory limit
+func setMemoryLimit() {
+	// Check for environment variable override
+	memLimitStr := os.Getenv("MCP_DEVTOOLS_MEMORY_LIMIT")
+	var memLimit int64 = DefaultMemoryLimit
+
+	if memLimitStr != "" {
+		if parsed, err := strconv.ParseInt(memLimitStr, 10, 64); err == nil && parsed > 0 {
+			memLimit = parsed
+		}
+	}
+
+	// Set the GOMEMLIMIT for the Go runtime
+	// This is a soft limit - Go will try to keep memory usage under this value
+	// The Go runtime will automatically adjust GC behaviour to stay under this limit
+	debug.SetMemoryLimit(memLimit)
+
+	// Log the memory limit (but only to stderr in a way that won't break stdio mode)
+	// We'll use a simple approach - write to a log file
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		logPath := filepath.Join(homeDir, ".mcp-devtools", "debug.log")
+		if logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
+			defer func() { _ = logFile.Close() }()
+			_, _ = fmt.Fprintf(logFile, "[%s] Memory limit set to %d bytes (%.2f GB)\n",
+				time.Now().Format("2006-01-02 15:04:05"), memLimit, float64(memLimit)/(1024*1024*1024))
+		}
+	}
+}
+
 func main() {
+	// Set memory limit for the Go application
+	setMemoryLimit()
+
 	// Create a logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.InfoLevel)

@@ -118,6 +118,11 @@ func (t *DocumentProcessorTool) processDocument(req *DocumentProcessingRequest) 
 	vlmEnv := t.getVLMEnvironmentVariables()
 	cmd.Env = append(cmd.Env, vlmEnv...)
 
+	// Apply resource limits to the Python subprocess
+	if err := setProcessResourceLimits(cmd, t.config.MaxMemoryLimit); err != nil {
+		return nil, fmt.Errorf("failed to set process resource limits: %w", err)
+	}
+
 	// Capture both stdout and stderr for better debugging
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
