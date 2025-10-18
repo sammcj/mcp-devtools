@@ -18,7 +18,7 @@ import (
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
 
 	// Import all tool packages to register them
@@ -51,7 +51,7 @@ func main() {
 	}()
 
 	// Create and run the CLI app
-	app := &cli.App{
+	app := &cli.Command{
 		Name:    "mcp-devtools",
 		Usage:   "MCP server for developer tools",
 		Version: fmt.Sprintf("%s (commit: %s, built: %s)", Version, Commit, BuildDate),
@@ -95,79 +95,79 @@ func main() {
 			// OAuth 2.0/2.1 flags
 			&cli.BoolFlag{
 				Name:    "oauth-enabled",
-				Usage:   "Enable OAuth 2.0/2.1 authorization (HTTP transport only)",
-				EnvVars: []string{"OAUTH_ENABLED", "MCP_OAUTH_ENABLED"},
+				Usage:   "Enable OAuth 2.0/2.1 authorisation (HTTP transport only)",
+				Sources: cli.EnvVars("OAUTH_ENABLED", "MCP_OAUTH_ENABLED"),
 			},
 			&cli.StringFlag{
 				Name:    "oauth-issuer",
 				Usage:   "OAuth issuer URL (required if oauth-enabled)",
-				EnvVars: []string{"OAUTH_ISSUER", "MCP_OAUTH_ISSUER"},
+				Sources: cli.EnvVars("OAUTH_ISSUER", "MCP_OAUTH_ISSUER"),
 			},
 			&cli.StringFlag{
 				Name:    "oauth-audience",
 				Usage:   "OAuth audience for this resource server",
-				EnvVars: []string{"OAUTH_AUDIENCE", "MCP_OAUTH_AUDIENCE"},
+				Sources: cli.EnvVars("OAUTH_AUDIENCE", "MCP_OAUTH_AUDIENCE"),
 			},
 			&cli.StringFlag{
 				Name:    "oauth-jwks-url",
 				Usage:   "JWKS URL for token validation",
-				EnvVars: []string{"OAUTH_JWKS_URL", "MCP_OAUTH_JWKS_URL"},
+				Sources: cli.EnvVars("OAUTH_JWKS_URL", "MCP_OAUTH_JWKS_URL"),
 			},
 			&cli.BoolFlag{
 				Name:    "oauth-dynamic-registration",
 				Usage:   "Enable RFC7591 dynamic client registration",
-				EnvVars: []string{"OAUTH_DYNAMIC_REGISTRATION", "MCP_OAUTH_DYNAMIC_REGISTRATION"},
+				Sources: cli.EnvVars("OAUTH_DYNAMIC_REGISTRATION", "MCP_OAUTH_DYNAMIC_REGISTRATION"),
 			},
 			&cli.StringFlag{
 				Name:    "oauth-authorization-server",
-				Usage:   "Authorization server URL (if different from issuer)",
-				EnvVars: []string{"OAUTH_AUTHORIZATION_SERVER", "MCP_OAUTH_AUTHORIZATION_SERVER"},
+				Usage:   "Authorisation server URL (if different from issuer)",
+				Sources: cli.EnvVars("OAUTH_AUTHORIZATION_SERVER", "MCP_OAUTH_AUTHORIZATION_SERVER"),
 			},
 			&cli.BoolFlag{
 				Name:    "oauth-require-https",
 				Value:   true,
 				Usage:   "Require HTTPS for OAuth endpoints (disable only for development)",
-				EnvVars: []string{"OAUTH_REQUIRE_HTTPS", "MCP_OAUTH_REQUIRE_HTTPS"},
+				Sources: cli.EnvVars("OAUTH_REQUIRE_HTTPS", "MCP_OAUTH_REQUIRE_HTTPS"),
 			},
 			// OAuth Client Browser Authentication flags
 			&cli.BoolFlag{
 				Name:    "oauth-browser-auth",
 				Usage:   "Enable browser-based OAuth authentication flow at startup",
-				EnvVars: []string{"OAUTH_BROWSER_AUTH", "MCP_OAUTH_BROWSER_AUTH"},
+				Sources: cli.EnvVars("OAUTH_BROWSER_AUTH", "MCP_OAUTH_BROWSER_AUTH"),
 			},
 			&cli.StringFlag{
 				Name:    "oauth-client-id",
 				Usage:   "OAuth client ID for browser authentication",
-				EnvVars: []string{"OAUTH_CLIENT_ID", "MCP_OAUTH_CLIENT_ID"},
+				Sources: cli.EnvVars("OAUTH_CLIENT_ID", "MCP_OAUTH_CLIENT_ID"),
 			},
 			&cli.StringFlag{
 				Name:    "oauth-client-secret",
 				Usage:   "OAuth client secret for browser authentication (optional for public clients)",
-				EnvVars: []string{"OAUTH_CLIENT_SECRET", "MCP_OAUTH_CLIENT_SECRET"},
+				Sources: cli.EnvVars("OAUTH_CLIENT_SECRET", "MCP_OAUTH_CLIENT_SECRET"),
 			},
 			&cli.StringFlag{
 				Name:    "oauth-scope",
 				Usage:   "OAuth scopes to request during browser authentication",
-				EnvVars: []string{"OAUTH_SCOPE", "MCP_OAUTH_SCOPE"},
+				Sources: cli.EnvVars("OAUTH_SCOPE", "MCP_OAUTH_SCOPE"),
 			},
 			&cli.IntFlag{
 				Name:    "oauth-callback-port",
 				Value:   0,
 				Usage:   "Port for OAuth callback server (0 for random port)",
-				EnvVars: []string{"OAUTH_CALLBACK_PORT", "MCP_OAUTH_CALLBACK_PORT"},
+				Sources: cli.EnvVars("OAUTH_CALLBACK_PORT", "MCP_OAUTH_CALLBACK_PORT"),
 			},
 			&cli.DurationFlag{
 				Name:    "oauth-auth-timeout",
 				Value:   5 * time.Minute,
 				Usage:   "Timeout for browser authentication flow",
-				EnvVars: []string{"OAUTH_AUTH_TIMEOUT", "MCP_OAUTH_AUTH_TIMEOUT"},
+				Sources: cli.EnvVars("OAUTH_AUTH_TIMEOUT", "MCP_OAUTH_AUTH_TIMEOUT"),
 			},
 		},
 		Commands: []*cli.Command{
 			{
 				Name:  "version",
 				Usage: "Print version information",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, cmd *cli.Command) error {
 					fmt.Printf("mcp-devtools version %s\n", Version)
 					fmt.Printf("Commit: %s\n", Commit)
 					fmt.Printf("Built: %s\n", BuildDate)
@@ -187,8 +187,8 @@ func main() {
 						Usage: "Path to security configuration file (default: ~/.mcp-devtools/security.yaml)",
 					},
 				},
-				Action: func(c *cli.Context) error {
-					return handleSecurityConfigDiff(c, logger)
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return handleSecurityConfigDiff(cmd, logger)
 				},
 			},
 			{
@@ -200,16 +200,16 @@ func main() {
 						Usage: "Path to security configuration file (default: ~/.mcp-devtools/security.yaml)",
 					},
 				},
-				Action: func(c *cli.Context) error {
-					return handleSecurityConfigValidate(c, logger)
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return handleSecurityConfigValidate(cmd, logger)
 				},
 			},
 		},
-		Action: func(c *cli.Context) error {
+		Action: func(ctx context.Context, cmd *cli.Command) error {
 			// Get transport settings first
-			transport := c.String("transport")
-			port := c.String("port")
-			baseURL := c.String("base-url")
+			transport := cmd.String("transport")
+			port := cmd.String("port")
+			baseURL := cmd.String("base-url")
 
 			// Configure logger appropriately for transport mode
 			if transport == "stdio" {
@@ -219,7 +219,7 @@ func main() {
 				logrus.SetLevel(logrus.ErrorLevel) // Also set global logrus level for security module
 			} else {
 				// For non-stdio modes, set up file logging if debug is enabled
-				if c.Bool("debug") {
+				if cmd.Bool("debug") {
 					// Set up debug logging to file
 					homeDir, err := os.UserHomeDir()
 					if err == nil {
@@ -322,8 +322,8 @@ func main() {
 			}
 
 			// Handle browser-based OAuth authentication if enabled
-			if c.Bool("oauth-browser-auth") {
-				if err := handleBrowserAuthentication(c, transport, logger); err != nil {
+			if cmd.Bool("oauth-browser-auth") {
+				if err := handleBrowserAuthentication(cmd, transport, logger); err != nil {
 					return fmt.Errorf("browser authentication failed: %w", err)
 				}
 			}
@@ -340,25 +340,25 @@ func main() {
 				return sseServer.Start(":" + port)
 			case "http":
 				logger.WithField("port", port).Debug("Starting HTTP server")
-				return startStreamableHTTPServer(c, mcpSrv, logger)
+				return startStreamableHTTPServer(cmd, mcpSrv, logger)
 			default:
 				return fmt.Errorf("unsupported transport: %s", transport)
 			}
 		},
 	}
 
-	if err := app.Run(os.Args); err != nil {
+	if err := app.Run(context.Background(), os.Args); err != nil {
 		logger.Fatalf("Error: %v", err)
 	}
 }
 
 // startStreamableHTTPServer configures and starts the Streamable HTTP server
-func startStreamableHTTPServer(c *cli.Context, mcpServer *mcpserver.MCPServer, logger *logrus.Logger) error {
-	port := c.String("port")
-	authToken := c.String("auth-token")
-	endpointPath := c.String("endpoint-path")
-	sessionTimeout := c.Duration("session-timeout")
-	baseURL := c.String("base-url")
+func startStreamableHTTPServer(cmd *cli.Command, mcpServer *mcpserver.MCPServer, logger *logrus.Logger) error {
+	port := cmd.String("port")
+	authToken := cmd.String("auth-token")
+	endpointPath := cmd.String("endpoint-path")
+	sessionTimeout := cmd.Duration("session-timeout")
+	baseURL := cmd.String("base-url")
 
 	logger.Infof("Starting Streamable HTTP server on port %s with endpoint %s", port, endpointPath)
 
@@ -377,17 +377,17 @@ func startStreamableHTTPServer(c *cli.Context, mcpServer *mcpserver.MCPServer, l
 	}
 
 	// Check if OAuth is enabled
-	oauthEnabled := c.Bool("oauth-enabled")
+	oauthEnabled := cmd.Bool("oauth-enabled")
 	if oauthEnabled {
 		// Configure OAuth 2.1
 		oauthConfig := &types.OAuth2Config{
 			Enabled:             true,
-			Issuer:              c.String("oauth-issuer"),
-			Audience:            c.String("oauth-audience"),
-			JWKSUrl:             c.String("oauth-jwks-url"),
-			DynamicRegistration: c.Bool("oauth-dynamic-registration"),
-			AuthorizationServer: c.String("oauth-authorization-server"),
-			RequireHTTPS:        c.Bool("oauth-require-https"),
+			Issuer:              cmd.String("oauth-issuer"),
+			Audience:            cmd.String("oauth-audience"),
+			JWKSUrl:             cmd.String("oauth-jwks-url"),
+			DynamicRegistration: cmd.Bool("oauth-dynamic-registration"),
+			AuthorizationServer: cmd.String("oauth-authorization-server"),
+			RequireHTTPS:        cmd.Bool("oauth-require-https"),
 		}
 
 		// Validate OAuth configuration
@@ -641,7 +641,7 @@ func createOAuthMiddleware(oauthServer *oauthserver.OAuth2Server, logger *logrus
 }
 
 // handleBrowserAuthentication handles the browser-based OAuth authentication flow
-func handleBrowserAuthentication(c *cli.Context, transport string, logger *logrus.Logger) error {
+func handleBrowserAuthentication(cmd *cli.Command, transport string, logger *logrus.Logger) error {
 	// Browser authentication is not compatible with stdio mode
 	if transport == "stdio" {
 		logger.Debug("Browser authentication disabled for stdio transport")
@@ -649,12 +649,12 @@ func handleBrowserAuthentication(c *cli.Context, transport string, logger *logru
 	}
 
 	// Validate required configuration
-	clientID := c.String("oauth-client-id")
+	clientID := cmd.String("oauth-client-id")
 	if clientID == "" {
 		return fmt.Errorf("oauth-client-id is required for browser authentication")
 	}
 
-	issuerURL := c.String("oauth-issuer")
+	issuerURL := cmd.String("oauth-issuer")
 	if issuerURL == "" {
 		return fmt.Errorf("oauth-issuer is required for browser authentication")
 	}
@@ -662,16 +662,16 @@ func handleBrowserAuthentication(c *cli.Context, transport string, logger *logru
 	// Build OAuth client configuration
 	clientConfig := &oauthclient.OAuth2ClientConfig{
 		ClientID:     clientID,
-		ClientSecret: c.String("oauth-client-secret"),
+		ClientSecret: cmd.String("oauth-client-secret"),
 		IssuerURL:    issuerURL,
-		Scope:        c.String("oauth-scope"),
-		ServerPort:   c.Int("oauth-callback-port"),
-		AuthTimeout:  c.Duration("oauth-auth-timeout"),
-		RequireHTTPS: c.Bool("oauth-require-https"),
+		Scope:        cmd.String("oauth-scope"),
+		ServerPort:   cmd.Int("oauth-callback-port"),
+		AuthTimeout:  cmd.Duration("oauth-auth-timeout"),
+		RequireHTTPS: cmd.Bool("oauth-require-https"),
 	}
 
 	// Set resource parameter for audience binding (RFC8707)
-	audience := c.String("oauth-audience")
+	audience := cmd.String("oauth-audience")
 	if audience != "" {
 		clientConfig.Resource = audience
 	}
@@ -733,9 +733,9 @@ func handleBrowserAuthentication(c *cli.Context, transport string, logger *logru
 }
 
 // handleSecurityConfigDiff compares user config against default config and optionally updates it
-func handleSecurityConfigDiff(c *cli.Context, logger *logrus.Logger) error {
+func handleSecurityConfigDiff(cmd *cli.Command, logger *logrus.Logger) error {
 	// Get config path
-	configPath := c.String("config-path")
+	configPath := cmd.String("config-path")
 	if configPath == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
@@ -817,7 +817,7 @@ func handleSecurityConfigDiff(c *cli.Context, logger *logrus.Logger) error {
 	}
 
 	// Offer to update if requested
-	if c.Bool("update") {
+	if cmd.Bool("update") {
 
 		fmt.Println("\n🔄 Updating user configuration...")
 
@@ -845,9 +845,9 @@ func handleSecurityConfigDiff(c *cli.Context, logger *logrus.Logger) error {
 }
 
 // handleSecurityConfigValidate validates the security configuration file
-func handleSecurityConfigValidate(c *cli.Context, logger *logrus.Logger) error {
+func handleSecurityConfigValidate(cmd *cli.Command, logger *logrus.Logger) error {
 	// Get config path
-	configPath := c.String("config-path")
+	configPath := cmd.String("config-path")
 	if configPath == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/google/go-github/v73/github"
+	"github.com/google/go-github/v76/github"
 	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"golang.org/x/oauth2"
 )
