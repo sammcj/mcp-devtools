@@ -389,8 +389,243 @@ func (c *Config) GetSystemInfo() *SystemInfo {
 	return info
 }
 
+// readPythonVersion reads the Python version from .python-version file
+// It checks the current working directory first, then the user's home directory
+func readPythonVersion() string {
+	// Check current working directory
+	cwd, err := os.Getwd()
+	if err == nil {
+		versionFile := filepath.Join(cwd, ".python-version")
+		if version := readVersionFile(versionFile); version != "" {
+			return version
+		}
+	}
+
+	// Check home directory
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		versionFile := filepath.Join(homeDir, ".python-version")
+		if version := readVersionFile(versionFile); version != "" {
+			return version
+		}
+	}
+
+	return ""
+}
+
+// readVersionFile reads and parses a .python-version file
+func readVersionFile(filePath string) string {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return ""
+	}
+
+	// Parse version - typically just a version string like "3.11.5" or "3.11"
+	version := strings.TrimSpace(string(data))
+	// Remove any comments (lines starting with #)
+	lines := strings.SplitSeq(version, "\n")
+	for line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			return line
+		}
+	}
+
+	return ""
+}
+
+// resolvePythonFromVersion attempts to find Python executable for a specific version
+// It tries multiple version managers in this order: pyenv, asdf, then direct paths
+func resolvePythonFromVersion(version string) string {
+	// Try pyenv first (most common for Python version management)
+	if pythonPath := resolvePyenvPython(version); pythonPath != "" {
+		return pythonPath
+	}
+
+	// Try asdf
+	if pythonPath := resolveAsdfPython(version); pythonPath != "" {
+		return pythonPath
+	}
+
+	// Try UV's Python installations
+	if pythonPath := resolveUVPython(version); pythonPath != "" {
+		return pythonPath
+	}
+
+	// Try system installations matching the version
+	if pythonPath := resolveSystemPython(version); pythonPath != "" {
+		return pythonPath
+	}
+
+	return ""
+}
+
+// resolvePyenvPython resolves Python path using pyenv
+func resolvePyenvPython(version string) string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+
+	// Check if pyenv is installed
+	pyenvRoot := os.Getenv("PYENV_ROOT")
+	if pyenvRoot == "" {
+		pyenvRoot = filepath.Join(homeDir, ".pyenv")
+	}
+
+	// Try exact version match first
+	pythonPath := filepath.Join(pyenvRoot, "versions", version, "bin", "python")
+	if _, err := os.Stat(pythonPath); err == nil {
+		return pythonPath
+	}
+
+	// Try with python3
+	pythonPath = filepath.Join(pyenvRoot, "versions", version, "bin", "python3")
+	if _, err := os.Stat(pythonPath); err == nil {
+		return pythonPath
+	}
+
+	// Try finding a version that starts with the specified version (e.g., 3.11 matches 3.11.5)
+	versionsDir := filepath.Join(pyenvRoot, "versions")
+	if entries, err := os.ReadDir(versionsDir); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() && strings.HasPrefix(entry.Name(), version) {
+				pythonPath := filepath.Join(versionsDir, entry.Name(), "bin", "python")
+				if _, err := os.Stat(pythonPath); err == nil {
+					return pythonPath
+				}
+				pythonPath = filepath.Join(versionsDir, entry.Name(), "bin", "python3")
+				if _, err := os.Stat(pythonPath); err == nil {
+					return pythonPath
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// resolveAsdfPython resolves Python path using asdf
+func resolveAsdfPython(version string) string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+
+	asdfDir := os.Getenv("ASDF_DIR")
+	if asdfDir == "" {
+		asdfDir = filepath.Join(homeDir, ".asdf")
+	}
+
+	// Try exact version match
+	pythonPath := filepath.Join(asdfDir, "installs", "python", version, "bin", "python")
+	if _, err := os.Stat(pythonPath); err == nil {
+		return pythonPath
+	}
+
+	pythonPath = filepath.Join(asdfDir, "installs", "python", version, "bin", "python3")
+	if _, err := os.Stat(pythonPath); err == nil {
+		return pythonPath
+	}
+
+	// Try finding a version that starts with the specified version
+	installsDir := filepath.Join(asdfDir, "installs", "python")
+	if entries, err := os.ReadDir(installsDir); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() && strings.HasPrefix(entry.Name(), version) {
+				pythonPath := filepath.Join(installsDir, entry.Name(), "bin", "python")
+				if _, err := os.Stat(pythonPath); err == nil {
+					return pythonPath
+				}
+				pythonPath = filepath.Join(installsDir, entry.Name(), "bin", "python3")
+				if _, err := os.Stat(pythonPath); err == nil {
+					return pythonPath
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// resolveUVPython resolves Python path from UV installations
+func resolveUVPython(version string) string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+
+	// UV typically stores Python in ~/.local/share/uv/python or ~/.uv/python
+	uvPaths := []string{
+		filepath.Join(homeDir, ".local", "share", "uv", "python"),
+		filepath.Join(homeDir, ".uv", "python"),
+	}
+
+	for _, uvPath := range uvPaths {
+		if entries, err := os.ReadDir(uvPath); err == nil {
+			for _, entry := range entries {
+				// UV uses directory names like "cpython-3.11.5-macos-aarch64" or similar
+				if entry.IsDir() && strings.HasPrefix(entry.Name(), "cpython-"+version) {
+					binPath := filepath.Join(uvPath, entry.Name(), "bin", "python")
+					if _, err := os.Stat(binPath); err == nil {
+						return binPath
+					}
+					binPath = filepath.Join(uvPath, entry.Name(), "bin", "python3")
+					if _, err := os.Stat(binPath); err == nil {
+						return binPath
+					}
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// resolveSystemPython tries to find a system Python matching the version
+func resolveSystemPython(version string) string {
+	// Extract major.minor version (e.g., "3.11" from "3.11.5")
+	parts := strings.Split(version, ".")
+	if len(parts) < 2 {
+		return ""
+	}
+	majorMinor := parts[0] + "." + parts[1]
+
+	// Try python3.X first
+	pythonName := "python" + majorMinor
+	if path, err := findExecutable(pythonName); err == nil {
+		return path
+	}
+
+	// Try with full version if provided
+	if len(parts) >= 3 {
+		pythonName := "python" + version
+		if path, err := findExecutable(pythonName); err == nil {
+			return path
+		}
+	}
+
+	// Check common installation paths on macOS
+	if runtime.GOOS == "darwin" {
+		brewPaths := []string{
+			fmt.Sprintf("/opt/homebrew/opt/python@%s/bin/python%s", majorMinor, majorMinor),
+			fmt.Sprintf("/opt/homebrew/opt/python@%s/bin/python3", majorMinor),
+			fmt.Sprintf("/usr/local/opt/python@%s/bin/python%s", majorMinor, majorMinor),
+			fmt.Sprintf("/usr/local/opt/python@%s/bin/python3", majorMinor),
+		}
+
+		for _, path := range brewPaths {
+			if _, err := os.Stat(path); err == nil {
+				return path
+			}
+		}
+	}
+
+	return ""
+}
+
 // detectPythonPath attempts to find a suitable Python executable with docling
-// Priority order: 1. Environment variable, 2. State file, 3. Discovery, 4. Auto-install + update state
+// Priority order: 1. Environment variable, 2. .python-version file, 3. State file, 4. Discovery
 func detectPythonPath() string {
 	// 1. Check environment variable first (highest priority)
 	if envPath := os.Getenv("DOCLING_PYTHON_PATH"); envPath != "" {
@@ -399,8 +634,21 @@ func detectPythonPath() string {
 		}
 	}
 
-	// 2. Check state file (if not stale)
+	// Get state object once for efficiency
 	state := config.GetGlobalState()
+
+	// 2. Check for .python-version file and respect it
+	if pythonVersion := readPythonVersion(); pythonVersion != "" {
+		if pythonPath := resolvePythonFromVersion(pythonVersion); pythonPath != "" {
+			if isDoclingAvailableInPython(pythonPath) {
+				// Update state file with discovered path for faster startup next time
+				_ = state.SetPythonPath(pythonPath, true)
+				return pythonPath
+			}
+		}
+	}
+
+	// 3. Check state file (if not stale)
 	if !state.IsStale() {
 		cachedPath, doclingAvailable := state.GetPythonPath()
 		if cachedPath != "" && doclingAvailable && isDoclingAvailableInPython(cachedPath) {
@@ -408,7 +656,7 @@ func detectPythonPath() string {
 		}
 	}
 
-	// 3. Discovery - find available Python with docling
+	// 4. Discovery - find available Python with docling
 	pythonPaths := getCommonPythonPaths()
 	for _, pythonPath := range pythonPaths {
 		if isDoclingAvailableInPython(pythonPath) {
