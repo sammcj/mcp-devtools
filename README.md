@@ -77,8 +77,9 @@ Assuming you have Golang installed, you can use `go run` (similar to npx / uvx) 
         "github.com/sammcj/mcp-devtools@HEAD"
       ],
       "env": {
-        "DISABLED_FUNCTIONS": "", // Optional, disable specific tools if not needed
-        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn" // Optional, enable security and analysis tools
+        "NOTE": "The below environment variables are completely optional, see the README.md for available tools and configuration options",
+        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
+        "DISABLED_FUNCTIONS": ""
       }
     }
   }
@@ -115,8 +116,9 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "DISABLED_FUNCTIONS": "", // Optional, disable specific tools if not needed
-        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn" // Optional, enable security and analysis tools
+        "NOTE": "The below environment variables are completely optional, see the README.md for available tools and configuration options",
+        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
+        "DISABLED_FUNCTIONS": ""
       }
     }
   }
