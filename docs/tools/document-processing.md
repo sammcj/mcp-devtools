@@ -184,6 +184,28 @@ The tool will attempt to install Docling automatically if not found.
 DOCLING_PYTHON_PATH="/path/to/python"  # Auto-detected if not set
 ```
 
+The tool automatically detects Python installations with Docling in the following order:
+1. `DOCLING_PYTHON_PATH` environment variable (highest priority)
+2. `.python-version` file in current directory or home directory
+3. Cached Python path from previous detection
+4. Common Python installation paths
+
+**`.python-version` Support:**
+The tool respects `.python-version` files (used by pyenv, asdf, and other version managers) for automatic Python version selection:
+- Checks current working directory first
+- Falls back to home directory if not found in working directory
+- Supports version formats like `3.11.5` or `3.11`
+- Automatically resolves Python paths from:
+  - **pyenv**: `~/.pyenv/versions/`
+  - **asdf**: `~/.asdf/installs/python/`
+  - **UV**: `~/.local/share/uv/python/`
+  - **System**: Homebrew and standard paths
+
+Example `.python-version` file:
+```
+3.11.5
+```
+
 #### Cache Configuration
 ```bash
 DOCLING_CACHE_DIR="~/.mcp-devtools/docling-cache"
@@ -433,7 +455,9 @@ Intelligent caching based on:
 
 **"Python path is required but not found"**
 - Install Python 3.10+ and ensure it's in PATH
-- Or set `DOCLING_PYTHON_PATH` environment variable
+- Set `DOCLING_PYTHON_PATH` environment variable
+- Or create a `.python-version` file in your project directory or home directory
+- Supported version managers: pyenv, asdf, UV
 
 **"Docling not available"**
 - Install: `pip install docling`
