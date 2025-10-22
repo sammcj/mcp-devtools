@@ -388,7 +388,7 @@ jobs:
           fi
 
           # Make binaries executable
-          find release -type f ! -name '*.exe' -exec chmod +x {} \;
+          chmod +x release/*
 
           # List what we have
           ls -la release/
