@@ -74,7 +74,7 @@ func (t *GitHubActionsTool) Execute(ctx context.Context, logger *logrus.Logger, 
 
 			// Parse current version
 			if currentVersion, ok := actionMap["currentVersion"].(string); ok && currentVersion != "" {
-				action.CurrentVersion = packageversions.StringPtr(currentVersion)
+				action.CurrentVersion = packageversions.StringPtrUnlessLatest(currentVersion)
 			}
 
 			actions = append(actions, action)
@@ -99,7 +99,7 @@ func (t *GitHubActionsTool) Execute(ctx context.Context, logger *logrus.Logger, 
 
 			// Parse current version
 			if len(parts) > 1 {
-				action.CurrentVersion = packageversions.StringPtr(parts[1])
+				action.CurrentVersion = packageversions.StringPtrUnlessLatest(parts[1])
 			}
 
 			actions = append(actions, action)

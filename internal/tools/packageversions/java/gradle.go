@@ -108,7 +108,7 @@ func (t *GradleTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, d
 		if cachedVersion, ok := cache.Load(cacheKey); ok {
 			logger.WithField("package", packageName).Debug("Using cached Gradle package version")
 			result := cachedVersion.(packageversions.PackageVersion)
-			result.CurrentVersion = packageversions.StringPtr(dep.Version)
+			result.CurrentVersion = packageversions.StringPtrUnlessLatest(dep.Version)
 			results = append(results, result)
 			continue
 		}
@@ -122,7 +122,7 @@ func (t *GradleTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, d
 			}).Error("Failed to get Gradle package version")
 			results = append(results, packageversions.PackageVersion{
 				Name:           packageName,
-				CurrentVersion: packageversions.StringPtr(dep.Version),
+				CurrentVersion: packageversions.StringPtrUnlessLatest(dep.Version),
 				LatestVersion:  "unknown",
 				Registry:       "gradle",
 				Skipped:        true,
@@ -134,7 +134,7 @@ func (t *GradleTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, d
 		// Create result
 		result := packageversions.PackageVersion{
 			Name:           packageName,
-			CurrentVersion: packageversions.StringPtr(dep.Version),
+			CurrentVersion: packageversions.StringPtrUnlessLatest(dep.Version),
 			LatestVersion:  latestVersion,
 			Registry:       "gradle",
 		}

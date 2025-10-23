@@ -4,6 +4,41 @@
 
 This is a modular MCP (Model Context Protocol) server written in Go with a tool registry architecture. Each tool implements the `tools.Tool` interface and registers itself through `internal/registry/`. The main server supports multiple transports (stdio, HTTP, SSE).
 
+## ⚠️ CRITICAL: stdio Mode Logging Violations
+
+**MOST IMPORTANT CHECK IN EVERY REVIEW:**
+
+When the server runs in stdio mode (default transport), ANY output to stdout/stderr will break the MCP protocol and cause catastrophic failures. This is the #1 bug to prevent.
+
+### What to Check in EVERY Pull Request:
+1. **No direct stdout/stderr writes:**
+   - ❌ NEVER: `fmt.Println()`, `fmt.Printf()`, `log.Println()`, `fmt.Fprintf(os.Stdout, ...)`
+   - ❌ NEVER: `os.Stdout.Write()`, `os.Stderr.Write()`, `print()`, `println()`
+   - ✅ ALWAYS: Use `logger.Info()`, `logger.Debug()`, `logger.Error()`, etc.
+
+2. **No external commands that write to stdout/stderr in stdio mode:**
+   - Check all `exec.Command()` calls
+   - Ensure stdout/stderr are captured or redirected when server is in stdio mode
+   - Consider transport mode when executing external commands
+
+3. **Check third-party libraries:**
+   - Some libraries may write to stdout/stderr unexpectedly
+   - Review library documentation before adding dependencies
+   - Test new dependencies in stdio mode
+
+4. **Verify error handling:**
+   - Errors should go to logger, not stderr
+   - Stack traces must use logger, not panic/fatal which write to stderr
+   - No debug prints left in production code
+
+### Why This Matters:
+- stdio transport uses stdin/stdout for MCP protocol messages (JSON-RPC)
+- Any extra output corrupts the protocol stream
+- Results in "unexpected end of JSON input" and protocol failures
+- Very difficult to debug once deployed
+
+**ACTION REQUIRED:** Flag ANY code that might write to stdout/stderr in your review comments with HIGH SEVERITY.
+
 ## Critical Review Areas
 
 ### Go Code Standards
@@ -61,6 +96,14 @@ This is a modular MCP (Model Context Protocol) server written in Go with a tool 
 
 ## Code Quality Checks
 
+### stdio Mode Logging (Check FIRST, EVERY TIME)
+- ❌ Scan entire diff for `fmt.Print`, `fmt.Println`, `fmt.Printf`, `log.Print`, `print`, `println`
+- ❌ Check for `os.Stdout.Write`, `os.Stderr.Write`, `fmt.Fprintf(os.Stdout`, `fmt.Fprintf(os.Stderr`
+- ❌ Review all `exec.Command()` calls - ensure stdout/stderr are captured
+- ✅ Confirm all logging uses `logger.Info/Debug/Error/Warn()` methods
+- ✅ Verify error paths don't use `panic()` or `log.Fatal()` (writes to stderr)
+
+### General Code Quality
 - Verify proper module imports and dependencies
 - Check for hardcoded credentials or sensitive data
 - Ensure proper resource cleanup (defer statements)
@@ -77,7 +120,21 @@ This is a modular MCP (Model Context Protocol) server written in Go with a tool 
 ## Special Attention Areas
 
 - Security framework integration for new tools
-- Transport mode compatibility (stdio/HTTP/SSE)
+- Transport mode compatibility (stdio/streamable HTTP)
 - Tool registry and discovery mechanisms
 - Memory management and potential leaks
-- Cross-platform compatibility (macOS/Linux support only)
+
+## Review Checklist for Every PR
+
+Before approving any pull request, verify:
+
+1. ✅ **[CRITICAL]** No stdout/stderr writes in stdio mode (see section above)
+2. ✅ All new tools implement `tools.Tool` interface correctly
+3. ✅ Security framework integration for file/network operations
+4. ✅ Documentation updated in `docs/tools/` if required
+5. ✅ British English spelling used throughout
+6. ✅ Error handling uses wrapped errors (`fmt.Errorf` with `%w`)
+7. ✅ Context cancellation handled properly
+8. ✅ Resource cleanup with defer statements
+
+**Remember:** The #1 priority is preventing stdout/stderr writes in stdio mode. This should be the first thing checked in every review.

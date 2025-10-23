@@ -137,7 +137,7 @@ func (t *SwiftTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, de
 			logger.WithField("package", packageName).Debug("Using cached Swift package version")
 			result := cachedVersion.(packageversions.PackageVersion)
 			if currentVersion != "" {
-				result.CurrentVersion = packageversions.StringPtr(currentVersion)
+				result.CurrentVersion = packageversions.StringPtrUnlessLatest(currentVersion)
 			}
 			results = append(results, result)
 			continue
@@ -158,7 +158,7 @@ func (t *SwiftTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, de
 				SkipReason:    fmt.Sprintf("Failed to fetch package info: %v", err),
 			}
 			if currentVersion != "" {
-				result.CurrentVersion = packageversions.StringPtr(currentVersion)
+				result.CurrentVersion = packageversions.StringPtrUnlessLatest(currentVersion)
 			}
 			results = append(results, result)
 			continue
@@ -183,7 +183,7 @@ func (t *SwiftTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, de
 			Registry:      "swift",
 		}
 		if currentVersion != "" {
-			result.CurrentVersion = packageversions.StringPtr(currentVersion)
+			result.CurrentVersion = packageversions.StringPtrUnlessLatest(currentVersion)
 		}
 
 		// Cache result

@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -38,7 +37,6 @@ const (
 type RateLimitedHTTPClient struct {
 	client  *http.Client
 	limiter *rate.Limiter
-	mu      sync.Mutex
 }
 
 // getPackagesRateLimit returns the configured rate limit for package requests
@@ -58,6 +56,22 @@ func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 	// Use shared HTTP client factory with proxy support
 	client := httpclient.NewHTTPClientWithProxy(30 * time.Second)
 
+	// Ensure transport is configured (proxy factory may not set it if no proxy configured)
+	var transport *http.Transport
+	if client.Transport == nil {
+		transport = http.DefaultTransport.(*http.Transport).Clone()
+		client.Transport = transport
+	} else if t, ok := client.Transport.(*http.Transport); ok {
+		transport = t
+	}
+
+	// Configure transport to prevent connection reuse issues with rapid sequential requests
+	if transport != nil {
+		// Disable keep-alives to prevent connection reuse race conditions that can cause
+		// incomplete reads with large package registry responses
+		transport.DisableKeepAlives = true
+	}
+
 	return &RateLimitedHTTPClient{
 		client:  client,
 		limiter: rate.NewLimiter(rate.Limit(rateLimit), 1), // Allow burst of 1
@@ -66,15 +80,13 @@ func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 
 // Do implements the HTTPClient interface with rate limiting
 func (c *RateLimitedHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// Wait for rate limiter to allow the request
+	// Wait for rate limiter to allow the request (thread-safe)
 	err := c.limiter.Wait(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
+	// http.Client.Do is thread-safe and handles concurrent requests properly
 	return c.client.Do(req)
 }
 
@@ -169,8 +181,11 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	// Read response body with size limit to prevent memory exhaustion
-	limitedReader := io.LimitReader(resp.Body, 10*1024*1024) // 10MB limit for package API responses
+	// Read response body with size limit to prevent memory exhaustion.
+	// Packages with extensive version histories (e.g., typescript) can exceed 10MB.
+	// The 50MB threshold provides a conservative upper bound
+	// based on observed registry response sizes while protecting against memory exhaustion.
+	limitedReader := io.LimitReader(resp.Body, 50*1024*1024) // 50MB limit
 	body, err := io.ReadAll(limitedReader)
 	if err != nil {
 		if logger != nil {
@@ -181,6 +196,29 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 			}).Error("Failed to read response body")
 		}
 		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check if response was truncated by attempting to read one more byte
+	extraByte := make([]byte, 1)
+	n, readErr := resp.Body.Read(extraByte)
+	if n > 0 {
+		// Response was truncated - there's more data beyond the 50MB limit
+		if logger != nil {
+			logger.WithFields(logrus.Fields{
+				"method": method,
+				"url":    reqURL,
+			}).Warn("Response body truncated at 50MB limit")
+		}
+	} else if readErr != nil && readErr != io.EOF {
+		// Actual read error (not just EOF)
+		if logger != nil {
+			logger.WithFields(logrus.Fields{
+				"method": method,
+				"url":    reqURL,
+				"error":  readErr.Error(),
+			}).Error("Error while checking for response truncation")
+		}
+		return nil, fmt.Errorf("error while checking for response truncation: %w", readErr)
 	}
 
 	// Analyse content for security threats using security helper
@@ -317,6 +355,15 @@ func CleanVersion(version string) string {
 
 // StringPtr returns a pointer to the given string
 func StringPtr(s string) *string {
+	return &s
+}
+
+// StringPtrUnlessLatest returns a pointer to the given string unless it equals "latest", in which case it returns nil
+// This is used to avoid including redundant "currentVersion": "latest" fields in package version responses
+func StringPtrUnlessLatest(s string) *string {
+	if s == "latest" {
+		return nil
+	}
 	return &s
 }
 
