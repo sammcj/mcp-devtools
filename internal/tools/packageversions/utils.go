@@ -182,8 +182,8 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 	}
 
 	// Read response body with size limit to prevent memory exhaustion.
-	// Typical npm registry responses are under 5MB, but packages with extensive version histories
-	// (e.g., typescript) can exceed 10MB. The 50MB threshold provides a conservative upper bound
+	// Packages with extensive version histories (e.g., typescript) can exceed 10MB.
+	// The 50MB threshold provides a conservative upper bound
 	// based on observed registry response sizes whilst protecting against memory exhaustion.
 	limitedReader := io.LimitReader(resp.Body, 50*1024*1024) // 50MB limit
 	body, err := io.ReadAll(limitedReader)
@@ -200,14 +200,25 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 
 	// Check if response was truncated by attempting to read one more byte
 	extraByte := make([]byte, 1)
-	n, _ := resp.Body.Read(extraByte)
+	n, readErr := resp.Body.Read(extraByte)
 	if n > 0 {
+		// Response was truncated - there's more data beyond the 50MB limit
 		if logger != nil {
 			logger.WithFields(logrus.Fields{
 				"method": method,
 				"url":    reqURL,
 			}).Warn("Response body truncated at 50MB limit")
 		}
+	} else if readErr != nil && readErr != io.EOF {
+		// Actual read error (not just EOF)
+		if logger != nil {
+			logger.WithFields(logrus.Fields{
+				"method": method,
+				"url":    reqURL,
+				"error":  readErr.Error(),
+			}).Error("Error whilst checking for response truncation")
+		}
+		return nil, fmt.Errorf("error whilst checking for response truncation: %w", readErr)
 	}
 
 	// Analyse content for security threats using security helper
