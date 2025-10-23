@@ -184,7 +184,7 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 	// Read response body with size limit to prevent memory exhaustion.
 	// Packages with extensive version histories (e.g., typescript) can exceed 10MB.
 	// The 50MB threshold provides a conservative upper bound
-	// based on observed registry response sizes whilst protecting against memory exhaustion.
+	// based on observed registry response sizes while protecting against memory exhaustion.
 	limitedReader := io.LimitReader(resp.Body, 50*1024*1024) // 50MB limit
 	body, err := io.ReadAll(limitedReader)
 	if err != nil {
@@ -216,9 +216,9 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 				"method": method,
 				"url":    reqURL,
 				"error":  readErr.Error(),
-			}).Error("Error whilst checking for response truncation")
+			}).Error("Error while checking for response truncation")
 		}
-		return nil, fmt.Errorf("error whilst checking for response truncation: %w", readErr)
+		return nil, fmt.Errorf("error while checking for response truncation: %w", readErr)
 	}
 
 	// Analyse content for security threats using security helper
