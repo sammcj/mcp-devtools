@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -38,7 +37,6 @@ const (
 type RateLimitedHTTPClient struct {
 	client  *http.Client
 	limiter *rate.Limiter
-	mu      sync.Mutex
 }
 
 // getPackagesRateLimit returns the configured rate limit for package requests
@@ -58,6 +56,25 @@ func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 	// Use shared HTTP client factory with proxy support
 	client := httpclient.NewHTTPClientWithProxy(30 * time.Second)
 
+	// Ensure transport is configured (proxy factory may not set it if no proxy configured)
+	var transport *http.Transport
+	if client.Transport == nil {
+		transport = http.DefaultTransport.(*http.Transport).Clone()
+		client.Transport = transport
+	} else if t, ok := client.Transport.(*http.Transport); ok {
+		transport = t
+	}
+
+	// Configure transport to prevent connection reuse issues with rapid sequential requests
+	if transport != nil {
+		// Increase connection pool limits to prevent contention
+		transport.MaxIdleConns = 100
+		transport.MaxIdleConnsPerHost = 100
+		transport.MaxConnsPerHost = 100
+		// Disable keep-alives to prevent connection reuse race conditions
+		transport.DisableKeepAlives = true
+	}
+
 	return &RateLimitedHTTPClient{
 		client:  client,
 		limiter: rate.NewLimiter(rate.Limit(rateLimit), 1), // Allow burst of 1
@@ -66,15 +83,13 @@ func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 
 // Do implements the HTTPClient interface with rate limiting
 func (c *RateLimitedHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// Wait for rate limiter to allow the request
+	// Wait for rate limiter to allow the request (thread-safe)
 	err := c.limiter.Wait(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
+	// http.Client.Do is thread-safe and handles concurrent requests properly
 	return c.client.Do(req)
 }
 
@@ -170,7 +185,8 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 	}
 
 	// Read response body with size limit to prevent memory exhaustion
-	limitedReader := io.LimitReader(resp.Body, 10*1024*1024) // 10MB limit for package API responses
+	// Increased to 50MB to handle large package registries (e.g., typescript has many versions)
+	limitedReader := io.LimitReader(resp.Body, 50*1024*1024) // 50MB limit for package API responses
 	body, err := io.ReadAll(limitedReader)
 	if err != nil {
 		if logger != nil {
@@ -181,6 +197,16 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 			}).Error("Failed to read response body")
 		}
 		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check if response was truncated (hit the limit)
+	if len(body) == 50*1024*1024 {
+		if logger != nil {
+			logger.WithFields(logrus.Fields{
+				"method": method,
+				"url":    reqURL,
+			}).Warn("Response body may have been truncated at size limit")
+		}
 	}
 
 	// Analyse content for security threats using security helper
