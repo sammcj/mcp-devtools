@@ -67,11 +67,8 @@ func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 
 	// Configure transport to prevent connection reuse issues with rapid sequential requests
 	if transport != nil {
-		// Increase connection pool limits to prevent contention
-		transport.MaxIdleConns = 100
-		transport.MaxIdleConnsPerHost = 100
-		transport.MaxConnsPerHost = 100
-		// Disable keep-alives to prevent connection reuse race conditions
+		// Disable keep-alives to prevent connection reuse race conditions that can cause
+		// incomplete reads with large package registry responses
 		transport.DisableKeepAlives = true
 	}
 
@@ -184,9 +181,11 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	// Read response body with size limit to prevent memory exhaustion
-	// Increased to 50MB to handle large package registries (e.g., typescript has many versions)
-	limitedReader := io.LimitReader(resp.Body, 50*1024*1024) // 50MB limit for package API responses
+	// Read response body with size limit to prevent memory exhaustion.
+	// Typical npm registry responses are under 5MB, but packages with extensive version histories
+	// (e.g., typescript) can exceed 10MB. The 50MB threshold provides a conservative upper bound
+	// based on observed registry response sizes whilst protecting against memory exhaustion.
+	limitedReader := io.LimitReader(resp.Body, 50*1024*1024) // 50MB limit
 	body, err := io.ReadAll(limitedReader)
 	if err != nil {
 		if logger != nil {
