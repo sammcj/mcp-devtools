@@ -120,10 +120,9 @@ When the server runs in stdio mode (default transport), ANY output to stdout/std
 ## Special Attention Areas
 
 - Security framework integration for new tools
-- Transport mode compatibility (stdio/HTTP/SSE)
+- Transport mode compatibility (stdio/streamable HTTP)
 - Tool registry and discovery mechanisms
 - Memory management and potential leaks
-- Cross-platform compatibility (macOS/Linux support only)
 
 ## Review Checklist for Every PR
 
