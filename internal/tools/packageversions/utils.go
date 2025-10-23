@@ -199,13 +199,15 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// Check if response was truncated (hit the limit)
-	if len(body) == 50*1024*1024 {
+	// Check if response was truncated by attempting to read one more byte
+	extraByte := make([]byte, 1)
+	n, _ := resp.Body.Read(extraByte)
+	if n > 0 {
 		if logger != nil {
 			logger.WithFields(logrus.Fields{
 				"method": method,
 				"url":    reqURL,
-			}).Warn("Response body may have been truncated at size limit")
+			}).Warn("Response body truncated at 50MB limit")
 		}
 	}
 

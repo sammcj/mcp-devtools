@@ -2,6 +2,8 @@ package tools
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync"
 	"testing"
 
@@ -68,12 +70,12 @@ func TestNpmBatchRequestRegression(t *testing.T) {
 	}
 
 	// Verify no packages have "unknown" version due to parse errors
-	if contains(resultText, `"latestVersion": "unknown"`) && contains(resultText, "unexpected end of JSON input") {
+	if strings.Contains(resultText, `"latestVersion": "unknown"`) && strings.Contains(resultText, "unexpected end of JSON input") {
 		t.Errorf("Bug still present: packages failing with 'unexpected end of JSON input'")
 	}
 
 	// Verify we got valid results for at least some packages
-	if !contains(resultText, `"latestVersion"`) {
+	if !strings.Contains(resultText, `"latestVersion"`) {
 		t.Error("Expected to find latestVersion in results")
 	}
 
@@ -117,13 +119,14 @@ func TestNpmBatchRequestConcurrent(t *testing.T) {
 			}
 
 			if result == nil {
-				errChan <- nil
+				errChan <- fmt.Errorf("routine %d: result is nil", routineNum)
 				return
 			}
 
 			// Verify result has content
 			if len(result.Content) == 0 {
-				errChan <- nil
+				errChan <- fmt.Errorf("routine %d: result has no content", routineNum)
+				return
 			}
 		}(i)
 	}
@@ -143,18 +146,4 @@ func TestNpmBatchRequestConcurrent(t *testing.T) {
 	if errorCount > 0 {
 		t.Errorf("%d out of %d concurrent requests failed", errorCount, numGoroutines)
 	}
-}
-
-// Helper function to check if string contains substring
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && containsAt(s, substr))
-}
-
-func containsAt(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
