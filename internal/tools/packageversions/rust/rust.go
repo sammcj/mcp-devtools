@@ -120,7 +120,7 @@ func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 			}).Error("Failed to get Rust crate info")
 			results = append(results, packageversions.PackageVersion{
 				Name:           name,
-				CurrentVersion: packageversions.StringPtr(currentVersion),
+				CurrentVersion: packageversions.StringPtrUnlessLatest(currentVersion),
 				LatestVersion:  "unknown",
 				Registry:       "crates.io",
 				Skipped:        true,
@@ -132,7 +132,7 @@ func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 		// Create base result
 		result := packageversions.PackageVersion{
 			Name:           name,
-			CurrentVersion: packageversions.StringPtr(currentVersion),
+			CurrentVersion: packageversions.StringPtrUnlessLatest(currentVersion),
 			LatestVersion:  info.Crate.MaxVersion,
 			Registry:       "crates.io",
 		}

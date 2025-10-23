@@ -102,7 +102,7 @@ func (t *MavenTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, de
 		if cachedVersion, ok := cache.Load(cacheKey); ok {
 			logger.WithField("package", packageName).Debug("Using cached Maven package version")
 			result := cachedVersion.(packageversions.PackageVersion)
-			result.CurrentVersion = packageversions.StringPtr(dep.Version)
+			result.CurrentVersion = packageversions.StringPtrUnlessLatest(dep.Version)
 			results = append(results, result)
 			continue
 		}
@@ -116,7 +116,7 @@ func (t *MavenTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, de
 			}).Error("Failed to get Maven package version")
 			results = append(results, packageversions.PackageVersion{
 				Name:           packageName,
-				CurrentVersion: packageversions.StringPtr(dep.Version),
+				CurrentVersion: packageversions.StringPtrUnlessLatest(dep.Version),
 				LatestVersion:  "unknown",
 				Registry:       "maven",
 				Skipped:        true,
@@ -128,7 +128,7 @@ func (t *MavenTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, de
 		// Create result
 		result := packageversions.PackageVersion{
 			Name:           packageName,
-			CurrentVersion: packageversions.StringPtr(dep.Version),
+			CurrentVersion: packageversions.StringPtrUnlessLatest(dep.Version),
 			LatestVersion:  latestVersion,
 			Registry:       "maven",
 		}

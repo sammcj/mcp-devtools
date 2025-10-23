@@ -126,7 +126,7 @@ func (t *NpmTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 			}).Error("Failed to get npm package info")
 			results = append(results, packageversions.PackageVersion{
 				Name:           name,
-				CurrentVersion: packageversions.StringPtr(currentVersion),
+				CurrentVersion: packageversions.StringPtrUnlessLatest(currentVersion),
 				LatestVersion:  "unknown",
 				Registry:       "npm",
 				Skipped:        true,
@@ -172,7 +172,7 @@ func (t *NpmTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 		// Add result
 		results = append(results, packageversions.PackageVersion{
 			Name:           name,
-			CurrentVersion: packageversions.StringPtr(currentVersion),
+			CurrentVersion: packageversions.StringPtrUnlessLatest(currentVersion),
 			LatestVersion:  latestVersion,
 			Registry:       "npm",
 		})

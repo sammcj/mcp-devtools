@@ -131,7 +131,7 @@ func (t *PythonTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, p
 			logger.WithField("package", pkg.Name).Debug("Using cached Python package version")
 			result := cachedVersion.(packageversions.PackageVersion)
 			if pkg.Version != "" {
-				result.CurrentVersion = packageversions.StringPtr(pkg.Version)
+				result.CurrentVersion = packageversions.StringPtrUnlessLatest(pkg.Version)
 			}
 			results = append(results, result)
 			continue
@@ -152,7 +152,7 @@ func (t *PythonTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, p
 				SkipReason:    fmt.Sprintf("Failed to fetch package info: %v", err),
 			}
 			if pkg.Version != "" {
-				result.CurrentVersion = packageversions.StringPtr(pkg.Version)
+				result.CurrentVersion = packageversions.StringPtrUnlessLatest(pkg.Version)
 			}
 			results = append(results, result)
 			continue
@@ -165,7 +165,7 @@ func (t *PythonTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, p
 			Registry:      "pypi",
 		}
 		if pkg.Version != "" {
-			result.CurrentVersion = packageversions.StringPtr(pkg.Version)
+			result.CurrentVersion = packageversions.StringPtrUnlessLatest(pkg.Version)
 		}
 
 		// Cache result

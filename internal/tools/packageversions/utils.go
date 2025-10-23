@@ -358,6 +358,15 @@ func StringPtr(s string) *string {
 	return &s
 }
 
+// StringPtrUnlessLatest returns a pointer to the given string unless it equals "latest", in which case it returns nil
+// This is used to avoid including redundant "currentVersion": "latest" fields in package version responses
+func StringPtrUnlessLatest(s string) *string {
+	if s == "latest" {
+		return nil
+	}
+	return &s
+}
+
 // IntPtr returns a pointer to the given int
 func IntPtr(i int) *int {
 	return &i

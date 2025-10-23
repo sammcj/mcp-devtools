@@ -126,7 +126,7 @@ func (t *GoTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, requi
 		if cachedVersion, ok := cache.Load(cacheKey); ok {
 			logger.WithField("package", require.Path).Debug("Using cached Go package version")
 			result := cachedVersion.(packageversions.PackageVersion)
-			result.CurrentVersion = packageversions.StringPtr(require.Version)
+			result.CurrentVersion = packageversions.StringPtrUnlessLatest(require.Version)
 			results = append(results, result)
 			continue
 		}
@@ -140,7 +140,7 @@ func (t *GoTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, requi
 			}).Error("Failed to get Go package version")
 			results = append(results, packageversions.PackageVersion{
 				Name:           require.Path,
-				CurrentVersion: packageversions.StringPtr(require.Version),
+				CurrentVersion: packageversions.StringPtrUnlessLatest(require.Version),
 				LatestVersion:  "unknown",
 				Registry:       "go",
 				Skipped:        true,
@@ -152,7 +152,7 @@ func (t *GoTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, requi
 		// Create result
 		result := packageversions.PackageVersion{
 			Name:           require.Path,
-			CurrentVersion: packageversions.StringPtr(require.Version),
+			CurrentVersion: packageversions.StringPtrUnlessLatest(require.Version),
 			LatestVersion:  latestVersion,
 			Registry:       "go",
 		}
