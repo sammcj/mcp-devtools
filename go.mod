@@ -15,7 +15,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/mark3labs/mcp-go v0.41.1
 	github.com/openai/openai-go/v3 v3.5.0
-	github.com/pdfcpu/pdfcpu v0.11.0
+	github.com/pdfcpu/pdfcpu v0.11.1
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/sammcj/m2e v0.0.27
 	github.com/sirupsen/logrus v1.9.4-0.20230606125235-dd1b4c2e81af
