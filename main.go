@@ -19,6 +19,7 @@ import (
 	"github.com/sammcj/mcp-devtools/internal/oauth/types"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
@@ -82,8 +83,19 @@ func main() {
 	// Initialise the registry
 	registry.Init(logger)
 
-	// Ensure cleanup of embedded scripts on exit
+	// Initialise tool error logger
+	if err := tools.InitGlobalErrorLogger(logger); err != nil {
+		logger.WithError(err).Warn("Failed to initialise tool error logger")
+	}
+
+	// Ensure cleanup of embedded scripts and error logger on exit
 	defer func() {
+		// Close the tool error logger if it was initialised
+		if errorLogger := tools.GetGlobalErrorLogger(); errorLogger != nil {
+			if err := errorLogger.Close(); err != nil {
+				logger.WithError(err).Warn("Failed to close tool error logger")
+			}
+		}
 		// Import the docprocessing package to access cleanup function
 		// We can't import it at the top level due to circular dependencies
 		// So we'll use a simple approach - the OS will clean up temp files anyway
@@ -353,6 +365,12 @@ func main() {
 						if transport != "stdio" {
 							logger.WithError(err).Errorf("Tool execution failed: %s", name)
 						}
+
+						// Log tool error to file if enabled
+						if errorLogger := tools.GetGlobalErrorLogger(); errorLogger.IsEnabled() {
+							errorLogger.LogToolError(name, args, err, transport)
+						}
+
 						return nil, fmt.Errorf("tool execution failed: %w", err)
 					}
 

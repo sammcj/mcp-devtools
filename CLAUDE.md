@@ -151,6 +151,12 @@ To ensure quality, review the code for:
 
 ---
 
+## Improving Tools with Tool Error Logs
+
+If the user asks you to look at the tool call error logs, they can be found in `~/.mcp-devtools/logs/tool-errors.log` (assuming the user has enabled tool error logging), looking at recent tool calling failures can be useful for improving tools that may be failing often. If looking at the tool error logs, ensure you look for the relevant date/time range when the user was experiencing issues.
+
+---
+
 ## Quick Debugging Tips
 
 - You can debug the tool by running it in debug mode interactively, e.g. `rm -f debug.log; pkill -f "mcp-devtools.*" ; echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "fetch_url", "arguments": {"url": "https://go.dev", "max_length": 500, "raw": false}}}' | ./bin/mcp-devtools stdio`, or `BRAVE_API_KEY="ask the user if you need this" ./bin/mcp-devtools stdio <<< '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "brave_search", "arguments": {"type": "web", "query": "cat facts", "count": 1}}}'`

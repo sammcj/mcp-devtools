@@ -23,6 +23,7 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
   - [Tool Annotations](#tool-annotations)
     - [Annotation Types](#annotation-types)
     - [Tool Categories](#tool-categories)
+  - [Tool Error Logging](#tool-error-logging)
   - [Additional Considerations](#additional-considerations)
 
 ## Tool Interface
@@ -569,6 +570,14 @@ Annotations help MCP clients understand tool behaviour and make informed decisio
 - Filesystem Operations, Security Override, Agent Tools (Claude, Codex, Gemini, Q Developer)
 - Annotations: `readOnly: false, destructive: true, openWorld: true`
 - **Note**: These tools require `ENABLE_ADDITIONAL_TOOLS` environment variable
+
+## Tool Error Logging
+
+MCP DevTools includes an optional tool error logging feature that captures detailed information about failed tool calls. This helps identify patterns in tool failures and improve tool reliability over time.
+
+When enabled, any tool execution that returns an error will be logged to a dedicated log file at `~/.mcp-devtools/logs/tool-errors.log`.
+
+To enable tool error logging, set the `LOG_TOOL_ERRORS` environment variable to `true`
 
 ## Additional Considerations
 
