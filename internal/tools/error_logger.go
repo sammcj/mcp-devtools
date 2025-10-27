@@ -234,10 +234,18 @@ func (l *ToolErrorLogger) rotateOldLogs() error {
 		return fmt.Errorf("error reading log file during rotation: %w", err)
 	}
 
-	// Write back only valid entries
-	if err := os.WriteFile(l.filePath, []byte(strings.Join(validEntries, "\n")+"\n"), 0600); err != nil {
+	// Write back only valid entries using atomic file replacement
+	tmpPath := l.filePath + ".tmp"
+	if err := os.WriteFile(tmpPath, []byte(strings.Join(validEntries, "\n")+"\n"), 0600); err != nil {
 		_ = l.reopenLogFile()
-		return fmt.Errorf("failed to write rotated log file: %w", err)
+		return fmt.Errorf("failed to write temporary rotated log file: %w", err)
+	}
+
+	// Atomically replace the original log file with the temporary file
+	if err := os.Rename(tmpPath, l.filePath); err != nil {
+		_ = os.Remove(tmpPath) // Clean up temp file on failure
+		_ = l.reopenLogFile()
+		return fmt.Errorf("failed to rename temporary log file during rotation: %w", err)
 	}
 
 	// Reopen the log file in append mode

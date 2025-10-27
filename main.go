@@ -367,7 +367,7 @@ func main() {
 						}
 
 						// Log tool error to file if enabled
-						if errorLogger := tools.GetGlobalErrorLogger(); errorLogger.IsEnabled() {
+						if errorLogger := tools.GetGlobalErrorLogger(); errorLogger != nil && errorLogger.IsEnabled() {
 							errorLogger.LogToolError(name, args, err, transport)
 						}
 
