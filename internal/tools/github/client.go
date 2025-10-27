@@ -22,7 +22,7 @@ const (
 	// GitHub API rate limits based on GitHub best practices
 	DefaultCoreAPIRateLimit        = 80   // requests per minute (4800/hour, under 5000/hour limit)
 	DefaultSearchAPIRateLimit      = 25   // requests per minute (under 30/minute limit)
-	DefaultMaxLines                = 1000 // maximum lines to return from get_file_contents before truncating
+	DefaultMaxLines                = 3000 // maximum lines to return from get_file_contents before truncating
 	GitHubCoreAPIRateLimitEnvVar   = "GITHUB_CORE_API_RATE_LIMIT"
 	GitHubSearchAPIRateLimitEnvVar = "GITHUB_SEARCH_API_RATE_LIMIT"
 	GitHubMaxLinesEnvVar           = "GITHUB_MAX_LINES"

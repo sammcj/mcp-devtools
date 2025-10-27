@@ -21,13 +21,13 @@ func TestFileTruncation(t *testing.T) {
 	// The actual truncation happens in GetFileContents which requires GitHub API access
 
 	// Test 1: Verify GetEnvInt works correctly
-	maxLines := github.GetEnvInt("GITHUB_MAX_LINES", 1000)
+	maxLines := github.GetEnvInt("GITHUB_MAX_LINES", 3000)
 	assert.Equal(t, 10, maxLines, "GetEnvInt should read from environment variable")
 
 	// Test 2: Verify default value when env var not set
 	_ = os.Unsetenv("GITHUB_MAX_LINES")
-	maxLines = github.GetEnvInt("GITHUB_MAX_LINES", 1000)
-	assert.Equal(t, 1000, maxLines, "GetEnvInt should use default when env var not set")
+	maxLines = github.GetEnvInt("GITHUB_MAX_LINES", 3000)
+	assert.Equal(t, 3000, maxLines, "GetEnvInt should use default when env var not set")
 }
 
 // TestGetEnvInt tests the GetEnvInt helper function
@@ -43,36 +43,36 @@ func TestGetEnvInt(t *testing.T) {
 			name:         "Valid environment variable",
 			envVar:       "TEST_INT_VAR",
 			envValue:     "500",
-			defaultValue: 1000,
+			defaultValue: 3000,
 			expected:     500,
 		},
 		{
 			name:         "Missing environment variable",
 			envVar:       "MISSING_VAR",
 			envValue:     "",
-			defaultValue: 1000,
-			expected:     1000,
+			defaultValue: 3000,
+			expected:     3000,
 		},
 		{
 			name:         "Invalid (non-numeric) environment variable",
 			envVar:       "TEST_INVALID_VAR",
 			envValue:     "not-a-number",
-			defaultValue: 1000,
-			expected:     1000,
+			defaultValue: 3000,
+			expected:     3000,
 		},
 		{
 			name:         "Zero value environment variable",
 			envVar:       "TEST_ZERO_VAR",
 			envValue:     "0",
-			defaultValue: 1000,
-			expected:     1000,
+			defaultValue: 3000,
+			expected:     3000,
 		},
 		{
 			name:         "Negative environment variable",
 			envVar:       "TEST_NEG_VAR",
 			envValue:     "-50",
-			defaultValue: 1000,
-			expected:     1000,
+			defaultValue: 3000,
+			expected:     3000,
 		},
 	}
 
