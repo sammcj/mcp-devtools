@@ -35,7 +35,7 @@ Functions and their required parameters:
 • search_pull_requests: repository (r), options.query (o), options.limit (o)
 • get_issue: repository (r), options.number (required unless repository contains full issue URL), options.include_comments (o)
 • get_pull_request: repository (r), options.number (required unless repository contains full PR URL), options.include_comments (o)
-• get_file_contents: repository (r), options.paths (r), options.ref (o) - Returns partial results even if some files fail
+• get_file_contents: repository (r), options.paths (r), options.ref (o) - Returns partial results even if some files fail. Large files are automatically truncated with guidance on retrieving remaining lines using options.line_start
 • list_directory: repository (r), options.path (optional, defaults to root), options.ref (o) - Lists directory contents to explore repository structure
 • clone_repository: repository (r), options.local_path (o)
 • get_workflow_run: repository (r), options.run_id (required unless repository contains full workflow URL), options.include_logs (o)
@@ -101,6 +101,10 @@ Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow
 				"ref": map[string]any{
 					"type":        "string",
 					"description": "Git reference - branch, tag, or commit SHA (optional for get_file_contents)",
+				},
+				"line_start": map[string]any{
+					"type":        "number",
+					"description": "Starting line number (1-based, optional). Only use this when a file is truncated to retrieve subsequent sections",
 				},
 				"local_path": map[string]any{
 					"type":        "string",
@@ -533,8 +537,13 @@ func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubCl
 		ref = r
 	}
 
+	lineStart := 0
+	if ls, ok := request.Options["line_start"].(float64); ok {
+		lineStart = int(ls)
+	}
+
 	// Get file results with graceful error handling
-	fileResults, err := client.GetFileContents(ctx, owner, repo, paths, ref)
+	fileResults, err := client.GetFileContents(ctx, owner, repo, paths, ref, lineStart)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get file contents: %w", err)
 	}
@@ -815,6 +824,29 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				ExpectedResult: "Returns partial results showing success for README.md and go.mod, with detailed error message for nonexistent-file.go explaining how to verify file paths",
 			},
 			{
+				Description: "Get file that's automatically truncated",
+				Arguments: map[string]any{
+					"function":   "get_file_contents",
+					"repository": "jlowin/fastmcp",
+					"options": map[string]any{
+						"paths": []string{"src/fastmcp/server/server.py"},
+					},
+				},
+				ExpectedResult: "If file exceeds max lines (default 1000), returns truncated content with metadata: total_lines, lines_returned (e.g., '1-1000'), truncated: true, and message with exact line_start value to use for next section.",
+			},
+			{
+				Description: "Retrieve next section of truncated file",
+				Arguments: map[string]any{
+					"function":   "get_file_contents",
+					"repository": "jlowin/fastmcp",
+					"options": map[string]any{
+						"paths":      []string{"src/fastmcp/server/server.py"},
+						"line_start": 1001,
+					},
+				},
+				ExpectedResult: "Returns lines 1001-2000 (or fewer if file ends sooner). If still truncated, message will provide next line_start value.",
+			},
+			{
 				Description: "Get details of a specific issue with comments",
 				Arguments: map[string]any{
 					"function":   "get_issue",
@@ -849,6 +881,10 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
 			{
+				Problem:  "File is truncated with message about retrieving more lines",
+				Solution: "Large files are automatically truncated to prevent overwhelming responses (default: 1000 lines). Check the 'message' field for the exact line_start value to use. Call get_file_contents again with that line_start to retrieve the next section. Repeat as needed until truncated: false.",
+			},
+			{
 				Problem:  "File not found errors (404)",
 				Solution: "Use list_directory to explore the repository structure first. Check the detailed error message for suggestions including browsing the repo on GitHub, verifying branch/ref, and checking for typos.",
 			},
@@ -876,7 +912,7 @@ func (t *GitHubTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		ParameterDetails: map[string]string{
 			"function":   "The GitHub operation to perform. Use list_directory first to explore, then get_file_contents for specific files. Each function has different requirements - see examples.",
 			"repository": "Repository identifier in 'owner/repo' format, full GitHub URLs, or URLs with issue/PR/workflow IDs. The tool automatically extracts relevant information.",
-			"options":    "Function-specific parameters. For list_directory: path (optional), ref (optional). For get_file_contents: paths (required array), ref (optional). Always check examples for each function.",
+			"options":    "Function-specific parameters. For list_directory: path (optional), ref (optional). For get_file_contents: paths (required array), ref (optional), line_start (optional, only needed when file is truncated - use value from truncation message). Always check examples for each function.",
 		},
 		WhenToUse:    "Use for GitHub repository exploration, file content examination with graceful error handling, repository structure analysis, issue tracking, PR review, and CI/CD debugging. Start with list_directory to understand repository layout.",
 		WhenNotToUse: "Don't use for non-GitHub repositories, private repositories without proper authentication, or when you need to modify GitHub data (this tool is read-only). Use Git commands for actual repository cloning and manipulation.",

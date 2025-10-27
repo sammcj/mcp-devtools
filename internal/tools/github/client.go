@@ -20,10 +20,12 @@ import (
 
 const (
 	// GitHub API rate limits based on GitHub best practices
-	DefaultCoreAPIRateLimit        = 80 // requests per minute (4800/hour, under 5000/hour limit)
-	DefaultSearchAPIRateLimit      = 25 // requests per minute (under 30/minute limit)
+	DefaultCoreAPIRateLimit        = 80   // requests per minute (4800/hour, under 5000/hour limit)
+	DefaultSearchAPIRateLimit      = 25   // requests per minute (under 30/minute limit)
+	DefaultMaxLines                = 3000 // maximum lines to return from get_file_contents before truncating
 	GitHubCoreAPIRateLimitEnvVar   = "GITHUB_CORE_API_RATE_LIMIT"
 	GitHubSearchAPIRateLimitEnvVar = "GITHUB_SEARCH_API_RATE_LIMIT"
+	GitHubMaxLinesEnvVar           = "GITHUB_MAX_LINES"
 )
 
 // GitHubClient wraps the GitHub API client with additional functionality
@@ -311,7 +313,11 @@ func (gc *GitHubClient) GetPullRequest(ctx context.Context, owner, repo string, 
 }
 
 // GetFileContents gets the contents of one or more files from a repository with graceful error handling
-func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string, paths []string, ref string) ([]FileResult, error) {
+// lineStart is optional (0 or 1 means start from beginning)
+// lineStart is 1-based (first line is 1, not 0)
+// Files exceeding max lines are automatically truncated with guidance
+func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string, paths []string, ref string, lineStart int) ([]FileResult, error) {
+	maxLines := GetEnvInt(GitHubMaxLinesEnvVar, DefaultMaxLines)
 	var results []FileResult
 
 	for _, originalPath := range paths {
@@ -401,12 +407,51 @@ func (gc *GitHubClient) GetFileContents(ctx context.Context, owner, repo string,
 			}
 		}
 
-		results = append(results, FileResult{
+		// Apply line-based truncation and provide metadata only when needed
+		result := FileResult{
 			Path:    fileContent.GetPath(),
 			Size:    fileContent.GetSize(),
 			Content: content,
 			Success: true,
-		})
+		}
+
+		if content != "" {
+			lines := strings.Split(content, "\n")
+			totalLines := len(lines)
+
+			// Determine start index (convert 1-based to 0-based)
+			startIdx := 0
+			if lineStart > 1 {
+				startIdx = lineStart - 1
+			}
+
+			// Validate start index
+			if startIdx >= totalLines {
+				result.Content = ""
+				result.Message = fmt.Sprintf("line_start (%d) exceeds total lines (%d)", lineStart, totalLines)
+			} else {
+				// Calculate end index
+				endIdx := min(startIdx+maxLines, totalLines)
+				truncated := endIdx < totalLines
+
+				// Slice the content
+				result.Content = strings.Join(lines[startIdx:endIdx], "\n")
+
+				// Only include metadata if file was truncated
+				if truncated {
+					actualStart := startIdx + 1 // Convert back to 1-based
+					actualEnd := endIdx
+					nextLineStart := endIdx + 1
+
+					result.TotalLines = totalLines
+					result.LinesReturned = fmt.Sprintf("%d-%d", actualStart, actualEnd)
+					result.Truncated = true
+					result.Message = fmt.Sprintf("File has %d total lines. Returned lines %s. To retrieve more, call again with line_start: %d", totalLines, result.LinesReturned, nextLineStart)
+				}
+			}
+		}
+
+		results = append(results, result)
 	}
 
 	return results, nil
@@ -635,6 +680,16 @@ func GetEnvRateLimit(envVar string, defaultValue int) int {
 	if limitStr := os.Getenv(envVar); limitStr != "" {
 		if limit, err := strconv.Atoi(limitStr); err == nil && limit > 0 {
 			return limit
+		}
+	}
+	return defaultValue
+}
+
+// GetEnvInt gets an integer value from environment variable with fallback to default
+func GetEnvInt(envVar string, defaultValue int) int {
+	if valStr := os.Getenv(envVar); valStr != "" {
+		if val, err := strconv.Atoi(valStr); err == nil && val > 0 {
+			return val
 		}
 	}
 	return defaultValue

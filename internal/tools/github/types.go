@@ -226,11 +226,15 @@ type FilteredPullRequestDetails struct {
 
 // FileResult represents the result of attempting to fetch a file (success or failure)
 type FileResult struct {
-	Path    string `json:"path"`
-	Size    int    `json:"size,omitempty"`
-	Content string `json:"content,omitempty"`
-	Success bool   `json:"success"`
-	Error   string `json:"error,omitempty"`
+	Path          string `json:"path"`
+	Size          int    `json:"size,omitempty"`
+	Content       string `json:"content,omitempty"`
+	Success       bool   `json:"success"`
+	Error         string `json:"error,omitempty"`
+	TotalLines    int    `json:"total_lines,omitempty"`
+	LinesReturned string `json:"lines_returned,omitempty"`
+	Truncated     bool   `json:"truncated,omitempty"`
+	Message       string `json:"message,omitempty"`
 }
 
 // DirectoryItem represents an item in a directory listing
