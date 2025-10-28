@@ -12,13 +12,13 @@ graph LR
     A --> F[Utilities]
     A --> G[Agents]
 
-    B --> B_Tools[🌐 Internet Search<br>📡 Web Fetch<br>📦 Package Search<br>📚 Package Documentation<br>🐙 GitHub<br>🎨 ShadCN UI Components<br>🔌 API Integration<br>☁️ AWS Docs<br>📝 Terraform Docs]
+    B --> B_Tools[🌐 Internet Search<br>📡 Web Fetch<br>📦 Package Search<br>📚 Package Documentation<br>🎨 ShadCN UI Components<br>📝 Terraform Docs<br>☁️ AWS Doc<br>🐙 GitHub]
 
-    C --> C_Tools[📄 Document Processing<br>📑 PDF Processing]
+    C --> C_Tools[📄 Document Processing<br>📈 Excel Spreadsheets<br>📑 PDF Processing]
 
-    E --> E_Tools[🧠 Think Tool<br>🔢 Sequential Thinking<br>🕸️ Memory Graph]
+    E --> E_Tools[🔢 Sequential Thinking<br>🕸️ Memory Graph<br>🧠 Think Tool]
 
-    F --> F_Tools[🧮 Calculator<br>🇬🇧 American→English<br>📁 Filesystem]
+    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>🧮 Calculator<br>📁 Filesystem]
 
     G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
@@ -154,6 +154,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            |
 | **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                                      | `process_document`        | PDF, DOCX → Markdown with OCR               |
 | **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                           | `pdf`                     | Quick PDF to Markdown                       |
+| **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                            | `excel`                   | Workbooks, charts, pivot tables, formulas   |
 | **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                             | `aws_documentation`       | Search and read AWS docs, recommendations   |
 | **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API access for providers, modules, and policies | `terraform_documentation` | Provider docs, module search, policy lookup |
 | **[Security Framework](docs/security.md)**                           | Context injection security protections                             | `security`                | Content analysis, access control            |

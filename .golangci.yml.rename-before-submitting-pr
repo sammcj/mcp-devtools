@@ -1,0 +1,35 @@
+version: "2"
+linters:
+  enable:
+    - unparam
+  settings:
+    unparam:
+      check-exported: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - unparam
+        path: internal/tools/.*/.*\.go
+        text: ctx is unused
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - screenshots$
+      - .github$
+      - .claude$
+      - bin$
+

@@ -9,6 +9,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/codexagent"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/copilotagent"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/docprocessing"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/excel"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/filelength"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/filesystem"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/geminiagent"

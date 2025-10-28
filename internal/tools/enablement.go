@@ -18,9 +18,11 @@ import (
 // - claude-agent
 // - codex-agent
 // - copilot-agent
+// - excel
 // - filesystem
 // - gemini-agent
 // - memory
+// - murican_to_english
 // - pdf
 // - process_document
 // - q-developer-agent
@@ -28,6 +30,7 @@ import (
 // - security
 // - security_override
 // - sequential-thinking
+// - shadcn
 // - terraform_documentation
 // - vulnerability_scan
 
