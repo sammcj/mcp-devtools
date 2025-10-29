@@ -56,6 +56,7 @@ When the server runs in stdio mode (default transport), ANY output to stdout/std
 - Execute methods MUST handle context cancellation
 - Tools should use shared cache (`sync.Map`) for performance
 - Import new tools in `main.go` to trigger registration
+- Tool responses should be limited to only include information that is actually useful, there's no point in returning the information an agent provides to call the tool back to them, or any generic information or null / empty fields - these just waste tokens.
 
 ### Security Integration (CRITICAL)
 - ALL tools accessing files or fetching content from URLs MUST integrate with the security framework

@@ -93,16 +93,12 @@ func (t *SwiftTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 	}
 
 	// Get latest versions
-	results, err := t.getLatestVersions(logger, cache, dependencies, constraints)
-	if err != nil {
-		return nil, err
-	}
-
+	results := t.getLatestVersions(logger, cache, dependencies, constraints)
 	return packageversions.NewToolResultJSON(results)
 }
 
 // getLatestVersions gets the latest versions for Swift packages
-func (t *SwiftTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, dependencies []packageversions.SwiftDependency, constraints packageversions.VersionConstraints) ([]packageversions.PackageVersion, error) {
+func (t *SwiftTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, dependencies []packageversions.SwiftDependency, constraints packageversions.VersionConstraints) []packageversions.PackageVersion {
 	var results []packageversions.PackageVersion
 
 	for _, dep := range dependencies {
@@ -197,7 +193,7 @@ func (t *SwiftTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, de
 		return strings.ToLower(results[i].Name) < strings.ToLower(results[j].Name)
 	})
 
-	return results, nil
+	return results
 }
 
 // getLatestVersion gets the latest version for a Swift package

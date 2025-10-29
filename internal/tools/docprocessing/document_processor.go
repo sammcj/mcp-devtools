@@ -170,7 +170,7 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 	}
 
 	// Check cache first
-	cacheEnabled := t.shouldUseCache(req)
+	cacheEnabled := t.shouldUseCache()
 	var cacheKey string
 	if cacheEnabled {
 		cacheKey = t.cacheManager.GenerateCacheKey(req)
@@ -235,7 +235,7 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 }
 
 // shouldUseCache determines if caching should be used for this request
-func (t *DocumentProcessorTool) shouldUseCache(req *DocumentProcessingRequest) bool {
+func (t *DocumentProcessorTool) shouldUseCache() bool {
 	// Always use cache since we removed the cache_enabled parameter
 	return t.config.CacheEnabled
 }

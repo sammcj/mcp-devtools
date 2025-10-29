@@ -103,16 +103,13 @@ func (t *GoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 	}
 
 	// Get latest versions
-	results, err := t.getLatestVersions(logger, cache, requires)
-	if err != nil {
-		return nil, err
-	}
+	results := t.getLatestVersions(logger, cache, requires)
 
 	return packageversions.NewToolResultJSON(results)
 }
 
 // getLatestVersions gets the latest versions for Go packages
-func (t *GoTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, requires []packageversions.GoRequire) ([]packageversions.PackageVersion, error) {
+func (t *GoTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, requires []packageversions.GoRequire) []packageversions.PackageVersion {
 	var results []packageversions.PackageVersion
 
 	for _, require := range requires {
@@ -168,7 +165,7 @@ func (t *GoTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, requi
 		return strings.ToLower(results[i].Name) < strings.ToLower(results[j].Name)
 	})
 
-	return results, nil
+	return results
 }
 
 // getLatestVersion gets the latest version for a Go package

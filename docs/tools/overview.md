@@ -61,6 +61,16 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 5. Sequential Thinking → Finalise solution with confidence
 ```
 
+#### Excel Data Analysis Workflow
+```
+1. Excel (create_workbook) → Create new workbook
+2. Excel (write_data) → Populate with data
+3. Excel (format_range) → Apply formatting and conditional formatting
+4. Excel (create_chart) → Add visualisations
+5. Excel (create_pivot_table) → Generate analysis summaries
+6. Excel (create_table) → Convert data to structured tables
+```
+
 ## Configuration Quick Start
 
 ### Minimal Configuration (Most Tools Available)
@@ -83,7 +93,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "ENABLE_ADDITIONAL_TOOLS": "aws_documentation,web_fetch,internet_search,think,memory,filesystem,shadcn_ui,security,claude-agent,codex-agent,copilot-agent,gemini-agent,q-developer-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking",
+        "ENABLE_ADDITIONAL_TOOLS": "aws_documentation,web_fetch,internet_search,think,memory,filesystem,shadcn_ui,security,claude-agent,codex-agent,copilot-agent,gemini-agent,q-developer-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking,excel",
         "GOOGLE_CLOUD_PROJECT": "gemini-code-assist-123456",
         "BRAVE_API_KEY": "abc123",
         "SEARXNG_BASE_URL": "https://searxng.your.domain",
@@ -105,6 +115,12 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 - Single documents → PDF Processing
 - Complex documents → Document Processing
 - Research papers → Document Processing + Memory
+
+**For Data Analysis:**
+- Spreadsheet creation → Excel
+- Data visualisation → Excel (charts and conditional formatting)
+- Data summarisation → Excel (pivot tables)
+- Structured data → Excel (tables with formatting)
 
 **For Development:**
 - Package management → Package Search + Package Documentation

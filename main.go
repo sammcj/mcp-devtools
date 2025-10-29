@@ -239,7 +239,7 @@ func main() {
 					},
 				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return handleSecurityConfigDiff(cmd, logger)
+					return handleSecurityConfigDiff(cmd)
 				},
 			},
 			{
@@ -252,7 +252,7 @@ func main() {
 					},
 				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return handleSecurityConfigValidate(cmd, logger)
+					return handleSecurityConfigValidate(cmd)
 				},
 			},
 		},
@@ -790,7 +790,7 @@ func handleBrowserAuthentication(cmd *cli.Command, transport string, logger *log
 }
 
 // handleSecurityConfigDiff compares user config against default config and optionally updates it
-func handleSecurityConfigDiff(cmd *cli.Command, logger *logrus.Logger) error {
+func handleSecurityConfigDiff(cmd *cli.Command) error {
 	// Get config path
 	configPath := cmd.String("config-path")
 	if configPath == "" {
@@ -902,7 +902,7 @@ func handleSecurityConfigDiff(cmd *cli.Command, logger *logrus.Logger) error {
 }
 
 // handleSecurityConfigValidate validates the security configuration file
-func handleSecurityConfigValidate(cmd *cli.Command, logger *logrus.Logger) error {
+func handleSecurityConfigValidate(cmd *cli.Command) error {
 	// Get config path
 	configPath := cmd.String("config-path")
 	if configPath == "" {

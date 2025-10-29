@@ -179,6 +179,7 @@ func requiresEnablement(toolName string) bool {
 		"terraform_documentation",
 		"shadcn",
 		"murican_to_english",
+		"excel",
 	}
 
 	// Normalize the tool name (lowercase, replace underscores with hyphens)

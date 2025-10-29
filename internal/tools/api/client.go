@@ -37,10 +37,7 @@ func NewHTTPClient(apiDef APIDefinition) *HTTPClient {
 // ExecuteRequest executes an API request
 func (c *HTTPClient) ExecuteRequest(ctx context.Context, endpoint EndpointConfig, parameters map[string]any) (map[string]any, error) {
 	// Build the request URL
-	requestURL, err := c.buildURL(endpoint, parameters)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build URL: %w", err)
-	}
+	requestURL := c.buildURL(endpoint, parameters)
 
 	// Security check - domain access
 	parsedURL, err := url.Parse(requestURL)
@@ -111,7 +108,7 @@ func (c *HTTPClient) ExecuteRequest(ctx context.Context, endpoint EndpointConfig
 }
 
 // buildURL constructs the full request URL with path and query parameters
-func (c *HTTPClient) buildURL(endpoint EndpointConfig, parameters map[string]any) (string, error) {
+func (c *HTTPClient) buildURL(endpoint EndpointConfig, parameters map[string]any) string {
 	// Start with base URL
 	baseURL := strings.TrimSuffix(c.apiDef.BaseURL, "/")
 	path := strings.TrimPrefix(endpoint.Path, "/")
@@ -150,7 +147,7 @@ func (c *HTTPClient) buildURL(endpoint EndpointConfig, parameters map[string]any
 		fullURL += "?" + queryParams.Encode()
 	}
 
-	return fullURL, nil
+	return fullURL
 }
 
 // buildRequest creates the HTTP request with headers, auth, and body

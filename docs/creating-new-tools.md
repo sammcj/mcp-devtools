@@ -584,6 +584,7 @@ To enable tool error logging, set the `LOG_TOOL_ERRORS` environment variable to 
 - You must remember to register tools so that MCP clients can discover them.
 - Tool descriptions and parameter annotations are important for the AI agents to understand how to use the tools effectively, but must be concise and clear so they don't overload the context.
   - If you want to create a function to help with debugging to testing a tool but don't want to expose it to MCP clients using the server, you can do so, just make sure you add a comment that it is a function not intended to be exposed to MCP clients. For tool descriptions aim to keep them under 450 characters if possible.
+- Tool responses should be limited to only include information that is actually useful, there's no point in returning the information an agent provides to call the tool back to them, or any generic information or null / empty fields - these just waste tokens.
 - All tools should work on both macOS and Linux unless otherwise specified (we do not need to support Windows).
 - Rather than creating lots of tools for one purpose / provider, instead favour creating a single tool with multiple functions and parameters.
 - Tools should have fast, concise unit tests that do not rely on external dependencies or services.

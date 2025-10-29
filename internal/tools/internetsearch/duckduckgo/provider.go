@@ -207,10 +207,10 @@ func (p *DuckDuckGoProvider) executeWebSearch(ctx context.Context, logger *logru
 	})
 
 	if len(results) == 0 {
-		return p.createEmptyResponse(query)
+		return p.createEmptyResponse(query), nil
 	}
 
-	return p.createSuccessResponse(query, results, logger)
+	return p.createSuccessResponse(query, results, logger), nil
 }
 
 // cleanText removes extra whitespace and cleans up text
@@ -222,18 +222,17 @@ func (p *DuckDuckGoProvider) cleanText(text string) string {
 }
 
 // Helper functions
-func (p *DuckDuckGoProvider) createEmptyResponse(query string) (*internetsearch.SearchResponse, error) {
-	result := &internetsearch.SearchResponse{
+func (p *DuckDuckGoProvider) createEmptyResponse(query string) *internetsearch.SearchResponse {
+	return &internetsearch.SearchResponse{
 		Query:       query,
 		ResultCount: 0,
 		Results:     []internetsearch.SearchResult{},
 		Provider:    "duckduckgo",
 		Timestamp:   time.Now(),
 	}
-	return result, nil
 }
 
-func (p *DuckDuckGoProvider) createSuccessResponse(query string, results []internetsearch.SearchResult, logger *logrus.Logger) (*internetsearch.SearchResponse, error) {
+func (p *DuckDuckGoProvider) createSuccessResponse(query string, results []internetsearch.SearchResult, logger *logrus.Logger) *internetsearch.SearchResponse {
 	result := &internetsearch.SearchResponse{
 		Query:       query,
 		ResultCount: len(results),
@@ -248,5 +247,5 @@ func (p *DuckDuckGoProvider) createSuccessResponse(query string, results []inter
 		"provider":     "duckduckgo",
 	}).Info("DuckDuckGo search completed successfully")
 
-	return result, nil
+	return result
 }

@@ -90,16 +90,12 @@ func (t *PyProjectTool) Execute(ctx context.Context, logger *logrus.Logger, cach
 	}
 
 	// Get latest versions
-	results, err := t.getLatestVersions(logger, cache, packages)
-	if err != nil {
-		return nil, err
-	}
-
+	results := t.getLatestVersions(logger, cache, packages)
 	return packageversions.NewToolResultJSON(results)
 }
 
 // getLatestVersions gets the latest versions for Python packages
-func (t *PyProjectTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, packages []Package) ([]packageversions.PackageVersion, error) {
+func (t *PyProjectTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, packages []Package) []packageversions.PackageVersion {
 	var results []packageversions.PackageVersion
 
 	// Create a Python tool to reuse its functionality
@@ -165,7 +161,7 @@ func (t *PyProjectTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map
 		return strings.ToLower(results[i].Name) < strings.ToLower(results[j].Name)
 	})
 
-	return results, nil
+	return results
 }
 
 // cleanPyProjectVersion cleans a version string from pyproject.toml

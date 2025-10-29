@@ -102,6 +102,7 @@ All tools follow this pattern:
 - When adding new tools ensure they are registered in the list of available tools in the server (within their init function), ensure they have a basic unit test, and that they have docs/tools/<toolname>.md with concise, clear information about the tool and that they're mentioned in the main README.md and docs/tools/overview.md.
 - Always use British English spelling, we are not American.
 - Follow the principle of least privileged security.
+- Tool responses should be limited to only include information that is actually useful, there's no point in returning the information an agent provides to call the tool back to them, or any generic information or null / empty fields - these just waste tokens.
 - Use 0600 and 0700 permissions for files and directories respectively, unless otherwise specified avoid using 0644 and 0755.
 - Unit tests for tools should be located within the tests/tools/ directory, and should be named <toolname>_test.go.
 - We should be mindful of the risks of code injection and other security risks when parsing any information from external sources.
@@ -122,7 +123,7 @@ All tools follow this pattern:
 **Optimise for Limited Context:**
 - Agents have constrained context windows - make every token count
 - Return high-signal information, not exhaustive data dumps
-- Provide "concise" vs "detailed" response format options
+- Provide "concise" vs "detailed" response format options where applicable
 - Default to human-readable identifiers over technical codes (names over IDs)
 - Consider the agent's context budget as a scarce resource
 

@@ -105,28 +105,28 @@ func (t *TerraformDocumentationTool) Execute(ctx context.Context, logger *logrus
 	// Dispatch to appropriate handler
 	switch action {
 	case "search_providers":
-		return t.executeSearchProviders(ctx, logger, cache, args)
+		return t.executeSearchProviders(ctx, args)
 	case "get_provider_details":
-		return t.executeGetProviderDetails(ctx, logger, cache, args)
+		return t.executeGetProviderDetails(ctx, args)
 	case "get_latest_provider_version":
-		return t.executeGetLatestProviderVersion(ctx, logger, cache, args)
+		return t.executeGetLatestProviderVersion(ctx, args)
 	case "search_modules":
-		return t.executeSearchModules(ctx, logger, cache, args)
+		return t.executeSearchModules(ctx, args)
 	case "get_module_details":
-		return t.executeGetModuleDetails(ctx, logger, cache, args)
+		return t.executeGetModuleDetails(ctx, args)
 	case "get_latest_module_version":
-		return t.executeGetLatestModuleVersion(ctx, logger, cache, args)
+		return t.executeGetLatestModuleVersion(ctx, args)
 	case "search_policies":
-		return t.executeSearchPolicies(ctx, logger, cache, args)
+		return t.executeSearchPolicies(ctx, args)
 	case "get_policy_details":
-		return t.executeGetPolicyDetails(ctx, logger, cache, args)
+		return t.executeGetPolicyDetails(ctx, args)
 	default:
 		return nil, fmt.Errorf("invalid action: %s", action)
 	}
 }
 
 // executeSearchProviders handles search_providers action
-func (t *TerraformDocumentationTool) executeSearchProviders(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeSearchProviders(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	providerName, ok := args["provider_name"].(string)
 	if !ok || providerName == "" {
 		return nil, fmt.Errorf("search_providers requires 'provider_name' parameter (e.g., 'aws', 'azurerm', 'google')")
@@ -156,7 +156,7 @@ func (t *TerraformDocumentationTool) executeSearchProviders(ctx context.Context,
 }
 
 // executeGetProviderDetails handles get_provider_details action
-func (t *TerraformDocumentationTool) executeGetProviderDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetProviderDetails(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	providerDocID, ok := args["provider_doc_id"].(string)
 	if !ok || providerDocID == "" {
 		return nil, fmt.Errorf("missing required parameter: provider_doc_id")
@@ -166,7 +166,7 @@ func (t *TerraformDocumentationTool) executeGetProviderDetails(ctx context.Conte
 }
 
 // executeGetLatestProviderVersion handles get_latest_provider_version action
-func (t *TerraformDocumentationTool) executeGetLatestProviderVersion(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetLatestProviderVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	providerName, ok := args["provider_name"].(string)
 	if !ok || providerName == "" {
 		return nil, fmt.Errorf("missing required parameter: provider_name")
@@ -181,7 +181,7 @@ func (t *TerraformDocumentationTool) executeGetLatestProviderVersion(ctx context
 }
 
 // executeSearchModules handles search_modules action
-func (t *TerraformDocumentationTool) executeSearchModules(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeSearchModules(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	moduleQuery, ok := args["query"].(string)
 	if !ok || moduleQuery == "" {
 		return nil, fmt.Errorf("missing required parameter: query")
@@ -196,7 +196,7 @@ func (t *TerraformDocumentationTool) executeSearchModules(ctx context.Context, l
 }
 
 // executeGetModuleDetails handles get_module_details action
-func (t *TerraformDocumentationTool) executeGetModuleDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetModuleDetails(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	moduleID, ok := args["module_id"].(string)
 	if !ok || moduleID == "" {
 		return nil, fmt.Errorf("missing required parameter: module_id")
@@ -206,7 +206,7 @@ func (t *TerraformDocumentationTool) executeGetModuleDetails(ctx context.Context
 }
 
 // executeGetLatestModuleVersion handles get_latest_module_version action
-func (t *TerraformDocumentationTool) executeGetLatestModuleVersion(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetLatestModuleVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	moduleID, ok := args["module_id"].(string)
 	if !ok || moduleID == "" {
 		return nil, fmt.Errorf("missing required parameter: module_id")
@@ -216,7 +216,7 @@ func (t *TerraformDocumentationTool) executeGetLatestModuleVersion(ctx context.C
 }
 
 // executeSearchPolicies handles search_policies action
-func (t *TerraformDocumentationTool) executeSearchPolicies(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeSearchPolicies(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	policyQuery, ok := args["query"].(string)
 	if !ok || policyQuery == "" {
 		return nil, fmt.Errorf("missing required parameter: query")
@@ -226,7 +226,7 @@ func (t *TerraformDocumentationTool) executeSearchPolicies(ctx context.Context, 
 }
 
 // executeGetPolicyDetails handles get_policy_details action
-func (t *TerraformDocumentationTool) executeGetPolicyDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetPolicyDetails(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	policyID, ok := args["policy_id"].(string)
 	if !ok || policyID == "" {
 		return nil, fmt.Errorf("missing required parameter: policy_id")

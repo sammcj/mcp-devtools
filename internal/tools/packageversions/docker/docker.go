@@ -187,9 +187,9 @@ func (t *DockerTool) getTags(logger *logrus.Logger, cache *sync.Map, query packa
 	case "dockerhub":
 		tags, err = t.getDockerHubTags(logger, owner, repo, query.IncludeDigest)
 	case "ghcr":
-		tags, err = t.getGHCRTags(logger, owner, repo, query.IncludeDigest)
+		tags, err = t.getGHCRTags(logger, owner, repo)
 	case "custom":
-		tags, err = t.getCustomRegistryTags(logger, query.CustomRegistry, owner, repo, query.IncludeDigest)
+		tags, err = t.getCustomRegistryTags(logger, query.CustomRegistry, owner, repo)
 	}
 	if err != nil {
 		return nil, err
@@ -264,7 +264,7 @@ func (t *DockerTool) getDockerHubTags(logger *logrus.Logger, owner, repo string,
 }
 
 // getGHCRTags gets tags from GitHub Container Registry
-func (t *DockerTool) getGHCRTags(logger *logrus.Logger, owner, repo string, includeDigest bool) ([]packageversions.DockerImageVersion, error) {
+func (t *DockerTool) getGHCRTags(logger *logrus.Logger, owner, repo string) ([]packageversions.DockerImageVersion, error) {
 	// Construct URL
 	apiURL := fmt.Sprintf("https://ghcr.io/v2/%s/%s/tags/list", url.PathEscape(owner), url.PathEscape(repo))
 	logger.WithFields(logrus.Fields{
@@ -301,12 +301,13 @@ func (t *DockerTool) getGHCRTags(logger *logrus.Logger, owner, repo string, incl
 		}
 
 		// Add digest if requested
-		if includeDigest {
-			digest, err := t.getGHCRDigest(logger, owner, repo, tag)
-			if err == nil && digest != "" {
-				imageVersion.Digest = &digest
-			}
-		}
+		// Note: Digest fetching is not currently implemented for GHCR
+		// if includeDigest {
+		// 	digest, err := t.getGHCRDigest(logger, owner, repo, tag)
+		// 	if err == nil && digest != "" {
+		// 		imageVersion.Digest = &digest
+		// 	}
+		// }
 
 		tags = append(tags, imageVersion)
 	}
@@ -314,34 +315,8 @@ func (t *DockerTool) getGHCRTags(logger *logrus.Logger, owner, repo string, incl
 	return tags, nil
 }
 
-// getGHCRDigest gets the digest for a specific tag from GitHub Container Registry
-func (t *DockerTool) getGHCRDigest(logger *logrus.Logger, owner, repo, tag string) (string, error) {
-	// Construct URL
-	apiURL := fmt.Sprintf("https://ghcr.io/v2/%s/%s/manifests/%s", url.PathEscape(owner), url.PathEscape(repo), url.PathEscape(tag))
-	logger.WithFields(logrus.Fields{
-		"owner": owner,
-		"repo":  repo,
-		"tag":   tag,
-		"url":   apiURL,
-	}).Debug("Fetching GHCR digest")
-
-	// Make request
-	headers := map[string]string{
-		"Accept": "application/vnd.docker.distribution.manifest.v2+json",
-	}
-	_, err := packageversions.MakeRequestWithLogger(t.client, logger, "HEAD", apiURL, headers)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch GHCR digest: %w", err)
-	}
-
-	// Get digest from response headers
-	// Note: This is a simplified implementation, as we don't have access to response headers in this context
-	// In a real implementation, we would extract the Docker-Content-Digest header
-	return "", nil
-}
-
 // getCustomRegistryTags gets tags from a custom registry
-func (t *DockerTool) getCustomRegistryTags(logger *logrus.Logger, registry, owner, repo string, includeDigest bool) ([]packageversions.DockerImageVersion, error) {
+func (t *DockerTool) getCustomRegistryTags(logger *logrus.Logger, registry, owner, repo string) ([]packageversions.DockerImageVersion, error) {
 	// Construct URL
 	apiURL := fmt.Sprintf("%s/v2/%s/%s/tags/list", registry, url.PathEscape(owner), url.PathEscape(repo))
 	logger.WithFields(logrus.Fields{
@@ -379,44 +354,18 @@ func (t *DockerTool) getCustomRegistryTags(logger *logrus.Logger, registry, owne
 		}
 
 		// Add digest if requested
-		if includeDigest {
-			digest, err := t.getCustomRegistryDigest(logger, registry, owner, repo, tag)
-			if err == nil && digest != "" {
-				imageVersion.Digest = &digest
-			}
-		}
+		// Note: Digest fetching is not currently implemented for custom registries
+		// if includeDigest {
+		// 	digest, err := t.getCustomRegistryDigest(logger, registry, owner, repo, tag)
+		// 	if err == nil && digest != "" {
+		// 		imageVersion.Digest = &digest
+		// 	}
+		// }
 
 		tags = append(tags, imageVersion)
 	}
 
 	return tags, nil
-}
-
-// getCustomRegistryDigest gets the digest for a specific tag from a custom registry
-func (t *DockerTool) getCustomRegistryDigest(logger *logrus.Logger, registry, owner, repo, tag string) (string, error) {
-	// Construct URL
-	apiURL := fmt.Sprintf("%s/v2/%s/%s/manifests/%s", registry, url.PathEscape(owner), url.PathEscape(repo), url.PathEscape(tag))
-	logger.WithFields(logrus.Fields{
-		"registry": registry,
-		"owner":    owner,
-		"repo":     repo,
-		"tag":      tag,
-		"url":      apiURL,
-	}).Debug("Fetching custom registry digest")
-
-	// Make request
-	headers := map[string]string{
-		"Accept": "application/vnd.docker.distribution.manifest.v2+json",
-	}
-	_, err := packageversions.MakeRequestWithLogger(t.client, logger, "HEAD", apiURL, headers)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch custom registry digest: %w", err)
-	}
-
-	// Get digest from response headers
-	// Note: This is a simplified implementation, as we don't have access to response headers in this context
-	// In a real implementation, we would extract the Docker-Content-Digest header
-	return "", nil
 }
 
 // filterAndLimitTags filters and limits the tags based on the query

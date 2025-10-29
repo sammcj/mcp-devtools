@@ -225,7 +225,7 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 
 	// Convert to unified format
 	if len(searxngResp.Results) == 0 {
-		return p.createEmptyResponse(query)
+		return p.createEmptyResponse(query), nil
 	}
 
 	results := make([]internetsearch.SearchResult, 0, len(searxngResp.Results))
@@ -248,22 +248,21 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 		})
 	}
 
-	return p.createSuccessResponse(query, results, logger)
+	return p.createSuccessResponse(query, results, logger), nil
 }
 
 // Helper functions
-func (p *SearXNGProvider) createEmptyResponse(query string) (*internetsearch.SearchResponse, error) {
-	result := &internetsearch.SearchResponse{
+func (p *SearXNGProvider) createEmptyResponse(query string) *internetsearch.SearchResponse {
+	return &internetsearch.SearchResponse{
 		Query:       query,
 		ResultCount: 0,
 		Results:     []internetsearch.SearchResult{},
 		Provider:    "searxng",
 		Timestamp:   time.Now(),
 	}
-	return result, nil
 }
 
-func (p *SearXNGProvider) createSuccessResponse(query string, results []internetsearch.SearchResult, logger *logrus.Logger) (*internetsearch.SearchResponse, error) {
+func (p *SearXNGProvider) createSuccessResponse(query string, results []internetsearch.SearchResult, logger *logrus.Logger) *internetsearch.SearchResponse {
 	result := &internetsearch.SearchResponse{
 		Query:       query,
 		ResultCount: len(results),
@@ -278,5 +277,5 @@ func (p *SearXNGProvider) createSuccessResponse(query string, results []internet
 		"provider":     "searxng",
 	}).Info("SearXNG search completed successfully")
 
-	return result, nil
+	return result
 }
