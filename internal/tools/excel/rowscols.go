@@ -81,7 +81,7 @@ func handleInsertRows(ctx context.Context, logger *logrus.Logger, filePath strin
 	}
 
 	// Save workbook with secure permissions
-	if err := saveWorkbookWithPermissions(f, filePath, nil); err != nil {
+	if err := saveWorkbookWithPermissions(f, filePath, logger); err != nil {
 		return nil, &WorkbookError{
 			Operation: "save",
 			Path:      filePath,
@@ -178,7 +178,7 @@ func handleInsertColumns(ctx context.Context, logger *logrus.Logger, filePath st
 	}
 
 	// Save workbook with secure permissions
-	if err := saveWorkbookWithPermissions(f, filePath, nil); err != nil {
+	if err := saveWorkbookWithPermissions(f, filePath, logger); err != nil {
 		return nil, &WorkbookError{
 			Operation: "save",
 			Path:      filePath,
@@ -265,7 +265,7 @@ func handleDeleteRows(ctx context.Context, logger *logrus.Logger, filePath strin
 	}
 
 	// Save workbook with secure permissions
-	if err := saveWorkbookWithPermissions(f, filePath, nil); err != nil {
+	if err := saveWorkbookWithPermissions(f, filePath, logger); err != nil {
 		return nil, &WorkbookError{
 			Operation: "save",
 			Path:      filePath,
@@ -362,7 +362,7 @@ func handleDeleteColumns(ctx context.Context, logger *logrus.Logger, filePath st
 	}
 
 	// Save workbook with secure permissions
-	if err := saveWorkbookWithPermissions(f, filePath, nil); err != nil {
+	if err := saveWorkbookWithPermissions(f, filePath, logger); err != nil {
 		return nil, &WorkbookError{
 			Operation: "save",
 			Path:      filePath,
@@ -378,7 +378,7 @@ func handleDeleteColumns(ctx context.Context, logger *logrus.Logger, filePath st
 }
 
 // handleAutoSizeColumns automatically adjusts column widths to fit content
-func handleAutoSizeColumns(ctx context.Context, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleAutoSizeColumns(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -465,7 +465,7 @@ func handleAutoSizeColumns(ctx context.Context, filePath string, sheetName strin
 	}
 
 	// Save workbook with secure permissions
-	if err := saveWorkbookWithPermissions(f, filePath, nil); err != nil {
+	if err := saveWorkbookWithPermissions(f, filePath, logger); err != nil {
 		return nil, &WorkbookError{
 			Operation: "save",
 			Path:      filePath,

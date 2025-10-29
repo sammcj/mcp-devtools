@@ -342,7 +342,7 @@ func (t *ExcelTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 	case "delete_columns":
 		return handleDeleteColumns(ctx, logger, fullPath, sheetName, options)
 	case "auto_size_columns":
-		return handleAutoSizeColumns(ctx, fullPath, sheetName)
+		return handleAutoSizeColumns(ctx, logger, fullPath, sheetName)
 	case "create_chart":
 		return handleCreateChart(ctx, logger, fullPath, sheetName, options)
 	case "create_pivot_table":
