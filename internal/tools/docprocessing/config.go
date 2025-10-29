@@ -253,9 +253,7 @@ func (c *Config) CleanupTemporaryFiles() error {
 	}
 
 	// Clean up system temporary directory for mcp-devtools files
-	if err := c.cleanupSystemTempFiles(); err != nil {
-		errors = append(errors, fmt.Sprintf("system temp cleanup failed: %v", err))
-	}
+	c.cleanupSystemTempFiles()
 
 	if len(errors) > 0 {
 		return fmt.Errorf("cleanup errors: %s", strings.Join(errors, "; "))
@@ -285,13 +283,13 @@ func (c *Config) cleanupCacheFiles(maxAge time.Duration) error {
 }
 
 // cleanupSystemTempFiles removes old temporary files created by mcp-devtools
-func (c *Config) cleanupSystemTempFiles() error {
+func (c *Config) cleanupSystemTempFiles() {
 	tempDir := os.TempDir()
 	cutoffTime := time.Now().Add(-24 * time.Hour) // Remove files older than 24 hours
 
 	entries, err := os.ReadDir(tempDir)
 	if err != nil {
-		return nil // Silently fail if we can't read temp directory
+		return // Silently fail if we can't read temp directory
 	}
 
 	for _, entry := range entries {
@@ -311,8 +309,6 @@ func (c *Config) cleanupSystemTempFiles() error {
 			}
 		}
 	}
-
-	return nil
 }
 
 // GetMaxMemoryLimit returns the configured maximum memory limit in bytes

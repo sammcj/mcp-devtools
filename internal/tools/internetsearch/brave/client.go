@@ -128,14 +128,14 @@ func (c *BraveClient) makeRequest(ctx context.Context, logger *logrus.Logger, en
 		}
 
 		// Process successful response with security analysis
-		return c.processResponseWithSecurity(ctx, logger, resp, attempt+1, reqURL.String())
+		return c.processResponseWithSecurity(ctx, logger, resp, reqURL.String())
 	}
 
 	return nil, fmt.Errorf("unexpected end of retry loop")
 }
 
 // processResponseWithSecurity handles the HTTP response processing with security analysis
-func (c *BraveClient) processResponseWithSecurity(ctx context.Context, logger *logrus.Logger, resp *http.Response, attempt int, requestURL string) ([]byte, error) {
+func (c *BraveClient) processResponseWithSecurity(ctx context.Context, logger *logrus.Logger, resp *http.Response, requestURL string) ([]byte, error) {
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
 			logger.WithError(closeErr).Warn("Failed to close response body")

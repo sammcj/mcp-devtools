@@ -553,11 +553,7 @@ func (r *YAMLRuleEngine) EvaluateContentWithConfig(content string, source Source
 	rulesByPriority := r.sortRulesByPriority()
 
 	for _, ruleInfo := range rulesByPriority {
-		matched, err := r.evaluateRuleWithConfig(ruleInfo.Name, ruleInfo.Rule, evaluationContent, source, config)
-		if err != nil {
-			logrus.WithError(err).Warnf("Error evaluating rule %s", ruleInfo.Name)
-			continue
-		}
+		matched := r.evaluateRuleWithConfig(ruleInfo.Name, ruleInfo.Rule, evaluationContent, source, config)
 
 		if matched {
 			// Generate security result
@@ -566,7 +562,7 @@ func (r *YAMLRuleEngine) EvaluateContentWithConfig(content string, source Source
 			return &SecurityResult{
 				Safe:      ruleInfo.Rule.Action == "allow" || ruleInfo.Rule.Action == "ignore",
 				Action:    mapRuleActionToSecurityAction(ruleInfo.Rule.Action),
-				Message:   r.formatSecurityMessage(ruleInfo.Rule, ruleInfo.Name, securityID),
+				Message:   r.formatSecurityMessage(ruleInfo.Rule, securityID),
 				ID:        securityID,
 				Timestamp: time.Now(),
 			}, nil
@@ -738,10 +734,10 @@ func (r *YAMLRuleEngine) applyContentSizeLimits(content string) string {
 }
 
 // evaluateRuleWithConfig evaluates a single rule against content with optional config for base64 processing
-func (r *YAMLRuleEngine) evaluateRuleWithConfig(ruleName string, rule Rule, content string, source SourceContext, config *SecurityConfig) (bool, error) {
+func (r *YAMLRuleEngine) evaluateRuleWithConfig(ruleName string, rule Rule, content string, source SourceContext, config *SecurityConfig) bool {
 	// Check exceptions first
 	if r.isSourceExcepted(source, rule.Exceptions) {
-		return false, nil
+		return false
 	}
 
 	// Logic defaults to "any" if not specified
@@ -781,13 +777,13 @@ func (r *YAMLRuleEngine) evaluateRuleWithConfig(ruleName string, rule Rule, cont
 		if matcher.Match(contentToMatch) {
 			matchCount++
 			if logic == "any" {
-				return true, nil // First match is enough for "any" logic
+				return true // First match is enough for "any" logic
 			}
 		}
 	}
 
 	// For "all" logic, all patterns must match
-	return logic == "all" && matchCount == len(rule.Patterns), nil
+	return logic == "all" && matchCount == len(rule.Patterns)
 }
 
 // isSourceExcepted checks if source is in exception list
@@ -829,7 +825,7 @@ func mapRuleActionToSecurityAction(ruleAction string) string {
 }
 
 // formatSecurityMessage creates a user-friendly security message
-func (r *YAMLRuleEngine) formatSecurityMessage(rule Rule, ruleName, securityID string) string {
+func (r *YAMLRuleEngine) formatSecurityMessage(rule Rule, securityID string) string {
 	action := mapRuleActionToSecurityAction(rule.Action)
 
 	switch action {

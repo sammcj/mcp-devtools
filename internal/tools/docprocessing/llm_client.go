@@ -160,10 +160,7 @@ func (c *DiagramLLMClient) AnalyseDiagram(diagram *ExtractedDiagram) (*DiagramAn
 	responseText := response.Choices[0].Message.Content
 
 	// Parse response and extract analysis
-	analysis, err := c.parseAnalysisResponse(responseText, diagram)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse LLM response: %w", err)
-	}
+	analysis := c.parseAnalysisResponse(responseText, diagram)
 
 	// Extract token usage if available
 	if usage := response.Usage; usage.PromptTokens > 0 || usage.CompletionTokens > 0 || usage.TotalTokens > 0 {
@@ -196,14 +193,14 @@ func (c *DiagramLLMClient) buildDiagramPrompt(diagram *ExtractedDiagram) string 
 }
 
 // parseAnalysisResponse parses the LLM response and extracts diagram analysis
-func (c *DiagramLLMClient) parseAnalysisResponse(response string, originalDiagram *ExtractedDiagram) (*DiagramAnalysis, error) {
+func (c *DiagramLLMClient) parseAnalysisResponse(response string, originalDiagram *ExtractedDiagram) *DiagramAnalysis {
 	// Try to extract JSON from the response
 	jsonStart := strings.Index(response, "{")
 	jsonEnd := strings.LastIndex(response, "}")
 
 	if jsonStart == -1 || jsonEnd == -1 || jsonEnd <= jsonStart {
 		// Fallback: create analysis from text response
-		return c.createFallbackAnalysis(response, originalDiagram), nil
+		return c.createFallbackAnalysis(response, originalDiagram)
 	}
 
 	jsonStr := response[jsonStart : jsonEnd+1]
@@ -211,7 +208,7 @@ func (c *DiagramLLMClient) parseAnalysisResponse(response string, originalDiagra
 	var analysis DiagramAnalysis
 	if err := json.Unmarshal([]byte(jsonStr), &analysis); err != nil {
 		// Fallback: create analysis from text response
-		return c.createFallbackAnalysis(response, originalDiagram), nil
+		return c.createFallbackAnalysis(response, originalDiagram)
 	}
 
 	// Ensure confidence is reasonable
@@ -227,7 +224,7 @@ func (c *DiagramLLMClient) parseAnalysisResponse(response string, originalDiagra
 		analysis.Description = "LLM-enhanced diagram analysis"
 	}
 
-	return &analysis, nil
+	return &analysis
 }
 
 // createFallbackAnalysis creates a basic analysis when JSON parsing fails

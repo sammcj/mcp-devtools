@@ -77,16 +77,12 @@ func (t *GradleTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 	}
 
 	// Get latest versions
-	results, err := t.getLatestVersions(logger, cache, dependencies)
-	if err != nil {
-		return nil, err
-	}
-
+	results := t.getLatestVersions(logger, cache, dependencies)
 	return packageversions.NewToolResultJSON(results)
 }
 
 // getLatestVersions gets the latest versions for Gradle packages
-func (t *GradleTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, dependencies []packageversions.GradleDependency) ([]packageversions.PackageVersion, error) {
+func (t *GradleTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, dependencies []packageversions.GradleDependency) []packageversions.PackageVersion {
 	var results []packageversions.PackageVersion
 
 	// Create a Maven tool to reuse its functionality
@@ -150,5 +146,5 @@ func (t *GradleTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, d
 		return strings.ToLower(results[i].Name) < strings.ToLower(results[j].Name)
 	})
 
-	return results, nil
+	return results
 }

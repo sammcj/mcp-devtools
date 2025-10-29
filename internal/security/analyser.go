@@ -702,7 +702,7 @@ func (a *SecurityAdvisor) hasDestructivePatterns(content string) bool {
 	if a.ruleEngine != nil && a.ruleEngine.rules != nil {
 		if rule, exists := a.ruleEngine.rules.Rules["obvious_malware"]; exists {
 			// Use the evaluateRuleWithConfig method to enable base64 processing
-			matches, _ := a.ruleEngine.evaluateRuleWithConfig("obvious_malware", rule, content, SourceContext{}, a.config)
+			matches := a.ruleEngine.evaluateRuleWithConfig("obvious_malware", rule, content, SourceContext{}, a.config)
 			return matches
 		}
 	}

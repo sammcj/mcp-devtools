@@ -56,9 +56,7 @@ func handleInsertRows(ctx context.Context, logger *logrus.Logger, filePath strin
 		}
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
-			logger.WithError(err).Warn("Failed to close workbook")
-		}
+		_ = f.Close()
 	}()
 
 	// Check if sheet exists
@@ -83,7 +81,7 @@ func handleInsertRows(ctx context.Context, logger *logrus.Logger, filePath strin
 	}
 
 	// Save workbook with secure permissions
-	if err := saveWorkbookWithPermissions(f, filePath, logger); err != nil {
+	if err := saveWorkbookWithPermissions(f, filePath, nil); err != nil {
 		return nil, &WorkbookError{
 			Operation: "save",
 			Path:      filePath,
@@ -145,9 +143,7 @@ func handleInsertColumns(ctx context.Context, logger *logrus.Logger, filePath st
 		}
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
-			logger.WithError(err).Warn("Failed to close workbook")
-		}
+		_ = f.Close()
 	}()
 
 	// Check if sheet exists
@@ -182,7 +178,7 @@ func handleInsertColumns(ctx context.Context, logger *logrus.Logger, filePath st
 	}
 
 	// Save workbook with secure permissions
-	if err := saveWorkbookWithPermissions(f, filePath, logger); err != nil {
+	if err := saveWorkbookWithPermissions(f, filePath, nil); err != nil {
 		return nil, &WorkbookError{
 			Operation: "save",
 			Path:      filePath,
@@ -244,9 +240,7 @@ func handleDeleteRows(ctx context.Context, logger *logrus.Logger, filePath strin
 		}
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
-			logger.WithError(err).Warn("Failed to close workbook")
-		}
+		_ = f.Close()
 	}()
 
 	// Check if sheet exists
@@ -271,7 +265,7 @@ func handleDeleteRows(ctx context.Context, logger *logrus.Logger, filePath strin
 	}
 
 	// Save workbook with secure permissions
-	if err := saveWorkbookWithPermissions(f, filePath, logger); err != nil {
+	if err := saveWorkbookWithPermissions(f, filePath, nil); err != nil {
 		return nil, &WorkbookError{
 			Operation: "save",
 			Path:      filePath,
@@ -333,9 +327,7 @@ func handleDeleteColumns(ctx context.Context, logger *logrus.Logger, filePath st
 		}
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
-			logger.WithError(err).Warn("Failed to close workbook")
-		}
+		_ = f.Close()
 	}()
 
 	// Check if sheet exists
@@ -370,7 +362,7 @@ func handleDeleteColumns(ctx context.Context, logger *logrus.Logger, filePath st
 	}
 
 	// Save workbook with secure permissions
-	if err := saveWorkbookWithPermissions(f, filePath, logger); err != nil {
+	if err := saveWorkbookWithPermissions(f, filePath, nil); err != nil {
 		return nil, &WorkbookError{
 			Operation: "save",
 			Path:      filePath,
@@ -386,7 +378,7 @@ func handleDeleteColumns(ctx context.Context, logger *logrus.Logger, filePath st
 }
 
 // handleAutoSizeColumns automatically adjusts column widths to fit content
-func handleAutoSizeColumns(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleAutoSizeColumns(ctx context.Context, filePath string, sheetName string) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -394,11 +386,6 @@ func handleAutoSizeColumns(ctx context.Context, logger *logrus.Logger, filePath 
 			Message: "sheet_name parameter is required",
 		}
 	}
-
-	logger.WithFields(logrus.Fields{
-		"filepath":   filePath,
-		"sheet_name": sheetName,
-	}).Info("Auto-sizing columns")
 
 	// Open workbook
 	f, err := excelize.OpenFile(filePath)
@@ -410,9 +397,7 @@ func handleAutoSizeColumns(ctx context.Context, logger *logrus.Logger, filePath 
 		}
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
-			logger.WithError(err).Warn("Failed to close workbook")
-		}
+		_ = f.Close()
 	}()
 
 	// Check if sheet exists
@@ -469,15 +454,10 @@ func handleAutoSizeColumns(ctx context.Context, logger *logrus.Logger, filePath 
 	for colIdx, width := range columnWidths {
 		colName, err := excelize.ColumnNumberToName(colIdx + 1)
 		if err != nil {
-			logger.WithError(err).WithField("column", colIdx+1).Warn("Failed to get column name")
 			continue
 		}
 
 		if err := f.SetColWidth(sheetName, colName, colName, width); err != nil {
-			logger.WithError(err).WithFields(logrus.Fields{
-				"column": colName,
-				"width":  width,
-			}).Warn("Failed to set column width")
 			continue
 		}
 
@@ -485,7 +465,7 @@ func handleAutoSizeColumns(ctx context.Context, logger *logrus.Logger, filePath 
 	}
 
 	// Save workbook with secure permissions
-	if err := saveWorkbookWithPermissions(f, filePath, logger); err != nil {
+	if err := saveWorkbookWithPermissions(f, filePath, nil); err != nil {
 		return nil, &WorkbookError{
 			Operation: "save",
 			Path:      filePath,

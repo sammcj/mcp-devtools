@@ -95,7 +95,7 @@ func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[strin
 				}
 
 				// Cache result if successful
-				if t.shouldUseCache(req) && response.Error == "" {
+				if t.shouldUseCache() && response.Error == "" {
 					cacheKey := t.cacheManager.GenerateCacheKey(req)
 					_ = t.cacheManager.Set(cacheKey, response)
 				}

@@ -60,9 +60,7 @@ func NewStorageWithNamespace(logger *logrus.Logger, namespace string) (*Storage,
 	}
 
 	// Load security configuration
-	if err := storage.loadSecurityConfig(); err != nil {
-		return nil, fmt.Errorf("failed to load security configuration: %w", err)
-	}
+	storage.loadSecurityConfig()
 
 	// Update file path for the namespace
 	if err := storage.updateFilePath(); err != nil {
@@ -73,7 +71,7 @@ func NewStorageWithNamespace(logger *logrus.Logger, namespace string) (*Storage,
 }
 
 // loadSecurityConfig loads security configuration from environment variables
-func (s *Storage) loadSecurityConfig() error {
+func (s *Storage) loadSecurityConfig() {
 	// Load max storage size
 	s.maxStorageSize = DefaultMaxStorageSize
 	if sizeStr := os.Getenv(MemoryMaxStorageSizeEnvVar); sizeStr != "" {
@@ -93,8 +91,6 @@ func (s *Storage) loadSecurityConfig() error {
 	// Load encryption configuration
 	s.encryptionPassword = os.Getenv(MemoryEncryptionPasswordEnvVar)
 	s.encryptionEnabled = s.encryptionPassword != ""
-
-	return nil
 }
 
 // encrypt encrypts data using AES-GCM with the configured password

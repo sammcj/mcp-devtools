@@ -86,18 +86,18 @@ func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logge
 	// Dispatch to appropriate handler
 	switch action {
 	case "search":
-		return t.executeSearch(ctx, logger, cache, args)
+		return t.executeSearch(ctx, args)
 	case "fetch":
-		return t.executeFetch(ctx, logger, cache, args)
+		return t.executeFetch(ctx, args)
 	case "recommend":
-		return t.executeRecommend(ctx, logger, cache, args)
+		return t.executeRecommend(ctx, args)
 	default:
 		return nil, fmt.Errorf("invalid action: %s. Must be one of: search, fetch, recommend", action)
 	}
 }
 
 // executeSearch performs documentation search
-func (t *AWSDocumentationTool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeSearch(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse search phrase
 	searchPhrase, ok := args["search_phrase"].(string)
 	if !ok {
@@ -142,7 +142,7 @@ func (t *AWSDocumentationTool) executeSearch(ctx context.Context, logger *logrus
 }
 
 // executeFetch performs documentation fetching and conversion
-func (t *AWSDocumentationTool) executeFetch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeFetch(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse the URL parameter
 	urlRaw, ok := args["url"].(string)
 	if !ok {
@@ -216,7 +216,7 @@ func (t *AWSDocumentationTool) executeFetch(ctx context.Context, logger *logrus.
 }
 
 // executeRecommend performs recommendation fetching
-func (t *AWSDocumentationTool) executeRecommend(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeRecommend(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse URL
 	url, ok := args["url"].(string)
 	if !ok {

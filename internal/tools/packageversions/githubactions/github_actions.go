@@ -109,16 +109,13 @@ func (t *GitHubActionsTool) Execute(ctx context.Context, logger *logrus.Logger, 
 	}
 
 	// Get latest versions
-	results, err := t.getLatestVersions(logger, cache, actions, includeDetails)
-	if err != nil {
-		return nil, err
-	}
+	results := t.getLatestVersions(logger, cache, actions, includeDetails)
 
 	return packageversions.NewToolResultJSON(results)
 }
 
 // getLatestVersions gets the latest versions for GitHub Actions
-func (t *GitHubActionsTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, actions []packageversions.GitHubAction, includeDetails bool) ([]packageversions.GitHubActionVersion, error) {
+func (t *GitHubActionsTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, actions []packageversions.GitHubAction, includeDetails bool) []packageversions.GitHubActionVersion {
 	var results []packageversions.GitHubActionVersion
 
 	for _, action := range actions {
@@ -179,7 +176,7 @@ func (t *GitHubActionsTool) getLatestVersions(logger *logrus.Logger, cache *sync
 		return strings.ToLower(ownerRepoI) < strings.ToLower(ownerRepoJ)
 	})
 
-	return results, nil
+	return results
 }
 
 // getLatestVersion gets the latest version for a GitHub Action

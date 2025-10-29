@@ -76,16 +76,12 @@ func (t *MavenTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 	}
 
 	// Get latest versions
-	results, err := t.getLatestVersions(logger, cache, dependencies)
-	if err != nil {
-		return nil, err
-	}
-
+	results := t.getLatestVersions(logger, cache, dependencies)
 	return packageversions.NewToolResultJSON(results)
 }
 
 // getLatestVersions gets the latest versions for Maven packages
-func (t *MavenTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, dependencies []packageversions.MavenDependency) ([]packageversions.PackageVersion, error) {
+func (t *MavenTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, dependencies []packageversions.MavenDependency) []packageversions.PackageVersion {
 	var results []packageversions.PackageVersion
 
 	for _, dep := range dependencies {
@@ -144,7 +140,7 @@ func (t *MavenTool) getLatestVersions(logger *logrus.Logger, cache *sync.Map, de
 		return strings.ToLower(results[i].Name) < strings.ToLower(results[j].Name)
 	})
 
-	return results, nil
+	return results
 }
 
 // getLatestVersion gets the latest version for a Maven package
