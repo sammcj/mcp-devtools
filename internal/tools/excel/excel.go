@@ -48,7 +48,7 @@ Other key workflows: write_data (auto-detects formulas starting with '='), forma
 
 Functions: create_workbook (supports initial_sheets for multi-sheet creation), create_worksheet, read/write_data, format_range, create_table, create_chart, create_pivot_table, formulas, validation, row/column ops, and more.
 
-Use get_tool_help tool with tool_name="excel" for detailed examples, troubleshooting, and parameter reference.`),
+If you have any troubles using or find the excel tool limiting call get_tool_help tool with tool_name="excel" for detailed examples, troubleshooting, and parameter reference.`),
 		mcp.WithString("function",
 			mcp.Required(),
 			mcp.Description("Operation to perform. For formatted tables, use create_table (all-in-one). For data with formulas, use write_data. For styling, use format_range."),
@@ -415,7 +415,7 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				ExpectedResult: "Creates table with data, applies style, and auto-sizes columns in one operation. More efficient than separate write_data, format_range, and auto_size_columns calls.",
 			},
 			{
-				Description: "Write data with formulas",
+				Description: "Write data with formulas using start_cell",
 				Arguments: map[string]any{
 					"function":   "write_data",
 					"filepath":   "/path/to/calc.xlsx",
@@ -431,6 +431,24 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 					},
 				},
 				ExpectedResult: "Writes data with formulas auto-detected (values starting with '='). Formulas are calculated and cached.",
+			},
+			{
+				Description: "Write data using start_row/start_col (automatically converted to start_cell)",
+				Arguments: map[string]any{
+					"function":   "write_data",
+					"filepath":   "/path/to/data.xlsx",
+					"sheet_name": "Sheet1",
+					"options": map[string]any{
+						"start_row": 32,
+						"start_col": 6,
+						"data": [][]any{
+							{0.6537},
+							{0.5641},
+							{0.9194},
+						},
+					},
+				},
+				ExpectedResult: "Row 32, col 6 (F32) is automatically converted to start_cell='F32'. Data is written starting from F32.",
 			},
 			{
 				Description: "Apply number formatting to currency column",
@@ -461,6 +479,18 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				ExpectedResult: "Creates column chart positioned at E2 showing data from A1:B6.",
 			},
 			{
+				Description: "Read cell metadata with formulas in a specific range",
+				Arguments: map[string]any{
+					"function":   "read_data_with_metadata",
+					"filepath":   "/path/to/report.xlsx",
+					"sheet_name": "Sheet1",
+					"options": map[string]any{
+						"range": "N17:N22",
+					},
+				},
+				ExpectedResult: "Returns only cells N17 through N22 with formula text, calculated values, and validation info. More efficient than reading entire sheet.",
+			},
+			{
 				Description: "Cross-sheet formula reference",
 				Arguments: map[string]any{
 					"function":   "write_data",
@@ -487,8 +517,22 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"Number formatting: Use options.number_format for currency ('£#,##0.00'), percentages ('0.00%'), or custom formats",
 			"Efficient workflows: Prefer create_table over separate write_data + format_range + auto_size_columns calls",
 			"Range validation: Use validate_range before using ranges in formulas to catch errors early",
+			"Flexible cell references: write_data accepts either start_cell='F32' OR start_row=32, start_col=6 (automatically converted)",
+			"Formula debugging: read_data_with_metadata returns formula text, cached value, and has_formula flag for all cells",
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
+			{
+				Problem:  "Error: 'either cell or start_cell parameter is required' when using start_row/start_col",
+				Solution: "Provide BOTH start_row AND start_col (not just one). They will be automatically converted to start_cell. Example: start_row=32, start_col=6 becomes start_cell='F32'.",
+			},
+			{
+				Problem:  "Need to debug formula issues or see actual formula text",
+				Solution: "Use read_data_with_metadata with options.range='N17:N22' to focus on specific cells. It returns formula='=ROUND(...)', has_formula=true, and value='0.1' (calculated or cached result) for cells with formulas. This helps identify incomplete or broken formulas without reading the entire sheet.",
+			},
+			{
+				Problem:  "read_data_with_metadata returns too many cells outside the requested range",
+				Solution: "Ensure you're using options.range='N17:N22' (not start_cell/end_cell). The range parameter is parsed correctly and returns only the specified cells, reducing token usage.",
+			},
 			{
 				Problem:  "Formula returns #REF! or #NAME? error",
 				Solution: "Check cell references are valid and within Excel limits (max row: 1048576, max col: 16384 / XFD). Use validate_range to verify ranges before using in formulas. Ensure sheet names in cross-sheet formulas match exactly.",
@@ -515,16 +559,20 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 		},
 		ParameterDetails: map[string]string{
-			"function":                  "Operation to perform. Key workflows: create_table (all-in-one), write_data (supports formulas), format_range (styling), create_chart/pivot_table (visualisation).",
-			"options.data":              "2D array for write_data or create_table. Values starting with '=' are auto-detected as formulas. Example: [['Total', '=SUM(B2:B5)'], ['Tax', '=B6*0.2']]",
-			"options.number_format":     "Excel number format string. Examples: '#,##0.00' (thousands separator), '£#,##0.00' (currency), '0.00%' (percentage), 'dd/mm/yyyy' (date).",
-			"options.range":             "Cell range in A1 notation (e.g., 'A1:D10'). Required for format_range, create_table, and many operations. Use validate_range to check validity.",
-			"create_table.options":      "Combine data, style, name, and auto_size for efficient table creation. options.data writes content, options.style applies table style (e.g., 'TableStyleMedium9'), options.auto_size=true auto-fits columns.",
-			"options.style":             "Table style name for create_table. Examples: 'TableStyleMedium2', 'TableStyleLight9', 'TableStyleDark1'. Applies professional formatting in one parameter.",
-			"options.formula":           "Excel formula without leading '='. Used in apply_formula. For write_data/create_table, formulas are auto-detected when values start with '='.",
-			"options.initial_sheets":    "Array of sheet names to create when creating a new workbook. Alternative to creating workbook then adding sheets individually.",
-			"format_range.options.font": "Font properties object: {bold: true, italic: true, size: 12, colour: 'FF0000', family: 'Arial'}. Accepts both 'colour' and 'color' spellings.",
-			"format_range.options.fill": "Fill properties object: {colour: 'E2EFDA', pattern: 'solid'}. Use hex colours without '#' prefix.",
+			"function":                      "Operation to perform. Key workflows: create_table (all-in-one), write_data (supports formulas), format_range (styling), create_chart/pivot_table (visualisation).",
+			"options.data":                  "2D array for write_data or create_table. Values starting with '=' are auto-detected as formulas. Example: [['Total', '=SUM(B2:B5)'], ['Tax', '=B6*0.2']]",
+			"options.start_cell":            "Starting cell in A1 notation (e.g., 'F32') for write_data. Alternative: use start_row + start_col instead.",
+			"options.start_row/start_col":   "Alternative to start_cell for write_data. Provide BOTH (e.g., start_row=32, start_col=6 for F32). Automatically converted to start_cell internally.",
+			"options.number_format":         "Excel number format string. Examples: '#,##0.00' (thousands separator), '£#,##0.00' (currency), '0.00%' (percentage), 'dd/mm/yyyy' (date).",
+			"options.range":                 "Cell range in A1 notation (e.g., 'A1:D10'). Required for format_range, create_table, and many operations. Use validate_range to check validity.",
+			"create_table.options":          "Combine data, style, name, and auto_size for efficient table creation. options.data writes content, options.style applies table style (e.g., 'TableStyleMedium9'), options.auto_size=true auto-fits columns.",
+			"options.style":                 "Table style name for create_table. Examples: 'TableStyleMedium2', 'TableStyleLight9', 'TableStyleDark1'. Applies professional formatting in one parameter.",
+			"options.formula":               "Excel formula without leading '='. Used in apply_formula. For write_data/create_table, formulas are auto-detected when values start with '='.",
+			"options.initial_sheets":        "Array of sheet names to create when creating a new workbook. Alternative to creating workbook then adding sheets individually.",
+			"format_range.options.font":     "Font properties object: {bold: true, italic: true, size: 12, colour: 'FF0000', family: 'Arial'}. Accepts both 'colour' and 'color' spellings.",
+			"format_range.options.fill":     "Fill properties object: {colour: 'E2EFDA', pattern: 'solid'}. Use hex colours without '#' prefix.",
+			"read_data_with_metadata":       "Returns cells with formula='=SUM(A1:A5)', has_formula=true/false, value='123' (calculated or cached), validation rules. Supports range='N17:N22' or start_cell/end_cell. Essential for debugging formula issues.",
+			"read_data_with_metadata.range": "Cell range in A1 notation (e.g., 'N17:N22'). More convenient than separate start_cell/end_cell parameters. Calculates formula values when possible.",
 		},
 		WhenToUse:    "Creating, editing, or formatting Excel spreadsheets with formulas, charts, tables, or data validation. Ideal for generating reports, data analysis outputs, structured data exports, or financial documents. Supports complex formatting, conditional formatting, pivot tables, and cross-sheet formula references.",
 		WhenNotToUse: "For simple CSV data export without formatting (use CSV tools instead). For reading extremely large datasets >100k rows (consider streaming or database approaches). For complex manual spreadsheet calculations better suited to interactive Excel usage. For real-time collaborative editing (use Google Sheets API instead).",

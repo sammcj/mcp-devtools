@@ -164,6 +164,24 @@ func validateCellReference(cell string) error {
 	return nil
 }
 
+// getNumberOption safely extracts a numeric option from the options map
+// Handles both float64 (from JSON) and int types
+func getNumberOption(options map[string]any, key string) (int, bool) {
+	val, exists := options[key]
+	if !exists {
+		return 0, false
+	}
+
+	switch v := val.(type) {
+	case float64:
+		return int(v), true
+	case int:
+		return v, true
+	default:
+		return 0, false
+	}
+}
+
 // saveWorkbookWithPermissions saves a workbook and sets secure file permissions
 func saveWorkbookWithPermissions(f *excelize.File, filePath string, logger *logrus.Logger) error {
 	// Update formula calculations before saving for Numbers compatibility

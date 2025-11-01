@@ -54,6 +54,32 @@ func handleWriteData(ctx context.Context, logger *logrus.Logger, filePath string
 	cell, hasCell := options["cell"].(string)
 	startCell, hasStartCell := options["start_cell"].(string)
 
+	// Support start_row/start_col conversion to start_cell for agent convenience
+	if !hasStartCell && !hasCell {
+		// Check if start_row and start_col are provided
+		startRow, hasStartRow := getNumberOption(options, "start_row")
+		startCol, hasStartCol := getNumberOption(options, "start_col")
+
+		if hasStartRow && hasStartCol {
+			// Convert to cell reference
+			convertedCell, err := coordinatesToCell(startCol, startRow)
+			if err != nil {
+				return nil, &ValidationError{
+					Field:   "start_row/start_col",
+					Value:   fmt.Sprintf("row=%d, col=%d", startRow, startCol),
+					Message: fmt.Sprintf("failed to convert row/col to cell reference: %v", err),
+				}
+			}
+			startCell = convertedCell
+			hasStartCell = true
+			logger.WithFields(logrus.Fields{
+				"start_row": startRow,
+				"start_col": startCol,
+				"converted": startCell,
+			}).Debug("Converted start_row/start_col to start_cell")
+		}
+	}
+
 	if hasCell {
 		// Single cell write
 		value := options["value"]
@@ -333,10 +359,25 @@ func handleWriteData(ctx context.Context, logger *logrus.Logger, filePath string
 		return mcp.NewToolResultJSON(result)
 
 	} else {
+		// Provide helpful error message with conversion hint
+		errMsg := "either 'cell' (for single cell) or 'start_cell' (for range) parameter is required"
+
+		// Check if they provided start_row or start_col individually (common mistake)
+		startRow, hasStartRow := getNumberOption(options, "start_row")
+		startCol, hasStartCol := getNumberOption(options, "start_col")
+
+		if hasStartRow && !hasStartCol {
+			errMsg = fmt.Sprintf("%s. You provided start_row=%d but start_col is missing. Provide both start_row and start_col, or use start_cell instead", errMsg, startRow)
+		} else if hasStartCol && !hasStartRow {
+			errMsg = fmt.Sprintf("%s. You provided start_col=%d but start_row is missing. Provide both start_row and start_col, or use start_cell instead", errMsg, startCol)
+		} else {
+			errMsg += ". You can also provide both start_row and start_col which will be converted to start_cell automatically"
+		}
+
 		return nil, &ValidationError{
 			Field:   "cell or start_cell",
 			Value:   nil,
-			Message: "either 'cell' (for single cell) or 'start_cell' (for range) parameter is required",
+			Message: errMsg,
 		}
 	}
 }
@@ -588,56 +629,76 @@ func handleReadDataWithMetadata(ctx context.Context, logger *logrus.Logger, file
 		}
 	}
 
-	// Get range parameters
-	startCell, hasStartCell := options["start_cell"].(string)
-	endCell, hasEndCell := options["end_cell"].(string)
-
+	// Get range parameters - support both "range" and "start_cell/end_cell" formats
 	var startRow, startCol, endRow, endCol int
+	var startCell, endCell string
 
-	if !hasStartCell {
-		startCell = "A1"
-	}
-
-	if err := validateCellReference(startCell); err != nil {
-		return nil, err
-	}
-
-	startRow, startCol, err = parseCellReference(startCell)
-	if err != nil {
-		return nil, err
-	}
-
-	if hasEndCell {
-		if err := validateCellReference(endCell); err != nil {
-			return nil, err
-		}
-
-		endRow, endCol, err = parseCellReference(endCell)
+	// Check if "range" parameter is provided (e.g., "N17:N22")
+	rangeParam, hasRange := options["range"].(string)
+	if hasRange && rangeParam != "" {
+		// Parse the range string
+		startRow, startCol, endRow, endCol, err = parseRange(rangeParam)
 		if err != nil {
 			return nil, err
 		}
+
+		// Convert back to cell references for logging
+		startCell, _ = coordinatesToCell(startCol, startRow)
+		endCell, _ = coordinatesToCell(endCol, endRow)
 	} else {
-		// Auto-detect range
-		rows, err := f.GetRows(sheetName)
-		if err != nil {
-			return nil, &SheetError{
-				Operation: "read_data_with_metadata",
-				SheetName: sheetName,
-				Cause:     fmt.Errorf("failed to get rows: %w", err),
-			}
+		// Fall back to start_cell/end_cell parameters
+		startCellParam, hasStartCell := options["start_cell"].(string)
+		endCellParam, hasEndCell := options["end_cell"].(string)
+
+		if !hasStartCell {
+			startCell = "A1"
+		} else {
+			startCell = startCellParam
 		}
 
-		if len(rows) == 0 {
-			endRow = startRow
-			endCol = startCol
+		if err := validateCellReference(startCell); err != nil {
+			return nil, err
+		}
+
+		startRow, startCol, err = parseCellReference(startCell)
+		if err != nil {
+			return nil, err
+		}
+
+		if hasEndCell {
+			endCell = endCellParam
+			if err := validateCellReference(endCell); err != nil {
+				return nil, err
+			}
+
+			endRow, endCol, err = parseCellReference(endCell)
+			if err != nil {
+				return nil, err
+			}
 		} else {
-			endRow = len(rows)
-			endCol = 0
-			for _, row := range rows {
-				if len(row) > endCol {
-					endCol = len(row)
+			// Auto-detect range
+			rows, err := f.GetRows(sheetName)
+			if err != nil {
+				return nil, &SheetError{
+					Operation: "read_data_with_metadata",
+					SheetName: sheetName,
+					Cause:     fmt.Errorf("failed to get rows: %w", err),
 				}
 			}
+
+			if len(rows) == 0 {
+				endRow = startRow
+				endCol = startCol
+			} else {
+				endRow = len(rows)
+				endCol = 0
+				for _, row := range rows {
+					if len(row) > endCol {
+						endCol = len(row)
+					}
+				}
+			}
+			endCell, _ = coordinatesToCell(endCol, endRow)
 		}
 	}
 
@@ -662,10 +723,35 @@ func handleReadDataWithMetadata(ctx context.Context, logger *logrus.Logger, file
 				continue
 			}
 
-			value, err := f.GetCellValue(sheetName, cellRef)
-			if err != nil {
-				logger.WithError(err).WithField("cell", cellRef).Warn("Failed to get cell value")
-				value = ""
+			// Get formula first to determine if we need calculation
+			formula, err := f.GetCellFormula(sheetName, cellRef)
+			hasFormula := err == nil && formula != ""
+
+			var value string
+			if hasFormula {
+				// For cells with formulas, try to calculate the value
+				calculatedValue, calcErr := f.CalcCellValue(sheetName, cellRef)
+				if calcErr == nil && calculatedValue != "" {
+					value = calculatedValue
+				} else {
+					// Fall back to cached value if calculation fails
+					cachedValue, cacheErr := f.GetCellValue(sheetName, cellRef)
+					if cacheErr == nil {
+						value = cachedValue
+					} else {
+						logger.WithError(calcErr).WithField("cell", cellRef).Debug("Failed to calculate formula, no cached value available")
+						value = ""
+					}
+				}
+			} else {
+				// Regular cell value (not a formula)
+				cellValue, err := f.GetCellValue(sheetName, cellRef)
+				if err != nil {
+					logger.WithError(err).WithField("cell", cellRef).Warn("Failed to get cell value")
+					value = ""
+				} else {
+					value = cellValue
+				}
 			}
 
 			cellData := map[string]any{
@@ -673,6 +759,14 @@ func handleReadDataWithMetadata(ctx context.Context, logger *logrus.Logger, file
 				"value":   value,
 				"row":     row,
 				"column":  col,
+			}
+
+			// Add formula information if present
+			if hasFormula {
+				cellData["formula"] = "=" + formula // Add back the = prefix for clarity
+				cellData["has_formula"] = true
+			} else {
+				cellData["has_formula"] = false
 			}
 
 			// Check if this cell has validation rules
