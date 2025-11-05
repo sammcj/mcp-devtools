@@ -362,6 +362,15 @@ func handleWriteData(ctx context.Context, logger *logrus.Logger, filePath string
 		// Provide helpful error message with conversion hint
 		errMsg := "either 'cell' (for single cell) or 'start_cell' (for range) parameter is required"
 
+		// Check if they provided 'range' parameter (wrong function - should use create_table)
+		if rangeParam, hasRange := options["range"].(string); hasRange && rangeParam != "" {
+			return nil, &ValidationError{
+				Field:   "range",
+				Value:   rangeParam,
+				Message: "range is not a valid parameter for write_data. Did you mean to use create_table instead? Use create_table when you have a data array and want to create a formatted table. Use write_data with start_cell='A1' for writing data without table formatting.",
+			}
+		}
+
 		// Check if they provided start_row or start_col individually (common mistake)
 		startRow, hasStartRow := getNumberOption(options, "start_row")
 		startCol, hasStartCol := getNumberOption(options, "start_col")

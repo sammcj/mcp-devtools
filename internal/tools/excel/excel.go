@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -39,16 +38,16 @@ func (t *ExcelTool) Definition() mcp.Tool {
 		"excel",
 		mcp.WithDescription(`Excel (.xlsx) manipulation: create/edit workbooks, sheets, data, formulas, charts, pivot tables, formatting, and validation. Supports many operations from simple data writes to complex formatted tables. Use this tool when creating or editing Excel spreadsheets.
 
-EFFICIENT WORKFLOW - Use create_table for formatted tables in one call:
+EFFICIENT WORKFLOW - Use create_table with a data array to create formatted tables in one call:
   create_table: range="A1:B6", data=[["Breed","Count"],["Lab",100],...], style="TableStyleMedium9", auto_size=true
-  → Writes data, applies professional styling, and auto-sizes columns in one operation
   → More efficient than separate write_data + format_range + auto_size_columns calls
 
-Other key workflows: write_data (auto-detects formulas starting with '='), format_range (merges with existing styles), create_chart/pivot_table.
+Other workflow examples:
+  write_data (writes data to cells without table formatting, requires start_cell (e.g., "A1") or cell parameter, auto-detects formulas starting with '='), format_range (merges with existing styles), create_chart/pivot_table.
 
 Functions: create_workbook (supports initial_sheets for multi-sheet creation), create_worksheet, read/write_data, format_range, create_table, create_chart, create_pivot_table, formulas, validation, row/column ops, and more.
 
-If you have any troubles using or find the excel tool limiting call get_tool_help tool with tool_name="excel" for detailed examples, troubleshooting, and parameter reference.`),
+If you fail to use the excel tool twice or find the excel tool limiting call get_tool_help tool with tool_name="excel" for detailed examples, troubleshooting, and parameter reference.`),
 		mcp.WithString("function",
 			mcp.Required(),
 			mcp.Description("Operation to perform. For formatted tables, use create_table (all-in-one). For data with formulas, use write_data. For styling, use format_range."),
@@ -79,7 +78,7 @@ If you have any troubles using or find the excel tool limiting call get_tool_hel
 		),
 		mcp.WithString("filepath",
 			mcp.Required(),
-			mcp.Description("Path to xlsx file"),
+			mcp.Description("Absolute path to xlsx file (e.g., /Users/name/project/report.xlsx)"),
 		),
 		mcp.WithString("sheet_name",
 			mcp.Description("Worksheet name (required for most operations except create_workbook)"),
@@ -360,33 +359,22 @@ func (t *ExcelTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 	}
 }
 
-// resolveExcelPath resolves file paths based on transport mode
+// resolveExcelPath validates and returns the absolute file path
 func resolveExcelPath(filePath string) (string, error) {
 	if filePath == "" {
 		return "", &ValidationError{Field: "filepath", Value: filePath, Message: "filepath parameter is required"}
 	}
 
-	// If absolute path, use directly (stdio mode)
-	if filepath.IsAbs(filePath) {
-		return filePath, nil
+	// Require absolute path to ensure file location is explicit and predictable
+	if !filepath.IsAbs(filePath) {
+		return "", &ValidationError{
+			Field:   "filepath",
+			Value:   filePath,
+			Message: "filepath must be an absolute path (e.g., /Users/name/project/report.xlsx). Relative paths are not supported.",
+		}
 	}
 
-	// Relative path: resolve from base directory (HTTP mode)
-	// Security: prevent directory traversal
-	cleanPath := filepath.Clean(filePath)
-	if strings.Contains(cleanPath, "..") {
-		return "", &ValidationError{Field: "filepath", Value: filePath, Message: "directory traversal not allowed"}
-	}
-
-	fullPath := filepath.Join(excelBasePath, cleanPath)
-
-	// Ensure directory exists for write operations
-	dir := filepath.Dir(fullPath)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return "", fmt.Errorf("failed to create directory: %w", err)
-	}
-
-	return fullPath, nil
+	return filePath, nil
 }
 
 // ProvideExtendedInfo provides detailed usage information for the Excel tool
