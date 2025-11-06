@@ -165,7 +165,7 @@ These tools can be disabled by adding their function name to the `DISABLED_TOOLS
 | **[Think](docs/tools/think.md)**                                 | Structured reasoning space            | None                          | Complex problem analysis        |
 | **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations         | None                          | 2 + 3 * 4, batch processing     |
 | **[DevTools Help](docs/tools/get_tool_help.md)**                 | Extended info about DevTools tools    | None                          | Usage examples, troubleshooting |
-| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    | `find_long_files`             | Find files over 700 lines       |
+| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    |                               | Find files over 700 lines       |
 
 ### Additional Tools (Disabled By Default)
 
