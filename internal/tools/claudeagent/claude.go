@@ -44,7 +44,7 @@ func (t *ClaudeTool) Definition() mcp.Tool {
 		mcp.WithString("override-model",
 			mcp.Description(fmt.Sprintf("Force Claude to use a different model. Default: %s.", defaultModel)),
 		),
-		tools.AddConditionalPermissionsParameter("yolo-mode",
+		tools.AddConditionalParameter("yolo-mode",
 			"Optional: Bypass all permission checks and allow the agent to write and execute anything"),
 		mcp.WithBoolean("continue-last-conversation",
 			mcp.Description("Optional: Continue the most recent conversation."),
@@ -267,10 +267,6 @@ func (t *ClaudeTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"Include specific error messages, logs, or symptoms in your prompts for better debugging help",
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
-			{
-				Problem:  "Tool not available/claude command not found",
-				Solution: "The claude agent requires Claude CLI to be installed and ENABLE_AGENTS environment variable to include 'claude'. Install Claude CLI and set ENABLE_AGENTS=claude.",
-			},
 			{
 				Problem:  "Agent timeout after 3 minutes",
 				Solution: "Complex tasks may need more time. Set AGENT_TIMEOUT environment variable to increase timeout (in seconds). Example: AGENT_TIMEOUT=600 for 10 minutes.",

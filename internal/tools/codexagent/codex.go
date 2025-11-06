@@ -22,7 +22,7 @@ import (
 type CodexTool struct{}
 
 const (
-	DefaultTimeout             = 180             // 3 minutes default timeout
+	DefaultTimeout             = 300             // 5 minutes default timeout
 	DefaultMaxResponseSize     = 2 * 1024 * 1024 // 2MB default limit
 	AgentMaxResponseSizeEnvVar = "AGENT_MAX_RESPONSE_SIZE"
 	AgentTimeoutEnvVar         = "AGENT_TIMEOUT"
@@ -52,7 +52,7 @@ func (t *CodexTool) Definition() mcp.Tool {
 			mcp.Description("Enable low-friction sandboxed automatic execution. In exec mode, implies --sandbox workspace-write."),
 			mcp.DefaultBool(false),
 		),
-		tools.AddConditionalPermissionsParameter("yolo-mode",
+		tools.AddConditionalParameter("yolo-mode",
 			"DANGER: Bypass all approvals and sandbox restrictions (maps to --dangerously-bypass-approvals-and-sandbox). Use with extreme caution."),
 		mcp.WithBoolean("resume",
 			mcp.Description("Continue the most recent session using --last flag."),

@@ -25,21 +25,21 @@ const (
 )
 
 // GetAgentPermissionsMode returns the current permissions mode from environment variable
-// Valid values: "default", "enabled", "disabled" (case-insensitive)
-// Aliases: "true"/"yolo" for enabled, "false" for disabled
+// Valid values: "yolo" for enabled, "false" for disabled
 // Returns PermissionsModeDefault if unset or invalid value
 func GetAgentPermissionsMode() PermissionsMode {
 	mode := strings.TrimSpace(strings.ToLower(os.Getenv(AgentPermissionsModeEnvVar)))
 
 	switch mode {
-	case "enabled", "true", "yolo":
+	case "yolo":
 		return PermissionsModeEnabled
 	case "disabled", "false":
 		return PermissionsModeDisabled
-	case "default", "":
+	case "":
+		// Allow the agent to optionally enable with a parameter
 		return PermissionsModeDefault
 	default:
-		// Invalid value, default to safe default mode
+		// Allow the agent to optionally enable with a parameter
 		return PermissionsModeDefault
 	}
 }
@@ -66,10 +66,10 @@ func GetEffectivePermissionsValue(paramValue bool) bool {
 	}
 }
 
-// AddConditionalPermissionsParameter adds the yolo-mode parameter to tool definition only if in default mode
+// AddConditionalParameter adds the yolo-mode parameter to tool definition only if in default mode
 // parameterName is the name of the parameter (e.g., "yolo-mode")
 // description is the parameter description
-func AddConditionalPermissionsParameter(parameterName, description string, options ...mcp.ToolOption) mcp.ToolOption {
+func AddConditionalParameter(parameterName, description string, options ...mcp.ToolOption) mcp.ToolOption {
 	if !ShouldExposePermissionsParameter() {
 		// Return a no-op option when permissions mode is forced
 		return func(t *mcp.Tool) {}

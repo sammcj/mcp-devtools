@@ -23,7 +23,9 @@ type GeminiTool struct{}
 const (
 	defaultModel               = "gemini-2.5-pro"
 	flashModel                 = "gemini-2.5-flash"
+	DefaultTimeout             = 300             // 5 minutes default timeout
 	DefaultMaxResponseSize     = 2 * 1024 * 1024 // 2MB default limit
+	AgentTimeoutEnvVar         = "AGENT_TIMEOUT"
 	AgentMaxResponseSizeEnvVar = "AGENT_MAX_RESPONSE_SIZE"
 )
 
@@ -48,7 +50,7 @@ func (t *GeminiTool) Definition() mcp.Tool {
 			mcp.Description("Run the command in the Gemini sandbox (Default: False)"),
 			mcp.DefaultBool(false),
 		),
-		tools.AddConditionalPermissionsParameter("yolo-mode",
+		tools.AddConditionalParameter("yolo-mode",
 			"Allow Gemini to make changes and run commands without confirmation. Only use if you want Gemini to make changes. Defaults to read-only mode."),
 		mcp.WithBoolean("include-all-files",
 			mcp.Description("Recursively includes all files within the current directory as context for the prompt."),
@@ -71,11 +73,8 @@ func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 
 	logger.Info("Executing gemini tool")
 
-	timeoutStr := os.Getenv("AGENT_TIMEOUT")
-	timeout, err := strconv.Atoi(timeoutStr)
-	if err != nil || timeout <= 0 {
-		timeout = 180 // Default to 3 minutes
-	}
+	// Get timeout from environment or use default
+	timeout := t.GetTimeout()
 
 	prompt, ok := args["prompt"].(string)
 	if !ok || prompt == "" {
@@ -167,6 +166,16 @@ func (t *GeminiTool) runGemini(ctx context.Context, logger *logrus.Logger, timeo
 	}
 
 	return strings.Join(cleanLines, "\n"), nil
+}
+
+// GetTimeout returns the configured timeout or default
+func (t *GeminiTool) GetTimeout() int {
+	if timeoutStr := os.Getenv(AgentTimeoutEnvVar); timeoutStr != "" {
+		if timeout, err := strconv.Atoi(timeoutStr); err == nil && timeout > 0 {
+			return timeout
+		}
+	}
+	return DefaultTimeout
 }
 
 // GetMaxResponseSize returns the configured maximum response size

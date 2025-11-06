@@ -13,11 +13,8 @@ func TestGetAgentPermissionsMode(t *testing.T) {
 		envValue string
 		expected tools.PermissionsMode
 	}{
-		{"Default - empty", "", tools.PermissionsModeDefault},
-		{"Default - explicit", "default", tools.PermissionsModeDefault},
-		{"Enabled - enabled", "enabled", tools.PermissionsModeEnabled},
-		{"Enabled - true", "true", tools.PermissionsModeEnabled},
-		{"Enabled - yolo", "yolo", tools.PermissionsModeEnabled},
+		{"Unset (empty)", "", tools.PermissionsModeDefault},
+		{"Yolo mode", "yolo", tools.PermissionsModeEnabled},
 		{"Disabled - disabled", "disabled", tools.PermissionsModeDisabled},
 		{"Disabled - false", "false", tools.PermissionsModeDisabled},
 		{"Invalid value", "invalid", tools.PermissionsModeDefault},
@@ -42,8 +39,8 @@ func TestShouldExposePermissionsParameter(t *testing.T) {
 		envValue string
 		expected bool
 	}{
-		{"Default mode - should expose", "default", true},
-		{"Enabled mode - should not expose", "enabled", false},
+		{"Unset - should expose", "", true},
+		{"Yolo mode - should not expose", "yolo", false},
 		{"Disabled mode - should not expose", "disabled", false},
 	}
 
@@ -67,10 +64,10 @@ func TestGetEffectivePermissionsValue(t *testing.T) {
 		paramValue bool
 		expected   bool
 	}{
-		{"Default mode - param true", "default", true, true},
-		{"Default mode - param false", "default", false, false},
-		{"Enabled mode - ignores param false", "enabled", false, true},
-		{"Enabled mode - ignores param true", "enabled", true, true},
+		{"Unset - param true", "", true, true},
+		{"Unset - param false", "", false, false},
+		{"Yolo mode - ignores param false", "yolo", false, true},
+		{"Yolo mode - ignores param true", "yolo", true, true},
 		{"Disabled mode - ignores param true", "disabled", true, false},
 		{"Disabled mode - ignores param false", "disabled", false, false},
 	}

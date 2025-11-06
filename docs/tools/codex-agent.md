@@ -22,9 +22,9 @@ Requires the [Codex CLI](https://codex.ai) to be installed and authenticated.
 ## Environment Variables
 
 - `ENABLE_ADDITIONAL_TOOLS`: A comma-separated list of additional tools to enable. Must include `codex-agent` to use this tool.
-- `AGENT_TIMEOUT`: The timeout in seconds for the `codex` command. Defaults to `180`.
-- `AGENT_MAX_RESPONSE_SIZE`: Maximum response size in bytes. Defaults to `2097152` (2MB).
-- `AGENT_PERMISSIONS_MODE`: Controls yolo mode behaviour. Options: `default` (agent can control via parameter), `enabled`/`true`/`yolo` (force on, hide parameter), `disabled`/`false` (force off, hide parameter). Defaults to `default`.
+- `AGENT_TIMEOUT`: (optional) The timeout in seconds for the `codex` command. Defaults to `300`.
+- `AGENT_MAX_RESPONSE_SIZE`: (optional) Maximum response size in bytes. Defaults to `2097152` (2MB).
+- `AGENT_PERMISSIONS_MODE`: (optional) Controls whether yolo-mode parameter is exposed and its default behaviour. Options: `yolo` (force yolo-mode on, hide parameter), `disabled`/`false` (force yolo-mode off, hide parameter). If unset, agent can control yolo-mode via parameter. This controls the `--dangerously-bypass-approvals-and-sandbox` flag.
 
 ## Security Features
 

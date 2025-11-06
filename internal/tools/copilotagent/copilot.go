@@ -21,7 +21,7 @@ import (
 type CopilotTool struct{}
 
 const (
-	DefaultTimeout             = 180             // 3 minutes default timeout
+	DefaultTimeout             = 300             // 5 minutes default timeout
 	DefaultMaxResponseSize     = 2 * 1024 * 1024 // 2MB default limit
 	AgentMaxResponseSizeEnvVar = "AGENT_MAX_RESPONSE_SIZE"
 	AgentTimeoutEnvVar         = "AGENT_TIMEOUT"
@@ -51,7 +51,7 @@ func (t *CopilotTool) Definition() mcp.Tool {
 		mcp.WithString("session-id",
 			mcp.Description("Specify a session identifier for resuming specific sessions."),
 		),
-		tools.AddConditionalPermissionsParameter("yolo-mode",
+		tools.AddConditionalParameter("yolo-mode",
 			"Trust all tools without confirmation (maps to --allow-all-tools)."),
 		mcp.WithArray("allow-tool",
 			mcp.Description("Specific tool permissions to grant (maps to --allow-tool flags)."),

@@ -241,7 +241,7 @@ func TestQDeveloperTool_Constants(t *testing.T) {
 	testutils.AssertEqual(t, "AGENT_MAX_RESPONSE_SIZE", qdeveloperagent.AgentMaxResponseSizeEnvVar)
 	testutils.AssertEqual(t, "AGENT_TIMEOUT", qdeveloperagent.AgentTimeoutEnvVar)
 	testutils.AssertEqual(t, 2*1024*1024, qdeveloperagent.DefaultMaxResponseSize)
-	testutils.AssertEqual(t, 180, qdeveloperagent.DefaultTimeout)
+	testutils.AssertEqual(t, 300, qdeveloperagent.DefaultTimeout)
 }
 
 // Fast error handling tests that don't execute CLI

@@ -250,7 +250,7 @@ func TestCopilotTool_Constants(t *testing.T) {
 	testutils.AssertEqual(t, "AGENT_MAX_RESPONSE_SIZE", copilotagent.AgentMaxResponseSizeEnvVar)
 	testutils.AssertEqual(t, "AGENT_TIMEOUT", copilotagent.AgentTimeoutEnvVar)
 	testutils.AssertEqual(t, 2*1024*1024, copilotagent.DefaultMaxResponseSize)
-	testutils.AssertEqual(t, 180, copilotagent.DefaultTimeout)
+	testutils.AssertEqual(t, 300, copilotagent.DefaultTimeout)
 }
 
 // Fast error handling tests that don't execute CLI
