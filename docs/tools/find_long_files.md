@@ -2,6 +2,8 @@
 
 The Find Long Files tool efficiently identifies code files that exceed a specified line count threshold, helping AI coding agents to identify files that may need refactoring for effective reading, editing and understanding.
 
+**Note:** This tool is disabled by default. To enable it, set the `ENABLE_ADDITIONAL_TOOLS` environment variable to include `find_long_files`.
+
 ## Overview
 
 This tool scans a project directory and returns a formatted checklist of files that are longer than a specified threshold (default: 700 lines). It's designed to help maintain code quality by identifying files that may have grown too large and need to be split into smaller, more manageable components.

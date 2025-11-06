@@ -16,6 +16,9 @@ import (
 )
 
 func TestFindLongFilesTool(t *testing.T) {
+	// Enable the find_long_files tool for testing (disabled by default)
+	t.Setenv("ENABLE_ADDITIONAL_TOOLS", "find_long_files")
+
 	// Create a temporary directory for testing
 	tempDir, err := os.MkdirTemp("", "find_long_files_test")
 	require.NoError(t, err)
@@ -122,6 +125,9 @@ func TestFindLongFilesTool(t *testing.T) {
 }
 
 func TestFindLongFilesTool_ParseRequest(t *testing.T) {
+	// Enable the find_long_files tool for testing (disabled by default)
+	t.Setenv("ENABLE_ADDITIONAL_TOOLS", "find_long_files")
+
 	tool := &filelength.FindLongFilesTool{}
 
 	// Create a temporary directory for testing
@@ -199,6 +205,9 @@ func TestFindLongFilesTool_ParseRequest(t *testing.T) {
 }
 
 func TestFindLongFilesTool_EnvironmentVariables(t *testing.T) {
+	// Enable the find_long_files tool for testing (disabled by default)
+	t.Setenv("ENABLE_ADDITIONAL_TOOLS", "find_long_files")
+
 	// Save original environment
 	originalThreshold := os.Getenv("LONG_FILES_DEFAULT_LENGTH")
 	originalExcludes := os.Getenv("LONG_FILES_ADDITIONAL_EXCLUDES")
@@ -269,6 +278,9 @@ func TestFindLongFilesTool_EnvironmentVariables(t *testing.T) {
 }
 
 func TestFindLongFilesTool_MaxFileSize(t *testing.T) {
+	// Enable the find_long_files tool for testing (disabled by default)
+	t.Setenv("ENABLE_ADDITIONAL_TOOLS", "find_long_files")
+
 	// Save original environment
 	originalMaxSize := os.Getenv("LONG_FILES_MAX_SIZE_KB")
 	defer func() {

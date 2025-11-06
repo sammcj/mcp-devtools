@@ -80,6 +80,11 @@ func (t *FindLongFilesTool) Definition() mcp.Tool {
 
 // Execute executes the find-long-files tool
 func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+	// Check if find_long_files tool is enabled (disabled by default)
+	if !tools.IsToolEnabled("find_long_files") {
+		return nil, fmt.Errorf("find_long_files tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'find_long_files'")
+	}
+
 	startTime := time.Now()
 	logger.Info("Executing find-long-files tool")
 

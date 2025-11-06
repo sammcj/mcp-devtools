@@ -139,7 +139,6 @@ These tools can be disabled by adding their function name to the `DISABLED_FUNCT
 | **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, mark3labs/mcp-go         |
 | **[Package Search](docs/tools/package-search.md)**               | Check package versions                | None                          | NPM, Python, Go, Java, Docker   |
 | **[Think](docs/tools/think.md)**                                 | Structured reasoning space            | None                          | Complex problem analysis        |
-| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    | None                          | Find files over 700 lines       |
 | **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations         | None                          | 2 + 3 * 4, batch processing     |
 | **[DevTools Help](docs/tools/get_tool_help.md)**                 | Extended info about DevTools tools    | None                          | Usage examples, troubleshooting |
 
@@ -149,6 +148,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 
 | Tool                                                                 | Purpose                                                            | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                               |
 |----------------------------------------------------------------------|--------------------------------------------------------------------|---------------------------|---------------------------------------------|
+| **[Find Long Files](docs/tools/find_long_files.md)**                | Identify files needing refactoring                                 | `find_long_files`         | Find files over 700 lines                   |
 | **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                                        | `murican_to_english`      | Organise, colour, centre                    |
 | **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                              | `shadcn`                  | Button, Dialog, Form components             |
 | **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            |
