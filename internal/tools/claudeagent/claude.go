@@ -44,10 +44,8 @@ func (t *ClaudeTool) Definition() mcp.Tool {
 		mcp.WithString("override-model",
 			mcp.Description(fmt.Sprintf("Force Claude to use a different model. Default: %s.", defaultModel)),
 		),
-		mcp.WithBoolean("yolo-mode",
-			mcp.Description("Optional: Bypass all permission checks and allow the agent to write and execute anything"),
-			mcp.DefaultBool(false),
-		),
+		tools.AddConditionalPermissionsParameter("yolo-mode",
+			"Optional: Bypass all permission checks and allow the agent to write and execute anything"),
 		mcp.WithBoolean("continue-last-conversation",
 			mcp.Description("Optional: Continue the most recent conversation."),
 			mcp.DefaultBool(false),
@@ -92,7 +90,8 @@ func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 		model = defaultModel
 	}
 
-	yoloMode, _ := args["yolo-mode"].(bool)
+	yoloModeParam, _ := args["yolo-mode"].(bool)
+	yoloMode := tools.GetEffectivePermissionsValue(yoloModeParam)
 	continueLast, _ := args["continue-last-conversation"].(bool)
 	resumeSession, _ := args["resume-specific-session"].(string)
 	includeDirs, _ := args["include-directories"].([]any)

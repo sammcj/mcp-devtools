@@ -17,6 +17,7 @@ Requires the [Gemini CLI](https://github.com/google-gemini/gemini-cli) to be ins
 - `ENABLE_AGENTS`: A comma-separated list of agents to enable (e.g., `claude,gemini`).
 - `AGENT_TIMEOUT`: The timeout in seconds for the `gemini` command. Defaults to `180`.
 - `AGENT_MAX_RESPONSE_SIZE`: Maximum response size in bytes. Defaults to `2097152` (2MB).
+- `AGENT_PERMISSIONS_MODE`: Controls yolo mode behaviour. Options: `default` (agent can control via parameter), `enabled`/`true`/`yolo` (force on, hide parameter), `disabled`/`false` (force off, hide parameter). Defaults to `default`.
 
 ## Security Features
 

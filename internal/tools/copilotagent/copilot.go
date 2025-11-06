@@ -51,10 +51,8 @@ func (t *CopilotTool) Definition() mcp.Tool {
 		mcp.WithString("session-id",
 			mcp.Description("Specify a session identifier for resuming specific sessions."),
 		),
-		mcp.WithBoolean("yolo-mode",
-			mcp.Description("Trust all tools without confirmation (maps to --allow-all-tools)."),
-			mcp.DefaultBool(false),
-		),
+		tools.AddConditionalPermissionsParameter("yolo-mode",
+			"Trust all tools without confirmation (maps to --allow-all-tools)."),
 		mcp.WithArray("allow-tool",
 			mcp.Description("Specific tool permissions to grant (maps to --allow-tool flags)."),
 			mcp.WithStringItems(),
@@ -137,7 +135,9 @@ func (t *CopilotTool) runCopilot(ctx context.Context, logger *logrus.Logger, tim
 	}
 
 	// Permission management
-	if yoloMode, ok := args["yolo-mode"].(bool); ok && yoloMode {
+	yoloModeParam, _ := args["yolo-mode"].(bool)
+	yoloMode := tools.GetEffectivePermissionsValue(yoloModeParam)
+	if yoloMode {
 		cmdArgs = append(cmdArgs, "--allow-all-tools")
 	}
 

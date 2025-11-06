@@ -19,6 +19,7 @@ AWS Q Developer is Amazon's AI coding assistant that provides code completions, 
 - `ENABLE_ADDITIONAL_TOOLS`: Must include `q-developer-agent` to enable the tool
 - `AGENT_TIMEOUT`: Timeout for Q Developer operations in seconds (default: 180)
 - `AGENT_MAX_RESPONSE_SIZE`: Maximum response size in bytes (default: 2MB)
+- `AGENT_PERMISSIONS_MODE`: Controls yolo mode behaviour. Options: `default` (agent can control via parameter), `enabled`/`true`/`yolo` (force on, hide parameter), `disabled`/`false` (force off, hide parameter). Defaults to `default`
 
 ### Security
 

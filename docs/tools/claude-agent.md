@@ -18,6 +18,7 @@ Requires the [Claude Code CLI](https://www.anthropic.com/claude-code) to be inst
 - `ENABLE_AGENTS`: A comma-separated list of agents to enable (e.g., `claude,gemini`).
 - `AGENT_TIMEOUT`: The timeout in seconds for the `claude` command. Defaults to `180`.
 - `AGENT_MAX_RESPONSE_SIZE`: Maximum response size in bytes. Defaults to `2097152` (2MB).
+- `AGENT_PERMISSIONS_MODE`: Controls yolo mode behaviour. Options: `default` (agent can control via parameter), `enabled`/`true`/`yolo` (force on, hide parameter), `disabled`/`false` (force off, hide parameter). Defaults to `default`.
 - `CLAUDE_SYSTEM_PROMPT`: A string to append to the default system prompt.
 - `CLAUDE_PERMISSION_MODE`: The permission mode to use for the session.
 

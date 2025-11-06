@@ -51,10 +51,8 @@ func (t *QDeveloperTool) Definition() mcp.Tool {
 		mcp.WithString("override-model",
 			mcp.Description("Model to use. Available models: claude-3.5-sonnet, claude-3.7-sonnet, claude-sonnet-4 (default)."),
 		),
-		mcp.WithBoolean("yolo-mode",
-			mcp.Description("Trust all tools without confirmation (maps to --trust-all-tools)."),
-			mcp.DefaultBool(false),
-		),
+		tools.AddConditionalPermissionsParameter("yolo-mode",
+			"Trust all tools without confirmation (maps to --trust-all-tools)."),
 		mcp.WithString("trust-tools",
 			mcp.Description("Comma-separated list of specific tools to trust."),
 		),
@@ -92,7 +90,8 @@ func (t *QDeveloperTool) Execute(ctx context.Context, logger *logrus.Logger, cac
 	resume, _ := args["resume"].(bool)
 	agent, _ := args["agent"].(string)
 	overrideModel, _ := args["override-model"].(string)
-	yoloMode, _ := args["yolo-mode"].(bool)
+	yoloModeParam, _ := args["yolo-mode"].(bool)
+	yoloMode := tools.GetEffectivePermissionsValue(yoloModeParam)
 	trustTools, _ := args["trust-tools"].(string)
 	verbose, _ := args["verbose"].(bool)
 

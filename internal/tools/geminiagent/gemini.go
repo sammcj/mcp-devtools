@@ -48,10 +48,8 @@ func (t *GeminiTool) Definition() mcp.Tool {
 			mcp.Description("Run the command in the Gemini sandbox (Default: False)"),
 			mcp.DefaultBool(false),
 		),
-		mcp.WithBoolean("yolo-mode",
-			mcp.Description("Allow Gemini to make changes and run commands without confirmation. Only use if you want Gemini to make changes. Defaults to read-only mode."),
-			mcp.DefaultBool(false),
-		),
+		tools.AddConditionalPermissionsParameter("yolo-mode",
+			"Allow Gemini to make changes and run commands without confirmation. Only use if you want Gemini to make changes. Defaults to read-only mode."),
 		mcp.WithBoolean("include-all-files",
 			mcp.Description("Recursively includes all files within the current directory as context for the prompt."),
 			mcp.DefaultBool(false),
@@ -90,7 +88,8 @@ func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 	}
 
 	sandbox, _ := args["sandbox"].(bool)
-	yoloMode, _ := args["yolo-mode"].(bool)
+	yoloModeParam, _ := args["yolo-mode"].(bool)
+	yoloMode := tools.GetEffectivePermissionsValue(yoloModeParam)
 	includeAllFiles, _ := args["include-all-files"].(bool)
 
 	// Initial attempt
