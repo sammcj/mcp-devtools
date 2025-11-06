@@ -1,6 +1,6 @@
 module github.com/sammcj/mcp-devtools
 
-go 1.25.3
+go 1.25.4
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
@@ -13,8 +13,8 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
-	github.com/mark3labs/mcp-go v0.42.0
-	github.com/openai/openai-go/v3 v3.6.1
+	github.com/mark3labs/mcp-go v0.43.0
+	github.com/openai/openai-go/v3 v3.8.1
 	github.com/pdfcpu/pdfcpu v0.11.1
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/sammcj/m2e v0.0.27
@@ -34,7 +34,8 @@ require (
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
-	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
+	github.com/clipperhouse/stringish v0.1.1 // indirect
+	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect

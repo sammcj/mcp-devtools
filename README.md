@@ -12,34 +12,49 @@ graph LR
     A --> F[Utilities]
     A --> G[Agents]
 
-    B --> B_Tools[🌐 Internet Search<br>📡 Web Fetch<br>📦 Package Search<br>📚 Package Documentation<br>🎨 ShadCN UI Components<br>📝 Terraform Docs<br>☁️ AWS Doc<br>🐙 GitHub]
+    B --> B_Enabled[🌐 Internet Search<br>📡 Web Fetch<br>📦 Package Search<br>📚 Package Documentation<br>🐙 GitHub]
+    B --> B_Disabled[🎨 ShadCN UI Components<br>📝 Terraform Docs<br>☁️ AWS Doc]
 
-    C --> C_Tools[📄 Document Processing<br>📈 Excel Spreadsheets<br>📑 PDF Processing]
+    C --> C_Disabled[📄 Document Processing<br>📈 Excel Spreadsheets<br>📑 PDF Processing]
 
-    E --> E_Tools[🔢 Sequential Thinking<br>🕸️ Memory Graph<br>🧠 Think Tool]
+    E --> E_Enabled[🧠 Think Tool]
+    E --> E_Disabled[🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
-    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>🧮 Calculator<br>📁 Filesystem]
+    F --> F_Enabled[🧮 Calculator]
+    F --> F_Disabled[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem]
 
-    G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
+    G --> G_Disabled[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
     classDef inputOutput fill:#FEE0D2,stroke:#E6550D,color:#E6550D
-    classDef llm fill:#E5F5E0,stroke:#31A354,color:#31A354
+    classDef llm fill:#E5F5E0,stroke:#31A354,color:#31A354,stroke-width:2px
+    classDef llmDisabled fill:#E5F5E0,stroke:#31A354,color:#31A354,stroke-dasharray:5 5
     classDef components fill:#E6E6FA,stroke:#756BB1,color:#756BB1
-    classDef process fill:#EAF5EA,stroke:#C6E7C6,color:#77AD77
+    classDef process fill:#EAF5EA,stroke:#C6E7C6,color:#77AD77,stroke-width:2px
+    classDef processDisabled fill:#EAF5EA,stroke:#C6E7C6,color:#77AD77,stroke-dasharray:5 5
     classDef stop fill:#E5E1F2,stroke:#C7C0DE,color:#8471BF
-    classDef data fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
-    classDef decision fill:#FFF5EB,stroke:#FD8D3C,color:#E6550D
+    classDef data fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD,stroke-width:2px
+    classDef dataDisabled fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD,stroke-dasharray:5 5
+    classDef decision fill:#FFF5EB,stroke:#FD8D3C,color:#E6550D,stroke-width:2px
+    classDef decisionDisabled fill:#FFF5EB,stroke:#FD8D3C,color:#E6550D,stroke-dasharray:5 5
     classDef storage fill:#F2F0F7,stroke:#BCBDDC,color:#756BB1
-    classDef api fill:#FFF5F0,stroke:#FD9272,color:#A63603
+    classDef api fill:#FFF5F0,stroke:#FD9272,color:#A63603,stroke-width:2px
+    classDef apiDisabled fill:#FFF5F0,stroke:#FD9272,color:#A63603,stroke-dasharray:5 5
     classDef error fill:#FCBBA1,stroke:#FB6A4A,color:#CB181D
 
     class A components
-    class B,B_Tools decision
-    class C,C_Tools api
-    class D,D_Tools error
-    class E,E_Tools data
-    class F,F_Tools process
-    class G,G_Tools llm
+    class B decision
+    class C api
+    class E data
+    class F process
+    class G llm
+    class B_Enabled decision
+    class E_Enabled data
+    class F_Enabled process
+    class B_Disabled decisionDisabled
+    class C_Disabled apiDisabled
+    class E_Disabled dataDisabled
+    class F_Disabled processDisabled
+    class G_Disabled llmDisabled
 ```
 
 ## Why I Built MCP DevTools
