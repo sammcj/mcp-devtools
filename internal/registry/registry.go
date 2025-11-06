@@ -75,7 +75,8 @@ func parseDisabledTools() {
 	}
 }
 
-// requiresEnablement checks if a tool requires enablement via ENABLE_ADDITIONAL_TOOLS
+// requiresEnablement checks if a tool requires enablement via ENABLE_ADDITIONAL_TOOLS.
+// When adding new tools that should be disabled by default, add their names to the additionalTools list.
 func requiresEnablement(toolName string) bool {
 	additionalTools := []string{
 		"filesystem",
