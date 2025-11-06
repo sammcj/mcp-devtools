@@ -92,9 +92,9 @@ func handleFormatRange(ctx context.Context, logger *logrus.Logger, filePath stri
 			font.Size = float64(size)
 		}
 		if colour, ok := fontMap["colour"].(string); ok {
-			font.Color = normalizeColour(colour)
+			font.Color = normaliseColour(colour)
 		} else if color, ok := fontMap["color"].(string); ok {
-			font.Color = normalizeColour(color)
+			font.Color = normaliseColour(color)
 		}
 		if family, ok := fontMap["family"].(string); ok {
 			font.Family = family
@@ -108,9 +108,9 @@ func handleFormatRange(ctx context.Context, logger *logrus.Logger, filePath stri
 			Type: "pattern",
 		}
 		if colour, ok := fillMap["colour"].(string); ok {
-			fill.Color = []string{normalizeColour(colour)}
+			fill.Color = []string{normaliseColour(colour)}
 		} else if color, ok := fillMap["color"].(string); ok {
-			fill.Color = []string{normalizeColour(color)}
+			fill.Color = []string{normaliseColour(color)}
 		}
 		if pattern, ok := fillMap["pattern"].(string); ok {
 			fill.Pattern = getPatternType(pattern)
@@ -136,7 +136,7 @@ func handleFormatRange(ctx context.Context, logger *logrus.Logger, filePath stri
 		if borderColour == "" {
 			borderColour = "000000"
 		}
-		borderColour = normalizeColour(borderColour)
+		borderColour = normaliseColour(borderColour)
 
 		sides, _ := borderMap["sides"].([]any)
 		if len(sides) == 0 {
@@ -314,7 +314,7 @@ func applyColourScale(f *excelize.File, filePath string, sheetName string, range
 	if minColour == "" {
 		minColour = "FF0000" // Default red
 	}
-	minColour = normalizeColour(minColour)
+	minColour = normaliseColour(minColour)
 
 	maxColour, _ := rule["max_colour"].(string)
 	if maxColour == "" {
@@ -323,14 +323,14 @@ func applyColourScale(f *excelize.File, filePath string, sheetName string, range
 	if maxColour == "" {
 		maxColour = "00FF00" // Default green
 	}
-	maxColour = normalizeColour(maxColour)
+	maxColour = normaliseColour(maxColour)
 
 	midColour, _ := rule["mid_colour"].(string)
 	if midColour == "" {
 		midColour, _ = rule["mid_color"].(string)
 	}
 	if midColour != "" {
-		midColour = normalizeColour(midColour)
+		midColour = normaliseColour(midColour)
 	}
 
 	format := []excelize.ConditionalFormatOptions{
@@ -513,9 +513,9 @@ func applyRuleBasedFormatting(f *excelize.File, filePath string, sheetName strin
 		if fontMap, ok := formatStyle["font"].(map[string]any); ok {
 			font := &excelize.Font{}
 			if colour, ok := fontMap["colour"].(string); ok {
-				font.Color = normalizeColour(colour)
+				font.Color = normaliseColour(colour)
 			} else if color, ok := fontMap["color"].(string); ok {
-				font.Color = normalizeColour(color)
+				font.Color = normaliseColour(color)
 			}
 			if font.Color != "" {
 				style.Font = font
@@ -527,13 +527,13 @@ func applyRuleBasedFormatting(f *excelize.File, filePath string, sheetName strin
 				style.Fill = excelize.Fill{
 					Type:    "pattern",
 					Pattern: 1,
-					Color:   []string{normalizeColour(colour)},
+					Color:   []string{normaliseColour(colour)},
 				}
 			} else if color, ok := fillMap["color"].(string); ok {
 				style.Fill = excelize.Fill{
 					Type:    "pattern",
 					Pattern: 1,
-					Color:   []string{normalizeColour(color)},
+					Color:   []string{normaliseColour(color)},
 				}
 			}
 		}
@@ -761,8 +761,8 @@ func mergeStyles(existing, new *excelize.Style) *excelize.Style {
 	return merged
 }
 
-// normalizeColour strips leading # from colour strings for flexibility
+// normaliseColour strips leading # from colour strings for flexibility
 // Accepts both "4472C4" and "#4472C4" formats
-func normalizeColour(colour string) string {
+func normaliseColour(colour string) string {
 	return strings.TrimPrefix(colour, "#")
 }

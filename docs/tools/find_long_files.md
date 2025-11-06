@@ -63,13 +63,13 @@ While intended to be activated via a prompt to an agent, below are some example 
 
 ## Environment Variables
 
-| Variable                              | Description                                          | Example                     |
-|---------------------------------------|------------------------------------------------------|-----------------------------|
-| `LONG_FILES_DEFAULT_LENGTH`           | Override default line threshold                      | `1000`                      |
-| `LONG_FILES_ADDITIONAL_EXCLUDES`      | Comma-separated additional exclusion patterns        | `**/*.test.js,**/*.spec.js` |
+| Variable                              | Description                                                                      | Example                     |
+|---------------------------------------|----------------------------------------------------------------------------------|-----------------------------|
+| `LONG_FILES_DEFAULT_LENGTH`           | Override default line threshold                                                  | `1000`                      |
+| `LONG_FILES_ADDITIONAL_EXCLUDES`      | Comma-separated additional exclusion patterns                                    | `**/*.test.js,**/*.spec.js` |
 | `LONG_FILES_RETURN_PROMPT`            | Custom message returned with the checklist (set to empty string `""` to disable) | `Custom instructions...`    |
-| `LONG_FILES_SORT_BY_DIRECTORY_TOTALS` | Sort by directory totals instead of individual files | `true`                      |
-| `LONG_FILES_MAX_SIZE_KB`              | Maximum file size in KB before skipping (default: 2048) | `4096`                      |
+| `LONG_FILES_SORT_BY_DIRECTORY_TOTALS` | Sort by directory totals instead of individual files                             | `true`                      |
+| `LONG_FILES_MAX_SIZE_KB`              | Maximum file size in KB before skipping (default: 2048)                          | `4096`                      |
 
 ## Default Exclusions
 

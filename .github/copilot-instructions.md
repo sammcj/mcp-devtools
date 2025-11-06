@@ -142,5 +142,6 @@ Before approving any pull request, verify:
 6. ✅ Error handling uses wrapped errors (`fmt.Errorf` with `%w`)
 7. ✅ Context cancellation handled properly
 8. ✅ Resource cleanup with defer statements
+9. ✅ No American English spelling used
 
 **Remember:** The #1 priority is preventing stdout/stderr writes in stdio mode. This should be the first thing checked in every review.

@@ -28,27 +28,6 @@ func TestM2ETool_Definition(t *testing.T) {
 	testutils.AssertNotNil(t, definition.InputSchema)
 }
 
-func TestM2ETool_Execute_ToolDisabled(t *testing.T) {
-	// Ensure murican_to_english tool is disabled by default
-	_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
-
-	tool := &m2e.M2ETool{}
-	logger := testutils.CreateTestLogger()
-	cache := testutils.CreateTestCache()
-	ctx := testutils.CreateTestContext()
-
-	args := map[string]any{
-		"text": "The color of the organization's behavior was analyzed.",
-	}
-
-	result, err := tool.Execute(ctx, logger, cache, args)
-
-	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "murican_to_english tool is not enabled")
-	testutils.AssertErrorContains(t, err, "Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'murican_to_english'")
-	testutils.AssertNil(t, result)
-}
-
 func TestM2ETool_Execute_InlineMode_ValidInput(t *testing.T) {
 	// Enable the murican_to_english tool for testing
 	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "murican_to_english")

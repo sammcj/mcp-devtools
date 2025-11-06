@@ -2,6 +2,35 @@
 
 A single, high-performance MCP server that replaces many Node.js and Python-based MCP servers with one efficient Go binary, providing access to essential developer tools through a unified, modular interface that can be easily extended with new tools.
 
+**Default Tools**
+
+```mermaid
+graph LR
+    A[MCP DevTools<br>Server]
+
+    A --> B[Search &<br>Discovery]
+    A --> E[Intelligence &<br>Memory]
+    A --> F[Utilities]
+
+    B --> B_Tools[🌐 Internet Search<br>📡 Web Fetch<br>📦 Package Search<br>📚 Package Documentation<br>🐙 GitHub]
+
+    E --> E_Tools[🧠 Think Tool]
+
+    F --> F_Tools[🧮 Calculator<br>🕵 Find Long Files]
+
+    classDef components fill:#E6E6FA,stroke:#756BB1,color:#756BB1
+    classDef decision fill:#FFF5EB,stroke:#FD8D3C,color:#E6550D
+    classDef data fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
+    classDef process fill:#EAF5EA,stroke:#C6E7C6,color:#77AD77
+
+    class A components
+    class B,B_Tools decision
+    class E,E_Tools data
+    class F,F_Tools process
+```
+
+**Additional Tools (Disabled by Default)**
+
 ```mermaid
 graph LR
     A[MCP DevTools<br>Server]
@@ -12,31 +41,26 @@ graph LR
     A --> F[Utilities]
     A --> G[Agents]
 
-    B --> B_Tools[🌐 Internet Search<br>📡 Web Fetch<br>📦 Package Search<br>📚 Package Documentation<br>🎨 ShadCN UI Components<br>📝 Terraform Docs<br>☁️ AWS Doc<br>🐙 GitHub]
+    B --> B_Tools[🎨 ShadCN UI Components<br>📝 Terraform Docs<br>☁️ AWS Doc]
 
     C --> C_Tools[📄 Document Processing<br>📈 Excel Spreadsheets<br>📑 PDF Processing]
 
-    E --> E_Tools[🔢 Sequential Thinking<br>🕸️ Memory Graph<br>🧠 Think Tool]
+    E --> E_Tools[🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
-    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>🧮 Calculator<br>📁 Filesystem]
+    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem]
 
     G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
-    classDef inputOutput fill:#FEE0D2,stroke:#E6550D,color:#E6550D
-    classDef llm fill:#E5F5E0,stroke:#31A354,color:#31A354
     classDef components fill:#E6E6FA,stroke:#756BB1,color:#756BB1
+    classDef llm fill:#E5F5E0,stroke:#31A354,color:#31A354
     classDef process fill:#EAF5EA,stroke:#C6E7C6,color:#77AD77
-    classDef stop fill:#E5E1F2,stroke:#C7C0DE,color:#8471BF
     classDef data fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
     classDef decision fill:#FFF5EB,stroke:#FD8D3C,color:#E6550D
-    classDef storage fill:#F2F0F7,stroke:#BCBDDC,color:#756BB1
     classDef api fill:#FFF5F0,stroke:#FD9272,color:#A63603
-    classDef error fill:#FCBBA1,stroke:#FB6A4A,color:#CB181D
 
     class A components
     class B,B_Tools decision
     class C,C_Tools api
-    class D,D_Tools error
     class E,E_Tools data
     class F,F_Tools process
     class G,G_Tools llm
@@ -79,7 +103,7 @@ Assuming you have Golang installed, you can use `go run` (similar to npx / uvx) 
       "env": {
         "NOTE": "The below environment variables are completely optional, see the README.md for available tools and configuration options",
         "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
-        "DISABLED_FUNCTIONS": ""
+        "DISABLED_TOOLS": ""
       }
     }
   }
@@ -118,7 +142,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "env": {
         "NOTE": "The below environment variables are completely optional, see the README.md for available tools and configuration options",
         "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
-        "DISABLED_FUNCTIONS": ""
+        "DISABLED_TOOLS": ""
       }
     }
   }
@@ -129,7 +153,7 @@ See below for various environment variables you can set to configure specific fe
 
 ## Available Tools
 
-These tools can be disabled by adding their function name to the `DISABLED_FUNCTIONS` environment variable in your MCP configuration.
+These tools can be disabled by adding their function name to the `DISABLED_TOOLS` environment variable in your MCP configuration.
 
 | Tool                                                             | Purpose                               | Dependencies                  | Example Usage                   |
 |------------------------------------------------------------------|---------------------------------------|-------------------------------|---------------------------------|
@@ -139,9 +163,9 @@ These tools can be disabled by adding their function name to the `DISABLED_FUNCT
 | **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, mark3labs/mcp-go         |
 | **[Package Search](docs/tools/package-search.md)**               | Check package versions                | None                          | NPM, Python, Go, Java, Docker   |
 | **[Think](docs/tools/think.md)**                                 | Structured reasoning space            | None                          | Complex problem analysis        |
-| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    | None                          | Find files over 700 lines       |
 | **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations         | None                          | 2 + 3 * 4, batch processing     |
 | **[DevTools Help](docs/tools/get_tool_help.md)**                 | Extended info about DevTools tools    | None                          | Usage examples, troubleshooting |
+| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    | `find_long_files`             | Find files over 700 lines       |
 
 ### Additional Tools (Disabled By Default)
 
@@ -288,7 +312,7 @@ All environment variables are optional, but if you want to use specific search p
 
 **General:**
 - `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,filesystem,claude-agent,codex-agent,gemini-agent,q-developer-agent,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
-- `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
+- `DISABLED_TOOLS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 - `LOG_TOOL_ERRORS` - Enable logging of failed tool calls to `~/.mcp-devtools/logs/tool-errors.log` (set to `true` to enable). Logs older than 60 days are automatically removed on server startup.
 
 **Core Tools:**

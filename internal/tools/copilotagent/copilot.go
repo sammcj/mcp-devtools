@@ -79,11 +79,6 @@ func (t *CopilotTool) Definition() mcp.Tool {
 
 // Execute executes the tool's logic by calling the Copilot CLI
 func (t *CopilotTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if copilot-agent tool is enabled (disabled by default for security)
-	if !tools.IsToolEnabled("copilot-agent") {
-		return nil, fmt.Errorf("copilot agent tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'copilot-agent'")
-	}
-
 	logger.Info("Executing Copilot tool")
 
 	// Get timeout from environment or use default

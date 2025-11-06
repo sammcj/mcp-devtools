@@ -71,11 +71,6 @@ Inline mode: Provide text parameter instead to get converted text returned direc
 
 // Execute executes the m2e tool
 func (m *M2ETool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if murican_to_english tool is enabled (disabled by default)
-	if !tools.IsToolEnabled("murican_to_english") {
-		return nil, fmt.Errorf("murican_to_english tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'murican_to_english'")
-	}
-
 	// Parse and validate parameters
 	request, err := m.parseRequest(args)
 	if err != nil {

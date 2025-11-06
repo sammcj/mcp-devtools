@@ -246,11 +246,6 @@ Functions and their required parameters:
 
 // Execute executes the filesystem tool
 func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if filesystem tool is enabled (disabled by defaulty)
-	if !tools.IsToolEnabled("filesystem") {
-		return nil, fmt.Errorf("filesystem tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'filesystem'")
-	}
-
 	// Create security operations instance
 	ops := security.NewOperations("filesystem")
 

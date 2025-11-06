@@ -50,14 +50,9 @@ func (t *SecurityOverrideTool) Definition() mcp.Tool {
 
 // Execute processes security override requests
 func (t *SecurityOverrideTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if security system is enabled
+	// Check if security system is enabled (dependency check)
 	if !tools.IsToolEnabled("security") {
 		return nil, fmt.Errorf("security system is not enabled. Ask the user to set ENABLE_ADDITIONAL_TOOLS environment variable to include 'security'")
-	}
-
-	// Check if security override tool is explicitly enabled
-	if !tools.IsToolEnabled("security_override") {
-		return nil, fmt.Errorf("security override tool is not enabled. Ask the user to set ENABLE_ADDITIONAL_TOOLS environment variable to include 'security_override'")
 	}
 
 	// Check if global security manager is available

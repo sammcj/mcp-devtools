@@ -69,11 +69,6 @@ Examples:
 
 // Execute executes the unified shadcn tool
 func (t *UnifiedShadcnTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if shadcn tool is enabled (disabled by default)
-	if !tools.IsToolEnabled("shadcn") {
-		return nil, fmt.Errorf("shadcn tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'shadcn'")
-	}
-
 	// Parse action (required)
 	action, ok := args["action"].(string)
 	if !ok || action == "" {

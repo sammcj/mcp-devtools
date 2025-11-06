@@ -69,11 +69,6 @@ func (t *PDFTool) Definition() mcp.Tool {
 
 // Execute processes the PDF file
 func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if pdf tool is enabled (disabled by default)
-	if !tools.IsToolEnabled("pdf") {
-		return nil, fmt.Errorf("pdf tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'pdf'")
-	}
-
 	logger.Debug("Executing PDF processing tool")
 
 	// Parse and validate parameters

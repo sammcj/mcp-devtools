@@ -16,7 +16,7 @@ import (
 )
 
 func TestFindLongFilesTool(t *testing.T) {
-	// Create a temporary directory for testing
+	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "find_long_files_test")
 	require.NoError(t, err)
 	defer func() {
@@ -124,7 +124,7 @@ func TestFindLongFilesTool(t *testing.T) {
 func TestFindLongFilesTool_ParseRequest(t *testing.T) {
 	tool := &filelength.FindLongFilesTool{}
 
-	// Create a temporary directory for testing
+	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "parse_request_test")
 	require.NoError(t, err)
 	defer func() {
@@ -180,7 +180,7 @@ func TestFindLongFilesTool_ParseRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Use reflection to access the private parseRequest method
-			// In a real scenario, you might make this method public for testing
+			// In a real scenario, you might make this method public
 			// or test it indirectly through Execute
 			logger := logrus.New()
 			logger.SetLevel(logrus.ErrorLevel)
@@ -228,7 +228,7 @@ func TestFindLongFilesTool_EnvironmentVariables(t *testing.T) {
 	require.NoError(t, os.Setenv("LONG_FILES_ADDITIONAL_EXCLUDES", "*.test,*.spec"))
 	require.NoError(t, os.Setenv("LONG_FILES_RETURN_PROMPT", "Custom test message"))
 
-	// Create a temporary directory for testing
+	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "env_test")
 	require.NoError(t, err)
 	defer func() {
@@ -279,7 +279,7 @@ func TestFindLongFilesTool_MaxFileSize(t *testing.T) {
 		}
 	}()
 
-	// Create a temporary directory for testing
+	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "max_size_test")
 	require.NoError(t, err)
 	defer func() {

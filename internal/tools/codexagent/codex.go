@@ -89,11 +89,6 @@ func (t *CodexTool) Definition() mcp.Tool {
 
 // Execute executes the tool's logic by calling the Codex CLI
 func (t *CodexTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if codex-agent tool is enabled (disabled by default for security)
-	if !tools.IsToolEnabled("codex-agent") {
-		return nil, fmt.Errorf("codex agent tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'codex-agent'")
-	}
-
 	logger.Info("Executing Codex tool")
 
 	// Get timeout from environment or use default

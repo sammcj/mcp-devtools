@@ -73,17 +73,17 @@ func TestRegistry_GetTools(t *testing.T) {
 
 func TestRegistry_DisabledFunctions(t *testing.T) {
 	// Save original environment
-	originalDisabled := os.Getenv("DISABLED_FUNCTIONS")
+	originalDisabled := os.Getenv("DISABLED_TOOLS")
 	defer func() {
 		if originalDisabled == "" {
-			_ = os.Unsetenv("DISABLED_FUNCTIONS")
+			_ = os.Unsetenv("DISABLED_TOOLS")
 		} else {
-			_ = os.Setenv("DISABLED_FUNCTIONS", originalDisabled)
+			_ = os.Setenv("DISABLED_TOOLS", originalDisabled)
 		}
 	}()
 
 	// Set up disabled functions
-	_ = os.Setenv("DISABLED_FUNCTIONS", "disabled-tool,another-disabled-tool")
+	_ = os.Setenv("DISABLED_TOOLS", "disabled-tool,another-disabled-tool")
 
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)
@@ -114,17 +114,17 @@ func TestRegistry_DisabledFunctions(t *testing.T) {
 
 func TestRegistry_DisabledFunctions_WithSpaces(t *testing.T) {
 	// Save original environment
-	originalDisabled := os.Getenv("DISABLED_FUNCTIONS")
+	originalDisabled := os.Getenv("DISABLED_TOOLS")
 	defer func() {
 		if originalDisabled == "" {
-			_ = os.Unsetenv("DISABLED_FUNCTIONS")
+			_ = os.Unsetenv("DISABLED_TOOLS")
 		} else {
-			_ = os.Setenv("DISABLED_FUNCTIONS", originalDisabled)
+			_ = os.Setenv("DISABLED_TOOLS", originalDisabled)
 		}
 	}()
 
 	// Set up disabled functions with spaces
-	_ = os.Setenv("DISABLED_FUNCTIONS", " disabled-tool , another-disabled-tool ")
+	_ = os.Setenv("DISABLED_TOOLS", " disabled-tool , another-disabled-tool ")
 
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)
@@ -140,17 +140,17 @@ func TestRegistry_DisabledFunctions_WithSpaces(t *testing.T) {
 
 func TestRegistry_DisabledFunctions_Empty(t *testing.T) {
 	// Save original environment
-	originalDisabled := os.Getenv("DISABLED_FUNCTIONS")
+	originalDisabled := os.Getenv("DISABLED_TOOLS")
 	defer func() {
 		if originalDisabled == "" {
-			_ = os.Unsetenv("DISABLED_FUNCTIONS")
+			_ = os.Unsetenv("DISABLED_TOOLS")
 		} else {
-			_ = os.Setenv("DISABLED_FUNCTIONS", originalDisabled)
+			_ = os.Setenv("DISABLED_TOOLS", originalDisabled)
 		}
 	}()
 
 	// Set empty disabled functions
-	_ = os.Setenv("DISABLED_FUNCTIONS", "")
+	_ = os.Setenv("DISABLED_TOOLS", "")
 
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)
@@ -159,9 +159,92 @@ func TestRegistry_DisabledFunctions_Empty(t *testing.T) {
 	tool := testutils.NewMockTool("test-tool")
 	registry.Register(tool)
 
-	// Test that tool is available when DISABLED_FUNCTIONS is empty
+	// Test that tool is available when DISABLED_TOOLS is empty
 	_, ok := registry.GetTool("test-tool")
 	testutils.AssertEqual(t, true, ok)
+}
+
+func TestRegistry_LegacyDisabledFunctions(t *testing.T) {
+	// TODO: This can be removed when DISABLED_FUNCTIONS is fully deprecated
+	// Save original environment
+	originalDisabled := os.Getenv("DISABLED_TOOLS")
+	originalLegacy := os.Getenv("DISABLED_FUNCTIONS")
+	defer func() {
+		if originalDisabled == "" {
+			_ = os.Unsetenv("DISABLED_TOOLS")
+		} else {
+			_ = os.Setenv("DISABLED_TOOLS", originalDisabled)
+		}
+		if originalLegacy == "" {
+			_ = os.Unsetenv("DISABLED_FUNCTIONS")
+		} else {
+			_ = os.Setenv("DISABLED_FUNCTIONS", originalLegacy)
+		}
+	}()
+
+	// Clear DISABLED_TOOLS and set legacy DISABLED_FUNCTIONS
+	_ = os.Unsetenv("DISABLED_TOOLS")
+	_ = os.Setenv("DISABLED_FUNCTIONS", "legacy-disabled-tool")
+
+	logger := testutils.CreateTestLogger()
+	registry.Init(logger)
+
+	// Register tools
+	enabledTool := testutils.NewMockTool("enabled-tool")
+	disabledTool := testutils.NewMockTool("legacy-disabled-tool")
+	registry.Register(enabledTool)
+	registry.Register(disabledTool)
+
+	// Test that legacy env var works
+	_, ok := registry.GetTool("enabled-tool")
+	testutils.AssertEqual(t, true, ok)
+
+	_, ok = registry.GetTool("legacy-disabled-tool")
+	testutils.AssertEqual(t, false, ok)
+}
+
+func TestRegistry_LegacyDisabledFunctions_MergesWithNew(t *testing.T) {
+	// TODO: This can be removed when DISABLED_FUNCTIONS is fully deprecated
+	// Save original environment
+	originalDisabled := os.Getenv("DISABLED_TOOLS")
+	originalLegacy := os.Getenv("DISABLED_FUNCTIONS")
+	defer func() {
+		if originalDisabled == "" {
+			_ = os.Unsetenv("DISABLED_TOOLS")
+		} else {
+			_ = os.Setenv("DISABLED_TOOLS", originalDisabled)
+		}
+		if originalLegacy == "" {
+			_ = os.Unsetenv("DISABLED_FUNCTIONS")
+		} else {
+			_ = os.Setenv("DISABLED_FUNCTIONS", originalLegacy)
+		}
+	}()
+
+	// Set both env vars
+	_ = os.Setenv("DISABLED_TOOLS", "new-disabled-tool")
+	_ = os.Setenv("DISABLED_FUNCTIONS", "legacy-disabled-tool")
+
+	logger := testutils.CreateTestLogger()
+	registry.Init(logger)
+
+	// Register tools
+	enabledTool := testutils.NewMockTool("enabled-tool")
+	legacyDisabledTool := testutils.NewMockTool("legacy-disabled-tool")
+	newDisabledTool := testutils.NewMockTool("new-disabled-tool")
+	registry.Register(enabledTool)
+	registry.Register(legacyDisabledTool)
+	registry.Register(newDisabledTool)
+
+	// Test that both env vars work together
+	_, ok := registry.GetTool("enabled-tool")
+	testutils.AssertEqual(t, true, ok)
+
+	_, ok = registry.GetTool("legacy-disabled-tool")
+	testutils.AssertEqual(t, false, ok)
+
+	_, ok = registry.GetTool("new-disabled-tool")
+	testutils.AssertEqual(t, false, ok)
 }
 
 func TestRegistry_Cache_Operations(t *testing.T) {
@@ -205,6 +288,92 @@ func TestRegistry_Shared_Resources(t *testing.T) {
 	testutils.AssertEqual(t, cache1, cache2)
 }
 
+func TestRegistry_ShouldRegisterTool(t *testing.T) {
+	// Test the ShouldRegisterTool function with various scenarios
+
+	// Save original environment
+	originalDisabled := os.Getenv("DISABLED_TOOLS")
+	originalEnabled := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
+	defer func() {
+		if originalDisabled == "" {
+			_ = os.Unsetenv("DISABLED_TOOLS")
+		} else {
+			_ = os.Setenv("DISABLED_TOOLS", originalDisabled)
+		}
+		if originalEnabled == "" {
+			_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		} else {
+			_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", originalEnabled)
+		}
+	}()
+
+	logger := testutils.CreateTestLogger()
+
+	t.Run("tool_enabled_by_default", func(t *testing.T) {
+		_ = os.Unsetenv("DISABLED_TOOLS")
+		_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		registry.Init(logger)
+
+		// Test a tool that's enabled by default (not in requiresEnablement list)
+		result := registry.ShouldRegisterTool("internet_search")
+		testutils.AssertEqual(t, true, result)
+	})
+
+	t.Run("tool_disabled_via_DISABLED_TOOLS", func(t *testing.T) {
+		_ = os.Setenv("DISABLED_TOOLS", "internet_search")
+		_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		registry.Init(logger)
+
+		// Tool should be blocked by DISABLED_TOOLS (highest priority)
+		result := registry.ShouldRegisterTool("internet_search")
+		testutils.AssertEqual(t, false, result)
+	})
+
+	t.Run("tool_requires_enablement_not_enabled", func(t *testing.T) {
+		_ = os.Unsetenv("DISABLED_TOOLS")
+		_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		registry.Init(logger)
+
+		// Test a tool that requires enablement but is not enabled
+		result := registry.ShouldRegisterTool("q-developer-agent")
+		testutils.AssertEqual(t, false, result)
+	})
+
+	t.Run("tool_requires_enablement_is_enabled", func(t *testing.T) {
+		_ = os.Unsetenv("DISABLED_TOOLS")
+		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "q-developer-agent")
+		registry.Init(logger)
+
+		// Tool requires enablement and is explicitly enabled
+		result := registry.ShouldRegisterTool("q-developer-agent")
+		testutils.AssertEqual(t, true, result)
+	})
+
+	t.Run("DISABLED_TOOLS_overrides_ENABLE_ADDITIONAL_TOOLS", func(t *testing.T) {
+		_ = os.Setenv("DISABLED_TOOLS", "q-developer-agent")
+		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "q-developer-agent")
+		registry.Init(logger)
+
+		// DISABLED_TOOLS has highest priority
+		result := registry.ShouldRegisterTool("q-developer-agent")
+		testutils.AssertEqual(t, false, result)
+	})
+
+	t.Run("multiple_tools_in_ENABLE_ADDITIONAL_TOOLS", func(t *testing.T) {
+		_ = os.Unsetenv("DISABLED_TOOLS")
+		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "q-developer-agent,claude-agent,gemini-agent")
+		registry.Init(logger)
+
+		// All listed tools should be enabled
+		testutils.AssertEqual(t, true, registry.ShouldRegisterTool("q-developer-agent"))
+		testutils.AssertEqual(t, true, registry.ShouldRegisterTool("claude-agent"))
+		testutils.AssertEqual(t, true, registry.ShouldRegisterTool("gemini-agent"))
+
+		// Tool not in the list should not be enabled
+		testutils.AssertEqual(t, false, registry.ShouldRegisterTool("codex-agent"))
+	})
+}
+
 func TestRegistry_DisabledByDefault_Tools(t *testing.T) {
 	// Save original environment
 	originalEnabled := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
@@ -246,10 +415,8 @@ func TestRegistry_DisabledByDefault_Tools(t *testing.T) {
 				newEnabledTools := registry.GetEnabledTools()
 				if _, nowEnabled := newEnabledTools[toolName]; !nowEnabled {
 					t.Errorf("Tool %q is disabled by default but CANNOT be enabled with ENABLE_ADDITIONAL_TOOLS=%q\n"+
-						"  Either:\n"+
-						"  1. Missing from requiresEnablement() list in internal/registry/registry.go, OR\n"+
-						"  2. Missing tools.IsToolEnabled(%q) check in Execute() method",
-						toolName, toolName, toolName)
+						"  This means the tool is missing from requiresEnablement() list in internal/registry/registry.go",
+						toolName, toolName)
 				}
 			}
 		} else {

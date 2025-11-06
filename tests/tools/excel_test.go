@@ -84,27 +84,6 @@ func TestExcel_Definition(t *testing.T) {
 	testutils.AssertNotNil(t, definition.InputSchema)
 }
 
-func TestExcel_Execute_ToolNotEnabled(t *testing.T) {
-	// Skip if tool is enabled
-	if os.Getenv("ENABLE_ADDITIONAL_TOOLS") != "" {
-		t.Skip("Skipping test because ENABLE_ADDITIONAL_TOOLS is set")
-	}
-
-	tool := &excel.ExcelTool{}
-	logger := testutils.CreateTestLogger()
-	cache := testutils.CreateTestCache()
-	ctx := testutils.CreateTestContext()
-
-	args := map[string]any{
-		"function": "create_workbook",
-		"filepath": "/tmp/test.xlsx",
-	}
-
-	_, err := tool.Execute(ctx, logger, cache, args)
-	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "not enabled")
-}
-
 func TestExcel_Execute_MissingFunction(t *testing.T) {
 	// Enable the tool for this test
 	defer enableExcelTool(t)()
