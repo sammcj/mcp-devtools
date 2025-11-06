@@ -25,7 +25,7 @@ const (
 )
 
 // GetAgentPermissionsMode returns the current permissions mode from environment variable
-// Valid values: "yolo" for enabled, "false" for disabled
+// Valid values: "yolo" for enabled, "disabled" or "false" for disabled
 // Returns PermissionsModeDefault if unset or invalid value
 func GetAgentPermissionsMode() PermissionsMode {
 	mode := strings.TrimSpace(strings.ToLower(os.Getenv(AgentPermissionsModeEnvVar)))
