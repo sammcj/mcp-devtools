@@ -14,7 +14,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/mark3labs/mcp-go v0.42.0
-	github.com/openai/openai-go/v3 v3.6.1
+	github.com/openai/openai-go/v3 v3.8.1
 	github.com/pdfcpu/pdfcpu v0.11.1
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/sammcj/m2e v0.0.27
