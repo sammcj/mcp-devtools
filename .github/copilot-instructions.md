@@ -127,7 +127,7 @@ When the server runs in stdio mode (default transport), ANY output to stdout/std
 
 ## General Guidelines
 
-- Do not marketing terms such as 'comprehensive' or 'production-grade' in documentation or code comments.
+- Do not use marketing terms such as 'comprehensive' or 'production-grade' in documentation or code comments.
 - Focus on clear, concise actionable technical guidance.
 
 ## Review Checklist for Every PR
