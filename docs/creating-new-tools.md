@@ -476,6 +476,8 @@ make test-fast
 
 For tools with complex parameter structures or usage patterns, you can implement the optional `ExtendedHelpProvider` interface to provide detailed usage information accessible through the `get_tool_help` tool.
 
+Note: The extended help is not automatically visible to agents, they have to explicitly call the `get_tool_help` tool to retrieve it.
+
 ### Implementing Extended Help
 
 To add extended help to your tool, implement the `ExtendedHelpProvider` interface:

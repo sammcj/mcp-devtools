@@ -256,7 +256,7 @@ func TestCodexTool_Constants(t *testing.T) {
 	testutils.AssertEqual(t, "AGENT_MAX_RESPONSE_SIZE", codexagent.AgentMaxResponseSizeEnvVar)
 	testutils.AssertEqual(t, "AGENT_TIMEOUT", codexagent.AgentTimeoutEnvVar)
 	testutils.AssertEqual(t, 2*1024*1024, codexagent.DefaultMaxResponseSize)
-	testutils.AssertEqual(t, 180, codexagent.DefaultTimeout)
+	testutils.AssertEqual(t, 300, codexagent.DefaultTimeout)
 }
 
 // Fast error handling tests that don't execute CLI
