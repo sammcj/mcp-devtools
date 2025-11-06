@@ -22,7 +22,7 @@ import (
 type CodexTool struct{}
 
 const (
-	DefaultTimeout             = 180             // 3 minutes default timeout
+	DefaultTimeout             = 300             // 5 minutes default timeout
 	DefaultMaxResponseSize     = 2 * 1024 * 1024 // 2MB default limit
 	AgentMaxResponseSizeEnvVar = "AGENT_MAX_RESPONSE_SIZE"
 	AgentTimeoutEnvVar         = "AGENT_TIMEOUT"
@@ -52,10 +52,8 @@ func (t *CodexTool) Definition() mcp.Tool {
 			mcp.Description("Enable low-friction sandboxed automatic execution. In exec mode, implies --sandbox workspace-write."),
 			mcp.DefaultBool(false),
 		),
-		mcp.WithBoolean("yolo-mode",
-			mcp.Description("DANGER: Bypass all approvals and sandbox restrictions (maps to --dangerously-bypass-approvals-and-sandbox). Use with extreme caution."),
-			mcp.DefaultBool(false),
-		),
+		tools.AddConditionalParameter("yolo-mode",
+			"DANGER: Bypass all approvals and sandbox restrictions (maps to --dangerously-bypass-approvals-and-sandbox). Use with extreme caution."),
 		mcp.WithBoolean("resume",
 			mcp.Description("Continue the most recent session using --last flag."),
 			mcp.DefaultBool(false),
@@ -114,7 +112,8 @@ func (t *CodexTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 	overrideModel, _ := args["override-model"].(string)
 	sandbox, _ := args["sandbox"].(string)
 	fullAuto, _ := args["full-auto"].(bool)
-	yoloMode, _ := args["yolo-mode"].(bool)
+	yoloModeParam, _ := args["yolo-mode"].(bool)
+	yoloMode := tools.GetEffectivePermissionsValue(yoloModeParam)
 	resume, _ := args["resume"].(bool)
 	sessionID, _ := args["session-id"].(string)
 	profile, _ := args["profile"].(string)

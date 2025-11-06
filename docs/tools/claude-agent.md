@@ -15,11 +15,11 @@ Requires the [Claude Code CLI](https://www.anthropic.com/claude-code) to be inst
 
 ## Environment Variables
 
-- `ENABLE_AGENTS`: A comma-separated list of agents to enable (e.g., `claude,gemini`).
-- `AGENT_TIMEOUT`: The timeout in seconds for the `claude` command. Defaults to `180`.
-- `AGENT_MAX_RESPONSE_SIZE`: Maximum response size in bytes. Defaults to `2097152` (2MB).
-- `CLAUDE_SYSTEM_PROMPT`: A string to append to the default system prompt.
-- `CLAUDE_PERMISSION_MODE`: The permission mode to use for the session.
+- `AGENT_TIMEOUT`: (optional) The timeout in seconds for the `claude` command. Defaults to `300`.
+- `AGENT_MAX_RESPONSE_SIZE`: (optional) Maximum response size in bytes. Defaults to `2097152` (2MB).
+- `AGENT_PERMISSIONS_MODE`: (optional) Controls whether yolo-mode parameter is exposed and its default behaviour. Options: `yolo` (force yolo-mode on, hide parameter), `disabled`/`false` (force yolo-mode off, hide parameter). If unset, agent can control yolo-mode via parameter. This controls the `--dangerously-skip-permissions` flag.
+- `CLAUDE_SYSTEM_PROMPT`: (optional) A string to append to the default system prompt.
+- `CLAUDE_PERMISSION_MODE`: (optional) Claude CLI's native permission mode setting (passed as `--permission-mode` to Claude CLI). This controls how Claude CLI prompts for permissions and is separate from AGENT_PERMISSIONS_MODE which controls `--dangerously-skip-permissions`.
 
 ## Security Features
 
