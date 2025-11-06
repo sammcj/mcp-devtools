@@ -79,7 +79,7 @@ Assuming you have Golang installed, you can use `go run` (similar to npx / uvx) 
       "env": {
         "NOTE": "The below environment variables are completely optional, see the README.md for available tools and configuration options",
         "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
-        "DISABLED_FUNCTIONS": ""
+        "DISABLED_TOOLS": ""
       }
     }
   }
@@ -118,7 +118,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "env": {
         "NOTE": "The below environment variables are completely optional, see the README.md for available tools and configuration options",
         "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
-        "DISABLED_FUNCTIONS": ""
+        "DISABLED_TOOLS": ""
       }
     }
   }
@@ -129,7 +129,7 @@ See below for various environment variables you can set to configure specific fe
 
 ## Available Tools
 
-These tools can be disabled by adding their function name to the `DISABLED_FUNCTIONS` environment variable in your MCP configuration.
+These tools can be disabled by adding their function name to the `DISABLED_TOOLS` environment variable in your MCP configuration.
 
 | Tool                                                             | Purpose                               | Dependencies                  | Example Usage                   |
 |------------------------------------------------------------------|---------------------------------------|-------------------------------|---------------------------------|
@@ -288,7 +288,7 @@ All environment variables are optional, but if you want to use specific search p
 
 **General:**
 - `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,filesystem,claude-agent,codex-agent,gemini-agent,q-developer-agent,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
-- `DISABLED_FUNCTIONS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
+- `DISABLED_TOOLS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 - `LOG_TOOL_ERRORS` - Enable logging of failed tool calls to `~/.mcp-devtools/logs/tool-errors.log` (set to `true` to enable). Logs older than 60 days are automatically removed on server startup.
 
 **Core Tools:**

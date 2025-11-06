@@ -11,7 +11,7 @@
       "env": {
         "NOTE": "The below environment variables are completely optional",
         "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
-        "DISABLED_FUNCTIONS": ""
+        "DISABLED_TOOLS": ""
       }
     }
   }

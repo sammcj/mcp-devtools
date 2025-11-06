@@ -186,7 +186,7 @@ Tools that only implement the basic `Tool` interface return:
 The tool automatically discovers and validates against currently enabled tools in the MCP DevTools server. The tool description and parameter enum update dynamically based on:
 
 - Tools registered in the server
-- Tools not disabled via `DISABLED_FUNCTIONS` environment variable
+- Tools not disabled via `DISABLED_TOOLS` environment variable
 
 ## Best Practices
 
@@ -295,7 +295,7 @@ func (t *YourTool) ProvideExtendedInfo() *tools.ExtendedInfo {
 No additional configuration required. The tool automatically:
 
 - Discovers enabled tools from the registry
-- Respects `DISABLED_FUNCTIONS` environment variable
+- Respects `DISABLED_TOOLS` environment variable
 - Updates tool lists dynamically
 - Validates requests against current tool availability
 

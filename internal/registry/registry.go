@@ -29,46 +29,61 @@ func Init(l *logrus.Logger) {
 	logger = l
 	cache = &sync.Map{}
 
-	// Parse DISABLED_FUNCTIONS environment variable
+	// Parse DISABLED_TOOLS environment variable
 	parseDisabledTools()
 }
 
-// parseDisabledTools parses the DISABLED_FUNCTIONS environment variable
+// parseDisabledTools parses the DISABLED_TOOLS and DISABLED_FUNCTIONS (legacy) environment variables
 func parseDisabledTools() {
 	// Clear the map first to ensure we start fresh
 	disabledTools = make(map[string]bool)
 
-	disabledEnv := os.Getenv("DISABLED_FUNCTIONS")
-	if disabledEnv == "" {
-		return
-	}
+	disabledEnv := os.Getenv("DISABLED_TOOLS")
+	legacyEnv := os.Getenv("DISABLED_FUNCTIONS")
 
-	// Split by comma and trim whitespace
-	tools := strings.SplitSeq(disabledEnv, ",")
-	for tool := range tools {
-		tool = strings.TrimSpace(tool)
-		if tool != "" {
-			disabledTools[tool] = true
-			if logger != nil {
-				logger.WithField("function", tool).Debug("Function disabled via DISABLED_FUNCTIONS environment variable")
+	// Helper function to parse and add tools to the disabled set
+	parseAndAdd := func(envValue, source string) {
+		if envValue == "" {
+			return
+		}
+
+		tools := strings.SplitSeq(envValue, ",")
+		for tool := range tools {
+			tool = strings.TrimSpace(tool)
+			if tool != "" {
+				disabledTools[tool] = true
+				if logger != nil {
+					logger.WithField("tool", tool).WithField("source", source).Debug("Tool disabled")
+				}
 			}
 		}
 	}
 
+	// Parse legacy env var first (if set, warn about deprecation)
+	if legacyEnv != "" {
+		if logger != nil {
+			logger.Warn("DISABLED_FUNCTIONS environment variable is deprecated, please use DISABLED_TOOLS instead")
+		}
+		parseAndAdd(legacyEnv, "DISABLED_FUNCTIONS")
+	}
+
+	// Parse current env var (can override or add to legacy)
+	parseAndAdd(disabledEnv, "DISABLED_TOOLS")
+
 	if logger != nil && len(disabledTools) > 0 {
-		logger.WithField("count", len(disabledTools)).Debug("Parsed disabled functions from environment")
+		logger.WithField("count", len(disabledTools)).Debug("Parsed disabled tools from environment")
 	}
 }
 
 // ShouldRegisterTool checks if a tool should be registered based on:
-// 1. DISABLED_FUNCTIONS (explicit disable - highest priority)
+// 1. DISABLED_TOOLS or DISABLED_FUNCTIONS (legacy) - explicit disable, highest priority
 // 2. Tool's enablement requirement
 // 3. ENABLE_ADDITIONAL_TOOLS (explicit enable)
 func ShouldRegisterTool(toolName string) bool {
-	// Check DISABLED_FUNCTIONS first (explicit disable wins)
+	// Check DISABLED_TOOLS/DISABLED_FUNCTIONS first (explicit disable wins)
 	if disabledTools[toolName] {
 		if logger != nil {
-			logger.WithField("tool", toolName).Debug("Tool disabled via DISABLED_FUNCTIONS")
+			logger.WithField("tool", toolName).Debug("Tool disabled via environment variable")
 		}
 		return false
 	}
