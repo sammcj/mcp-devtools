@@ -75,6 +75,43 @@ func parseDisabledTools() {
 	}
 }
 
+// requiresEnablement checks if a tool requires enablement via ENABLE_ADDITIONAL_TOOLS
+func requiresEnablement(toolName string) bool {
+	additionalTools := []string{
+		"filesystem",
+		"security",
+		"security_override",
+		"sbom",
+		"vulnerability_scan",
+		"claude-agent",
+		"codex-agent",
+		"copilot-agent",
+		"gemini-agent",
+		"q-developer-agent",
+		"generate_changelog",
+		"process_document",
+		"pdf",
+		"memory",
+		"aws_documentation",
+		"terraform_documentation",
+		"shadcn",
+		"murican_to_english",
+		"excel",
+	}
+
+	// Normalize the tool name (lowercase, replace underscores with hyphens)
+	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
+
+	for _, tool := range additionalTools {
+		// Normalize the additional tool name (lowercase, replace underscores with hyphens)
+		normalisedAdditionalTool := strings.ToLower(strings.ReplaceAll(tool, "_", "-"))
+		if normalisedToolName == normalisedAdditionalTool {
+			return true
+		}
+	}
+	return false
+}
+
 // ShouldRegisterTool checks if a tool should be registered based on:
 // 1. DISABLED_TOOLS or DISABLED_FUNCTIONS (legacy) - explicit disable, highest priority
 // 2. Tool's enablement requirement
@@ -218,44 +255,6 @@ func GetToolNamesWithExtendedHelp() []string {
 	}
 	sort.Strings(names)
 	return names
-}
-
-// requiresEnablement checks if a tool requires enablement via ENABLE_ADDITIONAL_TOOLS
-func requiresEnablement(toolName string) bool {
-	additionalTools := []string{
-		"filesystem",
-		"security",
-		"security_override",
-		"sbom",
-		"vulnerability_scan",
-		"claude-agent",
-		"codex-agent",
-		"copilot-agent",
-		"gemini-agent",
-		"q-developer-agent",
-		"generate_changelog",
-		"process_document",
-		"pdf",
-		"memory",
-		"aws_documentation",
-		"terraform_documentation",
-		"shadcn",
-		"murican_to_english",
-		"excel",
-		"find_long_files",
-	}
-
-	// Normalize the tool name (lowercase, replace underscores with hyphens)
-	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
-
-	for _, tool := range additionalTools {
-		// Normalize the additional tool name (lowercase, replace underscores with hyphens)
-		normalisedAdditionalTool := strings.ToLower(strings.ReplaceAll(tool, "_", "-"))
-		if normalisedToolName == normalisedAdditionalTool {
-			return true
-		}
-	}
-	return false
 }
 
 // isToolEnabled checks if a tool is enabled via the ENABLE_ADDITIONAL_TOOLS environment variable

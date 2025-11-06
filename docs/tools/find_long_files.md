@@ -2,8 +2,6 @@
 
 The Find Long Files tool efficiently identifies code files that exceed a specified line count threshold, helping AI coding agents to identify files that may need refactoring for effective reading, editing and understanding.
 
-**Note:** This tool is disabled by default. To enable it, set the `ENABLE_ADDITIONAL_TOOLS` environment variable to include `find_long_files`.
-
 ## Overview
 
 This tool scans a project directory and returns a formatted checklist of files that are longer than a specified threshold (default: 700 lines). It's designed to help maintain code quality by identifying files that may have grown too large and need to be split into smaller, more manageable components.
@@ -65,13 +63,13 @@ While intended to be activated via a prompt to an agent, below are some example 
 
 ## Environment Variables
 
-| Variable                              | Description                                          | Example                     |
-|---------------------------------------|------------------------------------------------------|-----------------------------|
-| `LONG_FILES_DEFAULT_LENGTH`           | Override default line threshold                      | `1000`                      |
-| `LONG_FILES_ADDITIONAL_EXCLUDES`      | Comma-separated additional exclusion patterns        | `**/*.test.js,**/*.spec.js` |
+| Variable                              | Description                                                                      | Example                     |
+|---------------------------------------|----------------------------------------------------------------------------------|-----------------------------|
+| `LONG_FILES_DEFAULT_LENGTH`           | Override default line threshold                                                  | `1000`                      |
+| `LONG_FILES_ADDITIONAL_EXCLUDES`      | Comma-separated additional exclusion patterns                                    | `**/*.test.js,**/*.spec.js` |
 | `LONG_FILES_RETURN_PROMPT`            | Custom message returned with the checklist (set to empty string `""` to disable) | `Custom instructions...`    |
-| `LONG_FILES_SORT_BY_DIRECTORY_TOTALS` | Sort by directory totals instead of individual files | `true`                      |
-| `LONG_FILES_MAX_SIZE_KB`              | Maximum file size in KB before skipping (default: 2048) | `4096`                      |
+| `LONG_FILES_SORT_BY_DIRECTORY_TOTALS` | Sort by directory totals instead of individual files                             | `true`                      |
+| `LONG_FILES_MAX_SIZE_KB`              | Maximum file size in KB before skipping (default: 2048)                          | `4096`                      |
 
 ## Default Exclusions
 
