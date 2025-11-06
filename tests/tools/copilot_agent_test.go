@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/copilotagent"
 	"github.com/sammcj/mcp-devtools/tests/testutils"
 )
@@ -255,40 +254,6 @@ func TestCopilotTool_Constants(t *testing.T) {
 
 // Fast error handling tests that don't execute CLI
 
-func TestCopilotTool_Execute_ToolDisabled(t *testing.T) {
-	// Save original environment variable
-	originalValue := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
-	defer func() {
-		if originalValue == "" {
-			_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
-		} else {
-			_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", originalValue)
-		}
-	}()
-
-	// Ensure tool is disabled
-	_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
-
-	tool := &copilotagent.CopilotTool{}
-	logger := testutils.CreateTestLogger()
-	cache := testutils.CreateTestCache()
-	ctx := testutils.CreateTestContext()
-
-	args := map[string]any{
-		"prompt": "test prompt",
-	}
-
-	result, err := tool.Execute(ctx, logger, cache, args)
-
-	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "copilot agent tool is not enabled")
-	testutils.AssertErrorContains(t, err, "ENABLE_ADDITIONAL_TOOLS")
-	testutils.AssertErrorContains(t, err, "copilot-agent")
-	if result != nil {
-		t.Error("Expected nil result when tool is disabled")
-	}
-}
-
 func TestCopilotTool_Execute_ValidationErrors(t *testing.T) {
 	// Save original environment variable
 	originalValue := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
@@ -355,40 +320,6 @@ func TestCopilotTool_Execute_ValidationErrors(t *testing.T) {
 }
 
 // Tool registration tests
-
-func TestCopilotTool_Registration(t *testing.T) {
-	// Test that the tool is registered during package initialisation
-	logger := testutils.CreateTestLogger()
-	registry.Init(logger)
-
-	// Test that the tool is discoverable via registry
-	retrievedTool, ok := registry.GetTool("copilot-agent")
-	testutils.AssertTrue(t, ok)
-	testutils.AssertNotNil(t, retrievedTool)
-
-	// Verify the retrieved tool has the correct name
-	def := retrievedTool.Definition()
-	testutils.AssertEqual(t, "copilot-agent", def.Name)
-}
-
-func TestCopilotTool_Registration_InToolsList(t *testing.T) {
-	// Test that the tool appears in the complete tools list
-	logger := testutils.CreateTestLogger()
-	registry.Init(logger)
-
-	tools := registry.GetTools()
-	testutils.AssertNotNil(t, tools)
-
-	// Test that copilot-agent is in the tools map
-	tool, exists := tools["copilot-agent"]
-	testutils.AssertTrue(t, exists)
-	testutils.AssertNotNil(t, tool)
-
-	// Verify it's the correct tool type
-	def := tool.Definition()
-	testutils.AssertEqual(t, "copilot-agent", def.Name)
-	testutils.AssertTrue(t, strings.Contains(def.Description, "GitHub Copilot CLI"))
-}
 
 func TestCopilotTool_ExtendedHelp(t *testing.T) {
 	// Test that the tool provides extended help information

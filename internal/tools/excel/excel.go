@@ -256,11 +256,6 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 
 // Execute executes the Excel tool
 func (t *ExcelTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check tool enablement first
-	if !tools.IsToolEnabled("excel") {
-		return nil, fmt.Errorf("excel tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS=excel to enable") // this should never occur
-	}
-
 	// Extract common parameters
 	function, ok := args["function"].(string)
 	if !ok || function == "" {

@@ -205,6 +205,92 @@ func TestRegistry_Shared_Resources(t *testing.T) {
 	testutils.AssertEqual(t, cache1, cache2)
 }
 
+func TestRegistry_ShouldRegisterTool(t *testing.T) {
+	// Test the ShouldRegisterTool function with various scenarios
+
+	// Save original environment
+	originalDisabled := os.Getenv("DISABLED_FUNCTIONS")
+	originalEnabled := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
+	defer func() {
+		if originalDisabled == "" {
+			_ = os.Unsetenv("DISABLED_FUNCTIONS")
+		} else {
+			_ = os.Setenv("DISABLED_FUNCTIONS", originalDisabled)
+		}
+		if originalEnabled == "" {
+			_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		} else {
+			_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", originalEnabled)
+		}
+	}()
+
+	logger := testutils.CreateTestLogger()
+
+	t.Run("tool_enabled_by_default", func(t *testing.T) {
+		_ = os.Unsetenv("DISABLED_FUNCTIONS")
+		_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		registry.Init(logger)
+
+		// Test a tool that's enabled by default (not in requiresEnablement list)
+		result := registry.ShouldRegisterTool("internet_search")
+		testutils.AssertEqual(t, true, result)
+	})
+
+	t.Run("tool_disabled_via_DISABLED_FUNCTIONS", func(t *testing.T) {
+		_ = os.Setenv("DISABLED_FUNCTIONS", "internet_search")
+		_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		registry.Init(logger)
+
+		// Tool should be blocked by DISABLED_FUNCTIONS (highest priority)
+		result := registry.ShouldRegisterTool("internet_search")
+		testutils.AssertEqual(t, false, result)
+	})
+
+	t.Run("tool_requires_enablement_not_enabled", func(t *testing.T) {
+		_ = os.Unsetenv("DISABLED_FUNCTIONS")
+		_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		registry.Init(logger)
+
+		// Test a tool that requires enablement but is not enabled
+		result := registry.ShouldRegisterTool("q-developer-agent")
+		testutils.AssertEqual(t, false, result)
+	})
+
+	t.Run("tool_requires_enablement_is_enabled", func(t *testing.T) {
+		_ = os.Unsetenv("DISABLED_FUNCTIONS")
+		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "q-developer-agent")
+		registry.Init(logger)
+
+		// Tool requires enablement and is explicitly enabled
+		result := registry.ShouldRegisterTool("q-developer-agent")
+		testutils.AssertEqual(t, true, result)
+	})
+
+	t.Run("DISABLED_FUNCTIONS_overrides_ENABLE_ADDITIONAL_TOOLS", func(t *testing.T) {
+		_ = os.Setenv("DISABLED_FUNCTIONS", "q-developer-agent")
+		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "q-developer-agent")
+		registry.Init(logger)
+
+		// DISABLED_FUNCTIONS has highest priority
+		result := registry.ShouldRegisterTool("q-developer-agent")
+		testutils.AssertEqual(t, false, result)
+	})
+
+	t.Run("multiple_tools_in_ENABLE_ADDITIONAL_TOOLS", func(t *testing.T) {
+		_ = os.Unsetenv("DISABLED_FUNCTIONS")
+		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "q-developer-agent,claude-agent,gemini-agent")
+		registry.Init(logger)
+
+		// All listed tools should be enabled
+		testutils.AssertEqual(t, true, registry.ShouldRegisterTool("q-developer-agent"))
+		testutils.AssertEqual(t, true, registry.ShouldRegisterTool("claude-agent"))
+		testutils.AssertEqual(t, true, registry.ShouldRegisterTool("gemini-agent"))
+
+		// Tool not in the list should not be enabled
+		testutils.AssertEqual(t, false, registry.ShouldRegisterTool("codex-agent"))
+	})
+}
+
 func TestRegistry_DisabledByDefault_Tools(t *testing.T) {
 	// Save original environment
 	originalEnabled := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
@@ -246,10 +332,8 @@ func TestRegistry_DisabledByDefault_Tools(t *testing.T) {
 				newEnabledTools := registry.GetEnabledTools()
 				if _, nowEnabled := newEnabledTools[toolName]; !nowEnabled {
 					t.Errorf("Tool %q is disabled by default but CANNOT be enabled with ENABLE_ADDITIONAL_TOOLS=%q\n"+
-						"  Either:\n"+
-						"  1. Missing from requiresEnablement() list in internal/registry/registry.go, OR\n"+
-						"  2. Missing tools.IsToolEnabled(%q) check in Execute() method",
-						toolName, toolName, toolName)
+						"  This means the tool is missing from requiresEnablement() list in internal/registry/registry.go",
+						toolName, toolName)
 				}
 			}
 		} else {

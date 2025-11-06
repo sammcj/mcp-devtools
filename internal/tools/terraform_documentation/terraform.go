@@ -81,11 +81,6 @@ func (t *TerraformDocumentationTool) Definition() mcp.Tool {
 
 // Execute executes the tool's logic
 func (t *TerraformDocumentationTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if terraform_documentation tool is enabled (disabled by default)
-	if !tools.IsToolEnabled("terraform_documentation") {
-		return nil, fmt.Errorf("terraform documentation tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'terraform_documentation'")
-	}
-
 	// Initialise client if needed
 	if t.client == nil {
 		t.client = NewClient(logger)

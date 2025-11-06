@@ -11,29 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTerraformDocumentationTool_Execute_ToolDisabled(t *testing.T) {
-	// Ensure terraform_documentation tool is disabled by default
-	_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
-
-	tool := &terraform_documentation.TerraformDocumentationTool{}
-	logger := logrus.New()
-	logger.SetLevel(logrus.PanicLevel) // Suppress output during tests
-	cache := &sync.Map{}
-
-	args := map[string]any{
-		"action":             "search_providers",
-		"provider_name":      "aws",
-		"provider_namespace": "hashicorp",
-		"query":              "s3",
-	}
-
-	result, err := tool.Execute(context.Background(), logger, cache, args)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "terraform documentation tool is not enabled")
-	assert.Contains(t, err.Error(), "Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'terraform_documentation'")
-	assert.Nil(t, result)
-}
-
 func TestTerraformDocumentationTool_Execute_ToolEnabled(t *testing.T) {
 	// Enable the terraform_documentation tool for testing
 	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "terraform_documentation")

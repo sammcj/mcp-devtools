@@ -179,11 +179,6 @@ func (t *DynamicAPITool) collectAllParameters() []ParameterConfig {
 
 // Execute executes the tool's logic
 func (t *DynamicAPITool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if API tool is enabled
-	if !tools.IsToolEnabled("api") {
-		return nil, fmt.Errorf("API tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'api'")
-	}
-
 	logger.WithField("api", t.apiName).Info("Executing API tool")
 
 	// Parse endpoint parameter

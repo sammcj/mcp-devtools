@@ -70,11 +70,6 @@ func (t *QDeveloperTool) Definition() mcp.Tool {
 
 // Execute executes the tool's logic by calling the Q Developer CLI
 func (t *QDeveloperTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if q-developer-agent tool is enabled (disabled by default for security)
-	if !tools.IsToolEnabled("q-developer-agent") {
-		return nil, fmt.Errorf("q Developer agent tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'q-developer-agent'")
-	}
-
 	logger.Info("Executing Q Developer tool")
 
 	// Get timeout from environment or use default
@@ -258,11 +253,11 @@ func (t *QDeveloperTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	return &tools.ExtendedHelp{
 		Examples: []tools.ToolExample{
 			{
-				Description: "Get Q Developer to analyze code for potential improvements",
+				Description: "Get Q Developer to analyse code for potential improvements",
 				Arguments: map[string]any{
-					"prompt": "Please review this function for efficiency and suggest optimizations: [paste your code here]",
+					"prompt": "Please review this function for efficiency and suggest optimisations: [paste your code here]",
 				},
-				ExpectedResult: "Q Developer analyzes the code and provides specific suggestions for optimization and best practices",
+				ExpectedResult: "Q Developer analyses the code and provides specific suggestions for optimisation and best practices",
 			},
 			{
 				Description: "Ask Q Developer to help debug an issue",
@@ -290,7 +285,7 @@ func (t *QDeveloperTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		Troubleshooting: []tools.TroubleshootingTip{
 			{
 				Problem:  "Q Developer CLI not found error",
-				Solution: "Install Q Developer CLI and ensure it's available in your PATH. The tool does not verify installation beforehand.",
+				Solution: "Install Q Developer CLI and ensure it's available in your PATH.",
 			},
 			{
 				Problem:  "Authentication errors",
@@ -309,12 +304,12 @@ func (t *QDeveloperTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"prompt":         "Required instruction for Q Developer. Cannot be empty.",
 			"resume":         "Continue previous conversation from current directory (directory-based sessions)",
 			"agent":          "Context profile to use - see Q Developer documentation for available agents",
-			"override-model": "Choose specific Claude model: claude-3.5-sonnet, claude-3.7-sonnet, or claude-sonnet-4",
+			"override-model": "Choose specific Claude model, e.g.: claude-4.5-sonnet, claude-4.5-haiku",
 			"yolo-mode":      "Trust all tools automatically (security consideration - use carefully)",
 			"trust-tools":    "Comma-separated list of specific tools to trust",
 			"verbose":        "Enable detailed logging for troubleshooting",
 		},
-		WhenToUse:    "Use Q Developer agent for AWS-specific code assistance, cloud architecture guidance, and when you need Q Developer's specialized knowledge of AWS services and best practices.",
+		WhenToUse:    "Use Q Developer agent for AWS-specific code assistance, cloud architecture guidance, and when you need Q Developer's specialised knowledge of AWS services and best practices.",
 		WhenNotToUse: "Avoid for non-AWS related tasks where other agents might be more appropriate. Q Developer does not support @ syntax for file references like other agents.",
 	}
 }

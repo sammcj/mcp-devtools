@@ -11,7 +11,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
-	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
 
@@ -73,11 +72,6 @@ func (t *SequentialThinkingTool) Definition() mcp.Tool {
 
 // Execute executes the tool's logic
 func (t *SequentialThinkingTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if sequential-thinking tool is enabled
-	if !tools.IsToolEnabled("sequential-thinking") {
-		return nil, fmt.Errorf("sequential thinking tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'sequential-thinking'")
-	}
-
 	logger.Info("Executing sequential thinking tool")
 
 	// Get action parameter (defaults to "think" for backward compatibility)

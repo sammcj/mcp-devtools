@@ -91,11 +91,6 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 
 // Execute processes the document using the Python wrapper
 func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Check if process_document tool is enabled (disabled by default)
-	if !tools.IsToolEnabled("process_document") {
-		return nil, fmt.Errorf("process_document tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'process_document'")
-	}
-
 	// Note: No logging to stdout/stderr in stdio mode to avoid breaking MCP protocol
 
 	// Perform cache maintenance and temporary file cleanup in background

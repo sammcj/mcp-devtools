@@ -30,27 +30,6 @@ func TestUnifiedShadcnTool_Definition(t *testing.T) {
 	testutils.AssertNotNil(t, definition.InputSchema)
 }
 
-func TestUnifiedShadcnTool_Execute_ToolDisabled(t *testing.T) {
-	// Ensure shadcn tool is disabled by default
-	_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
-
-	tool := &shadcnui.UnifiedShadcnTool{}
-	logger := testutils.CreateTestLogger()
-	cache := testutils.CreateTestCache()
-	ctx := testutils.CreateTestContext()
-
-	args := map[string]any{
-		"action": "list",
-	}
-
-	result, err := tool.Execute(ctx, logger, cache, args)
-
-	testutils.AssertError(t, err)
-	testutils.AssertErrorContains(t, err, "shadcn tool is not enabled")
-	testutils.AssertErrorContains(t, err, "Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'shadcn'")
-	testutils.AssertNil(t, result)
-}
-
 func TestUnifiedShadcnTool_Execute_MissingAction(t *testing.T) {
 	// Enable the shadcn tool for testing
 	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "shadcn")

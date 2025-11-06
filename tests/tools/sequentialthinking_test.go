@@ -56,32 +56,6 @@ func TestSequentialThinkingTool_Definition(t *testing.T) {
 	}
 }
 
-func TestSequentialThinkingTool_Execute_ToolDisabled(t *testing.T) {
-	// Ensure tool is disabled
-	_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
-
-	tool := &sequentialthinking.SequentialThinkingTool{}
-	logger := testutils.CreateTestLogger()
-	cache := testutils.CreateTestCache()
-	ctx := testutils.CreateTestContext()
-
-	args := map[string]any{
-		"action":   "think",
-		"thought":  "Test thought",
-		"continue": false,
-	}
-
-	result, err := tool.Execute(ctx, logger, cache, args)
-
-	testutils.AssertError(t, err)
-	if result != nil {
-		t.Error("Expected result to be nil when tool is disabled")
-	}
-	if !testutils.Contains(err.Error(), "not enabled") {
-		t.Errorf("Expected error about tool not being enabled, got: %s", err.Error())
-	}
-}
-
 func TestSequentialThinkingTool_Execute_ValidInput(t *testing.T) {
 	// Enable tool for this test
 	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "sequential-thinking")
