@@ -100,11 +100,11 @@ func requiresEnablement(toolName string) bool {
 		"excel",
 	}
 
-	// Normalize the tool name (lowercase, replace underscores with hyphens)
+	// Normalise the tool name (lowercase, replace underscores with hyphens)
 	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
 
 	for _, tool := range additionalTools {
-		// Normalize the additional tool name (lowercase, replace underscores with hyphens)
+		// Normalise the additional tool name (lowercase, replace underscores with hyphens)
 		normalisedAdditionalTool := strings.ToLower(strings.ReplaceAll(tool, "_", "-"))
 		if normalisedToolName == normalisedAdditionalTool {
 			return true
@@ -265,15 +265,15 @@ func isToolEnabled(toolName string) bool {
 		return false
 	}
 
-	// Normalize the tool name (lowercase, replace underscores with hyphens)
+	// Normalise the tool name (lowercase, replace underscores with hyphens)
 	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
 
 	// Split by comma and check each tool
 	toolsList := strings.SplitSeq(enabledTools, ",")
 	for tool := range toolsList {
-		// Normalize the tool from env var (trim spaces, lowercase, replace underscores with hyphens)
-		normalizedTool := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tool), "_", "-"))
-		if normalizedTool == normalisedToolName {
+		// Normalise the tool from env var (trim spaces, lowercase, replace underscores with hyphens)
+		normalisedTool := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tool), "_", "-"))
+		if normalisedTool == normalisedToolName {
 			return true
 		}
 	}

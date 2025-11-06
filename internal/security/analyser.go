@@ -746,10 +746,10 @@ func (a *SecurityAdvisor) formatAnalysisMessage(analysis *ThreatAnalysis) string
 // applyEncodingDetection applies encoding detection and normalisation to prevent pattern evasion
 func (a *SecurityAdvisor) applyEncodingDetection(content string) string {
 	// Start with Unicode normalisation
-	normalized := a.normalizeUnicode(content)
+	normalised := a.normaliseUnicode(content)
 
 	// Apply base64 detection and decoding
-	decoded := a.detectAndDecodeBase64(normalized)
+	decoded := a.detectAndDecodeBase64(normalised)
 
 	// Apply URL decoding for common URL encoding evasion
 	urlDecoded := a.decodeURLEncoding(decoded)
@@ -760,15 +760,15 @@ func (a *SecurityAdvisor) applyEncodingDetection(content string) string {
 	return hexDecoded
 }
 
-// normalizeUnicode normalizes Unicode content to prevent evasion through different Unicode forms
-func (a *SecurityAdvisor) normalizeUnicode(content string) string {
+// normaliseUnicode normalises Unicode content to prevent evasion through different Unicode forms
+func (a *SecurityAdvisor) normaliseUnicode(content string) string {
 	// Apply NFC (Canonical Decomposition followed by Canonical Composition)
 	// This converts visually identical Unicode characters to the same representation
-	normalized := norm.NFC.String(content)
+	normalised := norm.NFC.String(content)
 
 	// Remove/replace invisible and confusing Unicode characters
 	var result strings.Builder
-	for _, r := range normalized {
+	for _, r := range normalised {
 		switch {
 		case r == '\u200B': // Zero-width space
 			// Skip zero-width spaces as they can hide malicious content
