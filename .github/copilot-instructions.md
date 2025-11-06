@@ -125,6 +125,11 @@ When the server runs in stdio mode (default transport), ANY output to stdout/std
 - Tool registry and discovery mechanisms
 - Memory management and potential leaks
 
+## General Guidelines
+
+- Do not marketing terms such as 'comprehensive' or 'production-grade' in documentation or code comments.
+- Focus on clear, concise actionable technical guidance.
+
 ## Review Checklist for Every PR
 
 Before approving any pull request, verify:
