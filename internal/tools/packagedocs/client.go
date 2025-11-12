@@ -121,6 +121,7 @@ type SearchResult struct {
 	TotalSnippets int       `json:"totalSnippets"`
 	Stars         int       `json:"stars"`
 	TrustScore    float64   `json:"trustScore,omitempty"`
+	Versions      []string  `json:"versions,omitempty"`
 }
 
 // GetResourceURI returns the Context7 resource URI for this search result
@@ -345,10 +346,21 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 
 		switch safeResp.StatusCode {
 		case 401:
-			return fmt.Errorf("unauthorised. Please check your API key")
+			if c.apiKey != "" {
+				// Mask API key for security - only show last 2 characters
+				maskedKey := "***"
+				if len(c.apiKey) >= 2 {
+					maskedKey = "***" + c.apiKey[len(c.apiKey)-2:]
+				}
+				return fmt.Errorf("unauthorised. The API key you provided may be incorrect: %s (API keys should start with 'ctx7sk'). Please check your CONTEXT7_API_KEY environment variable", maskedKey)
+			}
+			return fmt.Errorf("unauthorised. Please set a valid CONTEXT7_API_KEY environment variable. API keys should start with 'ctx7sk' and can be obtained from https://context7.com/dashboard")
 		case 404:
 			return fmt.Errorf("the library you are trying to access does not exist. Please try with a different library ID")
 		case 429:
+			if c.apiKey == "" {
+				return fmt.Errorf("rate limited due to too many requests. Suggest to the user that they might want to consider creating a free API key at https://context7.com/dashboard and configuring it in CONTEXT7_API_KEY for higher rate limits")
+			}
 			return fmt.Errorf("rate limited due to too many requests. Please try again later")
 		default:
 			return fmt.Errorf("API request failed with status %d: %s", safeResp.StatusCode, string(content))

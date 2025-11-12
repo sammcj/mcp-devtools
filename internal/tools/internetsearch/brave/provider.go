@@ -54,7 +54,7 @@ func (p *BraveProvider) Search(ctx context.Context, logger *logrus.Logger, searc
 
 	switch searchType {
 	case "web":
-		return p.executeWebSearch(ctx, logger, args)
+		return p.executeInternetSearch(ctx, logger, args)
 	case "image":
 		return p.executeImageSearch(ctx, logger, args)
 	case "news":
@@ -68,8 +68,8 @@ func (p *BraveProvider) Search(ctx context.Context, logger *logrus.Logger, searc
 	}
 }
 
-// executeWebSearch handles web search
-func (p *BraveProvider) executeWebSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
+// executeInternetSearch handles internet search for web results
+func (p *BraveProvider) executeInternetSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters
@@ -77,7 +77,7 @@ func (p *BraveProvider) executeWebSearch(ctx context.Context, logger *logrus.Log
 	if countRaw, ok := args["count"].(float64); ok {
 		count = int(countRaw)
 		if count < 1 || count > 20 {
-			return nil, fmt.Errorf("count must be between 1 and 20 for web search, got %d", count)
+			return nil, fmt.Errorf("count must be between 1 and 20 for internet search, got %d", count)
 		}
 	}
 
@@ -94,9 +94,9 @@ func (p *BraveProvider) executeWebSearch(ctx context.Context, logger *logrus.Log
 		freshness = freshnessRaw
 	}
 
-	response, err := p.client.WebSearch(ctx, logger, query, count, offset, freshness)
+	response, err := p.client.InternetSearch(ctx, logger, query, count, offset, freshness)
 	if err != nil {
-		return nil, fmt.Errorf("web search failed: %w", err)
+		return nil, fmt.Errorf("internet search failed: %w", err)
 	}
 
 	// Convert to unified format
@@ -295,11 +295,11 @@ func (p *BraveProvider) executeLocalSearch(ctx context.Context, logger *logrus.L
 		return p.processLocalResults(ctx, logger, query, count, response)
 	}
 
-	// Fallback to web search
-	logger.WithField("query", query).Info("No location results found, falling back to web search")
-	webResponse, err := p.client.WebSearch(ctx, logger, query, count, 0, "")
+	// Fallback to internet search
+	logger.WithField("query", query).Info("No location results found, falling back to internet search")
+	webResponse, err := p.client.InternetSearch(ctx, logger, query, count, 0, "")
 	if err != nil {
-		return nil, fmt.Errorf("local search found no results and fallback web search failed: %w", err)
+		return nil, fmt.Errorf("local search found no results and fallback internet search failed: %w", err)
 	}
 
 	if webResponse.Web == nil || len(webResponse.Web.Results) == 0 {
@@ -310,7 +310,7 @@ func (p *BraveProvider) executeLocalSearch(ctx context.Context, logger *logrus.L
 	results := make([]internetsearch.SearchResult, 0, len(webResponse.Web.Results))
 	for _, webResult := range webResponse.Web.Results {
 		metadata := make(map[string]any)
-		metadata["fallback"] = "web_search"
+		metadata["fallback"] = "internet_search_fallback"
 		if webResult.Age != "" {
 			metadata["age"] = webResult.Age
 		}

@@ -116,7 +116,7 @@ func (t *InternetSearchTool) Definition() mcp.Tool {
 	// Build provider-specific parameter description
 	var providerSpecificParams []string
 	if hasBrave {
-		providerSpecificParams = append(providerSpecificParams, "- Brave: freshness (pd/pw/pm/py), offset (web search only)")
+		providerSpecificParams = append(providerSpecificParams, "- Brave: freshness (pd/pw/pm/py), offset (internet search only)")
 	}
 	if hasGoogle {
 		providerSpecificParams = append(providerSpecificParams, "- Google: start (pagination offset)")
@@ -135,7 +135,7 @@ Search Types: %v
 Automatic Fallback: If a provider fails (e.g., rate limited), the tool automatically retries with other available providers that support the requested search type. This ensures reliable search results even when primary providers are temporarily unavailable. To disable fallback and use only one provider, specify it explicitly with the 'provider' parameter.
 
 Examples:
-- Web search: {"query": "golang best practices", "count": 10}
+- Internet search: {"query": "golang best practices", "count": 10}
 - Image search: {"type": "image", "query": "golang gopher mascot", "count": 3}
 - News search: {"type": "news", "query": "AI breakthrough", "time_range": "day"}
 - Video search: {"type": "video", "query": "golang tutorial"}
@@ -180,7 +180,7 @@ After you have received the results you can fetch the url if you want to read th
 	if hasBrave {
 		toolOptions = append(toolOptions,
 			mcp.WithNumber("offset",
-				mcp.Description("Pagination offset (Brave web search only)"),
+				mcp.Description("Pagination offset (Brave internet search only)"),
 				mcp.DefaultNumber(0),
 			),
 			mcp.WithString("freshness",
@@ -236,7 +236,7 @@ func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 	// Parse parameters (with default for type)
 	searchType, ok := args["type"].(string)
 	if !ok || searchType == "" {
-		searchType = "web" // Default to web search
+		searchType = "web" // Default to internet search
 	}
 
 	query, ok := args["query"].(string)
@@ -423,12 +423,12 @@ func (t *InternetSearchTool) getOrderedProviders(searchType, userRequestedProvid
 func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	examples := []tools.ToolExample{
 		{
-			Description: "Basic web search with default provider",
+			Description: "Basic internet search with default provider",
 			Arguments: map[string]any{
 				"query": "golang best practices",
 				"count": 5,
 			},
-			ExpectedResult: "Returns 5 web search results about Go programming best practices",
+			ExpectedResult: "Returns 5 internet search results about Go programming best practices",
 		},
 		{
 			Description: "News search with time filtering",
@@ -482,7 +482,7 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 
 	commonPatterns := []string{
 		"Use count parameter to control result volume (more results = more context but higher latency)",
-		"Combine with web_fetch tool to get full content from interesting search results",
+		"Combine with fetch_url tool to get full content from interesting search results",
 		"For research workflows: search → analyse results → fetch detailed content → store in memory",
 		"Automatic fallback: If the default provider fails, the tool automatically tries other available providers",
 	}
@@ -569,7 +569,7 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 
 	parameterDetails := map[string]string{
 		"query": "The search query should be descriptive but not too long. Use natural language rather than keyword stuffing.",
-		"type":  "Web search is default and most versatile. Use 'news' for current events, 'image' for visual content, 'video' for tutorials.",
+		"type":  "Internet search is default and most versatile. Use 'news' for current events, 'image' for visual content, 'video' for tutorials.",
 		"count": "More results provide broader coverage but increase latency. Typical range: 3-10 results for focused searches, 10-20 for research.",
 	}
 

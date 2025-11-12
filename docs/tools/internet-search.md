@@ -11,25 +11,25 @@ Instead of managing separate tools for different search providers, the Internet 
 ## Supported Providers
 
 ### Brave Search
-- **Web Search**: General web search with fresh results
+- **Internet Search**: General internet search with fresh results
 - **Image Search**: Search for images with metadata
 - **News Search**: Recent news articles and events
 - **Video Search**: Video content with metadata
 - **Local Search**: Local businesses and points of interest (Pro API required)
 
 ### Google Custom Search
-- **Web Search**: General web search with Google's quality
+- **Internet Search**: General internet search with Google's quality
 - **Image Search**: Search for images with comprehensive metadata
 - **Note**: Requires Google API key and Custom Search Engine ID
 
 ### SearXNG
-- **Web Search**: Privacy-focused search aggregation
+- **Internet Search**: Privacy-focused search aggregation
 - **Image Search**: Images via SearXNG instance
 - **News Search**: News articles via SearXNG
 - **Video Search**: Video content via SearXNG
 
 ### DuckDuckGo
-- **Web Search**: Privacy-focused web search (no API key required)
+- **Internet Search**: Privacy-focused internet search (no API key required)
 
 ## Configuration
 
@@ -150,7 +150,7 @@ The Internet Search tool supports configurable rate limiting to protect external
 
 While intended to be activated via a prompt to an agent, below are some example JSON tool calls.
 
-### Web Search
+### Internet Search
 ```json
 {
   "name": "internet_search",
@@ -217,7 +217,7 @@ While intended to be activated via a prompt to an agent, below are some example 
 }
 ```
 
-### DuckDuckGo Web Search
+### DuckDuckGo Internet Search
 ```json
 {
   "name": "internet_search",
@@ -245,7 +245,7 @@ While intended to be activated via a prompt to an agent, below are some example 
   - `pm`: Past month
   - `py`: Past year
   - `YYYY-MM-DDtoYYYY-MM-DD`: Custom date range
-- **`offset`**: Pagination offset (web search only)
+- **`offset`**: Pagination offset (internet search only)
 
 ### Google-Specific Parameters
 - **`start`**: Start index for pagination (default: 0, increments of 10)
@@ -255,7 +255,7 @@ While intended to be activated via a prompt to an agent, below are some example 
 
 ## Search Types
 
-### Web Search
+### Internet Search
 Best for general information gathering, research, and finding relevant websites.
 
 **Example Results:**
@@ -350,26 +350,26 @@ When fallback occurs, search results include additional metadata:
 - **Cons**: Requires instance setup, variable performance
 
 ### When to Use DuckDuckGo
-- **Best for**: Quick web searches without setup
+- **Best for**: Quick internet searches without setup
 - **Pros**: No API key required, privacy-focused, reliable
-- **Cons**: Limited to web search only, fewer customisation options, rate-limited HTML scraping
+- **Cons**: Limited to internet search only, fewer customisation options, rate-limited HTML scraping
 
 ## Common Use Cases
 
 ### Research Workflow
-1. Start with web search to get overview
+1. Start with internet search to get overview
 2. Use news search for recent developments
 3. Find images for visual references
 4. Look up video tutorials for complex topics
 
 ### Content Creation
-1. Web search for background information
+1. Internet search for background information
 2. Image search for visual assets
 3. News search for current events
 4. Video search for tutorial references
 
 ### Development Research
-1. Web search for technical documentation
+1. Internet search for technical documentation
 2. Video search for coding tutorials
 3. News search for technology updates
 4. Image search for architecture diagrams

@@ -198,7 +198,7 @@ The tool automatically discovers and validates against currently enabled tools i
 {"tool_name": "github"}
 
 // ❌ Avoid - routine information gathering when basic usage is already clear
-{"tool_name": "web_fetch"}
+{"tool_name": "fetch_url"}
 ```
 
 **Focus on Complex Tools**: Use for tools that need clarification
@@ -251,7 +251,7 @@ document_processing --source "file.pdf" --profile "llm" --hardware_acceleration 
 ### Invalid Tool Names
 ```json
 {
-  "error": "tool 'nonexistent_tool' not found or disabled. Available tools: think, web_fetch, internet_search, ..."
+  "error": "tool 'nonexistent_tool' not found or disabled. Available tools: think, fetch_url, internet_search, ..."
 }
 ```
 

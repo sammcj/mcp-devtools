@@ -157,8 +157,8 @@ These tools can be disabled by adding their function name to the `DISABLED_TOOLS
 
 | Tool                                                             | Purpose                               | Dependencies                  | Example Usage                   |
 |------------------------------------------------------------------|---------------------------------------|-------------------------------|---------------------------------|
-| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider web search             | None (Provider keys optional) | Web, image, news, video search  |
-| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve web content as Markdown      | None                          | Documentation and articles      |
+| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider internet search             | None (Provider keys optional) | Web, image, news, video search  |
+| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve internet content as Markdown      | None                          | Documentation and articles      |
 | **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data          | None (GitHub token optional)  | Issues, PRs, repos, cloning     |
 | **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, mark3labs/mcp-go         |
 | **[Package Search](docs/tools/package-search.md)**               | Check package versions                | None                          | NPM, Python, Go, Java, Docker   |

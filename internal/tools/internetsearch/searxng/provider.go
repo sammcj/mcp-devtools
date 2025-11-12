@@ -70,7 +70,7 @@ func (p *SearXNGProvider) IsAvailable() bool {
 
 // GetSupportedTypes returns the search types this provider supports
 func (p *SearXNGProvider) GetSupportedTypes() []string {
-	// SearXNG primarily supports web search, but we'll map all types to web search
+	// SearXNG primarily supports internet search, with various categories
 	return []string{"web", "image", "news", "video"}
 }
 
@@ -85,7 +85,7 @@ func (p *SearXNGProvider) Search(ctx context.Context, logger *logrus.Logger, sea
 		"baseURL":  p.baseURL,
 	}).Debug("SearXNG search parameters")
 
-	// For SearXNG, all search types are handled as web search with different categories
+	// For SearXNG, all search types are handled as internet search with different categories
 	return p.executeSearch(ctx, logger, searchType, args)
 }
 

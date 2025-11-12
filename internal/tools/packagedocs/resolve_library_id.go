@@ -127,6 +127,9 @@ func (t *ResolveLibraryIDTool) formatResponse(libraryName string, results []*Sea
 	if bestMatch.TotalSnippets > 0 {
 		builder.WriteString(fmt.Sprintf("- Documentation Coverage: %d code snippets, %d tokens\n", bestMatch.TotalSnippets, bestMatch.TotalTokens))
 	}
+	if len(bestMatch.Versions) > 0 {
+		builder.WriteString(fmt.Sprintf("- Available Versions: %s\n", strings.Join(bestMatch.Versions, ", ")))
+	}
 
 	// Show alternative matches if there are more results
 	if len(results) > 1 {
@@ -150,6 +153,9 @@ func (t *ResolveLibraryIDTool) formatResponse(libraryName string, results []*Sea
 			}
 			if result.TrustScore > 0 || result.Stars > 0 {
 				builder.WriteString(fmt.Sprintf("   Trust Score: %.1f, Stars: %d\n", result.TrustScore, result.Stars))
+			}
+			if len(result.Versions) > 0 {
+				builder.WriteString(fmt.Sprintf("   Versions: %s\n", strings.Join(result.Versions, ", ")))
 			}
 			builder.WriteString("\n")
 		}
@@ -234,6 +240,6 @@ func (t *ResolveLibraryIDTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"libraryName": "Library or package name to search for. Can include version numbers, variants, or descriptive terms. Examples: 'React', 'Next.js', 'mongodb driver', 'aws-sdk-js', 'vue 3'. More specific terms usually yield better results.",
 		},
 		WhenToUse:    "Use as the first step before getting library documentation. Essential when you know the library name but need the Context7-compatible format, or when discovering available libraries for a technology stack.",
-		WhenNotToUse: "Don't use when you already have the exact Context7 library ID in '/org/project' format, for general technology searches (use web search instead), or when looking for tutorials rather than official documentation.",
+		WhenNotToUse: "Don't use when you already have the exact Context7 library ID in '/org/project' format, for general technology searches (use internet_search instead), or when looking for tutorials rather than official documentation.",
 	}
 }
