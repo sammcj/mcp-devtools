@@ -43,7 +43,7 @@ func (t *CodeSkimTool) Definition() mcp.Tool {
 		mcp.WithDescription("Returns information about source code in an efficient way by stripping function/method bodies whilst preserving signatures, types, and structure. Use when you need to analyse or summarise large files or codebases before reading an entire file to save on token usage."),
 		mcp.WithString("source",
 			mcp.Required(),
-			mcp.Description("Absolute path to: a file, a directory (recursively processes all supported files), or a glob pattern (e.g., '**/*.py')"),
+			mcp.Description("Absolute path to: a file, a directory (recursively processes all supported files - use sparingly!), or a glob pattern (e.g., '**/*.py')"),
 		),
 		mcp.WithBoolean("clear_cache",
 			mcp.Description("Force clear cache entries before processing"),
@@ -53,7 +53,7 @@ func (t *CodeSkimTool) Definition() mcp.Tool {
 			mcp.Description("Line number to start from (1-based) for pagination of large results. Use when previous response was truncated"),
 		),
 		mcp.WithString("filter",
-			mcp.Description("Optional glob pattern to return only filtered function/method/class names (e.g., 'handle_*', 'test_*', '*Controller')"),
+			mcp.Description("Optional glob pattern to filter by function/method/class name (e.g., 'handle_*', 'test_*', '*Controller'), non-matching items are omitted from the output"),
 		),
 		// Read-only annotations - reads files but doesn't modify them
 		mcp.WithReadOnlyHintAnnotation(true),
