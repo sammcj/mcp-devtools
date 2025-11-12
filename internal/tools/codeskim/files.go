@@ -9,6 +9,36 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 )
 
+// supportedExts is the set of file extensions that code_skim can process
+var supportedExts = map[string]bool{
+	".py":    true,
+	".go":    true,
+	".js":    true,
+	".jsx":   true,
+	".ts":    true,
+	".tsx":   true,
+	".rs":    true,
+	".c":     true,
+	".h":     true,
+	".cpp":   true,
+	".cc":    true,
+	".cxx":   true,
+	".hpp":   true,
+	".hxx":   true,
+	".hh":    true,
+	".sh":    true,
+	".bash":  true,
+	".html":  true,
+	".htm":   true,
+	".css":   true,
+	".swift": true,
+	".java":  true,
+	".yml":   true,
+	".yaml":  true,
+	".hcl":   true,
+	".tf":    true,
+}
+
 // ResolveFiles resolves the source parameter to a list of files to process
 // Handles:
 // - Single file path
@@ -74,34 +104,6 @@ func resolveSingleSource(source string) ([]string, error) {
 // findSupportedFiles recursively finds all supported source files in a directory
 func findSupportedFiles(dir string) ([]string, error) {
 	var files []string
-	supportedExts := map[string]bool{
-		".py":    true,
-		".go":    true,
-		".js":    true,
-		".jsx":   true,
-		".ts":    true,
-		".tsx":   true,
-		".rs":    true,
-		".c":     true,
-		".h":     true,
-		".cpp":   true,
-		".cc":    true,
-		".cxx":   true,
-		".hpp":   true,
-		".hxx":   true,
-		".hh":    true,
-		".sh":    true,
-		".bash":  true,
-		".html":  true,
-		".htm":   true,
-		".css":   true,
-		".swift": true,
-		".java":  true,
-		".yml":   true,
-		".yaml":  true,
-		".hcl":   true,
-		".tf":    true,
-	}
 
 	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -159,34 +161,6 @@ func resolveGlob(pattern string) ([]string, error) {
 
 	// Filter to only supported files
 	var files []string
-	supportedExts := map[string]bool{
-		".py":    true,
-		".go":    true,
-		".js":    true,
-		".jsx":   true,
-		".ts":    true,
-		".tsx":   true,
-		".rs":    true,
-		".c":     true,
-		".h":     true,
-		".cpp":   true,
-		".cc":    true,
-		".cxx":   true,
-		".hpp":   true,
-		".hxx":   true,
-		".hh":    true,
-		".sh":    true,
-		".bash":  true,
-		".html":  true,
-		".htm":   true,
-		".css":   true,
-		".swift": true,
-		".java":  true,
-		".yml":   true,
-		".yaml":  true,
-		".hcl":   true,
-		".tf":    true,
-	}
 
 	for _, match := range matches {
 		info, err := os.Stat(match)

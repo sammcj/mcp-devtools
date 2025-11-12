@@ -40,7 +40,7 @@ func init() {
 func (t *CodeSkimTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		toolName,
-		mcp.WithDescription("Returns information about source code in an efficient way by stripping function/method bodies whilst preserving signatures, types, and structure. Reduces token usage by 60-80% when analysing code structure."),
+		mcp.WithDescription("Returns information about source code in an efficient way by stripping function/method bodies whilst preserving signatures, types, and structure."),
 		mcp.WithArray("source",
 			mcp.Required(),
 			mcp.Description("Array of absolute paths to files, directories (recursively processes all supported files - use sparingly!), or glob patterns (e.g., [\"/path/file.py\", \"/dir\", \"**/*.go\"])."),
@@ -145,8 +145,9 @@ func (t *CodeSkimTool) processFilesParallel(ctx context.Context, files []string,
 	// Determine worker count (min of files count and max workers)
 	workerCount := min(len(files), maxWorkers)
 
-	// Memory tracking
+	// Memory tracking with mutex for atomic check-and-allocate
 	var memoryUsed sync.Map // map[int]int64 - track memory per file
+	var memoryMutex sync.Mutex
 
 	// Channels for work distribution
 	type job struct {
@@ -159,7 +160,9 @@ func (t *CodeSkimTool) processFilesParallel(ctx context.Context, files []string,
 
 	// Start workers
 	for range workerCount {
-		wg.Go(func() {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			for j := range jobs {
 				// Security check for each file
 				if err := security.CheckFileAccess(j.path); err != nil {
@@ -199,9 +202,9 @@ func (t *CodeSkimTool) processFilesParallel(ctx context.Context, files []string,
 
 				// Check total memory budget (approximate: file size * 3 for source + transformed + overhead)
 				estimatedMemory := fileSize * 3
-				memoryUsed.Store(j.index, estimatedMemory)
 
-				// Calculate total memory
+				// Atomic check-and-allocate with mutex
+				memoryMutex.Lock()
 				var currentTotal int64
 				memoryUsed.Range(func(key, value any) bool {
 					if mem, ok := value.(int64); ok {
@@ -210,23 +213,29 @@ func (t *CodeSkimTool) processFilesParallel(ctx context.Context, files []string,
 					return true
 				})
 
-				if currentTotal > maxMemoryBytes {
+				// Check if adding this file would exceed limit
+				if currentTotal+estimatedMemory > maxMemoryBytes {
+					memoryMutex.Unlock()
 					results[j.index] = FileResult{
 						Path:  j.path,
-						Error: fmt.Sprintf("memory limit exceeded: would use ~%d bytes (limit: %d bytes / 4GB)", currentTotal, maxMemoryBytes),
+						Error: fmt.Sprintf("memory limit exceeded: would use ~%d bytes (limit: %d bytes / 4GB)", currentTotal+estimatedMemory, maxMemoryBytes),
 					}
 					logger.WithFields(logrus.Fields{
 						"file":          j.path,
 						"current_total": currentTotal,
+						"estimated":     estimatedMemory,
 					}).Warn("Skipping file - would exceed memory limit")
-					memoryUsed.Delete(j.index)
 					continue
 				}
+
+				// Store memory allocation
+				memoryUsed.Store(j.index, estimatedMemory)
+				memoryMutex.Unlock()
 
 				// Process file
 				results[j.index] = t.processFile(ctx, j.path, req, cache, logger)
 			}
-		})
+		}()
 	}
 
 	// Send jobs
@@ -292,7 +301,9 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 		// req.Filter is []string or nil
 		var filterPatterns []string
 		if req.Filter != nil {
-			filterPatterns = req.Filter.([]string)
+			if patterns, ok := req.Filter.([]string); ok {
+				filterPatterns = patterns
+			}
 		}
 
 		var err error
