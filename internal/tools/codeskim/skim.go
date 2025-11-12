@@ -39,7 +39,7 @@ func init() {
 func (t *CodeSkimTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		toolName,
-		mcp.WithDescription("Returns information about source code in an efficient way by stripping function/method bodies whilst preserving signatures, types, and structure."),
+		mcp.WithDescription("Returns information about source code in an efficient way by stripping function/method bodies whilst preserving signatures, types, and structure. Useful to understand large files or codebases without implementation details to save token usage."),
 		mcp.WithArray("source",
 			mcp.Required(),
 			mcp.Description("Array of absolute paths to files, directories (recursively processes all supported files - use sparingly!), or glob patterns (e.g., [\"/path/file.py\", \"/dir\", \"**/*.go\"])."),
