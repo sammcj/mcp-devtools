@@ -466,7 +466,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2
+        uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # v2
         with:
           name: Release v${{ steps.get_version.outputs.version }}
           body: |
@@ -529,7 +529,7 @@ jobs:
 
       - name: Extract metadata for Docker
         id: meta
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5
+        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
