@@ -1,0 +1,134 @@
+package codeskim
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/bmatcuk/doublestar/v4"
+)
+
+// ResolveFiles resolves the source parameter to a list of files to process
+// Handles:
+// - Single file path
+// - Directory path (recursively finds all supported files)
+// - Glob pattern
+func ResolveFiles(source string) ([]string, error) {
+	// Check if source exists
+	info, err := os.Stat(source)
+	if err == nil {
+		// Path exists
+		if info.IsDir() {
+			// Directory - find all supported files recursively
+			return findSupportedFiles(source)
+		}
+		// Single file
+		return []string{source}, nil
+	}
+
+	// Path doesn't exist - might be a glob pattern
+	if strings.ContainsAny(source, "*?[]") {
+		return resolveGlob(source)
+	}
+
+	// Not a valid path or glob
+	return nil, fmt.Errorf("source not found: %s (not a file, directory, or valid glob pattern)", source)
+}
+
+// findSupportedFiles recursively finds all supported source files in a directory
+func findSupportedFiles(dir string) ([]string, error) {
+	var files []string
+	supportedExts := map[string]bool{
+		".py":  true,
+		".go":  true,
+		".js":  true,
+		".jsx": true,
+		".ts":  true,
+		".tsx": true,
+	}
+
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip hidden directories
+		if d.IsDir() && strings.HasPrefix(d.Name(), ".") && path != dir {
+			return filepath.SkipDir
+		}
+
+		// Skip hidden files
+		if !d.IsDir() && strings.HasPrefix(d.Name(), ".") {
+			return nil
+		}
+
+		// Check if file has supported extension
+		if !d.IsDir() {
+			ext := strings.ToLower(filepath.Ext(path))
+			if supportedExts[ext] {
+				files = append(files, path)
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk directory %s: %w", dir, err)
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no supported files found in directory: %s (looking for .py, .go, .js, .jsx, .ts, .tsx)", dir)
+	}
+
+	return files, nil
+}
+
+// resolveGlob resolves a glob pattern to a list of files
+func resolveGlob(pattern string) ([]string, error) {
+	// Use doublestar for ** support
+	matches, err := doublestar.FilepathGlob(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("invalid glob pattern: %w", err)
+	}
+
+	if len(matches) == 0 {
+		return nil, fmt.Errorf("no files match glob pattern: %s", pattern)
+	}
+
+	// Filter to only supported files
+	var files []string
+	supportedExts := map[string]bool{
+		".py":  true,
+		".go":  true,
+		".js":  true,
+		".jsx": true,
+		".ts":  true,
+		".tsx": true,
+	}
+
+	for _, match := range matches {
+		info, err := os.Stat(match)
+		if err != nil {
+			continue
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			continue
+		}
+
+		// Check extension
+		ext := strings.ToLower(filepath.Ext(match))
+		if supportedExts[ext] {
+			files = append(files, match)
+		}
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no supported files match glob pattern: %s (looking for .py, .go, .js, .jsx, .ts, .tsx)", pattern)
+	}
+
+	return files, nil
+}

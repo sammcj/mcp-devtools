@@ -1,0 +1,315 @@
+# code_skim
+
+Transform source code by removing implementation details whilst preserving structure. Achieves 60-80% token reduction for optimising AI context windows.
+
+## Status
+
+🔒 **Disabled by default** - Enable with `ENABLE_ADDITIONAL_TOOLS=code_skim`
+
+## Overview
+
+The `code_skim` tool uses tree-sitter to parse source code and strip function/method bodies whilst preserving signatures, types, and overall structure. Language is automatically detected from file extensions. Results are paginated to prevent overwhelming context windows.
+
+**Supported languages:**
+- Python (`.py`)
+- Go (`.go`)
+- JavaScript (`.js`, `.jsx`)
+- TypeScript (`.ts`, `.tsx`)
+
+## Why Use code_skim?
+
+When working with large codebases, you often don't need implementation details to understand architecture, APIs, or structure. The `code_skim` tool addresses the context attention problem:
+
+- **Context capacity isn't the bottleneck - attention is**
+- Large contexts degrade model performance (attention dilution)
+- 80% of the time, you don't need implementation details
+- Focus on *what* code does, not *how* it does it
+
+**Token reduction example:**
+- Original: 63,000 tokens
+- Structure mode: 25,000 tokens (60% reduction)
+- Fits more code in limited context windows
+
+## Parameters
+
+### Required
+
+- `source` (string): File path, directory path, or glob pattern
+  - Single file: `/path/to/file.py`
+  - Directory: `/path/to/directory` (recursively finds supported files)
+  - Glob pattern: `/path/to/**/*.py` (matches using glob syntax)
+
+### Optional
+
+- `clear_cache` (boolean): Clear cache entry before processing
+  - Default: `false`
+- `starting_line` (number): Line number to start from (1-based) for pagination
+  - Use when previous response was truncated
+  - Specified in `next_starting_line` field of truncated responses
+
+## How It Works
+
+The tool removes function/method bodies whilst preserving:
+- Function and method signatures
+- Class declarations
+- Type definitions
+- Overall code structure
+
+**Token reduction: 60-80%**
+
+**Example:**
+```python
+# Before
+def process_user(user):
+    validated = validate_user(user)
+    if not validated:
+        raise ValueError("Invalid user")
+    normalized = normalize_data(user)
+    return save_to_database(normalized)
+
+# After transformation
+def process_user(user): { /* ... */ }
+```
+
+## Line Limiting
+
+By default, results are limited to 10,000 lines per file to prevent overwhelming context windows. When results exceed this limit:
+
+- Response includes `truncated: true`
+- `total_lines` shows the full file line count
+- `returned_lines` shows how many lines were returned
+- `next_starting_line` specifies where to continue from
+
+Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
+
+## Examples
+
+### Transform a single file
+
+```json
+{
+  "source": "/path/to/src/api.py"
+}
+```
+
+### Transform all Python files in a directory
+
+```json
+{
+  "source": "/path/to/src"
+}
+```
+
+### Transform files matching a glob pattern
+
+```json
+{
+  "source": "/path/to/src/**/*.ts"
+}
+```
+
+### Clear cache and re-process
+
+```json
+{
+  "source": "/path/to/app.js",
+  "clear_cache": true
+}
+```
+
+### Paginate through a large file
+
+```json
+{
+  "source": "/path/to/large_file.py",
+  "starting_line": 10001
+}
+```
+
+## Response Format
+
+### Single File
+
+```json
+{
+  "files": [
+    {
+      "path": "/path/to/api.py",
+      "transformed": "def hello(name): { /* ... */ }",
+      "language": "python",
+      "from_cache": false,
+      "truncated": false,
+      "total_lines": 8,
+      "returned_lines": 8
+    }
+  ],
+  "total_files": 1,
+  "processed_files": 1,
+  "failed_files": 0,
+  "processing_time_ms": 15
+}
+```
+
+### Truncated Response (Pagination)
+
+```json
+{
+  "files": [
+    {
+      "path": "/path/to/large_file.py",
+      "transformed": "...first 10,000 lines...",
+      "language": "python",
+      "from_cache": false,
+      "truncated": true,
+      "total_lines": 25000,
+      "returned_lines": 10000,
+      "next_starting_line": 10001
+    }
+  ],
+  "total_files": 1,
+  "processed_files": 1,
+  "failed_files": 0
+}
+```
+
+**Response Fields:**
+- `files`: Array of file results
+  - `path`: Absolute file path
+  - `transformed`: Transformed source code
+  - `language`: Detected language
+  - `from_cache`: Whether result came from cache
+  - `truncated`: Whether output was truncated due to line limit
+  - `total_lines`: Total line count of transformed output
+  - `returned_lines`: Number of lines returned in this response
+  - `next_starting_line`: Line number to use for next request (if truncated)
+  - `error`: Error message (if file processing failed)
+- `total_files`: Total number of files found
+- `processed_files`: Number of successfully processed files
+- `failed_files`: Number of files that failed processing
+- `processing_time_ms`: Total processing time in milliseconds
+
+## Caching
+
+Results are cached using a key based on:
+- File path
+- Language
+- Source code hash (SHA256)
+
+**Cache behaviour:**
+- First call: Processes and caches result (`from_cache: false`)
+- Subsequent calls: Returns cached result if file content unchanged (`from_cache: true`)
+- Clear cache: Set `clear_cache: true` to force re-processing
+- Each file in batch operations is cached independently
+- Pagination: Cached transformed output is reused for different line ranges
+
+## Use Cases
+
+### 1. Codebase Overview
+Quickly understand code structure without implementation noise:
+```json
+{
+  "source": "/path/to/src",
+  "mode": "structure"
+}
+```
+
+### 2. API Documentation
+Extract function signatures for documentation:
+```json
+{
+  "source": "/path/to/api.py",
+  "mode": "structure"
+}
+```
+
+### 3. Architecture Analysis
+Analyse entire packages or modules:
+```json
+{
+  "source": "/path/to/project/**/*.go",
+  "mode": "structure"
+}
+```
+
+### 4. Context Window Optimisation
+Fit more code into limited AI context windows by removing implementation noise.
+
+## When to Use
+
+✅ **Use when:**
+- Analysing code structure without implementation details
+- Fitting large codebases into limited AI context windows
+- Providing architectural overviews
+- Examining API surfaces and function signatures
+- Understanding "what" code does without the "how" details
+
+❌ **Don't use when:**
+- Debugging implementation logic
+- Examining algorithm details
+- Reviewing line-by-line code quality
+- Actual implementation is required for the task
+- Working with unsupported languages
+
+## Troubleshooting
+
+### File not found or access denied
+**Problem:** Error about file not found or access denied
+
+**Solution:** Ensure the file path is absolute and exists. Check that the security configuration allows access to the file location.
+
+### No files match glob pattern
+**Problem:** Error when using glob patterns
+
+**Solution:** Verify the glob pattern is correct and matches existing files. Use `**/*.py` for recursive matching.
+
+### Language detection failed
+**Problem:** Error about unsupported file extension or language
+
+**Solution:** Ensure files have supported extensions (`.py`, `.go`, `.js`, `.jsx`, `.ts`, `.tsx`). Explicitly set `language` parameter if needed.
+
+### Transformation failed with parse error
+**Problem:** Tree-sitter parser error
+
+**Solution:** Ensure source code is syntactically valid for the specified language. Tree-sitter requires valid syntax to parse.
+
+### Cache returning stale results
+**Problem:** Getting old transformation when source has changed
+
+**Solution:** Set `clear_cache: true` to force re-processing. Cache uses file content hash, so changes are automatically detected.
+
+### Token reduction lower than expected
+**Problem:** Reduction percentage is much lower than 60-80%
+
+**Solution:** Structure mode targets 60-80% reduction. Low reduction may indicate minimal function bodies in source code (e.g., mostly declarations or empty functions).
+
+## Implementation Details
+
+- Built on [go-tree-sitter](https://github.com/smacker/go-tree-sitter)
+- Uses tree-sitter parsers for accurate AST analysis
+- Supports security limits (max AST depth: 500, max nodes: 100,000)
+- In-memory caching with SHA256 hashing for performance
+- File access controlled by security integration
+- Batch processing for directories and glob patterns using [doublestar](https://github.com/bmatcuk/doublestar)
+
+## Related Tools
+
+- `find_long_files`: Identify large files that may benefit from skimming
+- `get_library_documentation`: Get focused library documentation
+- `fetch_url`: Fetch web content (can be combined with skimming)
+
+## Extended Help
+
+Use the `get_tool_help` tool to access detailed usage information:
+
+```json
+{
+  "tool_name": "code_skim"
+}
+```
+
+This provides:
+- Detailed examples for all languages
+- Common usage patterns
+- Troubleshooting tips
+- Parameter explanations
+- When to use / when not to use guidance
