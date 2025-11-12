@@ -47,7 +47,7 @@ graph LR
 
     E --> E_Tools[🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
-    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem]
+    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem<br>✂️ Code Skim]
 
     G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
@@ -157,8 +157,8 @@ These tools can be disabled by adding their function name to the `DISABLED_TOOLS
 
 | Tool                                                             | Purpose                               | Dependencies                  | Example Usage                   |
 |------------------------------------------------------------------|---------------------------------------|-------------------------------|---------------------------------|
-| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider internet search             | None (Provider keys optional) | Web, image, news, video search  |
-| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve internet content as Markdown      | None                          | Documentation and articles      |
+| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider internet search        | None (Provider keys optional) | Web, image, news, video search  |
+| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve internet content as Markdown | None                          | Documentation and articles      |
 | **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data          | None (GitHub token optional)  | Issues, PRs, repos, cloning     |
 | **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, mark3labs/mcp-go         |
 | **[Package Search](docs/tools/package-search.md)**               | Check package versions                | None                          | NPM, Python, Go, Java, Docker   |
@@ -174,6 +174,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | Tool                                                                 | Purpose                                                            | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                               |
 |----------------------------------------------------------------------|--------------------------------------------------------------------|---------------------------|---------------------------------------------|
 | **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                                        | `murican_to_english`      | Organise, colour, centre                    |
+| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details               | `code_skim`               | 60-80% token reduction for AI context       |
 | **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                              | `shadcn`                  | Button, Dialog, Form components             |
 | **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            |
 | **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                                      | `process_document`        | PDF, DOCX → Markdown with OCR               |

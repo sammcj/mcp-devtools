@@ -12,6 +12,7 @@ concurrency:
 # The API requires write permission on the repository to submit dependencies
 permissions:
   contents: write
+  security-events: read
 
 jobs:
   go-action-detection:
