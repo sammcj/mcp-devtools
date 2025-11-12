@@ -19,7 +19,8 @@ ARG COMMIT=unknown
 ARG BUILD_DATE=unknown
 
 # Build with version information
-RUN CGO_ENABLED=0 GOOS=linux go build \
+# Note: CGO_ENABLED=0 excludes codeskim tool (requires CGO) but keeps Docker image lightweight
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
   -ldflags "-X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}" \
   -o mcp-devtools .
 

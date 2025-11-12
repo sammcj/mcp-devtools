@@ -6,7 +6,12 @@ Transform source code by removing implementation details whilst preserving struc
 
 🔒 **Disabled by default** - Enable with `ENABLE_ADDITIONAL_TOOLS=code_skim`
 
-⚠️ **Platform Availability**: Due to tree-sitter's CGO dependency and cross-compilation limitations in GitHub Actions, pre-built binaries from GitHub releases **only include** `code_skim` on **macOS** and **Linux AMD64** builds. Linux ARM64 and Windows builds exclude this tool. If you need `code_skim` on those platforms, you'll need to build from source.
+⚠️ **Platform Availability**: Due to tree-sitter's CGO dependency, `code_skim` is **only available** on:
+- **macOS** (darwin) - included in GitHub release binaries
+- **Linux AMD64** with CGO enabled - included in GitHub release binaries
+- **Docker images** exclude this tool (built with `CGO_ENABLED=0` for minimal size)
+
+Linux ARM64 and Windows builds exclude this tool. If you need `code_skim` on those platforms, you'll need to build from source with CGO enabled.
 
 ## Overview
 
