@@ -2,7 +2,7 @@
 
 ## Architecture & Structure
 
-This is a modular MCP (Model Context Protocol) server written in Go with a tool registry architecture. Each tool implements the `tools.Tool` interface and registers itself through `internal/registry/`. The main server supports multiple transports (stdio, HTTP, SSE).
+This is a modular MCP (Model Context Protocol) server written in Go with a tool registry architecture. Each tool implements the `tools.Tool` interface and registers itself through `internal/registry/`. The main server supports multiple transports (stdio, streamable HTTP).
 
 ## ⚠️ CRITICAL: stdio Mode Logging Violations
 
@@ -30,6 +30,8 @@ When the server runs in stdio mode (default transport), ANY output to stdout/std
    - Errors should go to logger, not stderr
    - Stack traces must use logger, not panic/fatal which write to stderr
    - No debug prints left in production code
+
+The only exception is in tests, tests are allowed to write to stdout/stderr.
 
 ### Why This Matters:
 - stdio transport uses stdin/stdout for MCP protocol messages (JSON-RPC)
@@ -143,5 +145,3 @@ Before approving any pull request, verify:
 7. ✅ Context cancellation handled properly
 8. ✅ Resource cleanup with defer statements
 9. ✅ No American English spelling used
-
-**Remember:** The #1 priority is preventing stdout/stderr writes in stdio mode. This should be the first thing checked in every review.
