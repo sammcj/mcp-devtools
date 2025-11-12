@@ -1,3 +1,5 @@
+//go:build darwin || (linux && amd64)
+
 package codeskim
 
 import (

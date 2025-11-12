@@ -6,6 +6,8 @@ Transform source code by removing implementation details whilst preserving struc
 
 🔒 **Disabled by default** - Enable with `ENABLE_ADDITIONAL_TOOLS=code_skim`
 
+⚠️ **Platform Availability**: Due to tree-sitter's CGO dependency and cross-compilation limitations in GitHub Actions, pre-built binaries from GitHub releases **only include** `code_skim` on **macOS** and **Linux AMD64** builds. Linux ARM64 and Windows builds exclude this tool. If you need `code_skim` on those platforms, you'll need to build from source.
+
 ## Overview
 
 The `code_skim` tool uses tree-sitter to parse source code and strip function/method bodies whilst preserving signatures, types, and overall structure. Language is automatically detected from file extensions. Results are paginated to prevent overwhelming context windows.
