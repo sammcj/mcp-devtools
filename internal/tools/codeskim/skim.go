@@ -26,6 +26,9 @@ const (
 	toolName        = "code_skim"
 	defaultMaxLines = 10000 // Default: 10,000 lines
 	envVarMaxLines  = "CODE_SKIM_MAX_LINES"
+	maxWorkers      = 10         // Maximum number of parallel workers
+	maxMemoryBytes  = 4294967296 // 4GB maximum memory usage
+	maxFileSize     = 512000     // 500KB maximum individual file size
 )
 
 // init registers the tool with the registry
@@ -37,7 +40,7 @@ func init() {
 func (t *CodeSkimTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		toolName,
-		mcp.WithDescription("Returns information about source code in an efficient way by stripping function/method bodies whilst preserving signatures, types, and structure. Use when you need to analyse or summarise large files or codebases before reading an entire file."),
+		mcp.WithDescription("Returns information about source code in an efficient way by stripping function/method bodies whilst preserving signatures, types, and structure. Use when you need to analyse or summarise large files or codebases before reading an entire file to save on token usage."),
 		mcp.WithString("source",
 			mcp.Required(),
 			mcp.Description("Absolute path to: a file, a directory (recursively processes all supported files), or a glob pattern (e.g., '**/*.py')"),
@@ -76,22 +79,13 @@ func (t *CodeSkimTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 
 	logger.WithField("files_count", len(files)).Debug("Resolved files to process")
 
-	// Security check: verify access to all files
-	for _, filePath := range files {
-		if err := security.CheckFileAccess(filePath); err != nil {
-			return nil, fmt.Errorf("access denied to %s: %w", filePath, err)
-		}
-	}
+	// Process files in parallel with worker pool
+	results := t.processFilesParallel(ctx, files, req, cache, logger)
 
-	// Process files
-	var results []FileResult
+	// Count successes and failures
 	processedCount := 0
 	failedCount := 0
-
-	for _, filePath := range files {
-		result := t.processFile(ctx, filePath, req, cache, logger)
-		results = append(results, result)
-
+	for _, result := range results {
 		if result.Error == "" {
 			processedCount++
 		} else {
@@ -110,6 +104,136 @@ func (t *CodeSkimTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 	}
 
 	return t.newToolResultJSON(response)
+}
+
+// processFilesParallel processes multiple files in parallel using a worker pool
+func (t *CodeSkimTool) processFilesParallel(ctx context.Context, files []string, req *SkimRequest, cache *sync.Map, logger *logrus.Logger) []FileResult {
+	// If only one file, process directly without goroutines
+	if len(files) == 1 {
+		filePath := files[0]
+		if err := security.CheckFileAccess(filePath); err != nil {
+			return []FileResult{{
+				Path:  filePath,
+				Error: fmt.Sprintf("access denied: %v", err),
+			}}
+		}
+
+		// Check file size
+		fileInfo, err := os.Stat(filePath)
+		if err != nil {
+			return []FileResult{{
+				Path:  filePath,
+				Error: fmt.Sprintf("failed to stat file: %v", err),
+			}}
+		}
+
+		if fileInfo.Size() > maxFileSize {
+			return []FileResult{{
+				Path:  filePath,
+				Error: fmt.Sprintf("file too large: %d bytes (max: %d bytes / 500KB)", fileInfo.Size(), maxFileSize),
+			}}
+		}
+
+		return []FileResult{t.processFile(ctx, filePath, req, cache, logger)}
+	}
+
+	// Determine worker count (min of files count and max workers)
+	workerCount := min(len(files), maxWorkers)
+
+	// Memory tracking
+	var memoryUsed sync.Map // map[int]int64 - track memory per file
+
+	// Channels for work distribution
+	type job struct {
+		index int
+		path  string
+	}
+	jobs := make(chan job, len(files))
+	results := make([]FileResult, len(files))
+	var wg sync.WaitGroup
+
+	// Start workers
+	for range workerCount {
+		wg.Go(func() {
+			for j := range jobs {
+				// Security check for each file
+				if err := security.CheckFileAccess(j.path); err != nil {
+					results[j.index] = FileResult{
+						Path:  j.path,
+						Error: fmt.Sprintf("access denied: %v", err),
+					}
+					logger.WithFields(logrus.Fields{
+						"file":  j.path,
+						"error": err,
+					}).Warn("Skipping file due to access denial")
+					continue
+				}
+
+				// Check file size before processing
+				fileInfo, err := os.Stat(j.path)
+				if err != nil {
+					results[j.index] = FileResult{
+						Path:  j.path,
+						Error: fmt.Sprintf("failed to stat file: %v", err),
+					}
+					continue
+				}
+
+				fileSize := fileInfo.Size()
+				if fileSize > maxFileSize {
+					results[j.index] = FileResult{
+						Path:  j.path,
+						Error: fmt.Sprintf("file too large: %d bytes (max: %d bytes / 500KB)", fileSize, maxFileSize),
+					}
+					logger.WithFields(logrus.Fields{
+						"file": j.path,
+						"size": fileSize,
+					}).Warn("Skipping file - exceeds size limit")
+					continue
+				}
+
+				// Check total memory budget (approximate: file size * 3 for source + transformed + overhead)
+				estimatedMemory := fileSize * 3
+				memoryUsed.Store(j.index, estimatedMemory)
+
+				// Calculate total memory
+				var currentTotal int64
+				memoryUsed.Range(func(key, value any) bool {
+					if mem, ok := value.(int64); ok {
+						currentTotal += mem
+					}
+					return true
+				})
+
+				if currentTotal > maxMemoryBytes {
+					results[j.index] = FileResult{
+						Path:  j.path,
+						Error: fmt.Sprintf("memory limit exceeded: would use ~%d bytes (limit: %d bytes / 4GB)", currentTotal, maxMemoryBytes),
+					}
+					logger.WithFields(logrus.Fields{
+						"file":          j.path,
+						"current_total": currentTotal,
+					}).Warn("Skipping file - would exceed memory limit")
+					memoryUsed.Delete(j.index)
+					continue
+				}
+
+				// Process file
+				results[j.index] = t.processFile(ctx, j.path, req, cache, logger)
+			}
+		})
+	}
+
+	// Send jobs
+	for i, filePath := range files {
+		jobs <- job{index: i, path: filePath}
+	}
+	close(jobs)
+
+	// Wait for completion
+	wg.Wait()
+
+	return results
 }
 
 // processFile processes a single file
@@ -271,9 +395,9 @@ func (t *CodeSkimTool) getMaxLines() int {
 
 // generateCacheKey generates a cache key for a file
 func (t *CodeSkimTool) generateCacheKey(filePath string, source string, lang Language) string {
-	// Use file path + language + source hash
+	// Use file path + language + source hash (16 bytes for reduced collision risk)
 	hash := sha256.Sum256([]byte(source))
-	return fmt.Sprintf("codeskim:%s:%s:%x", filePath, lang, hash[:8])
+	return fmt.Sprintf("codeskim:%s:%s:%x", filePath, lang, hash[:16])
 }
 
 // newToolResultJSON creates a new tool result with JSON content
@@ -289,8 +413,8 @@ func (t *CodeSkimTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) 
 // ProvideExtendedInfo implements the ExtendedHelpProvider interface
 func (t *CodeSkimTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	return &tools.ExtendedHelp{
-		WhenToUse:    "Use when you need to analyse code structure without implementation details, when fitting large codebases into limited AI context windows, when providing architectural overviews, or when examining API surfaces and function signatures. Ideal for understanding 'what' code does without the 'how' details.",
-		WhenNotToUse: "Don't use when you need to debug implementation logic, when examining algorithm details matters, when reviewing line-by-line code quality, or when the actual implementation is required for the task.",
+		WhenToUse:    "Use when you need to analyse code structure without implementation details, when fitting large codebases into limited AI context windows, when providing architectural overviews, or when examining API surfaces and function signatures. Ideal for understanding 'what' code does without the 'how' details. Subject to memory limits (4GB total, 500KB per file).",
+		WhenNotToUse: "Don't use when you need to debug implementation logic, when examining algorithm details matters, when reviewing line-by-line code quality, when the actual implementation is required for the task, or when files exceed 500KB.",
 		CommonPatterns: []string{
 			"Process single file: {\"source\": \"/path/to/file.py\"}",
 			"Process directory: {\"source\": \"/path/to/project\"}",
@@ -342,6 +466,14 @@ func (t *CodeSkimTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			{
 				Problem:  "Some files show errors in results",
 				Solution: "Check the 'error' field in individual file results. Files with errors are counted separately in failed_files",
+			},
+			{
+				Problem:  "File too large error",
+				Solution: "Individual files cannot exceed 500KB. Consider splitting large files or processing smaller subsets",
+			},
+			{
+				Problem:  "Memory limit exceeded error",
+				Solution: "Total memory usage limited to 4GB. Process fewer files at once or use glob patterns to target specific subsets",
 			},
 		},
 	}

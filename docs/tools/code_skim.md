@@ -20,7 +20,6 @@ The `code_skim` tool uses tree-sitter to parse source code and strip function/me
 
 When working with large codebases, you often don't need implementation details to understand architecture, APIs, or structure. The `code_skim` tool addresses the context attention problem:
 
-- **Context capacity isn't the bottleneck - attention is**
 - Large contexts degrade model performance (attention dilution)
 - 80% of the time, you don't need implementation details
 - Focus on *what* code does, not *how* it does it
@@ -208,8 +207,7 @@ Results are cached using a key based on:
 Quickly understand code structure without implementation noise:
 ```json
 {
-  "source": "/path/to/src",
-  "mode": "structure"
+  "source": "/path/to/src"
 }
 ```
 
@@ -217,8 +215,7 @@ Quickly understand code structure without implementation noise:
 Extract function signatures for documentation:
 ```json
 {
-  "source": "/path/to/api.py",
-  "mode": "structure"
+  "source": "/path/to/api.py"
 }
 ```
 
@@ -226,8 +223,7 @@ Extract function signatures for documentation:
 Analyse entire packages or modules:
 ```json
 {
-  "source": "/path/to/project/**/*.go",
-  "mode": "structure"
+  "source": "/path/to/project/**/*.go"
 }
 ```
 
@@ -282,14 +278,37 @@ Fit more code into limited AI context windows by removing implementation noise.
 
 **Solution:** Structure mode targets 60-80% reduction. Low reduction may indicate minimal function bodies in source code (e.g., mostly declarations or empty functions).
 
+### File too large error
+**Problem:** Individual file exceeds 500KB size limit
+
+**Solution:** The tool limits individual file sizes to 500KB to prevent memory exhaustion. Consider splitting large files, or if the file is genuinely needed, process it in smaller chunks or use alternative tools.
+
+### Memory limit exceeded error
+**Problem:** Total memory usage would exceed 4GB limit
+
+**Solution:** The tool limits total memory to 4GB across all files being processed. Process fewer files at once, use more specific glob patterns to target subsets, or process files in batches sequentially.
+
+## Memory and Resource Limits
+
+To ensure safe operation and prevent resource exhaustion:
+
+- **Maximum file size**: 500KB per individual file
+- **Maximum total memory**: 4GB across all files being processed
+- **Maximum AST depth**: 500 levels (prevents stack overflow)
+- **Maximum AST nodes**: 100,000 per file (prevents memory exhaustion)
+- **Parallel workers**: Up to 10 concurrent file processors
+
+Files exceeding these limits are skipped with detailed error messages in the response.
+
 ## Implementation Details
 
 - Built on [go-tree-sitter](https://github.com/smacker/go-tree-sitter)
 - Uses tree-sitter parsers for accurate AST analysis
-- Supports security limits (max AST depth: 500, max nodes: 100,000)
+- Parallel processing with worker pool (up to 10 workers)
 - In-memory caching with SHA256 hashing for performance
 - File access controlled by security integration
 - Batch processing for directories and glob patterns using [doublestar](https://github.com/bmatcuk/doublestar)
+- Memory-safe with configurable limits
 
 ## Related Tools
 

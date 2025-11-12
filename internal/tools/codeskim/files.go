@@ -87,6 +87,11 @@ func findSupportedFiles(dir string) ([]string, error) {
 
 // resolveGlob resolves a glob pattern to a list of files
 func resolveGlob(pattern string) ([]string, error) {
+	// Validate glob pattern complexity (prevent abuse with excessive recursion)
+	if err := validateGlobPattern(pattern); err != nil {
+		return nil, err
+	}
+
 	// Use doublestar for ** support
 	matches, err := doublestar.FilepathGlob(pattern)
 	if err != nil {
@@ -131,4 +136,25 @@ func resolveGlob(pattern string) ([]string, error) {
 	}
 
 	return files, nil
+}
+
+// validateGlobPattern validates a glob pattern for excessive complexity
+func validateGlobPattern(pattern string) error {
+	const (
+		maxRecursiveWildcards = 5   // Maximum number of ** patterns
+		maxPatternLength      = 500 // Maximum pattern length
+	)
+
+	// Check pattern length
+	if len(pattern) > maxPatternLength {
+		return fmt.Errorf("glob pattern too long: %d characters (max: %d)", len(pattern), maxPatternLength)
+	}
+
+	// Count recursive wildcards (**)
+	recursiveCount := strings.Count(pattern, "**")
+	if recursiveCount > maxRecursiveWildcards {
+		return fmt.Errorf("too many recursive wildcards (**) in pattern: %d (max: %d)", recursiveCount, maxRecursiveWildcards)
+	}
+
+	return nil
 }
