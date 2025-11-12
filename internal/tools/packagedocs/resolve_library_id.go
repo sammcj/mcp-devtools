@@ -127,6 +127,9 @@ func (t *ResolveLibraryIDTool) formatResponse(libraryName string, results []*Sea
 	if bestMatch.TotalSnippets > 0 {
 		builder.WriteString(fmt.Sprintf("- Documentation Coverage: %d code snippets, %d tokens\n", bestMatch.TotalSnippets, bestMatch.TotalTokens))
 	}
+	if len(bestMatch.Versions) > 0 {
+		builder.WriteString(fmt.Sprintf("- Available Versions: %s\n", strings.Join(bestMatch.Versions, ", ")))
+	}
 
 	// Show alternative matches if there are more results
 	if len(results) > 1 {
@@ -150,6 +153,9 @@ func (t *ResolveLibraryIDTool) formatResponse(libraryName string, results []*Sea
 			}
 			if result.TrustScore > 0 || result.Stars > 0 {
 				builder.WriteString(fmt.Sprintf("   Trust Score: %.1f, Stars: %d\n", result.TrustScore, result.Stars))
+			}
+			if len(result.Versions) > 0 {
+				builder.WriteString(fmt.Sprintf("   Versions: %s\n", strings.Join(result.Versions, ", ")))
 			}
 			builder.WriteString("\n")
 		}
