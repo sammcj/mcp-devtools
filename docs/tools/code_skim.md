@@ -43,10 +43,12 @@ When working with large codebases, you often don't need implementation details t
 
 ### Required
 
-- `source` (string): File path, directory path, or glob pattern
-  - Single file: `/path/to/file.py`
-  - Directory: `/path/to/directory` (recursively finds supported files)
-  - Glob pattern: `/path/to/**/*.py` (matches using glob syntax)
+- `source` (array): Array of file paths, directory paths, or glob patterns
+  - Single file: `["/path/to/file.py"]`
+  - Directory: `["/path/to/directory"]` (recursively finds supported files)
+  - Glob pattern: `["/path/to/**/*.py"]` (matches using glob syntax)
+  - Multiple: `["/path/to/file1.py", "/path/to/file2.go", "/path/**/*.ts"]`
+  - Multiple sources are automatically deduplicated
 
 ### Optional
 
@@ -55,10 +57,13 @@ When working with large codebases, you often don't need implementation details t
 - `starting_line` (number): Line number to start from (1-based) for pagination
   - Use when previous response was truncated
   - Specified in `next_starting_line` field of truncated responses
-- `filter` (string): Glob pattern to filter function/method/class names
-  - Only items with matching names will be included in output
-  - Examples: `"handle_*"`, `"test_*"`, `"*Controller"`, `"get*"`
-  - Reduces output even further by showing only relevant functions
+- `filter` (array): Array of glob patterns to filter function/method/class names
+  - Single pattern: `["handle_*"]`, `["test_*"]`, `["*Controller"]`
+  - Multiple patterns: `["handle_*", "process_*", "get*"]`
+  - Inverse filter (exclusion): Prefix with `!` (e.g., `["!temp_*"]`, `["!test_*"]`)
+  - Combined: `["handle_*", "!handle_temp*"]` (include handle_* but exclude handle_temp*)
+  - Exclusions take priority over inclusions
+  - Returns `matched_items`, `total_items`, `filtered_items` counts in response
 
 ## How It Works
 
@@ -101,7 +106,7 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
 
 ```json
 {
-  "source": "/path/to/src/api.py"
+  "source": ["/path/to/src/api.py"]
 }
 ```
 
@@ -109,7 +114,7 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
 
 ```json
 {
-  "source": "/path/to/src"
+  "source": ["/path/to/src"]
 }
 ```
 
@@ -117,7 +122,7 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
 
 ```json
 {
-  "source": "/path/to/src/**/*.ts"
+  "source": ["/path/to/src/**/*.ts"]
 }
 ```
 
@@ -125,7 +130,7 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
 
 ```json
 {
-  "source": "/path/to/app.js",
+  "source": ["/path/to/app.js"],
   "clear_cache": true
 }
 ```
@@ -134,7 +139,7 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
 
 ```json
 {
-  "source": "/path/to/large_file.py",
+  "source": ["/path/to/large_file.py"],
   "starting_line": 10001
 }
 ```
@@ -143,8 +148,8 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
 
 ```json
 {
-  "source": "/path/to/api.py",
-  "filter": "handle_*"
+  "source": ["/path/to/api.py"],
+  "filter": ["handle_*"]
 }
 ```
 
@@ -152,8 +157,47 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
 
 ```json
 {
-  "source": "/path/to/tests.py",
-  "filter": "test_*"
+  "source": ["/path/to/tests.py"],
+  "filter": ["test_*"]
+}
+```
+
+### Multiple source files
+
+```json
+{
+  "source": [
+    "/path/to/api.py",
+    "/path/to/handlers.py",
+    "/path/to/models.py"
+  ]
+}
+```
+
+### Multiple filter patterns
+
+```json
+{
+  "source": ["/path/to/api.py"],
+  "filter": ["handle_*", "process_*", "validate_*"]
+}
+```
+
+### Exclude specific patterns (inverse filter)
+
+```json
+{
+  "source": ["/path/to/api.py"],
+  "filter": ["handle_*", "!handle_temp*"]
+}
+```
+
+### Show everything except test functions
+
+```json
+{
+  "source": ["/path/to/src"],
+  "filter": ["!test_*"]
 }
 ```
 
@@ -171,13 +215,40 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
       "from_cache": false,
       "truncated": false,
       "total_lines": 8,
-      "returned_lines": 8
+      "returned_lines": 8,
+      "reduction_percentage": 65
     }
   ],
   "total_files": 1,
   "processed_files": 1,
   "failed_files": 0,
   "processing_time_ms": 15
+}
+```
+
+### With Filtering
+
+```json
+{
+  "files": [
+    {
+      "path": "/path/to/api.py",
+      "transformed": "def handle_request(): { /* ... */ }\ndef handle_response(): { /* ... */ }",
+      "language": "python",
+      "from_cache": false,
+      "truncated": false,
+      "total_lines": 4,
+      "returned_lines": 4,
+      "reduction_percentage": 75,
+      "matched_items": 2,
+      "total_items": 10,
+      "filtered_items": 8
+    }
+  ],
+  "total_files": 1,
+  "processed_files": 1,
+  "failed_files": 0,
+  "processing_time_ms": 18
 }
 ```
 
@@ -213,6 +284,10 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
   - `total_lines`: Total line count of transformed output
   - `returned_lines`: Number of lines returned in this response
   - `next_starting_line`: Line number to use for next request (if truncated)
+  - `reduction_percentage`: Percentage of token/character reduction from original (0-100)
+  - `matched_items`: Number of functions/methods/classes that matched filter (only when filtering)
+  - `total_items`: Total number of functions/methods/classes found (only when filtering)
+  - `filtered_items`: Number of functions/methods/classes excluded by filter (only when filtering)
   - `error`: Error message (if file processing failed)
 - `total_files`: Total number of files found
 - `processed_files`: Number of successfully processed files
@@ -224,6 +299,7 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
 Results are cached using a key based on:
 - File path
 - Language
+- Filter patterns (if applied)
 - Source code hash (SHA256)
 
 **Cache behaviour:**
@@ -232,6 +308,7 @@ Results are cached using a key based on:
 - Clear cache: Set `clear_cache: true` to force re-processing
 - Each file in batch operations is cached independently
 - Pagination: Cached transformed output is reused for different line ranges
+- Different filter patterns create separate cache entries
 
 ## Use Cases
 

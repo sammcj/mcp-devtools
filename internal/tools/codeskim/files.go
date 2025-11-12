@@ -14,7 +14,42 @@ import (
 // - Single file path
 // - Directory path (recursively finds all supported files)
 // - Glob pattern
-func ResolveFiles(source string) ([]string, error) {
+// - Array of any combination of the above
+func ResolveFiles(source any) ([]string, error) {
+	// Handle array of sources
+	if sources, ok := source.([]any); ok {
+		var allFiles []string
+		seen := make(map[string]bool)
+		for _, src := range sources {
+			srcStr, ok := src.(string)
+			if !ok {
+				return nil, fmt.Errorf("source array item must be a string")
+			}
+			files, err := resolveSingleSource(srcStr)
+			if err != nil {
+				return nil, err
+			}
+			// Deduplicate files
+			for _, file := range files {
+				if !seen[file] {
+					seen[file] = true
+					allFiles = append(allFiles, file)
+				}
+			}
+		}
+		return allFiles, nil
+	}
+
+	// Handle string source
+	if srcStr, ok := source.(string); ok {
+		return resolveSingleSource(srcStr)
+	}
+
+	return nil, fmt.Errorf("source must be a string or array of strings")
+}
+
+// resolveSingleSource resolves a single source path
+func resolveSingleSource(source string) ([]string, error) {
 	// Check if source exists
 	info, err := os.Stat(source)
 	if err == nil {

@@ -32,7 +32,7 @@ func TestCodeSkimTool(t *testing.T) {
 
 	t.Run("Python function transformation", func(t *testing.T) {
 		args := map[string]any{
-			"source": filepath.Join(fixturesDir, "test.py"),
+			"source": []any{filepath.Join(fixturesDir, "test.py")},
 		}
 
 		result, err := tool.Execute(ctx, logger, cache, args)
@@ -58,7 +58,7 @@ func TestCodeSkimTool(t *testing.T) {
 
 	t.Run("Go function transformation", func(t *testing.T) {
 		args := map[string]any{
-			"source": filepath.Join(fixturesDir, "test.go"),
+			"source": []any{filepath.Join(fixturesDir, "test.go")},
 		}
 
 		result, err := tool.Execute(ctx, logger, cache, args)
@@ -81,7 +81,7 @@ func TestCodeSkimTool(t *testing.T) {
 
 	t.Run("JavaScript function transformation", func(t *testing.T) {
 		args := map[string]any{
-			"source": filepath.Join(fixturesDir, "test.js"),
+			"source": []any{filepath.Join(fixturesDir, "test.js")},
 		}
 
 		result, err := tool.Execute(ctx, logger, cache, args)
@@ -104,7 +104,7 @@ func TestCodeSkimTool(t *testing.T) {
 
 	t.Run("TypeScript class transformation", func(t *testing.T) {
 		args := map[string]any{
-			"source": filepath.Join(fixturesDir, "test.ts"),
+			"source": []any{filepath.Join(fixturesDir, "test.ts")},
 		}
 
 		result, err := tool.Execute(ctx, logger, cache, args)
@@ -127,7 +127,7 @@ func TestCodeSkimTool(t *testing.T) {
 
 	t.Run("Directory processing", func(t *testing.T) {
 		args := map[string]any{
-			"source": fixturesDir,
+			"source": []any{fixturesDir},
 		}
 
 		result, err := tool.Execute(ctx, logger, cache, args)
@@ -149,7 +149,7 @@ func TestCodeSkimTool(t *testing.T) {
 
 	t.Run("Glob pattern processing", func(t *testing.T) {
 		args := map[string]any{
-			"source": filepath.Join(fixturesDir, "*.py"),
+			"source": []any{filepath.Join(fixturesDir, "*.py")},
 		}
 
 		result, err := tool.Execute(ctx, logger, cache, args)
@@ -172,7 +172,7 @@ func TestCodeSkimTool(t *testing.T) {
 	t.Run("Caching works", func(t *testing.T) {
 		testCache := &sync.Map{}
 		args := map[string]any{
-			"source": filepath.Join(fixturesDir, "test.go"),
+			"source": []any{filepath.Join(fixturesDir, "test.go")},
 		}
 
 		// First call
@@ -201,7 +201,7 @@ func TestCodeSkimTool(t *testing.T) {
 	t.Run("Clear cache works", func(t *testing.T) {
 		testCache := &sync.Map{}
 		args := map[string]any{
-			"source": filepath.Join(fixturesDir, "test.js"),
+			"source": []any{filepath.Join(fixturesDir, "test.js")},
 		}
 
 		// First call
@@ -231,7 +231,7 @@ func TestCodeSkimTool(t *testing.T) {
 
 	t.Run("Non-existent file fails", func(t *testing.T) {
 		args := map[string]any{
-			"source": filepath.Join(fixturesDir, "nonexistent.py"),
+			"source": []any{filepath.Join(fixturesDir, "nonexistent.py")},
 		}
 
 		_, err := tool.Execute(ctx, logger, cache, args)
@@ -241,7 +241,7 @@ func TestCodeSkimTool(t *testing.T) {
 
 	t.Run("Glob with no matches returns error", func(t *testing.T) {
 		args := map[string]any{
-			"source": filepath.Join(fixturesDir, "*.rb"),
+			"source": []any{filepath.Join(fixturesDir, "*.rb")},
 		}
 
 		_, err := tool.Execute(ctx, logger, cache, args)
@@ -253,7 +253,7 @@ func TestCodeSkimTool(t *testing.T) {
 		t.Setenv("CODE_SKIM_MAX_LINES", "5")
 		testCache := &sync.Map{}
 		args := map[string]any{
-			"source": filepath.Join(fixturesDir, "large.py"),
+			"source": []any{filepath.Join(fixturesDir, "large.py")},
 		}
 
 		// First call - should be truncated

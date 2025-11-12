@@ -22,23 +22,27 @@ const (
 
 // SkimRequest represents a request to transform code
 type SkimRequest struct {
-	Source       string `json:"source"` // File path, directory path, or glob pattern
-	ClearCache   bool   `json:"clear_cache,omitempty"`
-	StartingLine int    `json:"starting_line,omitempty"` // Line number to start from (1-based)
-	Filter       string `json:"filter,omitempty"`        // Optional glob pattern to filter function/method/class names
+	Source       any  `json:"source"` // String or array of strings: file path(s), directory path(s), or glob pattern(s)
+	ClearCache   bool `json:"clear_cache,omitempty"`
+	StartingLine int  `json:"starting_line,omitempty"` // Line number to start from (1-based)
+	Filter       any  `json:"filter,omitempty"`        // String or array of strings: glob pattern(s) to filter function/method/class names (prefix with ! for inverse)
 }
 
 // FileResult represents the result for a single file
 type FileResult struct {
-	Path             string   `json:"path"`
-	Transformed      string   `json:"transformed"`
-	Language         Language `json:"language"`
-	FromCache        bool     `json:"from_cache"`
-	Truncated        bool     `json:"truncated,omitempty"`
-	TotalLines       *int     `json:"total_lines,omitempty"`
-	ReturnedLines    *int     `json:"returned_lines,omitempty"`
-	NextStartingLine *int     `json:"next_starting_line,omitempty"`
-	Error            string   `json:"error,omitempty"`
+	Path                string   `json:"path"`
+	Transformed         string   `json:"transformed"`
+	Language            Language `json:"language"`
+	FromCache           bool     `json:"from_cache"`
+	Truncated           bool     `json:"truncated,omitempty"`
+	TotalLines          *int     `json:"total_lines,omitempty"`
+	ReturnedLines       *int     `json:"returned_lines,omitempty"`
+	NextStartingLine    *int     `json:"next_starting_line,omitempty"`
+	ReductionPercentage *int     `json:"reduction_percentage,omitempty"`
+	MatchedItems        *int     `json:"matched_items,omitempty"`
+	TotalItems          *int     `json:"total_items,omitempty"`
+	FilteredItems       *int     `json:"filtered_items,omitempty"`
+	Error               string   `json:"error,omitempty"`
 }
 
 // SkimResponse represents the response from a code transformation

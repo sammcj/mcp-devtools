@@ -40,10 +40,10 @@ func init() {
 func (t *CodeSkimTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		toolName,
-		mcp.WithDescription("Returns information about source code in an efficient way by stripping function/method bodies whilst preserving signatures, types, and structure. Use when you need to analyse or summarise large files or codebases before reading an entire file to save on token usage."),
+		mcp.WithDescription("Returns information about source code in an efficient way by stripping function/method bodies whilst preserving signatures, types, and structure. Reduces token usage by 60-80% when analysing code structure."),
 		mcp.WithString("source",
 			mcp.Required(),
-			mcp.Description("Absolute path to: a file, a directory (recursively processes all supported files - use sparingly!), or a glob pattern (e.g., '**/*.py')"),
+			mcp.Description("Array of absolute paths to files, directories (recursively processes all supported files - use sparingly!), or glob patterns (e.g., [\"/path/file.py\", \"/dir\", \"**/*.go\"])."),
 		),
 		mcp.WithBoolean("clear_cache",
 			mcp.Description("Force clear cache entries before processing"),
@@ -53,7 +53,7 @@ func (t *CodeSkimTool) Definition() mcp.Tool {
 			mcp.Description("Line number to start from (1-based) for pagination of large results. Use when previous response was truncated"),
 		),
 		mcp.WithString("filter",
-			mcp.Description("Optional glob pattern to filter by function/method/class name (e.g., 'handle_*', 'test_*', '*Controller'), non-matching items are omitted from the output"),
+			mcp.Description("Optional array of glob patterns to filter by function/method/class name (e.g., [\"handle_*\", \"process_*\"]). Optionally prefix pattern with ! for exclusions. Returns matched_items, total_items, filtered_items counts."),
 		),
 		// Read-only annotations - reads files but doesn't modify them
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -274,11 +274,11 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 	}
 
 	// Check cache
-	var transformed string
+	var transformResult *TransformResult
 	if cacheKey != "" {
 		if cached, ok := cache.Load(cacheKey); ok {
-			if cachedResult, ok := cached.(string); ok {
-				transformed = cachedResult
+			if cachedResult, ok := cached.(*TransformResult); ok {
+				transformResult = cachedResult
 				result.FromCache = true
 				logger.WithField("cache_key", cacheKey).Debug("Using cached result")
 			}
@@ -287,12 +287,14 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 
 	// Transform if not from cache
 	if !result.FromCache {
-		// Use filtered transform if filter is provided
-		if req.Filter != "" {
-			transformed, err = TransformWithFilter(ctx, source, lang, isTSX, req.Filter)
-		} else {
-			transformed, err = Transform(ctx, source, lang, isTSX)
+		// req.Filter is []string or nil
+		var filterPatterns []string
+		if req.Filter != nil {
+			filterPatterns = req.Filter.([]string)
 		}
+
+		var err error
+		transformResult, err = TransformWithFilter(ctx, source, lang, isTSX, filterPatterns)
 		if err != nil {
 			result.Error = fmt.Sprintf("transformation failed: %v", err)
 			return result
@@ -300,9 +302,27 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 
 		// Store in cache (cache key includes filter for filtered results)
 		if cacheKey != "" {
-			cache.Store(cacheKey, transformed)
+			cache.Store(cacheKey, transformResult)
 			logger.WithField("cache_key", cacheKey).Debug("Stored result in cache")
 		}
+	}
+
+	// Extract transformed string
+	transformed := transformResult.Transformed
+
+	// Calculate reduction percentage
+	originalSize := len(source)
+	transformedSize := len(transformed)
+	if originalSize > 0 {
+		reduction := int(float64(originalSize-transformedSize) / float64(originalSize) * 100)
+		result.ReductionPercentage = &reduction
+	}
+
+	// Add filter counts if filtering was applied
+	if req.Filter != nil {
+		result.MatchedItems = &transformResult.MatchedItems
+		result.TotalItems = &transformResult.TotalItems
+		result.FilteredItems = &transformResult.FilteredItems
 	}
 
 	// Apply line limiting and pagination
@@ -354,22 +374,52 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 func (t *CodeSkimTool) parseRequest(args map[string]any) (*SkimRequest, error) {
 	req := &SkimRequest{}
 
-	// Parse source (required)
-	source, ok := args["source"].(string)
-	if !ok || source == "" {
-		return nil, fmt.Errorf("missing required parameter 'source': provide a file path, directory path, or glob pattern")
+	// Parse source (required) - array of strings
+	sourceRaw, ok := args["source"]
+	if !ok {
+		return nil, fmt.Errorf("missing required parameter 'source': provide an array of file paths, directory paths, or glob patterns")
 	}
 
-	// Convert to absolute path if relative
-	if !filepath.IsAbs(source) {
-		absPath, err := filepath.Abs(source)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve absolute path: %w", err)
+	// Must be an array
+	sourceArray, ok := sourceRaw.([]any)
+	if !ok {
+		return nil, fmt.Errorf("source must be an array of strings (e.g., [\"/path/to/file.py\"])")
+	}
+
+	if len(sourceArray) == 0 {
+		return nil, fmt.Errorf("source array cannot be empty")
+	}
+
+	// Parse array items
+	var sources []string
+	for i, item := range sourceArray {
+		str, ok := item.(string)
+		if !ok {
+			return nil, fmt.Errorf("source array item %d must be a string", i)
 		}
-		source = absPath
+		if str == "" {
+			return nil, fmt.Errorf("source array item %d cannot be empty", i)
+		}
+		sources = append(sources, str)
 	}
 
-	req.Source = source
+	// Convert all sources to absolute paths
+	for i, source := range sources {
+		if !filepath.IsAbs(source) {
+			absPath, err := filepath.Abs(source)
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve absolute path for source %d: %w", i, err)
+			}
+			sources[i] = absPath
+		}
+	}
+
+	// Always store as array (converted to []any for interface{})
+	sourceInterfaces := make([]any, len(sources))
+	for i, s := range sources {
+		sourceInterfaces[i] = s
+	}
+	req.Source = sourceInterfaces
 
 	// Parse clear_cache (optional)
 	if clearRaw, ok := args["clear_cache"]; ok {
@@ -388,10 +438,28 @@ func (t *CodeSkimTool) parseRequest(args map[string]any) (*SkimRequest, error) {
 		}
 	}
 
-	// Parse filter (optional)
+	// Parse filter (optional) - array of strings
 	if filterRaw, ok := args["filter"]; ok {
-		if filterStr, ok := filterRaw.(string); ok {
-			req.Filter = filterStr
+		filterArray, ok := filterRaw.([]any)
+		if !ok {
+			return nil, fmt.Errorf("filter must be an array of strings (e.g., [\"handle_*\", \"!temp_*\"])")
+		}
+
+		if len(filterArray) > 0 {
+			var filters []string
+			for i, item := range filterArray {
+				str, ok := item.(string)
+				if !ok {
+					return nil, fmt.Errorf("filter array item %d must be a string", i)
+				}
+				if str != "" {
+					filters = append(filters, str)
+				}
+			}
+			if len(filters) > 0 {
+				// Store as []string
+				req.Filter = filters
+			}
 		}
 	}
 
@@ -409,11 +477,20 @@ func (t *CodeSkimTool) getMaxLines() int {
 }
 
 // generateCacheKey generates a cache key for a file
-func (t *CodeSkimTool) generateCacheKey(filePath string, source string, lang Language, filter string) string {
+func (t *CodeSkimTool) generateCacheKey(filePath string, source string, lang Language, filter any) string {
 	// Use file path + language + filter + source hash (16 bytes for reduced collision risk)
 	hash := sha256.Sum256([]byte(source))
-	if filter != "" {
-		return fmt.Sprintf("codeskim:%s:%s:%s:%x", filePath, lang, filter, hash[:16])
+
+	// Generate filter string for cache key (filter is []string or nil)
+	var filterStr string
+	if filter != nil {
+		if filterSlice, ok := filter.([]string); ok && len(filterSlice) > 0 {
+			filterStr = strings.Join(filterSlice, ",")
+		}
+	}
+
+	if filterStr != "" {
+		return fmt.Sprintf("codeskim:%s:%s:%s:%x", filePath, lang, filterStr, hash[:16])
 	}
 	return fmt.Sprintf("codeskim:%s:%s:%x", filePath, lang, hash[:16])
 }
@@ -434,14 +511,17 @@ func (t *CodeSkimTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		WhenToUse:    "Use when you need to analyse code structure without implementation details, when fitting large codebases into limited AI context windows, when providing architectural overviews, or when examining API surfaces and function signatures. Ideal for understanding 'what' code does without the 'how' details. Subject to memory limits (4GB total, 500KB per file).",
 		WhenNotToUse: "Don't use when you need to debug implementation logic, when examining algorithm details matters, when reviewing line-by-line code quality, when the actual implementation is required for the task, or when files exceed 500KB.",
 		CommonPatterns: []string{
-			"Process single file: {\"source\": \"/path/to/file.py\"}",
-			"Process directory: {\"source\": \"/path/to/project\"}",
-			"Use glob pattern: {\"source\": \"/path/to/project/**/*.ts\"}",
-			"Clear cache: {\"source\": \"file.py\", \"clear_cache\": true}",
-			"Paginate large file: {\"source\": \"large.py\", \"starting_line\": 10001}",
+			"Process single file: {\"source\": [\"/path/to/file.py\"]}",
+			"Process directory: {\"source\": [\"/path/to/project\"]}",
+			"Use glob pattern: {\"source\": [\"/path/to/project/**/*.ts\"]}",
+			"Multiple sources: {\"source\": [\"/file1.py\", \"/file2.go\", \"/dir\"]}",
+			"With filter: {\"source\": [\"/api.py\"], \"filter\": [\"handle_*\"]}",
+			"Clear cache: {\"source\": [\"/file.py\"], \"clear_cache\": true}",
+			"Paginate: {\"source\": [\"/large.py\"], \"starting_line\": 10001}",
 		},
 		ParameterDetails: map[string]string{
-			"source":        "Absolute path to a file, directory, or glob pattern. Directories are processed recursively. Globs support ** for recursive matching.",
+			"source":        "Array of absolute paths to files, directories, or glob patterns. Directories are processed recursively. Globs support ** for recursive matching. Multiple sources are deduplicated.",
+			"filter":        "Optional array of glob patterns to filter by function/method/class name. Prefix with ! for exclusion. Returns matched_items, total_items, filtered_items counts.",
 			"clear_cache":   "When true, clears cache entries before processing.",
 			"starting_line": "Line number to start from (1-based) for pagination. Use when previous response was truncated.",
 		},
@@ -449,23 +529,31 @@ func (t *CodeSkimTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			{
 				Description: "Process a single Python file",
 				Arguments: map[string]any{
-					"source": "/Users/samm/project/app.py",
+					"source": []string{"/Users/samm/project/app.py"},
 				},
 				ExpectedResult: "Returns array with one file result containing transformed code",
 			},
 			{
 				Description: "Process all TypeScript files in a directory",
 				Arguments: map[string]any{
-					"source": "/Users/samm/project/src",
+					"source": []string{"/Users/samm/project/src"},
 				},
 				ExpectedResult: "Returns array of results for all .ts and .tsx files found recursively",
 			},
 			{
 				Description: "Process files matching a glob pattern",
 				Arguments: map[string]any{
-					"source": "/Users/samm/project/**/*.go",
+					"source": []string{"/Users/samm/project/**/*.go"},
 				},
 				ExpectedResult: "Returns array of results for all .go files matching the pattern",
+			},
+			{
+				Description: "Filter to show only handle functions",
+				Arguments: map[string]any{
+					"source": []string{"/Users/samm/project/api.py"},
+					"filter": []string{"handle_*"},
+				},
+				ExpectedResult: "Returns transformed code with only functions matching 'handle_*', includes matched_items count",
 			},
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
