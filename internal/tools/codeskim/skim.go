@@ -2,7 +2,6 @@ package codeskim
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -268,33 +267,44 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 	isTSX := strings.HasSuffix(filePath, ".tsx")
 	result.Language = lang
 
-	// Read file
-	sourceBytes, err := os.ReadFile(filePath)
+	// Get file modification time for preliminary cache check
+	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		result.Error = fmt.Sprintf("failed to read file: %v", err)
+		result.Error = fmt.Sprintf("failed to stat file: %v", err)
 		return result
 	}
-	source := string(sourceBytes)
+	mtime := fileInfo.ModTime().Unix()
 
-	// Generate cache key (includes filter if present)
-	cacheKey := t.generateCacheKey(filePath, source, lang, req.Filter)
+	// Generate preliminary cache key (file path + mtime + language + filter)
+	preliminaryCacheKey := t.generatePreliminaryCacheKey(filePath, mtime, lang, req.Filter)
 
 	// Clear cache if requested
-	if req.ClearCache && cacheKey != "" {
-		cache.Delete(cacheKey)
-		logger.WithField("cache_key", cacheKey).Debug("Cleared cache entry")
+	if req.ClearCache && preliminaryCacheKey != "" {
+		cache.Delete(preliminaryCacheKey)
+		logger.WithField("cache_key", preliminaryCacheKey).Debug("Cleared cache entry")
 	}
 
-	// Check cache
+	// Check cache with preliminary key (avoids reading/hashing file)
 	var transformResult *TransformResult
-	if cacheKey != "" {
-		if cached, ok := cache.Load(cacheKey); ok {
+	if preliminaryCacheKey != "" {
+		if cached, ok := cache.Load(preliminaryCacheKey); ok {
 			if cachedResult, ok := cached.(*TransformResult); ok {
 				transformResult = cachedResult
 				result.FromCache = true
-				logger.WithField("cache_key", cacheKey).Debug("Using cached result")
+				logger.WithField("cache_key", preliminaryCacheKey).Debug("Using cached result")
 			}
 		}
+	}
+
+	// Read file only if not cached
+	var source string
+	if !result.FromCache {
+		sourceBytes, err := os.ReadFile(filePath)
+		if err != nil {
+			result.Error = fmt.Sprintf("failed to read file: %v", err)
+			return result
+		}
+		source = string(sourceBytes)
 	}
 
 	// Transform if not from cache
@@ -314,10 +324,10 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 			return result
 		}
 
-		// Store in cache (cache key includes filter for filtered results)
-		if cacheKey != "" {
-			cache.Store(cacheKey, transformResult)
-			logger.WithField("cache_key", cacheKey).Debug("Stored result in cache")
+		// Store in cache using preliminary key
+		if preliminaryCacheKey != "" {
+			cache.Store(preliminaryCacheKey, transformResult)
+			logger.WithField("cache_key", preliminaryCacheKey).Debug("Stored result in cache")
 		}
 	}
 
@@ -325,10 +335,22 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 	transformed := transformResult.Transformed
 
 	// Calculate reduction percentage
-	originalSize := len(source)
+	// For cached results, we need to get the original size from file info
+	var originalSize int
+	if result.FromCache {
+		originalSize = int(fileInfo.Size())
+	} else {
+		originalSize = len(source)
+	}
 	transformedSize := len(transformed)
 	if originalSize > 0 {
 		reduction := int(float64(originalSize-transformedSize) / float64(originalSize) * 100)
+		// Clamp reduction percentage to [0, 100] range
+		if reduction < 0 {
+			reduction = 0
+		} else if reduction > 100 {
+			reduction = 100
+		}
 		result.ReductionPercentage = &reduction
 	}
 
@@ -490,10 +512,11 @@ func (t *CodeSkimTool) getMaxLines() int {
 	return defaultMaxLines
 }
 
-// generateCacheKey generates a cache key for a file
-func (t *CodeSkimTool) generateCacheKey(filePath string, source string, lang Language, filter any) string {
-	// Use file path + language + filter + source hash (16 bytes for reduced collision risk)
-	hash := sha256.Sum256([]byte(source))
+// generatePreliminaryCacheKey generates a lightweight cache key using mtime instead of hashing
+// This avoids reading and hashing the entire file content on cache hits
+func (t *CodeSkimTool) generatePreliminaryCacheKey(filePath string, mtime int64, lang Language, filter any) string {
+	// Use file path + mtime + language + filter
+	// mtime changes when file is modified, invalidating the cache
 
 	// Generate filter string for cache key (filter is []string or nil)
 	var filterStr string
@@ -504,9 +527,9 @@ func (t *CodeSkimTool) generateCacheKey(filePath string, source string, lang Lan
 	}
 
 	if filterStr != "" {
-		return fmt.Sprintf("codeskim:%s:%s:%s:%x", filePath, lang, filterStr, hash[:16])
+		return fmt.Sprintf("codeskim:%s:%d:%s:%s", filePath, mtime, lang, filterStr)
 	}
-	return fmt.Sprintf("codeskim:%s:%s:%x", filePath, lang, hash[:16])
+	return fmt.Sprintf("codeskim:%s:%d:%s", filePath, mtime, lang)
 }
 
 // newToolResultJSON creates a new tool result with JSON content

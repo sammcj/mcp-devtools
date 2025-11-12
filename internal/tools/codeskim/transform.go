@@ -114,7 +114,7 @@ func transformStructure(source []byte, tree *sitter.Tree, lang Language, filterP
 // countItems counts total functions/methods/classes in the AST
 func countItems(node *sitter.Node, nodeTypes NodeTypes, depth int) int {
 	// Prevent stack overflow
-	if depth > MaxASTDepth {
+	if depth >= MaxASTDepth {
 		return 0
 	}
 
@@ -144,7 +144,7 @@ func countItems(node *sitter.Node, nodeTypes NodeTypes, depth int) int {
 // Filter patterns starting with ! are exclusion patterns (inverse filter)
 func collectMatchingNodes(node *sitter.Node, nodeTypes NodeTypes, source []byte, filterPatterns []string, matching map[*sitter.Node]bool, depth int) int {
 	// Prevent stack overflow
-	if depth > MaxASTDepth {
+	if depth >= MaxASTDepth {
 		return 0
 	}
 
@@ -229,7 +229,7 @@ func extractNodeName(node *sitter.Node, source []byte) string {
 // collectBodyReplacements recursively finds function/method bodies to replace
 func collectBodyReplacements(node *sitter.Node, nodeTypes NodeTypes, bodyTypes []string, replacements map[[2]uint32]string, matchingNodes map[*sitter.Node]bool, depth int) error {
 	// Prevent stack overflow
-	if depth > MaxASTDepth {
+	if depth >= MaxASTDepth {
 		return fmt.Errorf("maximum AST depth exceeded: %d (possible deeply nested code)", MaxASTDepth)
 	}
 
