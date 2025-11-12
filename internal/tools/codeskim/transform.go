@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/bmatcuk/doublestar/v4"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -19,6 +20,11 @@ const (
 
 // Transform transforms source code by removing implementation details
 func Transform(ctx context.Context, source string, lang Language, isTSX bool) (string, error) {
+	return TransformWithFilter(ctx, source, lang, isTSX, "")
+}
+
+// TransformWithFilter transforms source code and optionally filters by name pattern
+func TransformWithFilter(ctx context.Context, source string, lang Language, isTSX bool, filterPattern string) (string, error) {
 	// Get the appropriate tree-sitter language
 	var tsLang *sitter.Language
 	if lang == LanguageTypeScript && isTSX {
@@ -46,20 +52,27 @@ func Transform(ctx context.Context, source string, lang Language, isTSX bool) (s
 		return "", fmt.Errorf("failed to parse source code: no root node")
 	}
 
-	// Transform by stripping function bodies
-	return transformStructure(sourceBytes, tree, lang)
+	// Transform by stripping function bodies (with optional filtering)
+	return transformStructure(sourceBytes, tree, lang, filterPattern)
 }
 
 // transformStructure strips function/method bodies while preserving structure
-func transformStructure(source []byte, tree *sitter.Tree, lang Language) (string, error) {
+func transformStructure(source []byte, tree *sitter.Tree, lang Language, filterPattern string) (string, error) {
 	nodeTypes := GetNodeTypes(lang)
 	bodyTypes := GetBodyNodeTypes(lang)
 
 	// Map to store byte ranges to replace: (start, end) -> replacement
 	replacements := make(map[[2]uint32]string)
 
+	// If filter is provided, collect matching nodes to keep
+	var matchingNodes map[*sitter.Node]bool
+	if filterPattern != "" {
+		matchingNodes = make(map[*sitter.Node]bool)
+		collectMatchingNodes(tree.RootNode(), nodeTypes, source, filterPattern, matchingNodes, 0)
+	}
+
 	// Recursively collect body nodes to replace
-	if err := collectBodyReplacements(tree.RootNode(), nodeTypes, bodyTypes, replacements, 0); err != nil {
+	if err := collectBodyReplacements(tree.RootNode(), nodeTypes, bodyTypes, replacements, matchingNodes, 0); err != nil {
 		return "", err
 	}
 
@@ -72,8 +85,58 @@ func transformStructure(source []byte, tree *sitter.Tree, lang Language) (string
 	return buildOutput(source, replacements)
 }
 
+// collectMatchingNodes finds nodes whose names match the filter pattern
+func collectMatchingNodes(node *sitter.Node, nodeTypes NodeTypes, source []byte, filterPattern string, matching map[*sitter.Node]bool, depth int) {
+	// Prevent stack overflow
+	if depth > MaxASTDepth {
+		return
+	}
+
+	nodeType := node.Type()
+
+	// Check if this is a function/method/class
+	if nodeType == nodeTypes.Function || nodeType == nodeTypes.Method || nodeType == nodeTypes.Class ||
+		nodeType == "arrow_function" || nodeType == "function_expression" {
+		// Extract name
+		name := extractNodeName(node, source)
+		if name != "" {
+			// Match against filter pattern
+			matched, _ := doublestar.Match(filterPattern, name)
+			if matched {
+				matching[node] = true
+			}
+		}
+	}
+
+	// Recursively process children
+	childCount := int(node.ChildCount())
+	for i := range childCount {
+		child := node.Child(i)
+		if child != nil {
+			collectMatchingNodes(child, nodeTypes, source, filterPattern, matching, depth+1)
+		}
+	}
+}
+
+// extractNodeName extracts the name identifier from a function/method/class node
+func extractNodeName(node *sitter.Node, source []byte) string {
+	childCount := int(node.ChildCount())
+	for i := range childCount {
+		child := node.Child(i)
+		if child == nil {
+			continue
+		}
+		// Look for identifier or name nodes
+		childType := child.Type()
+		if childType == "identifier" || childType == "name" || childType == "property_identifier" {
+			return string(source[child.StartByte():child.EndByte()])
+		}
+	}
+	return ""
+}
+
 // collectBodyReplacements recursively finds function/method bodies to replace
-func collectBodyReplacements(node *sitter.Node, nodeTypes NodeTypes, bodyTypes []string, replacements map[[2]uint32]string, depth int) error {
+func collectBodyReplacements(node *sitter.Node, nodeTypes NodeTypes, bodyTypes []string, replacements map[[2]uint32]string, matchingNodes map[*sitter.Node]bool, depth int) error {
 	// Prevent stack overflow
 	if depth > MaxASTDepth {
 		return fmt.Errorf("maximum AST depth exceeded: %d (possible deeply nested code)", MaxASTDepth)
@@ -83,6 +146,17 @@ func collectBodyReplacements(node *sitter.Node, nodeTypes NodeTypes, bodyTypes [
 
 	// Check if this is a function/method/class with a body
 	if nodeType == nodeTypes.Function || nodeType == nodeTypes.Method || nodeType == "arrow_function" || nodeType == "function_expression" {
+		// If filter is active, skip nodes that don't match
+		if matchingNodes != nil && !matchingNodes[node] {
+			// Skip this node - don't include it in output
+			// Mark entire node for removal
+			start := node.StartByte()
+			end := node.EndByte()
+			replacements[[2]uint32{start, end}] = ""
+			return nil // Don't traverse children
+		}
+
+		// Node matches filter (or no filter) - strip body only
 		bodyNode := findBodyNode(node, bodyTypes)
 		if bodyNode != nil {
 			start := bodyNode.StartByte()
@@ -96,7 +170,7 @@ func collectBodyReplacements(node *sitter.Node, nodeTypes NodeTypes, bodyTypes [
 	for i := range childCount {
 		child := node.Child(i)
 		if child != nil {
-			if err := collectBodyReplacements(child, nodeTypes, bodyTypes, replacements, depth+1); err != nil {
+			if err := collectBodyReplacements(child, nodeTypes, bodyTypes, replacements, matchingNodes, depth+1); err != nil {
 				return err
 			}
 		}

@@ -46,11 +46,14 @@ func (t *CodeSkimTool) Definition() mcp.Tool {
 			mcp.Description("Absolute path to: a file, a directory (recursively processes all supported files), or a glob pattern (e.g., '**/*.py')"),
 		),
 		mcp.WithBoolean("clear_cache",
-			mcp.Description("Clear cache entries before processing"),
+			mcp.Description("Force clear cache entries before processing"),
 			mcp.DefaultBool(false),
 		),
 		mcp.WithNumber("starting_line",
-			mcp.Description("Line number to start from (1-based) for pagination of large results. Use when previous response was truncated."),
+			mcp.Description("Line number to start from (1-based) for pagination of large results. Use when previous response was truncated"),
+		),
+		mcp.WithString("filter",
+			mcp.Description("Optional glob pattern to return only filtered function/method/class names (e.g., 'handle_*', 'test_*', '*Controller')"),
 		),
 		// Read-only annotations - reads files but doesn't modify them
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -261,8 +264,8 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 	}
 	source := string(sourceBytes)
 
-	// Generate cache key
-	cacheKey := t.generateCacheKey(filePath, source, lang)
+	// Generate cache key (includes filter if present)
+	cacheKey := t.generateCacheKey(filePath, source, lang, req.Filter)
 
 	// Clear cache if requested
 	if req.ClearCache && cacheKey != "" {
@@ -284,13 +287,18 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 
 	// Transform if not from cache
 	if !result.FromCache {
-		transformed, err = Transform(ctx, source, lang, isTSX)
+		// Use filtered transform if filter is provided
+		if req.Filter != "" {
+			transformed, err = TransformWithFilter(ctx, source, lang, isTSX, req.Filter)
+		} else {
+			transformed, err = Transform(ctx, source, lang, isTSX)
+		}
 		if err != nil {
 			result.Error = fmt.Sprintf("transformation failed: %v", err)
 			return result
 		}
 
-		// Store in cache
+		// Store in cache (cache key includes filter for filtered results)
 		if cacheKey != "" {
 			cache.Store(cacheKey, transformed)
 			logger.WithField("cache_key", cacheKey).Debug("Stored result in cache")
@@ -380,6 +388,13 @@ func (t *CodeSkimTool) parseRequest(args map[string]any) (*SkimRequest, error) {
 		}
 	}
 
+	// Parse filter (optional)
+	if filterRaw, ok := args["filter"]; ok {
+		if filterStr, ok := filterRaw.(string); ok {
+			req.Filter = filterStr
+		}
+	}
+
 	return req, nil
 }
 
@@ -394,9 +409,12 @@ func (t *CodeSkimTool) getMaxLines() int {
 }
 
 // generateCacheKey generates a cache key for a file
-func (t *CodeSkimTool) generateCacheKey(filePath string, source string, lang Language) string {
-	// Use file path + language + source hash (16 bytes for reduced collision risk)
+func (t *CodeSkimTool) generateCacheKey(filePath string, source string, lang Language, filter string) string {
+	// Use file path + language + filter + source hash (16 bytes for reduced collision risk)
 	hash := sha256.Sum256([]byte(source))
+	if filter != "" {
+		return fmt.Sprintf("codeskim:%s:%s:%s:%x", filePath, lang, filter, hash[:16])
+	}
 	return fmt.Sprintf("codeskim:%s:%s:%x", filePath, lang, hash[:16])
 }
 

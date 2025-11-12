@@ -55,6 +55,10 @@ When working with large codebases, you often don't need implementation details t
 - `starting_line` (number): Line number to start from (1-based) for pagination
   - Use when previous response was truncated
   - Specified in `next_starting_line` field of truncated responses
+- `filter` (string): Glob pattern to filter function/method/class names
+  - Only items with matching names will be included in output
+  - Examples: `"handle_*"`, `"test_*"`, `"*Controller"`, `"get*"`
+  - Reduces output even further by showing only relevant functions
 
 ## How It Works
 
@@ -132,6 +136,24 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
 {
   "source": "/path/to/large_file.py",
   "starting_line": 10001
+}
+```
+
+### Filter by function name pattern
+
+```json
+{
+  "source": "/path/to/api.py",
+  "filter": "handle_*"
+}
+```
+
+### Show only test functions
+
+```json
+{
+  "source": "/path/to/tests.py",
+  "filter": "test_*"
 }
 ```
 

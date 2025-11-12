@@ -25,6 +25,7 @@ type SkimRequest struct {
 	Source       string `json:"source"` // File path, directory path, or glob pattern
 	ClearCache   bool   `json:"clear_cache,omitempty"`
 	StartingLine int    `json:"starting_line,omitempty"` // Line number to start from (1-based)
+	Filter       string `json:"filter,omitempty"`        // Optional glob pattern to filter function/method/class names
 }
 
 // FileResult represents the result for a single file
