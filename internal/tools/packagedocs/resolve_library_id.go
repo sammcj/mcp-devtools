@@ -234,6 +234,6 @@ func (t *ResolveLibraryIDTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"libraryName": "Library or package name to search for. Can include version numbers, variants, or descriptive terms. Examples: 'React', 'Next.js', 'mongodb driver', 'aws-sdk-js', 'vue 3'. More specific terms usually yield better results.",
 		},
 		WhenToUse:    "Use as the first step before getting library documentation. Essential when you know the library name but need the Context7-compatible format, or when discovering available libraries for a technology stack.",
-		WhenNotToUse: "Don't use when you already have the exact Context7 library ID in '/org/project' format, for general technology searches (use web search instead), or when looking for tutorials rather than official documentation.",
+		WhenNotToUse: "Don't use when you already have the exact Context7 library ID in '/org/project' format, for general technology searches (use internet_search instead), or when looking for tutorials rather than official documentation.",
 	}
 }

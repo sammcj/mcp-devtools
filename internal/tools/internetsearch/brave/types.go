@@ -69,20 +69,20 @@ func NormaliseText(s string) string {
 	return result
 }
 
-// BraveWebSearchResponse represents the response from Brave web search API
-type BraveWebSearchResponse struct {
-	Type  string                `json:"type"`
-	Query BraveQuery            `json:"query"`
-	Web   *BraveWebSearchResult `json:"web,omitempty"`
+// BraveInternetSearchResponse represents the response from Brave internet search API
+type BraveInternetSearchResponse struct {
+	Type  string                     `json:"type"`
+	Query BraveQuery                 `json:"query"`
+	Web   *BraveInternetSearchResult `json:"web,omitempty"`
 }
 
-// BraveWebSearchResult contains web search results
-type BraveWebSearchResult struct {
+// BraveInternetSearchResult contains internet search results
+type BraveInternetSearchResult struct {
 	Type    string           `json:"type"`
 	Results []BraveWebResult `json:"results"`
 }
 
-// BraveWebResult represents a single web search result
+// BraveWebResult represents a single internet search result
 type BraveWebResult struct {
 	Title       string `json:"title"`
 	URL         string `json:"url"`
@@ -152,10 +152,10 @@ type BraveVideoData struct {
 
 // BraveLocalSearchResponse represents the response from Brave local search API
 type BraveLocalSearchResponse struct {
-	Type      string                `json:"type"`
-	Query     BraveQuery            `json:"query"`
-	Locations *BraveLocationResult  `json:"locations,omitempty"`
-	Web       *BraveWebSearchResult `json:"web,omitempty"`
+	Type      string                     `json:"type"`
+	Query     BraveQuery                 `json:"query"`
+	Locations *BraveLocationResult       `json:"locations,omitempty"`
+	Web       *BraveInternetSearchResult `json:"web,omitempty"`
 }
 
 // BraveLocationResult contains local search results

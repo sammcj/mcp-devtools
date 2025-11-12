@@ -220,8 +220,8 @@ func (c *BraveClient) processResponseWithSecurity(ctx context.Context, logger *l
 	return body, nil
 }
 
-// WebSearch performs a web search using the Brave API
-func (c *BraveClient) WebSearch(ctx context.Context, logger *logrus.Logger, query string, count int, offset int, freshness string) (*BraveWebSearchResponse, error) {
+// InternetSearch performs an internet search using the Brave API
+func (c *BraveClient) InternetSearch(ctx context.Context, logger *logrus.Logger, query string, count int, offset int, freshness string) (*BraveInternetSearchResponse, error) {
 	params := map[string]string{
 		"q":      query,
 		"count":  fmt.Sprintf("%d", count),
@@ -237,9 +237,9 @@ func (c *BraveClient) WebSearch(ctx context.Context, logger *logrus.Logger, quer
 		return nil, err
 	}
 
-	var response BraveWebSearchResponse
+	var response BraveInternetSearchResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse web search response: %w", err)
+		return nil, fmt.Errorf("failed to parse internet search response: %w", err)
 	}
 
 	return &response, nil

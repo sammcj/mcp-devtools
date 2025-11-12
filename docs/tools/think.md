@@ -145,7 +145,7 @@ For the most challenging scenarios requiring maximum cognitive effort:
 }}
 
 // 3. Take targeted action
-{"name": "web_fetch", "arguments": {"url": "kubernetes.io/docs/troubleshooting"}}
+{"name": "fetch_url", "arguments": {"url": "kubernetes.io/docs/troubleshooting"}}
 ```
 
 ### Decision Making Pattern
@@ -279,7 +279,7 @@ think "Based on the documentation, I'll need to: 1) configure TLS certificates, 
 think "The user reports intermittent 500 errors. This could be: resource exhaustion, database connection issues, external service failures, or application bugs. I need to gather more specific information."
 
 # 2. Gather diagnostic information
-web_fetch "https://their-monitoring-dashboard.com/metrics"
+fetch_url "https://their-monitoring-dashboard.com/metrics"
 
 # 3. Correlate findings
 think "The metrics show memory usage spikes correlating with the errors. This suggests a memory leak or inefficient memory usage during peak load periods."

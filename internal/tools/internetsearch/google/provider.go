@@ -84,7 +84,7 @@ func (p *GoogleProvider) Search(ctx context.Context, logger *logrus.Logger, sear
 
 	switch searchType {
 	case "web":
-		return p.executeWebSearch(ctx, logger, args)
+		return p.executeInternetSearch(ctx, logger, args)
 	case "image":
 		return p.executeImageSearch(ctx, logger, args)
 	default:
@@ -92,8 +92,8 @@ func (p *GoogleProvider) Search(ctx context.Context, logger *logrus.Logger, sear
 	}
 }
 
-// executeWebSearch handles web search
-func (p *GoogleProvider) executeWebSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
+// executeInternetSearch handles internet search for web results
+func (p *GoogleProvider) executeInternetSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query, err := p.extractQuery(args)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (p *GoogleProvider) executeWebSearch(ctx context.Context, logger *logrus.Lo
 
 	response, err := p.client.Search(ctx, logger, query, "web", count, start)
 	if err != nil {
-		return nil, fmt.Errorf("web search failed: %w", err)
+		return nil, fmt.Errorf("internet search failed: %w", err)
 	}
 
 	// Convert to unified format

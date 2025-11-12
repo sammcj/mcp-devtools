@@ -42,8 +42,8 @@ func (p *DuckDuckGoProvider) IsAvailable() bool {
 
 // GetSupportedTypes returns the search types this provider supports
 func (p *DuckDuckGoProvider) GetSupportedTypes() []string {
-	// DuckDuckGo HTML interface primarily supports web search
-	// We'll map all types to web search for simplicity
+	// DuckDuckGo HTML interface primarily supports internet search
+	// We'll map all types to internet search for simplicity
 	return []string{"web"}
 }
 
@@ -57,12 +57,12 @@ func (p *DuckDuckGoProvider) Search(ctx context.Context, logger *logrus.Logger, 
 		"query":    query,
 	}).Debug("DuckDuckGo search parameters")
 
-	// For DuckDuckGo, all search types are handled as web search
-	return p.executeWebSearch(ctx, logger, args)
+	// For DuckDuckGo, all search types are handled as internet search
+	return p.executeInternetSearch(ctx, logger, args)
 }
 
-// executeWebSearch handles web search execution
-func (p *DuckDuckGoProvider) executeWebSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
+// executeInternetSearch handles internet search execution
+func (p *DuckDuckGoProvider) executeInternetSearch(ctx context.Context, logger *logrus.Logger, args map[string]any) (*internetsearch.SearchResponse, error) {
 	query := args["query"].(string)
 
 	// Parse optional parameters

@@ -741,7 +741,7 @@ echo "test content" | grep -E "your_regex_pattern"
 
 ## Examples
 
-For a very simple test to demonstrate the security system in action, ask the AI agent to use the web_fetch tool on any of these URLs:
+For a very simple test to demonstrate the security system in action, ask the AI agent to use the fetch_url tool on any of these URLs:
 1. https://gist.githubusercontent.com/sammcj/a37fb6d5f2aa53993281b365496adcef/raw/98e6f8e5d9238a278a3350a94c0b250afc6ef5de/test-bad-content.txt - Contains a bad command
 2. https://gist.githubusercontent.com/sammcj/a37fb6d5f2aa53993281b365496adcef/raw/c154135289c5c2bf802bc02a454f160ae29940f0/test-bad-content.txt - Contains a base64 encoded string, but it's not long and doesn't contain anything malicious
 3. https://gist.githubusercontent.com/sammcj/a37fb6d5f2aa53993281b365496adcef/raw/1ded814929f40e157a9650688242ca86a927594a/test-bad-content.txt - Contains a base64 encoded string that decodes to a short malicious command
