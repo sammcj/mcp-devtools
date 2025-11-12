@@ -15,6 +15,16 @@ The `code_skim` tool uses tree-sitter to parse source code and strip function/me
 - Go (`.go`)
 - JavaScript (`.js`, `.jsx`)
 - TypeScript (`.ts`, `.tsx`)
+- Rust (`.rs`)
+- C (`.c`, `.h`)
+- C++ (`.cpp`, `.cc`, `.cxx`, `.hpp`, `.hxx`, `.hh`)
+- Bash (`.sh`, `.bash`)
+- HTML (`.html`, `.htm`)
+- CSS (`.css`)
+- Swift (`.swift`)
+- Java (`.java`)
+- YAML (`.yml`, `.yaml`)
+- HCL/Terraform (`.hcl`, `.tf`)
 
 ## Why Use code_skim?
 
@@ -261,7 +271,7 @@ Fit more code into limited AI context windows by removing implementation noise.
 ### Language detection failed
 **Problem:** Error about unsupported file extension or language
 
-**Solution:** Ensure files have supported extensions (`.py`, `.go`, `.js`, `.jsx`, `.ts`, `.tsx`). Explicitly set `language` parameter if needed.
+**Solution:** Ensure files have supported extensions. See the full list of supported languages and extensions in the Overview section.
 
 ### Transformation failed with parse error
 **Problem:** Tree-sitter parser error

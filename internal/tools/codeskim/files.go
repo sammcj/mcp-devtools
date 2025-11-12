@@ -40,12 +40,32 @@ func ResolveFiles(source string) ([]string, error) {
 func findSupportedFiles(dir string) ([]string, error) {
 	var files []string
 	supportedExts := map[string]bool{
-		".py":  true,
-		".go":  true,
-		".js":  true,
-		".jsx": true,
-		".ts":  true,
-		".tsx": true,
+		".py":    true,
+		".go":    true,
+		".js":    true,
+		".jsx":   true,
+		".ts":    true,
+		".tsx":   true,
+		".rs":    true,
+		".c":     true,
+		".h":     true,
+		".cpp":   true,
+		".cc":    true,
+		".cxx":   true,
+		".hpp":   true,
+		".hxx":   true,
+		".hh":    true,
+		".sh":    true,
+		".bash":  true,
+		".html":  true,
+		".htm":   true,
+		".css":   true,
+		".swift": true,
+		".java":  true,
+		".yml":   true,
+		".yaml":  true,
+		".hcl":   true,
+		".tf":    true,
 	}
 
 	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
@@ -79,7 +99,7 @@ func findSupportedFiles(dir string) ([]string, error) {
 	}
 
 	if len(files) == 0 {
-		return nil, fmt.Errorf("no supported files found in directory: %s (looking for .py, .go, .js, .jsx, .ts, .tsx)", dir)
+		return nil, fmt.Errorf("no supported files found in directory: %s", dir)
 	}
 
 	return files, nil
@@ -105,12 +125,32 @@ func resolveGlob(pattern string) ([]string, error) {
 	// Filter to only supported files
 	var files []string
 	supportedExts := map[string]bool{
-		".py":  true,
-		".go":  true,
-		".js":  true,
-		".jsx": true,
-		".ts":  true,
-		".tsx": true,
+		".py":    true,
+		".go":    true,
+		".js":    true,
+		".jsx":   true,
+		".ts":    true,
+		".tsx":   true,
+		".rs":    true,
+		".c":     true,
+		".h":     true,
+		".cpp":   true,
+		".cc":    true,
+		".cxx":   true,
+		".hpp":   true,
+		".hxx":   true,
+		".hh":    true,
+		".sh":    true,
+		".bash":  true,
+		".html":  true,
+		".htm":   true,
+		".css":   true,
+		".swift": true,
+		".java":  true,
+		".yml":   true,
+		".yaml":  true,
+		".hcl":   true,
+		".tf":    true,
 	}
 
 	for _, match := range matches {
@@ -132,7 +172,7 @@ func resolveGlob(pattern string) ([]string, error) {
 	}
 
 	if len(files) == 0 {
-		return nil, fmt.Errorf("no supported files match glob pattern: %s (looking for .py, .go, .js, .jsx, .ts, .tsx)", pattern)
+		return nil, fmt.Errorf("no supported files match glob pattern: %s", pattern)
 	}
 
 	return files, nil

@@ -8,6 +8,16 @@ const (
 	LanguageGo         Language = "go"
 	LanguageJavaScript Language = "javascript"
 	LanguageTypeScript Language = "typescript"
+	LanguageRust       Language = "rust"
+	LanguageC          Language = "c"
+	LanguageCPP        Language = "cpp"
+	LanguageBash       Language = "bash"
+	LanguageHTML       Language = "html"
+	LanguageCSS        Language = "css"
+	LanguageSwift      Language = "swift"
+	LanguageJava       Language = "java"
+	LanguageYAML       Language = "yaml"
+	LanguageHCL        Language = "hcl"
 )
 
 // SkimRequest represents a request to transform code
