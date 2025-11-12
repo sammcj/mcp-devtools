@@ -347,7 +347,12 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, params ma
 		switch safeResp.StatusCode {
 		case 401:
 			if c.apiKey != "" {
-				return fmt.Errorf("unauthorised. The API key you provided may be incorrect: %s (API keys should start with 'ctx7sk'). Please check your CONTEXT7_API_KEY environment variable", c.apiKey)
+				// Mask API key for security - only show last 2 characters
+				maskedKey := "***"
+				if len(c.apiKey) >= 2 {
+					maskedKey = "***" + c.apiKey[len(c.apiKey)-2:]
+				}
+				return fmt.Errorf("unauthorised. The API key you provided may be incorrect: %s (API keys should start with 'ctx7sk'). Please check your CONTEXT7_API_KEY environment variable", maskedKey)
 			}
 			return fmt.Errorf("unauthorised. Please set a valid CONTEXT7_API_KEY environment variable. API keys should start with 'ctx7sk' and can be obtained from https://context7.com/dashboard")
 		case 404:
