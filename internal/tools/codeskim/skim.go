@@ -26,9 +26,9 @@ const (
 	toolName        = "code_skim"
 	defaultMaxLines = 10000 // Default: 10,000 lines
 	envVarMaxLines  = "CODE_SKIM_MAX_LINES"
-	maxWorkers      = 10         // Maximum number of parallel workers
-	maxMemoryBytes  = 4294967296 // 4GB maximum memory usage
-	maxFileSize     = 512000     // 500KB maximum individual file size
+	maxWorkers      = 10                     // Maximum number of parallel workers
+	maxMemoryBytes  = 4 * 1024 * 1024 * 1024 // 4GB maximum memory usage
+	maxFileSize     = 500 * 1024             // 500KB maximum individual file size
 )
 
 // init registers the tool with the registry
@@ -158,11 +158,9 @@ func (t *CodeSkimTool) processFilesParallel(ctx context.Context, files []string,
 	results := make([]FileResult, len(files))
 	var wg sync.WaitGroup
 
-	// Start workers
+	// Start workers (Go 1.25+ WaitGroup.Go pattern)
 	for range workerCount {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for j := range jobs {
 				// Security check for each file
 				if err := security.CheckFileAccess(j.path); err != nil {
@@ -234,8 +232,11 @@ func (t *CodeSkimTool) processFilesParallel(ctx context.Context, files []string,
 
 				// Process file
 				results[j.index] = t.processFile(ctx, j.path, req, cache, logger)
+
+				// Clean up memory tracking
+				memoryUsed.Delete(j.index)
 			}
-		}()
+		})
 	}
 
 	// Send jobs

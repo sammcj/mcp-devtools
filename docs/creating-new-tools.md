@@ -584,8 +584,8 @@ To enable tool error logging, set the `LOG_TOOL_ERRORS` environment variable to 
 ## Additional Considerations
 
 - You must remember to register tools so that MCP clients can discover them.
-- **Tool descriptions should focus on WHAT the tool does, not WHY it's selling points.** AI agents discover tools through search or filesystem exploration, so descriptions should be action-oriented and concise. For example:
-  - ✅ Good: "Returns information about source code in an efficient way by stripping function/method bodies whilst preserving signatures, types, and structure. Use when you need to analyse or summarise large files or codebases before reading an entire file."
+- Tool descriptions should focus on WHAT the tool does. Tool descriptions should be action-oriented and concise. For example:
+  - ✅ Good: "Returns source code structure by stripping function/method bodies whilst preserving signatures, types, and declarations."
   - ❌ Poor: "Transform source code by removing implementation details while preserving structure. Achieves 60-80% token reduction for optimising AI context windows"
   - The first describes what the tool does; the second explains why it's useful (which bloats the context unnecessarily)
 - Parameter descriptions should be clear and specific about the expected input format and constraints

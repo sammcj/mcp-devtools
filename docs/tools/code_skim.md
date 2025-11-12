@@ -1,6 +1,6 @@
 # code_skim
 
-Transform source code by removing implementation details whilst preserving structure. Achieves 60-80% token reduction for optimising AI context windows.
+Transform source code by removing implementation details whilst preserving structure. Achieves 60-80% character reduction for optimising AI context windows.
 
 ## Status
 
@@ -34,9 +34,9 @@ When working with large codebases, you often don't need implementation details t
 - 80% of the time, you don't need implementation details
 - Focus on *what* code does, not *how* it does it
 
-**Token reduction example:**
-- Original: 63,000 tokens
-- Structure mode: 25,000 tokens (60% reduction)
+**Character reduction example:**
+- Original: ~200,000 characters
+- Structure mode: ~60,000 characters (70% reduction)
 - Fits more code in limited context windows
 
 ## Parameters
@@ -73,7 +73,7 @@ The tool removes function/method bodies whilst preserving:
 - Type definitions
 - Overall code structure
 
-**Token reduction: 60-80%**
+**Character reduction: 60-80%**
 
 **Example:**
 ```python
@@ -82,8 +82,8 @@ def process_user(user):
     validated = validate_user(user)
     if not validated:
         raise ValueError("Invalid user")
-    normalized = normalize_data(user)
-    return save_to_database(normalized)
+    normalised = normalise_data(user)
+    return save_to_database(normalised)
 
 # After transformation
 def process_user(user): { /* ... */ }
