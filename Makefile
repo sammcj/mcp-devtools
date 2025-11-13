@@ -46,17 +46,24 @@ test-fast:
 
 # Benchmark tool token costs
 # Usage:
-#   make benchmark-tokens                    # Use default thresholds (800/10000/500)
-#   make benchmark-tokens PER_TOOL_MAX=600   # Custom per-tool max
-#   make benchmark-tokens TOTAL_MAX=5000     # Custom total max
-#   make benchmark-tokens WARN_THRESHOLD=400 # Custom warning threshold
+#   make benchmark-tokens                                        # Use default thresholds
+#   make benchmark-tokens PER_TOOL_MAX=600                       # Custom per-tool max (default: 800)
+#   make benchmark-tokens TOTAL_MAX=5000                         # Custom total max (default: 10000)
+#   make benchmark-tokens WARN_THRESHOLD=400                     # Custom warning threshold (default: 500)
+#   make benchmark-tokens LOW_THRESHOLD=150                      # Custom low threshold (default: 200)
+#   make benchmark-tokens HIGH_THRESHOLD=700                     # Custom high threshold (default: 600)
+#   make benchmark-tokens ALLOW_HIGH_TOKENS="excel,github"       # Allow specific tools to exceed threshold
+#   ENABLE_ADDITIONAL_TOOLS=all make benchmark-tokens            # Test with all tools enabled
 .PHONY: benchmark-tokens
 benchmark-tokens:
 	@echo "Analysing token costs for all tools..."
-	$(GOTEST) -v ./tests/benchmarks -run TestToolTokenCost \
+	$(GOTEST) -count=1 -v ./tests/benchmarks -run TestToolTokenCost \
 		$(if $(PER_TOOL_MAX),-per-tool-max=$(PER_TOOL_MAX)) \
 		$(if $(TOTAL_MAX),-total-max=$(TOTAL_MAX)) \
-		$(if $(WARN_THRESHOLD),-warn-threshold=$(WARN_THRESHOLD))
+		$(if $(WARN_THRESHOLD),-warn-threshold=$(WARN_THRESHOLD)) \
+		$(if $(LOW_THRESHOLD),-low-threshold=$(LOW_THRESHOLD)) \
+		$(if $(HIGH_THRESHOLD),-high-threshold=$(HIGH_THRESHOLD)) \
+		$(if $(ALLOW_HIGH_TOKENS),-allow-high-tokens=$(ALLOW_HIGH_TOKENS))
 
 # Run VLM/LLM integration tests (requires external VLM/LLM server configuration)
 .PHONY: test-docling-vlm

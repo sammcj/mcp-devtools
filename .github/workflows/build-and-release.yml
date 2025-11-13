@@ -79,6 +79,12 @@ jobs:
       - name: Test
         run: TEST_FAST=1 make test
 
+      - name: Check token usage for default tools
+        env:
+          ENABLE_ADDITIONAL_TOOLS: all
+          ALLOW_HIGH_TOKENS: excel
+        run: make benchmark-tokens
+
       - name: Build
         env:
           GOOS: linux

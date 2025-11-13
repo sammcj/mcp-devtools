@@ -453,6 +453,8 @@ Want to add your own tools? See the **[Development Guide](docs/creating-new-tool
 
 Contributions welcome! This project follows standard Go development practices and includes comprehensive tests.
 
+Important: See [docs/creating-new-tools.md](docs/creating-new-tools.md) for guidelines on adding new tools.
+
 ```bash
 # Development setup
 git clone https://github.com/sammcj/mcp-devtools.git
@@ -460,6 +462,10 @@ cd mcp-devtools
 make deps
 make test
 make build
+
+# Benchmark tool token costs
+ENABLE_ADDITIONAL_TOOLS=<your new tool name here> make benchmark-tokens
+
 # Run security checks, see make help
 make inspect # launches the MCP inspector tool
 ```

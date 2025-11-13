@@ -45,9 +45,13 @@ import (
 )
 
 var (
-	perToolMax    = flag.Int("per-tool-max", 800, "Maximum tokens per tool before failing")
-	totalMax      = flag.Int("total-max", 10000, "Maximum total tokens for all tools before failing")
-	warnThreshold = flag.Int("warn-threshold", 500, "Threshold for warning about high token tools")
+	perToolMax      = flag.Int("per-tool-max", 800, "Maximum tokens per tool before failing")
+	totalMax        = flag.Int("total-max", 6000, "Maximum total tokens for default + specifically enabled tools before failing")
+	warnThreshold   = flag.Int("warn-threshold", 500, "Threshold for warning about high token tools")
+	allowHighTokens = flag.String("allow-high-tokens", "", "Comma-separated list of tool names allowed to exceed per-tool-max")
+	lowThreshold    = flag.Int("low-threshold", 200, "Threshold for low token tools (green)")
+	highThreshold   = flag.Int("high-threshold", 600, "Threshold for high token tools (orange/red boundary)")
+	tokeniser       = "o200k_base"
 )
 
 // ToolTokenCost represents token cost breakdown for a tool
@@ -62,13 +66,13 @@ type ToolTokenCost struct {
 }
 
 // getColorCode returns ANSI color code based on token count
-func getColorCode(tokens int, warnThreshold int) string {
+func getColorCode(tokens int, lowThreshold, warnThreshold, highThreshold int) string {
 	switch {
-	case tokens <= 200:
+	case tokens <= lowThreshold:
 		return "\033[32m" // Green
 	case tokens <= warnThreshold:
 		return "\033[33m" // Yellow
-	case tokens <= 600:
+	case tokens <= highThreshold:
 		return "\033[38;5;208m" // Orange
 	default:
 		return "\033[31m" // Red
@@ -76,13 +80,13 @@ func getColorCode(tokens int, warnThreshold int) string {
 }
 
 // getStatusEmoji returns emoji based on token count
-func getStatusEmoji(tokens int, warnThreshold int) string {
+func getStatusEmoji(tokens int, lowThreshold, warnThreshold, highThreshold int) string {
 	switch {
-	case tokens <= 200:
+	case tokens <= lowThreshold:
 		return "🟢"
 	case tokens <= warnThreshold:
 		return "🟡"
-	case tokens <= 600:
+	case tokens <= highThreshold:
 		return "🟠"
 	default:
 		return "🔴"
@@ -90,13 +94,13 @@ func getStatusEmoji(tokens int, warnThreshold int) string {
 }
 
 // getStatusText returns status text based on token count
-func getStatusText(tokens int, warnThreshold int) string {
+func getStatusText(tokens int, lowThreshold, warnThreshold, highThreshold int) string {
 	switch {
-	case tokens <= 200:
+	case tokens <= lowThreshold:
 		return "OK"
 	case tokens <= warnThreshold:
 		return "OK"
-	case tokens <= 600:
+	case tokens <= highThreshold:
 		return "HIGH"
 	default:
 		return "HIGH"
@@ -105,9 +109,24 @@ func getStatusText(tokens int, warnThreshold int) string {
 
 const resetColor = "\033[0m"
 
+// isToolAllowedHighTokens checks if a tool is in the allowlist for high token counts
+func isToolAllowedHighTokens(toolName string) bool {
+	if *allowHighTokens == "" {
+		return false
+	}
+
+	allowedTools := strings.SplitSeq(*allowHighTokens, ",")
+	for allowed := range allowedTools {
+		if strings.TrimSpace(allowed) == toolName {
+			return true
+		}
+	}
+	return false
+}
+
 // countTokens uses tiktoken to estimate token count
 func countTokens(text string) (int, error) {
-	tkm, err := tiktoken.GetEncoding("cl100k_base")
+	tkm, err := tiktoken.GetEncoding(tokeniser)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get encoding: %w", err)
 	}
@@ -213,9 +232,9 @@ func TestToolTokenCost(t *testing.T) {
 
 	// Print each tool
 	for _, cost := range costs {
-		emoji := getStatusEmoji(cost.TotalTokens, *warnThreshold)
-		colorCode := getColorCode(cost.TotalTokens, *warnThreshold)
-		status := getStatusText(cost.TotalTokens, *warnThreshold)
+		emoji := getStatusEmoji(cost.TotalTokens, *lowThreshold, *warnThreshold, *highThreshold)
+		colorCode := getColorCode(cost.TotalTokens, *lowThreshold, *warnThreshold, *highThreshold)
+		status := getStatusText(cost.TotalTokens, *lowThreshold, *warnThreshold, *highThreshold)
 
 		fmt.Printf("%-30s %s%s %6d%s %8d %8d %8s\n",
 			cost.Name,
@@ -230,11 +249,11 @@ func TestToolTokenCost(t *testing.T) {
 
 		// Update distribution counts
 		switch {
-		case cost.TotalTokens <= 200:
+		case cost.TotalTokens <= *lowThreshold:
 			lowCount++
 		case cost.TotalTokens <= *warnThreshold:
 			mediumCount++
-		case cost.TotalTokens <= 600:
+		case cost.TotalTokens <= *highThreshold:
 			highCount++
 		default:
 			veryHighCount++
@@ -246,7 +265,15 @@ func TestToolTokenCost(t *testing.T) {
 
 	// Print summary
 	fmt.Println("Summary:")
-	fmt.Printf("  Total Tools: %d\n", len(costs))
+
+	// Build tool names list
+	var toolNames []string
+	for _, cost := range costs {
+		toolNames = append(toolNames, cost.Name)
+	}
+	sort.Strings(toolNames)
+
+	fmt.Printf("  Total Tools: %d (%s)\n", len(costs), strings.Join(toolNames, ", "))
 	fmt.Printf("  Total Tokens: %d\n", totalTokens)
 	if len(costs) > 0 {
 		fmt.Printf("  Average per Tool: %d\n", totalTokens/len(costs))
@@ -255,14 +282,14 @@ func TestToolTokenCost(t *testing.T) {
 
 	// Print distribution
 	fmt.Println("Distribution:")
-	fmt.Printf("  🟢 Low (0-200):        %2d tools (%d%%)\n",
-		lowCount, (lowCount*100)/len(costs))
-	fmt.Printf("  🟡 Medium (201-%d):   %2d tools (%d%%)\n",
-		*warnThreshold, mediumCount, (mediumCount*100)/len(costs))
-	fmt.Printf("  🟠 High (%d-600):    %2d tools (%d%%)\n",
-		*warnThreshold+1, highCount, (highCount*100)/len(costs))
-	fmt.Printf("  🔴 Very High (>600):   %2d tools (%d%%)\n",
-		veryHighCount, (veryHighCount*100)/len(costs))
+	fmt.Printf("  🟢 Low (0-%d):        %2d tools (%d%%)\n",
+		*lowThreshold, lowCount, (lowCount*100)/len(costs))
+	fmt.Printf("  🟡 Medium (%d-%d):   %2d tools (%d%%)\n",
+		*lowThreshold+1, *warnThreshold, mediumCount, (mediumCount*100)/len(costs))
+	fmt.Printf("  🟠 High (%d-%d):    %2d tools (%d%%)\n",
+		*warnThreshold+1, *highThreshold, highCount, (highCount*100)/len(costs))
+	fmt.Printf("  🔴 Very High (>%d):   %2d tools (%d%%)\n",
+		*highThreshold, veryHighCount, (veryHighCount*100)/len(costs))
 	fmt.Println()
 
 	// Print context impact
@@ -275,6 +302,11 @@ func TestToolTokenCost(t *testing.T) {
 	// Check thresholds
 	fmt.Println("Threshold Checks:")
 
+	// Print allowlist if set
+	if *allowHighTokens != "" {
+		fmt.Printf("  ℹ️  Tools allowed to exceed per-tool max: %s\n", *allowHighTokens)
+	}
+
 	// Check per-tool max
 	var maxTool *ToolTokenCost
 	for _, cost := range costs {
@@ -283,9 +315,14 @@ func TestToolTokenCost(t *testing.T) {
 		}
 
 		if cost.TotalTokens > *perToolMax {
-			fmt.Printf("  ❌ Tool '%s' exceeds per-tool max: %d > %d tokens\n",
-				cost.Name, cost.TotalTokens, *perToolMax)
-			failed = true
+			if isToolAllowedHighTokens(cost.Name) {
+				fmt.Printf("  ⚠️  Tool '%s' exceeds per-tool max but is allowed: %d > %d tokens\n",
+					cost.Name, cost.TotalTokens, *perToolMax)
+			} else {
+				fmt.Printf("  ❌ Tool '%s' exceeds per-tool max: %d > %d tokens\n",
+					cost.Name, cost.TotalTokens, *perToolMax)
+				failed = true
+			}
 		}
 	}
 
@@ -293,18 +330,31 @@ func TestToolTokenCost(t *testing.T) {
 		fmt.Printf("  ✅ Per-tool max: %d tokens (PASS - highest: %s with %d tokens)\n",
 			*perToolMax, maxTool.Name, maxTool.TotalTokens)
 	} else if maxTool != nil {
-		fmt.Printf("  ❌ Per-tool max: %d tokens (FAIL - highest: %s with %d tokens)\n",
-			*perToolMax, maxTool.Name, maxTool.TotalTokens)
+		if isToolAllowedHighTokens(maxTool.Name) {
+			fmt.Printf("  ✅ Per-tool max: %d tokens (PASS - highest: %s with %d tokens, allowed)\n",
+				*perToolMax, maxTool.Name, maxTool.TotalTokens)
+		} else {
+			fmt.Printf("  ❌ Per-tool max: %d tokens (FAIL - highest: %s with %d tokens)\n",
+				*perToolMax, maxTool.Name, maxTool.TotalTokens)
+		}
 	}
 
-	// Check total max
-	if totalTokens > *totalMax {
-		fmt.Printf("  ❌ Total max: %d tokens (FAIL - actual: %d tokens)\n",
-			*totalMax, totalTokens)
-		failed = true
+	// Check total max (skip if ENABLE_ADDITIONAL_TOOLS=all)
+	enabledTools := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
+	isAllToolsEnabled := strings.TrimSpace(strings.ToLower(enabledTools)) == "all"
+
+	if !isAllToolsEnabled {
+		if totalTokens > *totalMax {
+			fmt.Printf("  ❌ Total max: %d tokens (FAIL - actual: %d tokens)\n",
+				*totalMax, totalTokens)
+			failed = true
+		} else {
+			fmt.Printf("  ✅ Total max: %d tokens (PASS - actual: %d tokens)\n",
+				*totalMax, totalTokens)
+		}
 	} else {
-		fmt.Printf("  ✅ Total max: %d tokens (PASS - actual: %d tokens)\n",
-			*totalMax, totalTokens)
+		fmt.Printf("  ℹ️  Total max: skipped (ENABLE_ADDITIONAL_TOOLS=all, actual: %d tokens)\n",
+			totalTokens)
 	}
 
 	fmt.Println()

@@ -460,6 +460,22 @@ To test your tool:
 }
 ```
 
+### Verifying Token Cost
+
+After implementing your tool, verify its context overhead doesn't exceed the configured threshold:
+
+```bash
+# Test your tool's token cost (enable it first if disabled by default)
+ENABLE_ADDITIONAL_TOOLS=your_tool_name make benchmark-tokens
+```
+
+If your tool exceeds the default 800 token threshold, consider:
+- Simplifying parameter descriptions (keep under 200 characters)
+- Reducing enum values or moving detailed information to Extended Help
+- Using more concise parameter names
+
+The benchmark shows description vs parameter token breakdown to help identify optimisation opportunities.
+
 ## Testing
 
 The project includes unit tests for core functionality. Tests are designed to be lightweight and fast, avoiding external dependencies.
