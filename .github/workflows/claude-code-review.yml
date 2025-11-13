@@ -1,9 +1,10 @@
 name: Claude Code Review
 on:
-  pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
-    paths:
-      - "**/*.go"
+  # disabled for now
+  # pull_request:
+  #   types: [opened, synchronize, ready_for_review, reopened]
+  #   paths:
+  #     - "**/*.go"
   workflow_dispatch:
 
 jobs:
