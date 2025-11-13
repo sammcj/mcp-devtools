@@ -101,7 +101,7 @@ func (p *BraveProvider) executeInternetSearch(ctx context.Context, logger *logru
 
 	// Convert to unified format
 	if response.Web == nil || len(response.Web.Results) == 0 {
-		return p.createEmptyResponse(query)
+		return p.createEmptyResponse()
 	}
 
 	results := make([]internetsearch.SearchResult, 0, len(response.Web.Results))
@@ -115,7 +115,6 @@ func (p *BraveProvider) executeInternetSearch(ctx context.Context, logger *logru
 			Title:       decodeHTMLEntities(webResult.Title),
 			URL:         webResult.URL,
 			Description: decodeHTMLEntities(webResult.Description),
-			Type:        "web",
 			Metadata:    metadata,
 		})
 	}
@@ -143,7 +142,7 @@ func (p *BraveProvider) executeImageSearch(ctx context.Context, logger *logrus.L
 
 	// Convert to unified format
 	if len(response.Results) == 0 {
-		return p.createEmptyResponse(query)
+		return p.createEmptyResponse()
 	}
 
 	results := make([]internetsearch.SearchResult, 0, len(response.Results))
@@ -164,7 +163,6 @@ func (p *BraveProvider) executeImageSearch(ctx context.Context, logger *logrus.L
 			Title:       decodeHTMLEntities(imageResult.Title),
 			URL:         imageResult.URL,
 			Description: fmt.Sprintf("Image: %s", decodeHTMLEntities(imageResult.Title)),
-			Type:        "image",
 			Metadata:    metadata,
 		})
 	}
@@ -197,7 +195,7 @@ func (p *BraveProvider) executeNewsSearch(ctx context.Context, logger *logrus.Lo
 
 	// Convert to unified format
 	if len(response.Results) == 0 {
-		return p.createEmptyResponse(query)
+		return p.createEmptyResponse()
 	}
 
 	results := make([]internetsearch.SearchResult, 0, len(response.Results))
@@ -211,7 +209,6 @@ func (p *BraveProvider) executeNewsSearch(ctx context.Context, logger *logrus.Lo
 			Title:       decodeHTMLEntities(newsResult.Title),
 			URL:         newsResult.URL,
 			Description: decodeHTMLEntities(newsResult.Description),
-			Type:        "news",
 			Metadata:    metadata,
 		})
 	}
@@ -244,7 +241,7 @@ func (p *BraveProvider) executeVideoSearch(ctx context.Context, logger *logrus.L
 
 	// Convert to unified format
 	if len(response.Results) == 0 {
-		return p.createEmptyResponse(query)
+		return p.createEmptyResponse()
 	}
 
 	results := make([]internetsearch.SearchResult, 0, len(response.Results))
@@ -264,7 +261,6 @@ func (p *BraveProvider) executeVideoSearch(ctx context.Context, logger *logrus.L
 			Title:       decodeHTMLEntities(videoResult.Title),
 			URL:         videoResult.URL,
 			Description: fmt.Sprintf("Video: %s", decodeHTMLEntities(videoResult.Title)),
-			Type:        "video",
 			Metadata:    metadata,
 		})
 	}
@@ -303,7 +299,7 @@ func (p *BraveProvider) executeLocalSearch(ctx context.Context, logger *logrus.L
 	}
 
 	if webResponse.Web == nil || len(webResponse.Web.Results) == 0 {
-		return p.createEmptyResponse(query)
+		return p.createEmptyResponse()
 	}
 
 	// Convert web results with fallback indicator
@@ -319,7 +315,6 @@ func (p *BraveProvider) executeLocalSearch(ctx context.Context, logger *logrus.L
 			Title:       decodeHTMLEntities(webResult.Title),
 			URL:         webResult.URL,
 			Description: decodeHTMLEntities(webResult.Description),
-			Type:        "web",
 			Metadata:    metadata,
 		})
 	}
@@ -431,7 +426,6 @@ func (p *BraveProvider) processLocalResults(ctx context.Context, logger *logrus.
 			Title:       decodeHTMLEntities(location.Title),
 			URL:         location.URL,
 			Description: decodeHTMLEntities(description),
-			Type:        "local",
 			Metadata:    metadata,
 		})
 	}
@@ -440,24 +434,20 @@ func (p *BraveProvider) processLocalResults(ctx context.Context, logger *logrus.
 }
 
 // Helper functions
-func (p *BraveProvider) createEmptyResponse(query string) (*internetsearch.SearchResponse, error) {
+func (p *BraveProvider) createEmptyResponse() (*internetsearch.SearchResponse, error) {
 	result := &internetsearch.SearchResponse{
-		Query:       query,
-		ResultCount: 0,
-		Results:     []internetsearch.SearchResult{},
-		Provider:    "brave",
-		Timestamp:   time.Now(),
+		Results:   []internetsearch.SearchResult{},
+		Provider:  "brave",
+		Timestamp: time.Now(),
 	}
 	return result, nil
 }
 
 func (p *BraveProvider) createSuccessResponse(query string, results []internetsearch.SearchResult, logger *logrus.Logger) (*internetsearch.SearchResponse, error) {
 	result := &internetsearch.SearchResponse{
-		Query:       query,
-		ResultCount: len(results),
-		Results:     results,
-		Provider:    "brave",
-		Timestamp:   time.Now(),
+		Results:   results,
+		Provider:  "brave",
+		Timestamp: time.Now(),
 	}
 
 	logger.WithFields(logrus.Fields{

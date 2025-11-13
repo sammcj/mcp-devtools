@@ -223,7 +223,6 @@ func TestProcessContent(t *testing.T) {
 		{
 			name: "HTML content conversion to markdown",
 			response: &webfetch.FetchURLResponse{
-				URL:         "https://example.com",
 				ContentType: "text/html",
 				StatusCode:  200,
 				Content:     "<html><body><h1>Title</h1><p>Content</p></body></html>",
@@ -235,7 +234,6 @@ func TestProcessContent(t *testing.T) {
 		{
 			name: "Raw HTML content",
 			response: &webfetch.FetchURLResponse{
-				URL:         "https://example.com",
 				ContentType: "text/html",
 				StatusCode:  200,
 				Content:     "<html><body><h1>Title</h1><p>Content</p></body></html>",
@@ -247,7 +245,6 @@ func TestProcessContent(t *testing.T) {
 		{
 			name: "Plain text content",
 			response: &webfetch.FetchURLResponse{
-				URL:         "https://example.com",
 				ContentType: "text/plain",
 				StatusCode:  200,
 				Content:     "This is plain text content.",
@@ -259,7 +256,6 @@ func TestProcessContent(t *testing.T) {
 		{
 			name: "Binary content",
 			response: &webfetch.FetchURLResponse{
-				URL:         "https://example.com",
 				ContentType: "application/octet-stream",
 				StatusCode:  200,
 				Content:     string([]byte{0x89, 0x50, 0x4E, 0x47}), // PNG header
@@ -271,7 +267,6 @@ func TestProcessContent(t *testing.T) {
 		{
 			name: "HTTP error response",
 			response: &webfetch.FetchURLResponse{
-				URL:         "https://example.com",
 				ContentType: "text/html",
 				StatusCode:  404,
 				Content:     "Not Found",
@@ -283,7 +278,6 @@ func TestProcessContent(t *testing.T) {
 		{
 			name: "Empty content",
 			response: &webfetch.FetchURLResponse{
-				URL:         "https://example.com",
 				ContentType: "text/html",
 				StatusCode:  200,
 				Content:     "",

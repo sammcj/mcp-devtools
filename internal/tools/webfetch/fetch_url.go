@@ -98,7 +98,6 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 
 	// Convert SafeHTTPResponse to FetchURLResponse format
 	response := &FetchURLResponse{
-		URL:         request.URL,
 		Content:     string(safeResp.Content),
 		ContentType: safeResp.ContentType,
 		StatusCode:  safeResp.StatusCode,
@@ -129,7 +128,6 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 	if securityNotice != "" {
 		// Convert response to map for adding security field
 		responseMap := map[string]any{
-			"url":             paginatedResponse.URL,
 			"content":         paginatedResponse.Content,
 			"truncated":       paginatedResponse.Truncated,
 			"start_index":     paginatedResponse.StartIndex,
@@ -246,7 +244,6 @@ func (t *FetchURLTool) applyPagination(originalResponse *FetchURLResponse, proce
 	// Check if start_index is beyond content length
 	if request.StartIndex >= totalLength {
 		return &FetchURLResponse{
-			URL:            originalResponse.URL,
 			Content:        "",
 			Truncated:      false,
 			StartIndex:     request.StartIndex,
@@ -313,7 +310,6 @@ func (t *FetchURLTool) applyPagination(originalResponse *FetchURLResponse, proce
 
 	// Create enhanced response
 	response := &FetchURLResponse{
-		URL:              originalResponse.URL,
 		Content:          content,
 		Truncated:        truncated,
 		StartIndex:       request.StartIndex,

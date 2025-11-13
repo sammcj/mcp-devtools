@@ -201,13 +201,12 @@ func (p *DuckDuckGoProvider) executeInternetSearch(ctx context.Context, logger *
 			Title:       p.cleanText(title),
 			URL:         link,
 			Description: p.cleanText(snippet),
-			Type:        "web",
 			Metadata:    metadata,
 		})
 	})
 
 	if len(results) == 0 {
-		return p.createEmptyResponse(query), nil
+		return p.createEmptyResponse(), nil
 	}
 
 	return p.createSuccessResponse(query, results, logger), nil
@@ -222,23 +221,19 @@ func (p *DuckDuckGoProvider) cleanText(text string) string {
 }
 
 // Helper functions
-func (p *DuckDuckGoProvider) createEmptyResponse(query string) *internetsearch.SearchResponse {
+func (p *DuckDuckGoProvider) createEmptyResponse() *internetsearch.SearchResponse {
 	return &internetsearch.SearchResponse{
-		Query:       query,
-		ResultCount: 0,
-		Results:     []internetsearch.SearchResult{},
-		Provider:    "duckduckgo",
-		Timestamp:   time.Now(),
+		Results:   []internetsearch.SearchResult{},
+		Provider:  "duckduckgo",
+		Timestamp: time.Now(),
 	}
 }
 
 func (p *DuckDuckGoProvider) createSuccessResponse(query string, results []internetsearch.SearchResult, logger *logrus.Logger) *internetsearch.SearchResponse {
 	result := &internetsearch.SearchResponse{
-		Query:       query,
-		ResultCount: len(results),
-		Results:     results,
-		Provider:    "duckduckgo",
-		Timestamp:   time.Now(),
+		Results:   results,
+		Provider:  "duckduckgo",
+		Timestamp: time.Now(),
 	}
 
 	logger.WithFields(logrus.Fields{
