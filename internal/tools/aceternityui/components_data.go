@@ -87,7 +87,7 @@ var AceternityComponents = []ComponentInfo{
 	},
 	{
 		Name:           "world-map",
-		Description:    "A world map with animated lines and dots, programatically generated",
+		Description:    "A world map with animated lines and dots, programmatically generated",
 		Category:       "map",
 		InstallCommand: "npx shadcn@latest add https://ui.aceternity.com/registry/world-map.json",
 		Dependencies:   []string{"motion", "dotted-map", "clsx", "tailwind-merge"},
@@ -217,7 +217,7 @@ var AceternityComponents = []ComponentInfo{
 		Category:       "card",
 		InstallCommand: "npx shadcn@latest add https://ui.aceternity.com/registry/text-reveal-card.json",
 		Dependencies:   []string{"motion", "clsx", "tailwind-merge"},
-		Tags:           []string{"map", "world", "geography", "animation"},
+		Tags:           []string{"text", "card", "reveal", "mousemove", "interaction"},
 		IsPro:          false,
 	},
 }

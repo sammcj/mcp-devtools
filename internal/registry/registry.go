@@ -280,7 +280,7 @@ func isToolEnabled(toolName string) bool {
 
 	// Tool name aliases for backwards compatibility
 	aliases := map[string][]string{
-		"shadcn": {"shadcn-ui"}, // Allow shadcn to be enabled via shadcn_ui
+		"shadcn": {"shadcn-ui"}, // shadcn tool can be enabled via either 'shadcn' or 'shadcn_ui' in ENABLE_ADDITIONAL_TOOLS
 	}
 
 	// Build list of names to check (tool name + any aliases)
