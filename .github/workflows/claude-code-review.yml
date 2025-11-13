@@ -1,0 +1,66 @@
+name: Claude Code Review
+on:
+  # disabled for now
+  # pull_request:
+  #   types: [opened, synchronize, ready_for_review, reopened]
+  #   paths:
+  #     - "**/*.go"
+  workflow_dispatch:
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: claude-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: write  # Required for posting comments
+      issues: read
+      id-token: write
+    if: github.event.pull_request.user.login == 'sammcj' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true # ✨ Enables tracking comments
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this PR against our team checklist:
+
+            ## Code Quality
+            - [ ] Code follows the latest Golang best practices
+            - [ ] Code is clean and well-structured
+            - [ ] Code is free of bugs and serious issues
+            - [ ] DRY principle followed
+            - [ ] No logging to stdout/stderr when run in STDIO mode
+            - [ ] Parameterises and uses variables appropriately over hardcoding values
+            - [ ] Follows the latest Model Context Protocol best practices
+            - [ ] Australian English spelling used (no Americanisations)
+
+            ## Testing
+            - [ ] Lightweight unit tests for new functionality
+
+            ## Documentation
+            - [ ] README and tooling updated if needed
+
+            ## Security
+            - [ ] Input validation implemented
+            - [ ] Output validation implemented where applicable
+            - [ ] Sensible error handling
+
+            ## General Guidelines
+            - Avoid nitpicking or minor style issues unless they impact maintainability.
+            - Use Australian English spelling throughout the review.
+
+            For each item, check if it's satisfied and comment on any that need attention using inline comments.
+            Once complete post a summary comment with checklist results.
+
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"
