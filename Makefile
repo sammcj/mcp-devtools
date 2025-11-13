@@ -44,6 +44,20 @@ test:
 test-fast:
 	$(GOTEST) -short ./tests/...
 
+# Benchmark tool token costs
+# Usage:
+#   make benchmark-tokens                    # Use default thresholds (800/10000/500)
+#   make benchmark-tokens PER_TOOL_MAX=600   # Custom per-tool max
+#   make benchmark-tokens TOTAL_MAX=5000     # Custom total max
+#   make benchmark-tokens WARN_THRESHOLD=400 # Custom warning threshold
+.PHONY: benchmark-tokens
+benchmark-tokens:
+	@echo "Analysing token costs for all tools..."
+	$(GOTEST) -v ./tests/benchmarks -run TestToolTokenCost \
+		$(if $(PER_TOOL_MAX),-per-tool-max=$(PER_TOOL_MAX)) \
+		$(if $(TOTAL_MAX),-total-max=$(TOTAL_MAX)) \
+		$(if $(WARN_THRESHOLD),-warn-threshold=$(WARN_THRESHOLD))
+
 # Run VLM/LLM integration tests (requires external VLM/LLM server configuration)
 .PHONY: test-docling-vlm
 test-docling-vlm:
@@ -178,6 +192,7 @@ help:
 	@echo "  run-http		: Run the server with Streamable HTTP transport"
 	@echo "  test 			: Run all tests (including external dependencies)"
 	@echo "  test-fast		: Run fast tests (no external dependencies)"
+	@echo "  benchmark-tokens	: Analyse token costs for all tools"
 	@echo "  test-docling-vlm	: Run VLM/LLM integration tests (requires .env configuration)"
 	@echo "  gosec			: Run gosec security tests"
 	@echo "  clean			: Clean build artifacts"
