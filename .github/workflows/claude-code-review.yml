@@ -14,7 +14,7 @@ jobs:
       cancel-in-progress: true
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write  # Required for posting comments
       issues: read
       id-token: write
     if: github.event.pull_request.user.login == 'sammcj' || github.event_name == 'workflow_dispatch'
