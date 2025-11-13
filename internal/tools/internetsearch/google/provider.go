@@ -123,7 +123,7 @@ func (p *GoogleProvider) executeInternetSearch(ctx context.Context, logger *logr
 
 	// Convert to unified format
 	if len(response.Items) == 0 {
-		return p.createEmptyResponse(query)
+		return p.createEmptyResponse()
 	}
 
 	results := make([]internetsearch.SearchResult, 0, len(response.Items))
@@ -137,7 +137,6 @@ func (p *GoogleProvider) executeInternetSearch(ctx context.Context, logger *logr
 			Title:       item.Title,
 			URL:         item.Link,
 			Description: item.Snippet,
-			Type:        "web",
 			Metadata:    metadata,
 		})
 	}
@@ -176,7 +175,7 @@ func (p *GoogleProvider) executeImageSearch(ctx context.Context, logger *logrus.
 
 	// Convert to unified format
 	if len(response.Items) == 0 {
-		return p.createEmptyResponse(query)
+		return p.createEmptyResponse()
 	}
 
 	results := make([]internetsearch.SearchResult, 0, len(response.Items))
@@ -209,7 +208,6 @@ func (p *GoogleProvider) executeImageSearch(ctx context.Context, logger *logrus.
 			Title:       item.Title,
 			URL:         item.Link,
 			Description: description,
-			Type:        "image",
 			Metadata:    metadata,
 		})
 	}
@@ -218,24 +216,20 @@ func (p *GoogleProvider) executeImageSearch(ctx context.Context, logger *logrus.
 }
 
 // Helper functions
-func (p *GoogleProvider) createEmptyResponse(query string) (*internetsearch.SearchResponse, error) {
+func (p *GoogleProvider) createEmptyResponse() (*internetsearch.SearchResponse, error) {
 	result := &internetsearch.SearchResponse{
-		Query:       query,
-		ResultCount: 0,
-		Results:     []internetsearch.SearchResult{},
-		Provider:    "google",
-		Timestamp:   time.Now(),
+		Results:   []internetsearch.SearchResult{},
+		Provider:  "google",
+		Timestamp: time.Now(),
 	}
 	return result, nil
 }
 
 func (p *GoogleProvider) createSuccessResponse(query string, results []internetsearch.SearchResult, logger *logrus.Logger) (*internetsearch.SearchResponse, error) {
 	result := &internetsearch.SearchResponse{
-		Query:       query,
-		ResultCount: len(results),
-		Results:     results,
-		Provider:    "google",
-		Timestamp:   time.Now(),
+		Results:   results,
+		Provider:  "google",
+		Timestamp: time.Now(),
 	}
 
 	logger.WithFields(logrus.Fields{

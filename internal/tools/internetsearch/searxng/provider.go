@@ -225,7 +225,7 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 
 	// Convert to unified format
 	if len(searxngResp.Results) == 0 {
-		return p.createEmptyResponse(query), nil
+		return p.createEmptyResponse(), nil
 	}
 
 	results := make([]internetsearch.SearchResult, 0, len(searxngResp.Results))
@@ -243,7 +243,6 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 			Title:       searxngResult.Title,
 			URL:         searxngResult.URL,
 			Description: searxngResult.Content,
-			Type:        searchType,
 			Metadata:    metadata,
 		})
 	}
@@ -252,23 +251,19 @@ func (p *SearXNGProvider) executeSearch(ctx context.Context, logger *logrus.Logg
 }
 
 // Helper functions
-func (p *SearXNGProvider) createEmptyResponse(query string) *internetsearch.SearchResponse {
+func (p *SearXNGProvider) createEmptyResponse() *internetsearch.SearchResponse {
 	return &internetsearch.SearchResponse{
-		Query:       query,
-		ResultCount: 0,
-		Results:     []internetsearch.SearchResult{},
-		Provider:    "searxng",
-		Timestamp:   time.Now(),
+		Results:   []internetsearch.SearchResult{},
+		Provider:  "searxng",
+		Timestamp: time.Now(),
 	}
 }
 
 func (p *SearXNGProvider) createSuccessResponse(query string, results []internetsearch.SearchResult, logger *logrus.Logger) *internetsearch.SearchResponse {
 	result := &internetsearch.SearchResponse{
-		Query:       query,
-		ResultCount: len(results),
-		Results:     results,
-		Provider:    "searxng",
-		Timestamp:   time.Now(),
+		Results:   results,
+		Provider:  "searxng",
+		Timestamp: time.Now(),
 	}
 
 	logger.WithFields(logrus.Fields{

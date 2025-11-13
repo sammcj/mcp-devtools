@@ -142,7 +142,6 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 	// Check for HTTP errors
 	if resp.StatusCode >= 400 {
 		return &FetchURLResponse{
-			URL:              targetURL,
 			ContentType:      resp.Header.Get("Content-Type"),
 			StatusCode:       resp.StatusCode,
 			Content:          "",
@@ -199,7 +198,6 @@ func (c *WebClient) FetchContent(ctx context.Context, logger *logrus.Logger, tar
 	}).Debug("Successfully fetched content")
 
 	response := &FetchURLResponse{
-		URL:              targetURL,
 		Content:          string(body),
 		Truncated:        false, // Will be set later during pagination
 		StartIndex:       0,

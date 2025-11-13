@@ -10,7 +10,6 @@ type FetchURLRequest struct {
 
 // FetchURLResponse represents the response from the fetch-url tool
 type FetchURLResponse struct {
-	URL              string `json:"url"`
 	ContentType      string `json:"content_type,omitempty"`
 	StatusCode       int    `json:"status_code,omitempty"`
 	Content          string `json:"content"`

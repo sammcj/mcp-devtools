@@ -172,7 +172,7 @@ After you have received the results you can fetch the url if you want to read th
 		),
 		mcp.WithNumber("count",
 			mcp.Description("Number of results (limits vary by provider & type)"),
-			mcp.DefaultNumber(4),
+			mcp.DefaultNumber(5),
 		),
 	}
 
