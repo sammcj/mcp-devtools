@@ -296,59 +296,59 @@ func (t *ExcelTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 	// Dispatch to appropriate handler
 	switch function {
 	case "create_workbook":
-		return handleCreateWorkbook(ctx, logger, fullPath, options)
+		return handleCreateWorkbook(logger, fullPath, options)
 	case "get_workbook_metadata":
-		return handleGetWorkbookMetadata(ctx, logger, fullPath, options)
+		return handleGetWorkbookMetadata(logger, fullPath, options)
 	case "create_worksheet":
-		return handleCreateWorksheet(ctx, logger, fullPath, sheetName)
+		return handleCreateWorksheet(logger, fullPath, sheetName)
 	case "read_data":
-		return handleReadData(ctx, logger, fullPath, sheetName, options)
+		return handleReadData(logger, fullPath, sheetName, options)
 	case "write_data":
-		return handleWriteData(ctx, logger, fullPath, sheetName, options)
+		return handleWriteData(logger, fullPath, sheetName, options)
 	case "read_data_with_metadata":
-		return handleReadDataWithMetadata(ctx, logger, fullPath, sheetName, options)
+		return handleReadDataWithMetadata(logger, fullPath, sheetName, options)
 	case "copy_worksheet":
-		return handleCopyWorksheet(ctx, logger, fullPath, sheetName, options)
+		return handleCopyWorksheet(logger, fullPath, sheetName, options)
 	case "delete_worksheet":
-		return handleDeleteWorksheet(ctx, logger, fullPath, sheetName)
+		return handleDeleteWorksheet(logger, fullPath, sheetName)
 	case "rename_worksheet":
-		return handleRenameWorksheet(ctx, logger, fullPath, sheetName, options)
+		return handleRenameWorksheet(logger, fullPath, sheetName, options)
 	case "format_range":
-		return handleFormatRange(ctx, logger, fullPath, sheetName, options)
+		return handleFormatRange(logger, fullPath, sheetName, options)
 	case "merge_cells":
-		return handleMergeCells(ctx, logger, fullPath, sheetName, options)
+		return handleMergeCells(logger, fullPath, sheetName, options)
 	case "unmerge_cells":
-		return handleUnmergeCells(ctx, logger, fullPath, sheetName, options)
+		return handleUnmergeCells(logger, fullPath, sheetName, options)
 	case "get_merged_cells":
-		return handleGetMergedCells(ctx, logger, fullPath, sheetName)
+		return handleGetMergedCells(logger, fullPath, sheetName)
 	case "copy_range":
-		return handleCopyRange(ctx, logger, fullPath, sheetName, options)
+		return handleCopyRange(logger, fullPath, sheetName, options)
 	case "delete_range":
-		return handleDeleteRange(ctx, logger, fullPath, sheetName, options)
+		return handleDeleteRange(logger, fullPath, sheetName, options)
 	case "validate_range":
-		return handleValidateRange(ctx, logger, fullPath, sheetName, options)
+		return handleValidateRange(logger, fullPath, sheetName, options)
 	case "insert_rows":
-		return handleInsertRows(ctx, logger, fullPath, sheetName, options)
+		return handleInsertRows(logger, fullPath, sheetName, options)
 	case "insert_columns":
-		return handleInsertColumns(ctx, logger, fullPath, sheetName, options)
+		return handleInsertColumns(logger, fullPath, sheetName, options)
 	case "delete_rows":
-		return handleDeleteRows(ctx, logger, fullPath, sheetName, options)
+		return handleDeleteRows(logger, fullPath, sheetName, options)
 	case "delete_columns":
-		return handleDeleteColumns(ctx, logger, fullPath, sheetName, options)
+		return handleDeleteColumns(logger, fullPath, sheetName, options)
 	case "auto_size_columns":
-		return handleAutoSizeColumns(ctx, logger, fullPath, sheetName)
+		return handleAutoSizeColumns(logger, fullPath, sheetName)
 	case "create_chart":
-		return handleCreateChart(ctx, logger, fullPath, sheetName, options)
+		return handleCreateChart(logger, fullPath, sheetName, options)
 	case "create_pivot_table":
-		return handleCreatePivotTable(ctx, logger, fullPath, sheetName, options)
+		return handleCreatePivotTable(logger, fullPath, sheetName, options)
 	case "create_table":
-		return handleCreateTable(ctx, logger, fullPath, sheetName, options)
+		return handleCreateTable(logger, fullPath, sheetName, options)
 	case "apply_formula":
-		return handleApplyFormula(ctx, logger, fullPath, sheetName, options)
+		return handleApplyFormula(logger, fullPath, sheetName, options)
 	case "validate_formula_syntax":
-		return handleValidateFormulaSyntax(ctx, logger, options)
+		return handleValidateFormulaSyntax(logger, options)
 	case "get_data_validation_info":
-		return handleGetDataValidationInfo(ctx, logger, fullPath, sheetName)
+		return handleGetDataValidationInfo(logger, fullPath, sheetName)
 	default:
 		return nil, fmt.Errorf("unknown function: %s", function)
 	}

@@ -1,7 +1,6 @@
 package docprocessing
 
 import (
-	"context"
 	"fmt"
 	"runtime"
 	"strings"
@@ -13,7 +12,7 @@ import (
 )
 
 // executeBatch processes multiple documents concurrently
-func (t *DocumentProcessorTool) executeBatch(ctx context.Context, args map[string]any, sources []any) (*mcp.CallToolResult, error) {
+func (t *DocumentProcessorTool) executeBatch(args map[string]any, sources []any) (*mcp.CallToolResult, error) {
 	startTime := time.Now()
 
 	// Convert sources to strings

@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,7 +14,7 @@ import (
 )
 
 // handleCreateWorkbook creates a new Excel workbook
-func handleCreateWorkbook(ctx context.Context, logger *logrus.Logger, filePath string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleCreateWorkbook(logger *logrus.Logger, filePath string, options map[string]any) (*mcp.CallToolResult, error) {
 	logger.WithField("filepath", filePath).Info("Creating new workbook")
 
 	// Check if file already exists
@@ -138,7 +137,7 @@ func handleCreateWorkbook(ctx context.Context, logger *logrus.Logger, filePath s
 }
 
 // handleGetWorkbookMetadata retrieves metadata about a workbook
-func handleGetWorkbookMetadata(ctx context.Context, logger *logrus.Logger, filePath string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleGetWorkbookMetadata(logger *logrus.Logger, filePath string, options map[string]any) (*mcp.CallToolResult, error) {
 	logger.WithField("filepath", filePath).Info("Getting workbook metadata")
 
 	// Check if file exists

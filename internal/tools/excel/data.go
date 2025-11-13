@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -11,7 +10,7 @@ import (
 )
 
 // handleWriteData writes data to cells in a worksheet
-func handleWriteData(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleWriteData(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -392,7 +391,7 @@ func handleWriteData(ctx context.Context, logger *logrus.Logger, filePath string
 }
 
 // handleReadData reads data from a range in a worksheet
-func handleReadData(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleReadData(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -599,7 +598,7 @@ func handleReadData(ctx context.Context, logger *logrus.Logger, filePath string,
 }
 
 // handleReadDataWithMetadata reads data with validation information
-func handleReadDataWithMetadata(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleReadDataWithMetadata(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",

@@ -97,7 +97,7 @@ func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, 
 	}).Debug("Find long files parameters")
 
 	// Find long files
-	longFiles, totalScanned, skippedLargeFiles, err := t.findLongFiles(ctx, logger, request)
+	longFiles, totalScanned, skippedLargeFiles, err := t.findLongFiles(logger, request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find long files: %w", err)
 	}
@@ -237,7 +237,7 @@ func (t *FindLongFilesTool) parseRequest(args map[string]any) (*FindLongFilesReq
 }
 
 // findLongFiles finds all files exceeding the line threshold
-func (t *FindLongFilesTool) findLongFiles(ctx context.Context, logger *logrus.Logger, request *FindLongFilesRequest) ([]FileInfo, int, []string, error) {
+func (t *FindLongFilesTool) findLongFiles(logger *logrus.Logger, request *FindLongFilesRequest) ([]FileInfo, int, []string, error) {
 	var longFiles []FileInfo
 	var skippedLargeFiles []string
 	totalScanned := 0
