@@ -79,6 +79,17 @@ jobs:
       - name: Test
         run: TEST_FAST=1 make test
 
+      - name: Check token usage for default tools
+        env:
+          ENABLE_ADDITIONAL_TOOLS: all
+          ALLOW_HIGH_TOKENS: excel
+        run: |
+          {
+            echo '```'
+            make benchmark-tokens 2>&1 | sed 's/\x1b\[[0-9;]*m//g'
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
       - name: Build
         env:
           GOOS: linux

@@ -266,6 +266,11 @@ func isToolEnabled(toolName string) bool {
 		return false
 	}
 
+	// Check if "all" is specified to enable all tools
+	if strings.TrimSpace(strings.ToLower(enabledTools)) == "all" {
+		return true
+	}
+
 	// Normalise the tool name (lowercase, replace underscores with hyphens)
 	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
 
