@@ -427,10 +427,11 @@ func startStreamableHTTPServer(cmd *cli.Command, mcpServer *mcpserver.MCPServer,
 
 	// Set session timeout (create a custom session manager)
 	if sessionTimeout > 0 {
-		opts = append(opts, mcpserver.WithSessionIdManager(&TimeoutSessionManager{
-			timeout: sessionTimeout,
-			logger:  logger,
-		}))
+		sessionManager := NewTimeoutSessionManager(sessionTimeout, logger)
+		opts = append(opts, mcpserver.WithSessionIdManager(sessionManager))
+
+		// Ensure session manager cleanup on shutdown
+		defer sessionManager.Stop()
 	}
 
 	// Check if OAuth is enabled
@@ -585,12 +586,24 @@ func isValidProtocolVersion(version string) bool {
 
 // isValidOrigin validates the Origin header to prevent DNS rebinding attacks
 func isValidOrigin(origin string) bool {
-	// Allow localhost and 127.0.0.1 origins for development
+	// Default allowed origins for development
 	allowedOrigins := []string{
 		"http://localhost",
 		"https://localhost",
 		"http://127.0.0.1",
 		"https://127.0.0.1",
+	}
+
+	// Add configured origins from environment variable
+	// MCP_ALLOWED_ORIGINS can be a comma-separated list of allowed origins
+	// Example: MCP_ALLOWED_ORIGINS="https://app.example.com,https://api.example.com"
+	if envOrigins := os.Getenv("MCP_ALLOWED_ORIGINS"); envOrigins != "" {
+		for _, configuredOrigin := range strings.Split(envOrigins, ",") {
+			trimmed := strings.TrimSpace(configuredOrigin)
+			if trimmed != "" {
+				allowedOrigins = append(allowedOrigins, trimmed)
+			}
+		}
 	}
 
 	for _, allowed := range allowedOrigins {
@@ -599,36 +612,109 @@ func isValidOrigin(origin string) bool {
 		}
 	}
 
-	// In production, you would add your specific allowed origins here
 	return false
 }
 
 // TimeoutSessionManager implements SessionIdManager with timeout support
 type TimeoutSessionManager struct {
-	timeout time.Duration
-	logger  *logrus.Logger
+	sessions map[string]time.Time
+	mu       sync.RWMutex
+	timeout  time.Duration
+	logger   *logrus.Logger
+	stopCh   chan struct{}
 }
 
+// NewTimeoutSessionManager creates a new session manager with automatic cleanup
+func NewTimeoutSessionManager(timeout time.Duration, logger *logrus.Logger) *TimeoutSessionManager {
+	sm := &TimeoutSessionManager{
+		sessions: make(map[string]time.Time),
+		timeout:  timeout,
+		logger:   logger,
+		stopCh:   make(chan struct{}),
+	}
+
+	// Start background cleanup goroutine
+	go sm.cleanupExpiredSessions()
+
+	return sm
+}
+
+// Generate creates a new session ID and stores it with current timestamp
 func (t *TimeoutSessionManager) Generate() string {
-	// Generate a simple UUID-like session ID
-	// In production, you'd want to use crypto/rand or a proper UUID library
-	return fmt.Sprintf("session-%d", time.Now().UnixNano())
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	// Generate session ID using nanosecond timestamp for uniqueness
+	sessionID := fmt.Sprintf("session-%d", time.Now().UnixNano())
+	t.sessions[sessionID] = time.Now()
+
+	t.logger.Debugf("Generated new session: %s", sessionID)
+	return sessionID
 }
 
+// Validate checks if a session ID exists and hasn't expired
+// Returns false if the session is terminated (expired or doesn't exist)
 func (t *TimeoutSessionManager) Validate(sessionID string) (bool, error) {
-	// For this simple implementation, we don't track session expiry
-	// In production, you'd store sessions with timestamps and check expiry
 	if sessionID == "" {
 		return false, fmt.Errorf("empty session ID")
 	}
-	return false, nil // Session is not terminated
+
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	createdAt, exists := t.sessions[sessionID]
+	if !exists {
+		return false, nil // Session doesn't exist (terminated)
+	}
+
+	// Check if session has expired
+	if time.Since(createdAt) > t.timeout {
+		return false, nil // Session expired (terminated)
+	}
+
+	return false, nil // Session is valid (not terminated)
 }
 
+// Terminate removes a session from storage
 func (t *TimeoutSessionManager) Terminate(sessionID string) (bool, error) {
-	// For this simple implementation, we don't track sessions
-	// In production, you'd remove the session from storage
-	t.logger.Debugf("Session terminated: %s", sessionID)
-	return true, nil // Session was terminated successfully
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if _, exists := t.sessions[sessionID]; exists {
+		delete(t.sessions, sessionID)
+		t.logger.Debugf("Session terminated: %s", sessionID)
+		return true, nil // Session was terminated successfully
+	}
+
+	return false, fmt.Errorf("session not found: %s", sessionID)
+}
+
+// cleanupExpiredSessions runs periodically to remove expired sessions
+func (t *TimeoutSessionManager) cleanupExpiredSessions() {
+	ticker := time.NewTicker(t.timeout / 2) // Run cleanup at half the timeout interval
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			t.mu.Lock()
+			now := time.Now()
+			for sessionID, createdAt := range t.sessions {
+				if now.Sub(createdAt) > t.timeout {
+					delete(t.sessions, sessionID)
+					t.logger.Debugf("Cleaned up expired session: %s", sessionID)
+				}
+			}
+			t.mu.Unlock()
+		case <-t.stopCh:
+			return
+		}
+	}
+}
+
+// Stop stops the background cleanup goroutine
+func (t *TimeoutSessionManager) Stop() {
+	close(t.stopCh)
 }
 
 // logrusAdapter adapts logrus.Logger to the mcp-go util.Logger interface
