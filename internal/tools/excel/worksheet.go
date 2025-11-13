@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"context"
 	"fmt"
 	"slices"
 
@@ -11,7 +10,7 @@ import (
 )
 
 // handleCreateWorksheet adds a new worksheet to an existing workbook
-func handleCreateWorksheet(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleCreateWorksheet(logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -80,7 +79,7 @@ func handleCreateWorksheet(ctx context.Context, logger *logrus.Logger, filePath 
 }
 
 // handleCopyWorksheet creates a copy of an existing worksheet
-func handleCopyWorksheet(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleCopyWorksheet(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -192,7 +191,7 @@ func handleCopyWorksheet(ctx context.Context, logger *logrus.Logger, filePath st
 }
 
 // handleDeleteWorksheet removes a worksheet from the workbook
-func handleDeleteWorksheet(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleDeleteWorksheet(logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -261,7 +260,7 @@ func handleDeleteWorksheet(ctx context.Context, logger *logrus.Logger, filePath 
 }
 
 // handleRenameWorksheet renames an existing worksheet
-func handleRenameWorksheet(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleRenameWorksheet(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",

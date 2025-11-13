@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -34,7 +33,7 @@ var dangerousFunctions = []string{
 const maxFormulaLength = 8192
 
 // handleApplyFormula applies a formula to a cell
-func handleApplyFormula(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleApplyFormula(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -180,7 +179,7 @@ func handleApplyFormula(ctx context.Context, logger *logrus.Logger, filePath str
 }
 
 // handleValidateFormulaSyntax validates a formula without applying it
-func handleValidateFormulaSyntax(ctx context.Context, logger *logrus.Logger, options map[string]any) (*mcp.CallToolResult, error) {
+func handleValidateFormulaSyntax(logger *logrus.Logger, options map[string]any) (*mcp.CallToolResult, error) {
 	formula, ok := options["formula"].(string)
 	if !ok || formula == "" {
 		return nil, &ValidationError{

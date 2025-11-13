@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -10,7 +9,7 @@ import (
 )
 
 // handleInsertRows inserts one or more rows
-func handleInsertRows(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleInsertRows(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -97,7 +96,7 @@ func handleInsertRows(ctx context.Context, logger *logrus.Logger, filePath strin
 }
 
 // handleInsertColumns inserts one or more columns
-func handleInsertColumns(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleInsertColumns(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -194,7 +193,7 @@ func handleInsertColumns(ctx context.Context, logger *logrus.Logger, filePath st
 }
 
 // handleDeleteRows deletes one or more rows
-func handleDeleteRows(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleDeleteRows(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -281,7 +280,7 @@ func handleDeleteRows(ctx context.Context, logger *logrus.Logger, filePath strin
 }
 
 // handleDeleteColumns deletes one or more columns
-func handleDeleteColumns(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleDeleteColumns(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -378,7 +377,7 @@ func handleDeleteColumns(ctx context.Context, logger *logrus.Logger, filePath st
 }
 
 // handleAutoSizeColumns automatically adjusts column widths to fit content
-func handleAutoSizeColumns(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleAutoSizeColumns(logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",

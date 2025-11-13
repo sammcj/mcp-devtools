@@ -113,7 +113,7 @@ func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 	t.applyMemoryLimits(conf)
 
 	// Process the PDF
-	result, err := t.processPDF(ctx, logger, request, conf)
+	result, err := t.processPDF(logger, request, conf)
 	if err != nil {
 		return t.newToolResultJSON(map[string]any{
 			"error":     err.Error(),
@@ -180,7 +180,7 @@ func (t *PDFTool) ParseRequest(args map[string]any) (*PDFRequest, error) {
 }
 
 // processPDF handles the main PDF processing logic
-func (t *PDFTool) processPDF(ctx context.Context, logger *logrus.Logger, request *PDFRequest, conf *model.Configuration) (*PDFResponse, error) {
+func (t *PDFTool) processPDF(logger *logrus.Logger, request *PDFRequest, conf *model.Configuration) (*PDFResponse, error) {
 	// Ensure output directory exists
 	if err := os.MkdirAll(request.OutputDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create output directory: %w", err)

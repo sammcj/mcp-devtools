@@ -12,11 +12,6 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
-    rules:
-      - linters:
-          - unparam
-        path: internal/tools/.*/.*\.go
-        text: ctx is unused
     paths:
       - third_party$
       - builtin$
