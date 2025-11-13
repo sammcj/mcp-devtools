@@ -37,22 +37,22 @@ graph LR
 
     A --> B[Search &<br>Discovery]
     A --> C[Document<br>Processing]
-    A --> D[UI Component<br>Libraries]
     A --> E[Intelligence &<br>Memory]
     A --> F[Utilities]
     A --> G[Agents]
+    A --> D[UI Component<br>Libraries]
 
     B --> B_Tools[📝 Terraform Docs<br>☁️ AWS Doc]
 
     C --> C_Tools[📄 Document Processing<br>📈 Excel Spreadsheets<br>📑 PDF Processing]
-
-    D --> D_Tools[🎨 ShadCN UI<br>✨ Magic UI<br>⚡ Aceternity UI]
 
     E --> E_Tools[🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
     F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem<br>✂️ Code Skim]
 
     G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
+
+    D --> D_Tools[🎨 ShadCN UI<br>✨ Magic UI<br>⚡ Aceternity UI]
 
     classDef components fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef llm fill:#E5F5E0,stroke:#31A354,color:#31A354
