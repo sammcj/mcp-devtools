@@ -281,16 +281,18 @@ func TestToolTokenCost(t *testing.T) {
 	fmt.Println()
 
 	// Print distribution
-	fmt.Println("Distribution:")
-	fmt.Printf("  🟢 Low (0-%d):        %2d tools (%d%%)\n",
-		*lowThreshold, lowCount, (lowCount*100)/len(costs))
-	fmt.Printf("  🟡 Medium (%d-%d):   %2d tools (%d%%)\n",
-		*lowThreshold+1, *warnThreshold, mediumCount, (mediumCount*100)/len(costs))
-	fmt.Printf("  🟠 High (%d-%d):     %2d tools (%d%%)\n",
-		*warnThreshold+1, *highThreshold, highCount, (highCount*100)/len(costs))
-	fmt.Printf("  🔴 Very High (>%d):   %2d tools (%d%%)\n",
-		*highThreshold, veryHighCount, (veryHighCount*100)/len(costs))
-	fmt.Println()
+	if len(costs) > 0 {
+		fmt.Println("Distribution:")
+		fmt.Printf("  🟢 Low (0-%d):        %2d tools (%d%%)\n",
+			*lowThreshold, lowCount, (lowCount*100)/len(costs))
+		fmt.Printf("  🟡 Medium (%d-%d):   %2d tools (%d%%)\n",
+			*lowThreshold+1, *warnThreshold, mediumCount, (mediumCount*100)/len(costs))
+		fmt.Printf("  🟠 High (%d-%d):     %2d tools (%d%%)\n",
+			*warnThreshold+1, *highThreshold, highCount, (highCount*100)/len(costs))
+		fmt.Printf("  🔴 Very High (>%d):   %2d tools (%d%%)\n",
+			*highThreshold, veryHighCount, (veryHighCount*100)/len(costs))
+		fmt.Println()
+	}
 
 	// Print context impact
 	fmt.Println("Context Impact:")
@@ -364,12 +366,5 @@ func TestToolTokenCost(t *testing.T) {
 	// Fail test if thresholds exceeded
 	if failed {
 		t.Fatal("Token cost thresholds exceeded")
-	}
-
-	// Always exit with appropriate code when run with -v
-	if testing.Verbose() {
-		if failed {
-			os.Exit(1)
-		}
 	}
 }
