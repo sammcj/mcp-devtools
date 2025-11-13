@@ -45,15 +45,6 @@ test-fast:
 	$(GOTEST) -short ./tests/...
 
 # Benchmark tool token costs
-# Usage:
-#   make benchmark-tokens                                        # Use default thresholds
-#   make benchmark-tokens PER_TOOL_MAX=600                       # Custom per-tool max (default: 800)
-#   make benchmark-tokens TOTAL_MAX=5000                         # Custom total max (default: 10000)
-#   make benchmark-tokens WARN_THRESHOLD=400                     # Custom warning threshold (default: 500)
-#   make benchmark-tokens LOW_THRESHOLD=150                      # Custom low threshold (default: 200)
-#   make benchmark-tokens HIGH_THRESHOLD=700                     # Custom high threshold (default: 600)
-#   make benchmark-tokens ALLOW_HIGH_TOKENS="excel,github"       # Allow specific tools to exceed threshold
-#   ENABLE_ADDITIONAL_TOOLS=all make benchmark-tokens            # Test with all tools enabled
 .PHONY: benchmark-tokens
 benchmark-tokens:
 	@echo "Analysing token costs for all tools..."
