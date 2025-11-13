@@ -83,7 +83,7 @@ jobs:
         env:
           ENABLE_ADDITIONAL_TOOLS: all
           ALLOW_HIGH_TOKENS: excel
-        run: make benchmark-tokens
+        run: make benchmark-tokens >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Build
         env:
