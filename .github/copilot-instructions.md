@@ -145,3 +145,4 @@ Before approving any pull request, verify:
 7. ✅ Context cancellation handled properly
 8. ✅ Resource cleanup with defer statements
 9. ✅ No American English spelling used
+10. ✅ If you are re-reviewing a PR you've reviewed in the past and your previous comments / suggestions have been addressed or are no longer valid please resolve those previous review comments to keep the review history clean and easy to follow.
