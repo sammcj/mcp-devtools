@@ -26,12 +26,12 @@ func init() {
 func (t *MagicUITool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"magic_ui",
-		mcp.WithDescription(`List, search, get details for Magic UI animated components.
+		mcp.WithDescription(`List, search, get details for Magic UI frontend components.
 
 Actions:
-- list: Get all available components
-- search: Search components by keyword in name or description
-- details: Get detailed information about a specific component
+- list: Get all components
+- search: Search by keyword in name or description
+- details: Get information about a component
 
 Examples:
 - List all components: {"action": "list"}
@@ -85,7 +85,7 @@ func (t *MagicUITool) Execute(ctx context.Context, logger *logrus.Logger, cache 
 }
 
 // executeList handles the list action
-func (t *MagicUITool) executeList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
+func (t *MagicUITool) executeList(_ context.Context, logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
 	logger.Info("Listing Magic UI components")
 
 	components, err := t.fetchComponents(logger, cache)
@@ -104,7 +104,7 @@ func (t *MagicUITool) executeList(ctx context.Context, logger *logrus.Logger, ca
 }
 
 // executeSearch handles the search action
-func (t *MagicUITool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
+func (t *MagicUITool) executeSearch(_ context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
 	logger.Infof("Searching Magic UI components with query: %s", query)
 
 	allComponents, err := t.fetchComponents(logger, cache)
@@ -134,7 +134,7 @@ func (t *MagicUITool) executeSearch(ctx context.Context, logger *logrus.Logger, 
 }
 
 // executeDetails handles the details action
-func (t *MagicUITool) executeDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
+func (t *MagicUITool) executeDetails(_ context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
 	logger.Infof("Getting details for Magic UI component: %s", componentName)
 
 	cacheKey := componentDetailsCachePrefix + componentName
