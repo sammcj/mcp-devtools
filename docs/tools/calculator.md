@@ -38,6 +38,7 @@ AI agents can use this tool when they need to:
 - **Multiplication**: `*`
 - **Division**: `/`
 - **Modulo**: `%`
+- **Exponentiation**: `^`
 - **Parentheses**: `()` for grouping
 
 ### Order of Operations
@@ -45,8 +46,9 @@ AI agents can use this tool when they need to:
 The calculator follows standard mathematical order of operations (PEMDAS/BODMAS):
 
 1. **P**arentheses/Brackets first
-2. **M**ultiplication and **D**ivision (left to right)
-3. **A**ddition and **S**ubtraction (left to right)
+2. **E**xponents (right to left)
+3. **M**ultiplication and **D**ivision (left to right)
+4. **A**ddition and **S**ubtraction (left to right)
 
 ```json
 {
@@ -116,6 +118,27 @@ Returns `14` (not `20`) because multiplication is performed before addition.
 }
 ```
 
+### Exponentiation
+
+```json
+{
+  "name": "calculator",
+  "arguments": {
+    "expression": "2^53 - 1"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "expression": "2^53 - 1",
+  "result": 9007199254740991
+}
+```
+
+Note: Exponentiation is right-associative, so `2^3^2` equals `2^(3^2)` = 512, not `(2^3)^2` = 64.
+
 ## Parameters
 
 You must provide **either** `expression` or `expressions` parameter (not both).
@@ -131,8 +154,8 @@ You must provide **either** `expression` or `expressions` parameter (not both).
 - **Example**: `["2 + 3", "10 * 5", "(15 - 3) / 4"]`
 
 Each expression can contain:
-- Numbers (integers and decimals)  
-- Basic arithmetic operators (`+`, `-`, `*`, `/`, `%`)
+- Numbers (integers and decimals)
+- Basic arithmetic operators (`+`, `-`, `*`, `/`, `%`, `^`)
 - Parentheses for grouping
 - Unary operators (`+`, `-`)
 - Whitespace (ignored)
@@ -176,7 +199,7 @@ Each expression can contain:
   "arguments": {
     "expressions": [
       "2 + 3",
-      "10 * 5", 
+      "10 * 5",
       "(15 - 3) / 4",
       "2.5 + 1.5"
     ]
@@ -211,11 +234,11 @@ Each expression can contain:
 ### Batch Financial Calculations
 ```json
 {
-  "name": "calculator", 
+  "name": "calculator",
   "arguments": {
     "expressions": [
       "1000 * 0.08",
-      "1500 * 0.15", 
+      "1500 * 0.15",
       "2000 * 0.12"
     ]
   }
@@ -262,9 +285,7 @@ The calculator provides clear error messages for invalid expressions:
 ## Limitations
 
 - No support for scientific notation (e.g., `1e6`)
-- No support for functions (e.g., `sqrt`, `sin`, `cos`)
+- No support for functions (e.g., `sqrt`, `sin`, `cos`, `log`)
 - No support for variables or constants (e.g., `π`, `e`)
 - No support for bitwise operations
 - Decimal precision limited by floating-point representation
-
-For advanced mathematical operations, consider implementing separate tools or using external mathematical libraries.

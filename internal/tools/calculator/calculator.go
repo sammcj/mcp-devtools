@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,9 +28,9 @@ func init() {
 func (c *Calculator) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"calculator",
-		mcp.WithDescription("Use when performing arithmetic (e.g., calculating percentages, ratios, or large sums of numbers) to ensure accuracy. Supports +, -, *, /, %, parentheses, and decimal numbers."),
+		mcp.WithDescription("Use when performing arithmetic (e.g., calculating percentages, ratios, or large sums of numbers) to ensure accuracy. Supports +, -, *, /, %, ^, parentheses, and decimal numbers."),
 		mcp.WithString("expression",
-			mcp.Description("Single mathematical expression to evaluate (e.g., '2 + 3 * 4', '(10 + 5) / 3', '12.5 * 2')"),
+			mcp.Description("Single mathematical expression to evaluate (e.g., '2 + 3 * 4', '(10 + 5) / 3', '12.5 * 2', '2^8')"),
 		),
 		mcp.WithArray("expressions",
 			mcp.Description("Array of mathematical expressions to evaluate"),
@@ -125,7 +126,7 @@ func (c *Calculator) evaluateExpression(expression string) (any, error) {
 
 	// Check if we consumed all tokens
 	if !parser.isAtEnd() {
-		return nil, fmt.Errorf("unexpected characters after expression: '%s'. Check for typos or unsupported operators (only +, -, *, /, %%, parentheses supported)", parser.remaining())
+		return nil, fmt.Errorf("unexpected characters after expression: '%s'. Check for typos or unsupported operators (only +, -, *, /, %%, ^, parentheses supported)", parser.remaining())
 	}
 
 	// Format result appropriately
@@ -135,6 +136,11 @@ func (c *Calculator) evaluateExpression(expression string) (any, error) {
 	} else {
 		return result, nil
 	}
+}
+
+// pow calculates base raised to exponent
+func pow(base, exponent float64) float64 {
+	return math.Pow(base, exponent)
 }
 
 // Parser represents an expression parser
@@ -245,7 +251,7 @@ func (p *parser) parseExpression() (float64, error) {
 
 // parseTerm parses a term (handles *, /, %)
 func (p *parser) parseTerm() (float64, error) {
-	left, err := p.parseFactor()
+	left, err := p.parseExponent()
 	if err != nil {
 		return 0, err
 	}
@@ -255,14 +261,14 @@ func (p *parser) parseTerm() (float64, error) {
 		switch p.current {
 		case '*':
 			p.advance()
-			right, err := p.parseFactor()
+			right, err := p.parseExponent()
 			if err != nil {
 				return 0, err
 			}
 			left *= right
 		case '/':
 			p.advance()
-			right, err := p.parseFactor()
+			right, err := p.parseExponent()
 			if err != nil {
 				return 0, err
 			}
@@ -272,7 +278,7 @@ func (p *parser) parseTerm() (float64, error) {
 			left /= right
 		case '%':
 			p.advance()
-			right, err := p.parseFactor()
+			right, err := p.parseExponent()
 			if err != nil {
 				return 0, err
 			}
@@ -285,6 +291,27 @@ func (p *parser) parseTerm() (float64, error) {
 			return left, nil
 		}
 	}
+}
+
+// parseExponent parses exponentiation (handles ^)
+func (p *parser) parseExponent() (float64, error) {
+	left, err := p.parseFactor()
+	if err != nil {
+		return 0, err
+	}
+
+	p.skipWhitespace()
+	if p.current == '^' {
+		p.advance()
+		// Right-associative: 2^3^2 = 2^(3^2) = 2^9 = 512
+		right, err := p.parseExponent()
+		if err != nil {
+			return 0, err
+		}
+		return pow(left, right), nil
+	}
+
+	return left, nil
 }
 
 // parseFactor parses a factor (handles numbers and parentheses)
@@ -327,7 +354,7 @@ func (p *parser) parseFactor() (float64, error) {
 		return p.parseNumber()
 	}
 
-	return 0, fmt.Errorf("unexpected character '%c' - only numbers and operators (+, -, *, /, %%, parentheses) are supported", p.current)
+	return 0, fmt.Errorf("unexpected character '%c' - only numbers and operators (+, -, *, /, %%, ^, parentheses) are supported", p.current)
 }
 
 // newToolResultJSON creates a new tool result with JSON content
@@ -347,6 +374,7 @@ func (c *Calculator) ProvideExtendedInfo() *tools.ExtendedHelp {
 		WhenNotToUse: "Don't use for scientific functions (sqrt, sin, cos, log, etc.), bitwise operations or boolean logic, statistical calculations or data analysis, or advanced mathematical operations like matrices or calculus.",
 		CommonPatterns: []string{
 			"Parentheses for grouping: \"(10 + 5) * 2\"",
+			"Exponentiation: \"2^8\" or \"10^3\"",
 			"Array mode for batch: {\"expressions\": [\"100 * 0.15\", \"200 * 0.15\"]}",
 			"Unary operators: \"-5 + 10\" or \"-(2 + 3)\"",
 			"Use parentheses to make complex expressions clear",
@@ -357,7 +385,7 @@ func (c *Calculator) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"Group related calculations in arrays when performing multiple operations",
 		},
 		ParameterDetails: map[string]string{
-			"expression":  "Single mathematical expression to evaluate (string). Supports +, -, *, /, % operators with standard precedence, parentheses for grouping, and unary +/- operators.",
+			"expression":  "Single mathematical expression to evaluate (string). Supports +, -, *, /, %, ^ operators with standard precedence, parentheses for grouping, and unary +/- operators.",
 			"expressions": "Array of mathematical expressions for batch processing (array of strings). Each expression follows same rules as single expression parameter.",
 		},
 		Examples: []tools.ToolExample{
@@ -367,6 +395,11 @@ func (c *Calculator) ProvideExtendedInfo() *tools.ExtendedHelp {
 				ExpectedResult: `{"expression": "150 * 0.20", "result": 30}`,
 			},
 			{
+				Description:    "Exponentiation calculation",
+				Arguments:      map[string]any{"expression": "2^53 - 1"},
+				ExpectedResult: `{"expression": "2^53 - 1", "result": 9007199254740991}`,
+			},
+			{
 				Description:    "Complex business calculation with proper order",
 				Arguments:      map[string]any{"expression": "(1200 - 200) * 0.15 + 50"},
 				ExpectedResult: `{"expression": "(1200 - 200) * 0.15 + 50", "result": 200}`,
@@ -374,9 +407,9 @@ func (c *Calculator) ProvideExtendedInfo() *tools.ExtendedHelp {
 			{
 				Description: "Batch calculations for efficiency",
 				Arguments: map[string]any{
-					"expressions": []string{"2 + 3", "10 * 5", "(15 - 3) / 4"},
+					"expressions": []string{"2 + 3", "10 * 5", "(15 - 3) / 4", "3^4"},
 				},
-				ExpectedResult: `{"results": [{"expression": "2 + 3", "result": 5}, {"expression": "10 * 5", "result": 50}, {"expression": "(15 - 3) / 4", "result": 3}]}`,
+				ExpectedResult: `{"results": [{"expression": "2 + 3", "result": 5}, {"expression": "10 * 5", "result": 50}, {"expression": "(15 - 3) / 4", "result": 3}, {"expression": "3^4", "result": 81}]}`,
 			},
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
@@ -390,7 +423,7 @@ func (c *Calculator) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 			{
 				Problem:  "Syntax errors with unexpected characters",
-				Solution: "Ensure only supported operators (+, -, *, /, %, parentheses) and valid decimal numbers",
+				Solution: "Ensure only supported operators (+, -, *, /, %, ^, parentheses) and valid decimal numbers",
 			},
 			{
 				Problem:  "Array mode returns error for single calculation",
