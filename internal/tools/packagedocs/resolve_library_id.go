@@ -26,7 +26,7 @@ func init() {
 func (t *ResolveLibraryIDTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"resolve_library_id",
-		mcp.WithDescription(`Resolves a package/product name to a Context7-compatible library ID and returns a list of matching libraries.
+		mcp.WithDescription(`Resolves a package/product name to a Context7-compatible library ID and returns a list of matching libraries. Use this as the first step when you need to lookup documentation for a package or library.
 
 You MUST call this function before 'get_library_documentation' to obtain a valid Context7-compatible library ID UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.
 

@@ -6,6 +6,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/aws_documentation"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/calculator"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/claudeagent"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/code_rename"
 	// codeskim is conditionally imported in tools_codeskim.go based on platform support
 	_ "github.com/sammcj/mcp-devtools/internal/tools/codexagent"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/copilotagent"
