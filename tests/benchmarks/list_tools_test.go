@@ -1,4 +1,3 @@
-// go:build listtools
 //go:build listtools
 
 package benchmarks

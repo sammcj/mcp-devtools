@@ -138,11 +138,6 @@ func (c *Calculator) evaluateExpression(expression string) (any, error) {
 	}
 }
 
-// pow calculates base raised to exponent
-func pow(base, exponent float64) float64 {
-	return math.Pow(base, exponent)
-}
-
 // Parser represents an expression parser
 type parser struct {
 	expression string
@@ -308,7 +303,7 @@ func (p *parser) parseExponent() (float64, error) {
 		if err != nil {
 			return 0, err
 		}
-		return pow(left, right), nil
+		return math.Pow(left, right), nil
 	}
 
 	return left, nil
