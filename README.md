@@ -102,7 +102,7 @@ Assuming you have Golang installed, you can use `go run` (similar to npx / uvx) 
       ],
       "env": {
         "NOTE": "The below environment variables are completely optional, see the README.md for available tools and configuration options",
-        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
+        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn,magic_ui",
         "DISABLED_TOOLS": ""
       }
     }
@@ -141,7 +141,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "command": "/path/to/mcp-devtools",
       "env": {
         "NOTE": "The below environment variables are completely optional, see the README.md for available tools and configuration options",
-        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
+        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn,magic_ui",
         "DISABLED_TOOLS": ""
       }
     }
@@ -176,6 +176,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                                        | `murican_to_english`      | Organise, colour, centre                    |
 | **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details               | `code_skim`               | Reduced token consumption                   |
 | **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                              | `shadcn`                  | Button, Dialog, Form components             |
+| **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                         | `magic_ui`                | 74+ animated React components               |
 | **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            |
 | **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                                      | `process_document`        | PDF, DOCX → Markdown with OCR               |
 | **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                           | `pdf`                     | Quick PDF to Markdown                       |

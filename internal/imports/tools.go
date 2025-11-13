@@ -17,6 +17,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/github"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/internetsearch/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/m2e"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/magicui"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/memory"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packagedocs"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/unified"

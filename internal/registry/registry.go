@@ -96,6 +96,7 @@ func requiresEnablement(toolName string) bool {
 		"aws_documentation",
 		"terraform_documentation",
 		"shadcn",
+		"magic_ui",
 		"murican_to_english",
 		"excel",
 		"code_skim",
