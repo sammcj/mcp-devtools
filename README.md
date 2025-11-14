@@ -48,7 +48,7 @@ graph LR
 
     E --> E_Tools[🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
-    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem<br>✂️ Code Skim]
+    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem<br>✂️ Code Skim<br>🏷️ Code Rename]
 
     G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
@@ -180,9 +180,10 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 |----------------------------------------------------------------------|--------------------------------------------------------------------|---------------------------|---------------------------------------------|
 | **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                                        | `murican_to_english`      | Organise, colour, centre                    |
 | **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details               | `code_skim`               | Reduced token consumption                   |
+| **[Code Rename](docs/tools/code_rename.md)**                         | LSP-based symbol renaming across files (Experimental)              | `code_rename`             | Rename functions, variables, types          |
 | **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                              | `shadcn`                  | Button, Dialog, Form components             |
-| **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                         | `magic_ui`                | 74+ animated React components               |
-| **[Aceternity UI Component Library](docs/tools/aceternityui.md)**    | Animated component library                                         | `aceternity_ui`           | 24+ animated React components               |
+| **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                         | `magic_ui`                | Frontend React components                   |
+| **[Aceternity UI Component Library](docs/tools/aceternityui.md)**    | Animated component library                                         | `aceternity_ui`           | Frontend React components                   |
 | **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            |
 | **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                                      | `process_document`        | PDF, DOCX → Markdown with OCR               |
 | **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                           | `pdf`                     | Quick PDF to Markdown                       |
