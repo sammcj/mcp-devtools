@@ -2,6 +2,8 @@
 
 Rename symbols (variables, functions, types, methods) across codebases using Language Server Protocol (LSP) servers.
 
+**EXPERIMENTAL** - This tool is in early development and may have limitations or bugs.
+
 ## Overview
 
 The `code_rename` tool uses LSP servers to identify and rename symbols across files. It handles imports, comments, and cross-file references according to the LSP server's rename implementation.
