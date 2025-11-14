@@ -176,12 +176,13 @@ func (c *LSPClient) initialize(_ context.Context) error {
 	}
 
 	var result protocol.InitializeResult
-	if _, err := c.conn.Call(initCtx, "initialise", initParams, &result); err != nil {
+	// Note: LSP protocol requires American spelling for method names
+	if _, err := c.conn.Call(initCtx, "initialize", initParams, &result); err != nil {
 		return fmt.Errorf("initialise failed: %w", err)
 	}
 
-	// Send initialised notification
-	if err := c.conn.Notify(initCtx, "initialised", &protocol.InitializedParams{}); err != nil {
+	// Send initialised notification (LSP protocol requires "initialized" method name)
+	if err := c.conn.Notify(initCtx, "initialized", &protocol.InitializedParams{}); err != nil {
 		return fmt.Errorf("initialised notification failed: %w", err)
 	}
 
