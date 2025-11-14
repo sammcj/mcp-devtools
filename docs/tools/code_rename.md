@@ -1,5 +1,3 @@
-
-
 # code_rename
 
 Rename symbols (variables, functions, types, methods) across codebases using Language Server Protocol (LSP) servers.
@@ -8,9 +6,11 @@ Rename symbols (variables, functions, types, methods) across codebases using Lan
 
 The `code_rename` tool uses LSP servers to identify and rename symbols across files. It handles imports, comments, and cross-file references according to the LSP server's rename implementation.
 
+LSP-validated symbol finding ensures correct detection even when symbol names appear in block comments, string literals, or multiple locations in the same file. The tool uses LSP's `PrepareRename` to validate that each candidate position contains a renameable symbol.
+
 ## Supported Languages
 
-When enabled at the point where the MCP-DevTools server starts the tool detects which language servers are available and will provide rename functionality for. If it cannot find the appropriate server for a given language it will simply not make the rename functionality for that language available to clients.
+When the MCP-DevTools server starts, the tool detects which language servers are available. If the appropriate server for a given language cannot be found, rename functionality for that language won't be available.
 
 - **Go** - via `gopls`
 - **TypeScript/JavaScript** - via `typescript-language-server`
@@ -27,7 +27,7 @@ When enabled at the point where the MCP-DevTools server starts the tool detects 
 
 ## Requirements
 
-The tool requires the appropriate LSP server to be installed for the language you're working with:
+Install the appropriate LSP server for your language:
 
 ```bash
 # Go
@@ -55,9 +55,8 @@ pnpm install -g yaml-language-server
 brew install llvm  # macOS
 apt install clangd # Linux
 
-# Java
+# Java (but let's be honest - a better option would be to rewrite it in another language)
 brew install jdtls # macOS
-# Or download from Eclipse JDT Language Server
 
 # Swift
 # Included with Xcode or Swift toolchain
@@ -161,30 +160,15 @@ The tool relies on LSP server capabilities for rename operations:
 
 **Error**: `failed to find symbol 'oldName' in file`
 
-**Solution**: Ensure the `old_name` parameter exactly matches the symbol name in the file (case-sensitive). The tool searches for the first occurrence of the symbol name. Check for typos.
+**Solution**: Ensure the `old_name` parameter exactly matches the symbol name in the file (case-sensitive). Check for typos.
 
-## Performance Notes
+## Performance
 
 - **Server detection**: LSP server availability is cached for 5 minutes to avoid repeated checks
-- **Client caching**: LSP server connections are cached for 5 minutes to improve performance for batch operations
-- **Startup time**: First rename in a workspace may take 1-2 seconds whilst the LSP server initialises
+- **Client caching**: LSP server connections are cached for 5 minutes and reused for batch operations
+- **Startup time**: First rename in a workspace takes 1-2 seconds whilst the LSP server initialises
 - **Batch operations**: Subsequent renames in the same workspace are 10-100x faster due to connection reuse
 - **Large projects**: Rename operations scale with project size; preview mode is recommended for large codebases
-
-## Improvements (v0.48.3+)
-
-### LSP-Validated Symbol Finding
-The tool now uses LSP's `PrepareRename` to validate symbol positions, ensuring correct detection even when symbols appear in:
-- Block comments (`/* */`, `"""`, `'''`)
-- String literals
-- Multiple locations in the same file
-
-This eliminates false positives where the tool might previously have targeted comments or strings instead of actual code symbols.
-
-### Connection Pooling
-LSP server connections are now cached and reused within a 5-minute window, dramatically improving performance for batch rename operations:
-- **Previous**: 2 seconds per rename (N renames = 2N seconds)
-- **Now**: 2 seconds first rename + 0.1-0.2 seconds per subsequent rename
 
 ## Limitations
 
