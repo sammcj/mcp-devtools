@@ -657,16 +657,24 @@ func getInstallCommand(language string) string {
 
 // applyEditsToFile applies text edits to a single file atomically
 // Returns an error on any failure (security, read, apply, or write)
+// Defence in depth: includes both security check and size limit
 func applyEditsToFile(filePath string, edits []protocol.TextEdit) error {
 	// Security: Check file access permission before modification
 	if err := security.CheckFileAccess(filePath); err != nil {
 		return fmt.Errorf("access denied for %s: %w", filePath, err)
 	}
 
-	// Get original file info to preserve permissions
+	// Get original file info to preserve permissions and check size
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to stat file %s: %w", filePath, err)
+	}
+
+	// Defence in depth: Check file size even though caller should have already checked
+	const maxFileSize = 2 * 1024 * 1024 // 2MB
+	if fileInfo.Size() > maxFileSize {
+		return fmt.Errorf("file too large: %s (%.1fMB) exceeds maximum size of 2MB",
+			filePath, float64(fileInfo.Size())/(1024*1024))
 	}
 
 	// Read current file content
