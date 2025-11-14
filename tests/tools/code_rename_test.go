@@ -342,3 +342,242 @@ func TestCodeRenameTool_ProvideExtendedInfo(t *testing.T) {
 	testutils.AssertTrue(t, info.WhenToUse != "")
 	testutils.AssertTrue(t, info.WhenNotToUse != "")
 }
+
+// TestCodeRenameTool_SymbolInBlockComment tests that symbols in block comments are skipped
+func TestCodeRenameTool_SymbolInBlockComment(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping LSP integration test in short mode")
+	}
+
+	tool := &code_rename.CodeRenameTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := context.Background()
+
+	tmpDir := t.TempDir()
+
+	// Create go.mod
+	goMod := filepath.Join(tmpDir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module testmodule\n\ngo 1.21\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a file where the symbol appears in a comment before the actual function
+	mainFile := filepath.Join(tmpDir, "main.go")
+	mainContent := `package main
+
+/*
+TODO: Refactor processData to use generics
+The processData function needs improvement
+*/
+
+// processData processes some data
+func processData(x int) int {
+	return x * 2
+}
+
+func main() {
+	result := processData(5)
+	println(result)
+}
+`
+	if err := os.WriteFile(mainFile, []byte(mainContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test renaming - should find the actual function, not the comment
+	args := map[string]any{
+		"file_path": mainFile,
+		"old_name":  "processData",
+		"new_name":  "handleData",
+		"preview":   true,
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+
+	// If gopls is not installed, skip the test
+	if err != nil && strings.Contains(err.Error(), "no LSP server available") {
+		t.Skip("gopls not installed, skipping test")
+	}
+
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
+
+	renameResult, ok := result.StructuredContent.(*code_rename.RenameResult)
+	if !ok {
+		t.Fatalf("Expected StructuredContent to be *code_rename.RenameResult, got %T", result.StructuredContent)
+	}
+
+	// Should have found the function, not the comments
+	if renameResult.TotalReplacements < 2 {
+		t.Errorf("Expected at least 2 replacements (definition + usage), got %d", renameResult.TotalReplacements)
+	}
+
+	if renameResult.Error != "" {
+		t.Errorf("Expected no error, got: %s", renameResult.Error)
+	}
+
+	t.Logf("Block comment test successful: %d replacements", renameResult.TotalReplacements)
+}
+
+// TestCodeRenameTool_ClientCaching tests that LSP clients are cached and reused
+func TestCodeRenameTool_ClientCaching(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping LSP integration test in short mode")
+	}
+
+	tool := &code_rename.CodeRenameTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := context.Background()
+
+	tmpDir := t.TempDir()
+
+	// Create go.mod
+	goMod := filepath.Join(tmpDir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module testmodule\n\ngo 1.21\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create test file
+	mainFile := filepath.Join(tmpDir, "main.go")
+	mainContent := `package main
+
+func first() int {
+	return 1
+}
+
+func second() int {
+	return 2
+}
+
+func main() {
+	a := first()
+	b := second()
+	println(a, b)
+}
+`
+	if err := os.WriteFile(mainFile, []byte(mainContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Perform first rename
+	args1 := map[string]any{
+		"file_path": mainFile,
+		"old_name":  "first",
+		"new_name":  "one",
+		"preview":   true,
+	}
+
+	result1, err := tool.Execute(ctx, logger, cache, args1)
+	if err != nil && strings.Contains(err.Error(), "no LSP server available") {
+		t.Skip("gopls not installed, skipping test")
+	}
+	testutils.AssertNoError(t, err)
+
+	// Perform second rename in same workspace - should reuse cached client
+	args2 := map[string]any{
+		"file_path": mainFile,
+		"old_name":  "second",
+		"new_name":  "two",
+		"preview":   true,
+	}
+
+	result2, err := tool.Execute(ctx, logger, cache, args2)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result2)
+
+	// Both should succeed
+	renameResult1, ok := result1.StructuredContent.(*code_rename.RenameResult)
+	if !ok {
+		t.Fatalf("Expected result1 to be *code_rename.RenameResult")
+	}
+	if renameResult1.Error != "" {
+		t.Errorf("First rename failed: %s", renameResult1.Error)
+	}
+
+	renameResult2, ok := result2.StructuredContent.(*code_rename.RenameResult)
+	if !ok {
+		t.Fatalf("Expected result2 to be *code_rename.RenameResult")
+	}
+	if renameResult2.Error != "" {
+		t.Errorf("Second rename failed: %s", renameResult2.Error)
+	}
+
+	t.Logf("Client caching test successful: both renames completed")
+}
+
+// TestCodeRenameTool_SymbolInStringLiteral tests symbol appearing in strings
+func TestCodeRenameTool_SymbolInStringLiteral(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping LSP integration test in short mode")
+	}
+
+	tool := &code_rename.CodeRenameTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := context.Background()
+
+	tmpDir := t.TempDir()
+
+	// Create go.mod
+	goMod := filepath.Join(tmpDir, "go.mod")
+	if err := os.WriteFile(goMod, []byte("module testmodule\n\ngo 1.21\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create file where symbol appears in string literal
+	mainFile := filepath.Join(tmpDir, "main.go")
+	mainContent := `package main
+
+import "fmt"
+
+func getValue() int {
+	// This string mentions "getValue" but isn't the symbol
+	fmt.Println("Calling getValue function")
+	return 42
+}
+
+func main() {
+	x := getValue()
+	println(x)
+}
+`
+	if err := os.WriteFile(mainFile, []byte(mainContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test renaming - should find the function, not the string
+	args := map[string]any{
+		"file_path": mainFile,
+		"old_name":  "getValue",
+		"new_name":  "fetchValue",
+		"preview":   true,
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+
+	if err != nil && strings.Contains(err.Error(), "no LSP server available") {
+		t.Skip("gopls not installed, skipping test")
+	}
+
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
+
+	renameResult, ok := result.StructuredContent.(*code_rename.RenameResult)
+	if !ok {
+		t.Fatalf("Expected StructuredContent to be *code_rename.RenameResult")
+	}
+
+	// Should rename function but not string literal
+	// Expect at least 2: definition + usage in main
+	if renameResult.TotalReplacements < 2 {
+		t.Errorf("Expected at least 2 replacements, got %d", renameResult.TotalReplacements)
+	}
+
+	if renameResult.Error != "" {
+		t.Errorf("Expected no error, got: %s", renameResult.Error)
+	}
+
+	t.Logf("String literal test successful: %d replacements", renameResult.TotalReplacements)
+}

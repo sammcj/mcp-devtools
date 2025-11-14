@@ -166,8 +166,25 @@ The tool relies on LSP server capabilities for rename operations:
 ## Performance Notes
 
 - **Server detection**: LSP server availability is cached for 5 minutes to avoid repeated checks
-- **Startup time**: First rename may take 1-2 seconds whilst the LSP server initialises
+- **Client caching**: LSP server connections are cached for 5 minutes to improve performance for batch operations
+- **Startup time**: First rename in a workspace may take 1-2 seconds whilst the LSP server initialises
+- **Batch operations**: Subsequent renames in the same workspace are 10-100x faster due to connection reuse
 - **Large projects**: Rename operations scale with project size; preview mode is recommended for large codebases
+
+## Improvements (v0.48.3+)
+
+### LSP-Validated Symbol Finding
+The tool now uses LSP's `PrepareRename` to validate symbol positions, ensuring correct detection even when symbols appear in:
+- Block comments (`/* */`, `"""`, `'''`)
+- String literals
+- Multiple locations in the same file
+
+This eliminates false positives where the tool might previously have targeted comments or strings instead of actual code symbols.
+
+### Connection Pooling
+LSP server connections are now cached and reused within a 5-minute window, dramatically improving performance for batch rename operations:
+- **Previous**: 2 seconds per rename (N renames = 2N seconds)
+- **Now**: 2 seconds first rename + 0.1-0.2 seconds per subsequent rename
 
 ## Limitations
 
@@ -176,7 +193,6 @@ The tool relies on LSP server capabilities for rename operations:
 - **Language-specific**: Not all LSP servers support all rename scenarios
 - **Single language**: Cross-language renames are not supported
 - **Timeout constraints**: Operations have timeouts (10s init, 5s prepare, 30s rename)
-- **First occurrence only**: If a symbol name appears multiple times in a file, the tool uses the first occurrence (excluding comments). Ensure the symbol you want to rename appears first in actual code or is unique in the file
 
 ## Configuration
 

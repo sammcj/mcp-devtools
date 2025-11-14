@@ -52,6 +52,7 @@ type LSPClient struct {
 	logger       *logrus.Logger
 	serverCancel context.CancelFunc
 	openDocs     map[string]bool
+	docVersions  map[string]int32 // Track document versions for didChange
 	docMu        sync.Mutex
 }
 
@@ -124,6 +125,7 @@ func NewLSPClient(ctx context.Context, logger *logrus.Logger, server *LanguageSe
 		logger:       logger,
 		serverCancel: serverCancel,
 		openDocs:     make(map[string]bool),
+		docVersions:  make(map[string]int32),
 	}
 
 	// Start the message pump with a handler for server->client messages
@@ -193,12 +195,17 @@ func (c *LSPClient) openDocument(ctx context.Context, filePath string) error {
 
 	// Check if document is already open to avoid protocol violations
 	c.docMu.Lock()
-	defer c.docMu.Unlock()
+	alreadyOpen := c.openDocs[fileURI]
+	c.docMu.Unlock()
 
-	if c.openDocs[fileURI] {
-		c.logger.WithField("uri", fileURI).Debug("Document already open, skipping didOpen")
-		return nil
+	if alreadyOpen {
+		c.logger.WithField("uri", fileURI).Debug("Document already open, syncing instead")
+		// Document already open - sync it to ensure LSP has latest content
+		return c.SyncDocument(ctx, filePath)
 	}
+
+	c.docMu.Lock()
+	defer c.docMu.Unlock()
 
 	// Security: Check file access permission
 	if err := security.CheckFileAccess(filePath); err != nil {
@@ -223,9 +230,67 @@ func (c *LSPClient) openDocument(ctx context.Context, filePath string) error {
 		return err
 	}
 
-	// Mark document as open
+	// Mark document as open and set initial version
 	c.openDocs[fileURI] = true
+	c.docVersions[fileURI] = 1
 	c.logger.WithField("uri", fileURI).Debug("Document opened")
+
+	return nil
+}
+
+// SyncDocument sends textDocument/didChange to update the LSP server's view of a file
+// This should be called after modifying files to keep the LSP server in sync
+func (c *LSPClient) SyncDocument(ctx context.Context, filePath string) error {
+	fileURI := pathToURI(filePath)
+
+	c.docMu.Lock()
+	defer c.docMu.Unlock()
+
+	// Only sync if document is open
+	if !c.openDocs[fileURI] {
+		c.logger.WithField("uri", fileURI).Debug("Document not open, skipping sync")
+		return nil
+	}
+
+	// Security: Check file access permission
+	if err := security.CheckFileAccess(filePath); err != nil {
+		return fmt.Errorf("access denied: %w", err)
+	}
+
+	// Read current file content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Increment version
+	c.docVersions[fileURI]++
+	version := c.docVersions[fileURI]
+
+	// Send didChange with full document content
+	params := &protocol.DidChangeTextDocumentParams{
+		TextDocument: protocol.VersionedTextDocumentIdentifier{
+			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
+				URI: protocol.DocumentURI(fileURI),
+			},
+			Version: version,
+		},
+		ContentChanges: []protocol.TextDocumentContentChangeEvent{
+			{
+				// Full document sync - replace entire content
+				Text: string(content),
+			},
+		},
+	}
+
+	if err := c.conn.Notify(ctx, "textDocument/didChange", params); err != nil {
+		return fmt.Errorf("failed to send didChange: %w", err)
+	}
+
+	c.logger.WithFields(logrus.Fields{
+		"uri":     fileURI,
+		"version": version,
+	}).Debug("Document synchronized with LSP server")
 
 	return nil
 }

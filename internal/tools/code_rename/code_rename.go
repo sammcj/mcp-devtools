@@ -177,33 +177,6 @@ type symbolPosition struct {
 	column int
 }
 
-// findSymbolPosition locates a symbol in the file and returns its position
-// If line and column are provided (both > 0), validates the position contains the symbol
-// Otherwise, searches for the first occurrence of the symbol
-func findSymbolPosition(absPath, oldName string, line, column int) (*symbolPosition, error) {
-	if line > 0 && column > 0 {
-		// Position provided - validate it contains the symbol
-		if err := validateSymbolAtPosition(absPath, oldName, line, column); err != nil {
-			return nil, err
-		}
-		return &symbolPosition{
-			line:   line,
-			column: column,
-		}, nil
-	}
-
-	// No position provided - search for symbol
-	foundLine, foundColumn, err := findSymbolInFile(absPath, oldName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find symbol '%s' in file: %w", oldName, err)
-	}
-
-	return &symbolPosition{
-		line:   foundLine,
-		column: foundColumn,
-	}, nil
-}
-
 // validateSymbolAtPosition checks that the given position contains the specified symbol
 func validateSymbolAtPosition(filePath, symbolName string, line, column int) error {
 	content, err := os.ReadFile(filePath)
@@ -241,30 +214,53 @@ func validateSymbolAtPosition(filePath, symbolName string, line, column int) err
 }
 
 // performLSPRename executes the rename operation using LSP client
-func performLSPRename(ctx context.Context, logger *logrus.Logger, params *renameParams, pos *symbolPosition) (*protocol.WorkspaceEdit, error) {
-	// Find LSP server for this language
-	server, err := FindServerForLanguage(ctx, logger, params.language)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find LSP server: %w", err)
-	}
+// If existingClient is provided, it will be reused; otherwise a new client is created
+func performLSPRename(
+	ctx context.Context,
+	logger *logrus.Logger,
+	cache *sync.Map,
+	params *renameParams,
+	pos *symbolPosition,
+	existingClient *LSPClient,
+) (*protocol.WorkspaceEdit, error) {
+	var client *LSPClient
+	var err error
+	var shouldClose bool
 
-	if server == nil {
-		availableLangs := GetAvailableLanguages(ctx, logger)
-		installCmd := getInstallCommand(params.language)
-		if len(availableLangs) > 0 {
-			return nil, fmt.Errorf("no LSP server available for %s (available languages: %v). Install command: %s", params.language, availableLangs, installCmd)
+	if existingClient != nil {
+		// Reuse provided client
+		client = existingClient
+		shouldClose = false
+		logger.Debug("Reusing existing LSP client")
+	} else {
+		// Find LSP server for this language
+		server, err := FindServerForLanguage(ctx, logger, params.language)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find LSP server: %w", err)
 		}
-		return nil, fmt.Errorf("no LSP server available for %s. Install command: %s", params.language, installCmd)
+
+		if server == nil {
+			availableLangs := GetAvailableLanguages(ctx, logger)
+			installCmd := getInstallCommand(params.language)
+			if len(availableLangs) > 0 {
+				return nil, fmt.Errorf("no LSP server available for %s (available languages: %v). Install command: %s", params.language, availableLangs, installCmd)
+			}
+			return nil, fmt.Errorf("no LSP server available for %s. Install command: %s", params.language, installCmd)
+		}
+
+		logger.WithField("server", server.Command).Debug("Found LSP server")
+
+		// Get or create cached LSP client
+		client, err = getOrCreateLSPClient(ctx, logger, cache, server, params.absPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get LSP client: %w", err)
+		}
+		shouldClose = false // Don't close cached clients
 	}
 
-	logger.WithField("server", server.Command).Debug("Found LSP server")
-
-	// Create LSP client
-	client, err := NewLSPClient(ctx, logger, server, params.absPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create LSP client: %w", err)
+	if shouldClose {
+		defer client.Close()
 	}
-	defer client.Close()
 
 	// Prepare rename to get current symbol name
 	symbol, err := client.PrepareRename(ctx, params.absPath, pos.line, pos.column)
@@ -291,10 +287,47 @@ func (t *CodeRenameTool) Execute(ctx context.Context, logger *logrus.Logger, cac
 		return nil, err
 	}
 
-	// Find symbol position
-	pos, err := findSymbolPosition(params.absPath, params.oldName, params.line, params.column)
-	if err != nil {
-		return nil, err
+	var pos *symbolPosition
+	var client *LSPClient
+
+	// If position is provided, use it directly
+	if params.line > 0 && params.column > 0 {
+		// Position provided - validate it contains the symbol
+		if err := validateSymbolAtPosition(params.absPath, params.oldName, params.line, params.column); err != nil {
+			return nil, err
+		}
+		pos = &symbolPosition{
+			line:   params.line,
+			column: params.column,
+		}
+	} else {
+		// Need to find symbol position - create LSP client for accurate symbol detection
+		server, err := FindServerForLanguage(ctx, logger, params.language)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find LSP server: %w", err)
+		}
+
+		if server == nil {
+			availableLangs := GetAvailableLanguages(ctx, logger)
+			installCmd := getInstallCommand(params.language)
+			if len(availableLangs) > 0 {
+				return nil, fmt.Errorf("no LSP server available for %s (available languages: %v). Install command: %s", params.language, availableLangs, installCmd)
+			}
+			return nil, fmt.Errorf("no LSP server available for %s. Install command: %s", params.language, installCmd)
+		}
+
+		// Get or create cached LSP client
+		client, err = getOrCreateLSPClient(ctx, logger, cache, server, params.absPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create LSP client: %w", err)
+		}
+		// Don't close client - it's cached
+
+		// Use LSP-validated symbol search
+		pos, err = findSymbolPositionWithLSP(ctx, logger, client, params.absPath, params.oldName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	logger.WithFields(logrus.Fields{
@@ -308,8 +341,8 @@ func (t *CodeRenameTool) Execute(ctx context.Context, logger *logrus.Logger, cac
 
 	logger.WithField("language", params.language).Debug("Detected language")
 
-	// Perform LSP rename operation
-	workspaceEdit, err := performLSPRename(ctx, logger, params, pos)
+	// Perform LSP rename operation (passing client if we created one for symbol finding)
+	workspaceEdit, err := performLSPRename(ctx, logger, cache, params, pos, client)
 	if err != nil {
 		return nil, err
 	}
@@ -347,6 +380,26 @@ func (t *CodeRenameTool) Execute(ctx context.Context, logger *logrus.Logger, cac
 		} else if applyResult != nil {
 			// Success - merge apply result
 			result.Applied = applyResult.Applied
+
+			// Synchronise modified files with LSP server if we have a client
+			if client != nil {
+				logger.Debug("Synchronising modified files with LSP server")
+
+				// Get list of modified files from workspace edit
+				modifiedFiles := getModifiedFiles(workspaceEdit)
+
+				for _, filePath := range modifiedFiles {
+					if err := client.SyncDocument(ctx, filePath); err != nil {
+						logger.WithFields(logrus.Fields{
+							"file":  filePath,
+							"error": err,
+						}).Warn("Failed to sync document with LSP server")
+						// Don't fail the entire operation, just log the warning
+					}
+				}
+
+				logger.WithField("files_synced", len(modifiedFiles)).Debug("LSP synchronisation complete")
+			}
 		}
 	}
 
@@ -437,60 +490,105 @@ func (t *CodeRenameTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	}
 }
 
-// findSymbolInFile searches for a symbol by name in a file
-// Returns 1-based line and column numbers
-func findSymbolInFile(filePath, symbolName string) (int, int, error) {
+// getModifiedFiles extracts the list of files modified in a workspace edit
+func getModifiedFiles(edit *protocol.WorkspaceEdit) []string {
+	fileSet := make(map[string]bool)
+
+	// Handle legacy Changes format
+	for uriStr := range edit.Changes {
+		filePath := uriToPath(string(uriStr))
+		fileSet[filePath] = true
+	}
+
+	// Handle modern DocumentChanges format
+	for _, textDocEdit := range edit.DocumentChanges {
+		filePath := uriToPath(string(textDocEdit.TextDocument.URI))
+		fileSet[filePath] = true
+	}
+
+	// Convert set to slice
+	files := make([]string, 0, len(fileSet))
+	for file := range fileSet {
+		files = append(files, file)
+	}
+
+	return files
+}
+
+// findSymbolPositionWithLSP uses LSP to find and validate symbol positions
+// This is more accurate than regex as LSP understands language syntax
+func findSymbolPositionWithLSP(
+	ctx context.Context,
+	logger *logrus.Logger,
+	client *LSPClient,
+	filePath string,
+	symbolName string,
+) (*symbolPosition, error) {
+	// Read file to find candidate positions
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to read file: %w", err)
+		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
 	lines := strings.Split(string(content), "\n")
-
-	// Search for the symbol as a word boundary match
-	// This prevents matching "foo" inside "foobar"
-	symbolPattern := regexp.MustCompile(`\b` + regexp.QuoteMeta(symbolName) + `\b`)
-
-	// Simple comment detection patterns for common languages
-	lineCommentPatterns := []*regexp.Regexp{
-		regexp.MustCompile(`^\s*//`), // Go, JavaScript, TypeScript, Rust, etc.
-		regexp.MustCompile(`^\s*#`),  // Python, Bash, etc.
-		regexp.MustCompile(`^\s*--`), // SQL, Lua, etc.
+	symbolPattern, err := regexp.Compile(`\b` + regexp.QuoteMeta(symbolName) + `\b`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile regex pattern: %w", err)
 	}
 
+	// Find all candidate positions
+	var candidates []symbolPosition
 	for lineIdx, line := range lines {
-		// Skip lines that start with common comment markers
-		isComment := false
-		for _, commentPattern := range lineCommentPatterns {
-			if commentPattern.MatchString(line) {
-				isComment = true
-				break
-			}
-		}
-		if isComment {
-			continue
-		}
-
-		// Also skip matches that appear after // or # on the same line
-		// Find the symbol match
-		match := symbolPattern.FindStringIndex(line)
-		if match != nil {
-			// Check if this match is in a comment on the same line
-			commentStart := strings.Index(line, "//")
-			if commentStart == -1 {
-				commentStart = strings.Index(line, "#")
-			}
-
-			// If there's a comment and the match is after it, skip this line
-			if commentStart != -1 && match[0] >= commentStart {
-				continue
-			}
-
-			return lineIdx + 1, match[0] + 1, nil // Convert to 1-based
+		matches := symbolPattern.FindAllStringIndex(line, -1)
+		for _, match := range matches {
+			candidates = append(candidates, symbolPosition{
+				line:   lineIdx + 1,  // Convert to 1-based
+				column: match[0] + 1, // Convert to 1-based
+			})
 		}
 	}
 
-	return 0, 0, fmt.Errorf("symbol '%s' not found in file", symbolName)
+	if len(candidates) == 0 {
+		return nil, fmt.Errorf("symbol '%s' not found in file", symbolName)
+	}
+
+	logger.WithFields(logrus.Fields{
+		"symbol":     symbolName,
+		"candidates": len(candidates),
+	}).Debug("Found symbol candidates, validating with LSP")
+
+	// Open document in LSP
+	if err := client.openDocument(ctx, filePath); err != nil {
+		return nil, fmt.Errorf("failed to open document: %w", err)
+	}
+
+	// Try each candidate with PrepareRename
+	for i, candidate := range candidates {
+		symbol, err := client.PrepareRename(ctx, filePath, candidate.line, candidate.column)
+
+		if err == nil && symbol != "" {
+			// Found valid renameable symbol
+			logger.WithFields(logrus.Fields{
+				"symbol":    symbol,
+				"line":      candidate.line,
+				"column":    candidate.column,
+				"candidate": i + 1,
+				"total":     len(candidates),
+			}).Debug("Found valid renameable symbol via LSP")
+
+			return &candidate, nil
+		}
+
+		// PrepareRename failed - not a valid symbol (comment, string, etc.)
+		logger.WithFields(logrus.Fields{
+			"line":      candidate.line,
+			"column":    candidate.column,
+			"candidate": i + 1,
+			"error":     err,
+		}).Debug("LSP rejected candidate position")
+	}
+
+	return nil, fmt.Errorf("symbol '%s' found %d time(s) in file but none at renameable positions (may be in comments or strings)", symbolName, len(candidates))
 }
 
 // validateIdentifierName checks if a name is a valid identifier
