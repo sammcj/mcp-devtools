@@ -26,6 +26,7 @@ import (
 
 	// Import all tool packages to register them
 	_ "github.com/sammcj/mcp-devtools/internal/imports"
+	coderename "github.com/sammcj/mcp-devtools/internal/tools/code_rename"
 )
 
 // Version information (set during build)
@@ -96,6 +97,10 @@ func main() {
 				logger.WithError(err).Warn("Failed to close tool error logger")
 			}
 		}
+
+		// Stop LSP client cleanup routine and close all cached LSP clients
+		coderename.StopCleanupRoutine(registry.GetCache(), logger)
+
 		// Import the docprocessing package to access cleanup function
 		// We can't import it at the top level due to circular dependencies
 		// So we'll use a simple approach - the OS will clean up temp files anyway

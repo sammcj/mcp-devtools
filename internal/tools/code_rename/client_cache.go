@@ -72,6 +72,32 @@ func startCleanupRoutine(cache *sync.Map, logger *logrus.Logger) {
 	})
 }
 
+// StopCleanupRoutine stops the background cleanup routine and closes all cached LSP clients
+// Should be called during server shutdown to prevent goroutine leaks
+func StopCleanupRoutine(cache *sync.Map, logger *logrus.Logger) {
+	// Stop the background cleanup goroutine
+	if cleanupStop != nil {
+		close(cleanupStop)
+		cleanupStop = nil
+	}
+
+	// Close all remaining cached clients
+	if cache != nil {
+		cache.Range(func(key, value any) bool {
+			if c, ok := value.(*cachedLSPClient); ok {
+				c.mu.Lock()
+				if c.client != nil {
+					logger.WithField("language", c.language).Debug("Closing LSP client during shutdown")
+					c.client.Close()
+				}
+				c.mu.Unlock()
+				cache.Delete(key)
+			}
+			return true
+		})
+	}
+}
+
 // getOrCreateLSPClient retrieves a cached LSP client or creates a new one
 // Clients are cached for a fixed 1 minute from creation (not extended on reuse) to improve performance for batch operations
 func getOrCreateLSPClient(
