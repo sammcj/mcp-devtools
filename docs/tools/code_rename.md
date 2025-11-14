@@ -166,10 +166,10 @@ The tool relies on LSP server capabilities for rename operations:
 
 ## Performance
 
-- **Server detection**: LSP server availability is cached for 5 minutes to avoid repeated checks
-- **Client caching**: LSP server connections are cached for 5 minutes and reused for batch operations
+- **Server detection**: LSP server availability is cached to avoid repeated checks
+- **Client caching**: LSP server connections are cached for 1 minute and reused for batch operations
 - **Startup time**: First rename in a workspace takes 1-2 seconds while the LSP server initialises
-- **Batch operations**: Subsequent renames in the same workspace are 10-100x faster due to connection reuse
+- **Batch operations**: Subsequent renames in the same workspace within 1 minute are significantly faster due to connection reuse
 - **Large projects**: Rename operations scale with project size; preview mode is recommended for large codebases
 
 ## Limitations

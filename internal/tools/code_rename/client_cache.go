@@ -25,7 +25,7 @@ func cacheKey(language, workspaceRoot string) string {
 }
 
 // getOrCreateLSPClient retrieves a cached LSP client or creates a new one
-// Clients are cached for 5 minutes to improve performance for batch operations
+// Clients are cached for 1 minute to improve performance for batch operations
 func getOrCreateLSPClient(
 	ctx context.Context,
 	logger *logrus.Logger,
@@ -47,9 +47,9 @@ func getOrCreateLSPClient(
 			cachedClient.mu.Lock()
 			defer cachedClient.mu.Unlock()
 
-			// Check if still valid (< 5 minutes old)
+			// Check if still valid (< 1 minute old)
 			age := time.Since(cachedClient.createdAt)
-			if age < 5*time.Minute {
+			if age < 1*time.Minute {
 				// Check if client connection is still alive
 				if cachedClient.client != nil && cachedClient.client.conn != nil {
 					cachedClient.lastUsed = time.Now()
@@ -90,9 +90,9 @@ func getOrCreateLSPClient(
 	}
 	cache.Store(key, cached)
 
-	// Start cleanup goroutine for this client
+	// Start cleanup goroutine for this client (1 minute lifetime, no extensions)
 	go func() {
-		time.Sleep(5 * time.Minute)
+		time.Sleep(1 * time.Minute)
 
 		// Check if still in cache and expired
 		if stillCached, ok := cache.Load(key); ok {
@@ -101,7 +101,7 @@ func getOrCreateLSPClient(
 				defer c.mu.Unlock()
 
 				// Only close if not used recently
-				if time.Since(c.lastUsed) >= 5*time.Minute {
+				if time.Since(c.lastUsed) >= 1*time.Minute {
 					logger.WithFields(logrus.Fields{
 						"language": server.Language,
 						"age":      time.Since(c.createdAt).Round(time.Second).String(),
@@ -111,27 +111,9 @@ func getOrCreateLSPClient(
 						c.client.Close()
 					}
 					cache.Delete(key)
-				} else {
-					// Still in use, schedule another check
-					logger.WithField("language", server.Language).Debug("LSP client still in use, extending lifetime")
-					go func() {
-						time.Sleep(5 * time.Minute)
-						// This will recursively check and potentially extend again
-						if stillCached2, ok := cache.Load(key); ok {
-							if c2, ok := stillCached2.(*cachedLSPClient); ok {
-								c2.mu.Lock()
-								defer c2.mu.Unlock()
-								if time.Since(c2.lastUsed) >= 5*time.Minute {
-									logger.WithField("language", server.Language).Debug("Closing extended LSP client")
-									if c2.client != nil {
-										c2.client.Close()
-									}
-									cache.Delete(key)
-								}
-							}
-						}
-					}()
 				}
+				// Note: No lifetime extension to prevent goroutine accumulation
+				// If client is still needed, a new one will be created on next use
 			}
 		}
 	}()
