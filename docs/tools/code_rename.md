@@ -172,10 +172,13 @@ The tool relies on LSP server capabilities for rename operations:
 - **Batch operations**: Subsequent renames in the same workspace within 1 minute are significantly faster due to connection reuse
 - **Large projects**: Rename operations scale with project size; preview mode is recommended for large codebases
 
+## Features
+
+- **Atomic operations with automatic rollback**: Rename operations are applied atomically across multiple files. If an error occurs during the process, changes are automatically rolled back to maintain consistency. Backup files are preserved for debugging in case of rollback failures.
+
 ## Limitations
 
 - **LSP server required**: Each language needs its LSP server installed
-- **Atomic operations with rollback**: Rename operations are applied atomically across multiple files. If an error occurs during the process, changes are automatically rolled back to maintain consistency. Backup files are kept in case of rollback failures
 - **Language-specific**: Not all LSP servers support all rename scenarios
 - **Single language**: Cross-language renames are not supported
 - **Timeout constraints**: Operations have timeouts (10s init, 5s prepare, 30s rename)
