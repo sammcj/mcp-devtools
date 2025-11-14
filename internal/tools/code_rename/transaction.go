@@ -126,8 +126,17 @@ func (tx *RenameTransaction) BackupFile(filePath string) error {
 
 // ApplyWithTracking applies edits to a file and tracks the modification
 func (tx *RenameTransaction) ApplyWithTracking(filePath string, edits []protocol.TextEdit) error {
-	// Note: Large file size check (>2MB) could be added here if needed
-	// Current implementation handles all file sizes - checksums provide safety
+	// Check file size to prevent memory exhaustion (2MB limit for source files)
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to stat file: %w", err)
+	}
+
+	const maxFileSize = 2 * 1024 * 1024 // 2MB
+	if fileInfo.Size() > maxFileSize {
+		return fmt.Errorf("file too large: %s (%.1fMB) exceeds maximum size of 2MB for rename operations",
+			filePath, float64(fileInfo.Size())/(1024*1024))
+	}
 
 	// Backup file before modification
 	if err := tx.BackupFile(filePath); err != nil {
