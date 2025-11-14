@@ -47,10 +47,10 @@ func startCleanupRoutine(cache *sync.Map, logger *logrus.Logger) {
 						if c, ok := value.(*cachedLSPClient); ok {
 							c.mu.Lock()
 							// Close clients that haven't been used in the last minute
-							if time.Since(c.createdAt) >= 1*time.Minute {
+							if time.Since(c.lastUsed) >= 1*time.Minute {
 								logger.WithFields(logrus.Fields{
 									"language": c.language,
-									"age":      time.Since(c.createdAt).Round(time.Second).String(),
+									"idle":     time.Since(c.lastUsed).Round(time.Second).String(),
 								}).Debug("Cleanup routine closing expired LSP client")
 
 								if c.client != nil {

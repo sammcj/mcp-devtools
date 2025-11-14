@@ -57,7 +57,7 @@ pnpm install -g yaml-language-server
 brew install llvm  # macOS
 apt install clangd # Linux
 
-# Java (but let's be honest - a better option would be to rewrite it in another language)
+# Java
 brew install jdtls # macOS
 
 # Swift
