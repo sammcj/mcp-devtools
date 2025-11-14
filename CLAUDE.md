@@ -107,6 +107,7 @@ All tools follow this pattern:
 - Unit tests for tools should be located within the tests/tools/ directory, and should be named <toolname>_test.go.
 - We should be mindful of the risks of code injection and other security risks when parsing any information from external sources.
 - On occasion the user may ask you to build a new tool and provide reference code or information in a provided directory such as `tmp_repo_clones/<dirname>` unless specified otherwise this should only be used for reference and learning purposes, we don't ever want to use code that directory as part of the project's codebase.
+- After making changes and performing a build if you need to test the MCP server with the updated changes you MUST either test it from the command line - or STOP and ask the user to restart the MCP client otherwise you won't pickup the latest changes
 - When creating new MCP tools make sure descriptions are clear and concise as they are what is used as hints to the AI coding agent using the tool, you should also make good use of MCP's annotations.
 - The mcp-go package documentation contains useful examples of using the package which you can lookup when asked to implement specific MCP features https://mcp-go.dev/servers/tools
 

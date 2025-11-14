@@ -2,6 +2,7 @@ package code_rename
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -40,7 +41,7 @@ func (t *CodeRenameTool) Definition() mcp.Tool {
 	if len(availableLangs) > 0 {
 		description += " Supports: " + strings.Join(availableLangs, ", ")
 	} else {
-		description += " No LSP servers detected - install language servers to enable renaming." // This should never occur as the tool should not be registered
+		description += " No LSP servers detected - install language servers to enable renaming."
 	}
 
 	return mcp.NewTool(
@@ -758,7 +759,7 @@ func applyWorkspaceEdit(edit *protocol.WorkspaceEdit) (*RenameResult, error) {
 
 		if rollbackErr != nil {
 			result.RollbackSuccessful = false
-			return result, fmt.Errorf("apply failed and rollback had errors: %v (original error: %w)", rollbackErr, applyErr)
+			return result, errors.Join(fmt.Errorf("apply failed: %w", applyErr), fmt.Errorf("rollback had errors: %w", rollbackErr))
 		}
 
 		result.RollbackSuccessful = true

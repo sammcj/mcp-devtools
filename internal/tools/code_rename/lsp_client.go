@@ -148,7 +148,7 @@ func NewLSPClient(ctx context.Context, logger *logrus.Logger, server *LanguageSe
 	}
 	conn.Go(context.Background(), handler)
 
-	// Initialize the LSP connection
+	// Initialise the LSP connection
 	if err := client.initialize(ctx); err != nil {
 		client.Close()
 		return nil, fmt.Errorf("failed to initialise LSP: %w", err)
@@ -157,8 +157,8 @@ func NewLSPClient(ctx context.Context, logger *logrus.Logger, server *LanguageSe
 	return client, nil
 }
 
-// initialize sends the initialize request to the LSP server
-func (c *LSPClient) initialize(ctx context.Context) error {
+// initialise sends the initialise request to the LSP server
+func (c *LSPClient) initialize(_ context.Context) error {
 	// Use timeout context derived from Background() for consistency with message pump
 	initCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -176,13 +176,13 @@ func (c *LSPClient) initialize(ctx context.Context) error {
 	}
 
 	var result protocol.InitializeResult
-	if _, err := c.conn.Call(initCtx, "initialize", initParams, &result); err != nil {
-		return fmt.Errorf("initialize failed: %w", err)
+	if _, err := c.conn.Call(initCtx, "initialise", initParams, &result); err != nil {
+		return fmt.Errorf("initialise failed: %w", err)
 	}
 
-	// Send initialized notification
-	if err := c.conn.Notify(initCtx, "initialized", &protocol.InitializedParams{}); err != nil {
-		return fmt.Errorf("initialized notification failed: %w", err)
+	// Send initialised notification
+	if err := c.conn.Notify(initCtx, "initialised", &protocol.InitializedParams{}); err != nil {
+		return fmt.Errorf("initialised notification failed: %w", err)
 	}
 
 	c.logger.WithField("server", c.server.Command).Debug("LSP server initialised")
@@ -290,7 +290,7 @@ func (c *LSPClient) SyncDocument(ctx context.Context, filePath string) error {
 	c.logger.WithFields(logrus.Fields{
 		"uri":     fileURI,
 		"version": version,
-	}).Debug("Document synchronized with LSP server")
+	}).Debug("Document synchronised with LSP server")
 
 	return nil
 }
@@ -395,6 +395,10 @@ func (c *LSPClient) Close() (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			c.logger.WithField("panic", r).Error("Panic during LSP client close, attempting cleanup")
+			// Cancel context if not already done
+			if c.serverCancel != nil {
+				c.serverCancel()
+			}
 			// Still try to kill the process
 			if c.cmd != nil && c.cmd.Process != nil {
 				_ = c.cmd.Process.Kill()

@@ -101,7 +101,7 @@ func FindServerForLanguage(ctx context.Context, logger *logrus.Logger, language 
 }
 
 // isCommandAvailable checks if a command is available in PATH
-func isCommandAvailable(ctx context.Context, command string) bool {
+func isCommandAvailable(_ context.Context, command string) bool {
 	// Use exec.LookPath which is portable and doesn't require external commands
 	_, err := exec.LookPath(command)
 	return err == nil

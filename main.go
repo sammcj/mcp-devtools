@@ -319,7 +319,7 @@ func main() {
 					logger.WithError(err).Warn("Failed to initialise security system")
 				}
 			} else {
-				logger.Debug("Security system initialized successfully")
+				logger.Debug("Security system initialised successfully")
 			}
 
 			// Only log startup info for non-stdio transports

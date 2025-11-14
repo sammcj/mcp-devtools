@@ -175,7 +175,7 @@ The tool relies on LSP server capabilities for rename operations:
 ## Limitations
 
 - **LSP server required**: Each language needs its LSP server installed
-- **No rollback**: If applying changes fails partway through multiple files, some files may be modified whilst others aren't, potentially leaving the codebase in an inconsistent state. Always commit before using `preview: false`
+- **Atomic operations with rollback**: Rename operations are applied atomically across multiple files. If an error occurs during the process, changes are automatically rolled back to maintain consistency. Backup files are kept in case of rollback failures
 - **Language-specific**: Not all LSP servers support all rename scenarios
 - **Single language**: Cross-language renames are not supported
 - **Timeout constraints**: Operations have timeouts (10s init, 5s prepare, 30s rename)
