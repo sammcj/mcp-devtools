@@ -360,7 +360,7 @@ func InitGlobalSecurityManager() error {
 	globalManagerMutex.Lock()
 	defer globalManagerMutex.Unlock()
 
-	// Check if already initialised to avoid double initialization
+	// Check if already initialised to avoid double initialisation
 	if GlobalSecurityManager != nil {
 		logrus.Debug("Security system already initialised, skipping")
 		return nil
