@@ -151,7 +151,7 @@ func newParser(expression string) *parser {
 		expression: expression,
 		position:   0,
 	}
-	p.advance() // Initialize current character
+	p.advance() // Initialise current character
 	return p
 }
 

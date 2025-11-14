@@ -103,6 +103,7 @@ func requiresEnablement(toolName string) bool {
 		"murican_to_english",
 		"excel",
 		"code_skim",
+		"code_rename",
 	}
 
 	// Normalise the tool name (lowercase, replace underscores with hyphens)

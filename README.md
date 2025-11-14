@@ -48,7 +48,7 @@ graph LR
 
     E --> E_Tools[🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
-    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem<br>✂️ Code Skim]
+    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem<br>✂️ Code Skim<br>🏷️ Code Rename]
 
     G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
@@ -160,50 +160,51 @@ See below for various environment variables you can set to configure specific fe
 
 These tools can be disabled by adding their function name to the `DISABLED_TOOLS` environment variable in your MCP configuration.
 
-| Tool                                                             | Purpose                               | Dependencies                  | Example Usage                   |
-|------------------------------------------------------------------|---------------------------------------|-------------------------------|---------------------------------|
-| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider internet search        | None (Provider keys optional) | Web, image, news, video search  |
-| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve internet content as Markdown | None                          | Documentation and articles      |
-| **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data          | None (GitHub token optional)  | Issues, PRs, repos, cloning     |
-| **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, mark3labs/mcp-go         |
-| **[Package Search](docs/tools/package-search.md)**               | Check package versions                | None                          | NPM, Python, Go, Java, Docker   |
-| **[Think](docs/tools/think.md)**                                 | Structured reasoning space            | None                          | Complex problem analysis        |
-| **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations         | None                          | 2 + 3 * 4, batch processing     |
-| **[DevTools Help](docs/tools/get_tool_help.md)**                 | Extended info about DevTools tools    | None                          | Usage examples, troubleshooting |
-| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    |                               | Find files over 700 lines       |
+| Tool                                                             | Purpose                               | Dependencies                  | Example Usage                   | Maturity |
+|------------------------------------------------------------------|---------------------------------------|-------------------------------|---------------------------------|----------|
+| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider internet search        | None (Provider keys optional) | Web, image, news, video search  | 🟢       |
+| **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve internet content as Markdown | None                          | Documentation and articles      | 🟢       |
+| **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data          | None (GitHub token optional)  | Issues, PRs, repos, cloning     | 🟢       |
+| **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, mark3labs/mcp-go         | 🟢       |
+| **[Package Search](docs/tools/package-search.md)**               | Check package versions                | None                          | NPM, Python, Go, Java, Docker   | 🟢       |
+| **[Think](docs/tools/think.md)**                                 | Structured reasoning space            | None                          | Complex problem analysis        | 🟢       |
+| **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations         | None                          | 2 + 3 * 4, batch processing     | 🟢       |
+| **[DevTools Help](docs/tools/get_tool_help.md)**                 | Extended info about DevTools tools    | None                          | Usage examples, troubleshooting | 🟢       |
+| **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    |                               | Find files over 700 lines       | 🟢       |
 
 ### Additional Tools (Disabled By Default)
 
 These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment variable in your MCP configuration.
 
-| Tool                                                                 | Purpose                                                            | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                               |
-|----------------------------------------------------------------------|--------------------------------------------------------------------|---------------------------|---------------------------------------------|
-| **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                                        | `murican_to_english`      | Organise, colour, centre                    |
-| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details               | `code_skim`               | Reduced token consumption                   |
-| **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                              | `shadcn`                  | Button, Dialog, Form components             |
-| **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                         | `magic_ui`                | 74+ animated React components               |
-| **[Aceternity UI Component Library](docs/tools/aceternityui.md)**    | Animated component library                                         | `aceternity_ui`           | 24+ animated React components               |
-| **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            |
-| **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                                      | `process_document`        | PDF, DOCX → Markdown with OCR               |
-| **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                           | `pdf`                     | Quick PDF to Markdown                       |
-| **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                            | `excel`                   | Workbooks, charts, pivot tables, formulas   |
-| **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                             | `aws_documentation`       | Search and read AWS docs, recommendations   |
-| **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API access for providers, modules, and policies | `terraform_documentation` | Provider docs, module search, policy lookup |
-| **[Security Framework](docs/security.md)**                           | Context injection security protections                             | `security`                | Content analysis, access control            |
-| **[Security Override](docs/security.md)**                            | Agent managed security warning overrides                           | `security_override`       | Bypass false positives                      |
-| **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts                | `sequential-thinking`     | Step-by-step analysis, revision, branching  |
-| **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                                       | `api`                     | Configure any REST API via YAML             |
-| **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                                      | `filesystem`              | Read, write, edit, search files             |
+| Tool                                                                 | Purpose                                                            | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                               | Maturity |
+|----------------------------------------------------------------------|--------------------------------------------------------------------|---------------------------|---------------------------------------------|----------|
+| **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                                        | `murican_to_english`      | Organise, colour, centre                    | 🟡       |
+| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details               | `code_skim`               | Reduced token consumption                   | 🟡       |
+| **[Code Rename](docs/tools/code_rename.md)**                         | LSP-based symbol renaming across files (Experimental)              | `code_rename`             | Rename functions, variables, types          | 🔴       |
+| **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                              | `shadcn`                  | Button, Dialog, Form components             | 🟢       |
+| **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                         | `magic_ui`                | Frontend React components                   | 🟠       |
+| **[Aceternity UI Component Library](docs/tools/aceternityui.md)**    | Animated component library                                         | `aceternity_ui`           | Frontend React components                   | 🟠       |
+| **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            | 🟡       |
+| **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                                      | `process_document`        | PDF, DOCX → Markdown with OCR               | 🟡       |
+| **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                           | `pdf`                     | Quick PDF to Markdown                       | 🟢       |
+| **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                            | `excel`                   | Workbooks, charts, pivot tables, formulas   | 🟢       |
+| **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                             | `aws_documentation`       | Search and read AWS docs, recommendations   | 🟡       |
+| **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API access for providers, modules, and policies | `terraform_documentation` | Provider docs, module search, policy lookup | 🟡       |
+| **[Security Framework](docs/security.md)**                           | Context injection security protections                             | `security`                | Content analysis, access control            | 🟢       |
+| **[Security Override](docs/security.md)**                            | Agent managed security warning overrides                           | `security_override`       | Bypass false positives                      | 🟡       |
+| **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts                | `sequential-thinking`     | Step-by-step analysis, revision, branching  | 🟢       |
+| **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                                       | `api`                     | Configure any REST API via YAML             | 🔴       |
+| **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                                      | `filesystem`              | Read, write, edit, search files             | 🟡       |
 
 **Agents as Tools** - In addition to the above tools, MCP DevTools can provide access to AI agents as tools by integrating with external LLMs.
 
-| Agent                                                    | Purpose                      | `ENABLE_ADDITIONAL_TOOLS` |
-|----------------------------------------------------------|------------------------------|---------------------------|
-| **[Claude Agent](docs/tools/claude-agent.md)**           | Claude Code CLI Agent        | `claude-agent`            |
-| **[Codex Agent](docs/tools/codex-agent.md)**             | Codex CLI Agent              | `codex-agent`             |
-| **[Copilot Agent](docs/tools/copilot-agent.md)**         | GitHub Copilot CLI Agent     | `copilot-agent`           |
-| **[Gemini Agent](docs/tools/gemini-agent.md)**           | Gemini CLI Agent             | `gemini-agent`            |
-| **[Q Developer Agent](docs/tools/q-developer-agent.md)** | AWS Q Developer CLI Agent    | `q-developer-agent`       |
+| Agent                                                    | Purpose                   | `ENABLE_ADDITIONAL_TOOLS` | Maturity |
+|----------------------------------------------------------|---------------------------|---------------------------|----------|
+| **[Claude Agent](docs/tools/claude-agent.md)**           | Claude Code CLI Agent     | `claude-agent`            | 🟡       |
+| **[Codex Agent](docs/tools/codex-agent.md)**             | Codex CLI Agent           | `codex-agent`             | 🟡       |
+| **[Copilot Agent](docs/tools/copilot-agent.md)**         | GitHub Copilot CLI Agent  | `copilot-agent`           | 🟡       |
+| **[Gemini Agent](docs/tools/gemini-agent.md)**           | Gemini CLI Agent          | `gemini-agent`            | 🟡       |
+| **[Q Developer Agent](docs/tools/q-developer-agent.md)** | AWS Q Developer CLI Agent | `q-developer-agent`       | 🟡       |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 

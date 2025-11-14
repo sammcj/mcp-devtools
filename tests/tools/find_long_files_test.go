@@ -55,7 +55,7 @@ func TestFindLongFilesTool(t *testing.T) {
 	err = os.WriteFile(filepath.Join(tempDir, "ignored.tmp"), []byte(strings.Repeat("line\n", 900)), 0600)
 	require.NoError(t, err)
 
-	// Initialize the tool
+	// Initialise the tool
 	tool := &filelength.FindLongFilesTool{}
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests

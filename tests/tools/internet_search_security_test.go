@@ -47,7 +47,7 @@ func TestInternetSearchSecurityIntegration(t *testing.T) {
 		TrustedDomains: []string{"api.search.brave.com", "html.duckduckgo.com"},
 	}
 
-	// Initialize security manager with test rules
+	// Initialise security manager with test rules
 	securityManager, err := security.NewSecurityManagerWithRules(rules)
 	require.NoError(t, err)
 	t.Logf("Created security manager successfully")
