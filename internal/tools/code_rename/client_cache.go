@@ -25,7 +25,7 @@ func cacheKey(language, workspaceRoot string) string {
 }
 
 // getOrCreateLSPClient retrieves a cached LSP client or creates a new one
-// Clients are cached for 1 minute to improve performance for batch operations
+// Clients are cached for a fixed 1 minute from creation (not extended on reuse) to improve performance for batch operations
 func getOrCreateLSPClient(
 	ctx context.Context,
 	logger *logrus.Logger,
