@@ -266,29 +266,29 @@ func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cac
 	// Execute the requested function
 	switch function {
 	case "read_file":
-		return t.readFile(ctx, logger, ops, options)
+		return t.readFile(logger, ops, options)
 	case "read_multiple_files":
-		return t.readMultipleFiles(ctx, logger, ops, options)
+		return t.readMultipleFiles(logger, ops, options)
 	case "write_file":
-		return t.writeFile(ctx, options)
+		return t.writeFile(options)
 	case "edit_file":
-		return t.editFile(ctx, logger, ops, options)
+		return t.editFile(logger, ops, options)
 	case "create_directory":
-		return t.createDirectory(ctx, options)
+		return t.createDirectory(options)
 	case "list_directory":
-		return t.listDirectory(ctx, options)
+		return t.listDirectory(options)
 	case "list_directory_with_sizes":
-		return t.listDirectoryWithSizes(ctx, options)
+		return t.listDirectoryWithSizes(options)
 	case "directory_tree":
-		return t.directoryTree(ctx, options)
+		return t.directoryTree(options)
 	case "move_file":
-		return t.moveFile(ctx, options)
+		return t.moveFile(options)
 	case "search_files":
-		return t.searchFiles(ctx, options)
+		return t.searchFiles(options)
 	case "get_file_info":
-		return t.getFileInfo(ctx, options)
+		return t.getFileInfo(options)
 	case "list_allowed_directories":
-		return t.listAllowedDirectories(ctx)
+		return t.listAllowedDirectories()
 	default:
 		return nil, fmt.Errorf("unknown function: %s", function)
 	}
@@ -379,7 +379,7 @@ func (t *FileSystemTool) isPathWithinAllowedReal(realPath, allowedClean string) 
 }
 
 // readFile reads the contents of a file
-func (t *FileSystemTool) readFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) readFile(logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -549,7 +549,7 @@ func (t *FileSystemTool) readFileTail(path string, numLines int) (string, error)
 }
 
 // readMultipleFiles reads multiple files simultaneously
-func (t *FileSystemTool) readMultipleFiles(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) readMultipleFiles(logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	pathsRaw, ok := options["paths"]
 	if !ok {
 		return nil, fmt.Errorf("missing required parameter: paths")
@@ -611,7 +611,7 @@ func (t *FileSystemTool) readMultipleFiles(ctx context.Context, logger *logrus.L
 }
 
 // writeFile creates or overwrites a file
-func (t *FileSystemTool) writeFile(ctx context.Context, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) writeFile(options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -657,7 +657,7 @@ func (t *FileSystemTool) writeFile(ctx context.Context, options map[string]any) 
 }
 
 // editFile performs line-based edits on a file
-func (t *FileSystemTool) editFile(ctx context.Context, logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) editFile(logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -803,7 +803,7 @@ func (t *FileSystemTool) createDiff(original, modified, filename string) string 
 }
 
 // createDirectory creates a directory
-func (t *FileSystemTool) createDirectory(ctx context.Context, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) createDirectory(options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -822,7 +822,7 @@ func (t *FileSystemTool) createDirectory(ctx context.Context, options map[string
 }
 
 // listDirectory lists directory contents
-func (t *FileSystemTool) listDirectory(ctx context.Context, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listDirectory(options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -851,7 +851,7 @@ func (t *FileSystemTool) listDirectory(ctx context.Context, options map[string]a
 }
 
 // listDirectoryWithSizes lists directory contents with sizes
-func (t *FileSystemTool) listDirectoryWithSizes(ctx context.Context, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -946,7 +946,7 @@ func (t *FileSystemTool) formatSize(bytes int64) string {
 }
 
 // directoryTree creates a recursive tree view of directories
-func (t *FileSystemTool) directoryTree(ctx context.Context, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) directoryTree(options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1047,7 +1047,7 @@ func (t *FileSystemTool) formatDirectoryTree(entries []DirectoryEntry, indent in
 }
 
 // moveFile moves or renames files and directories
-func (t *FileSystemTool) moveFile(ctx context.Context, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) moveFile(options map[string]any) (*mcp.CallToolResult, error) {
 	source, ok := options["source"].(string)
 	if !ok || source == "" {
 		return nil, fmt.Errorf("missing required parameter: source")
@@ -1081,7 +1081,7 @@ func (t *FileSystemTool) moveFile(ctx context.Context, options map[string]any) (
 }
 
 // searchFiles recursively searches for files matching a pattern
-func (t *FileSystemTool) searchFiles(ctx context.Context, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) searchFiles(options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1166,7 +1166,7 @@ func (t *FileSystemTool) performSearch(rootPath, pattern string, excludePatterns
 }
 
 // getFileInfo retrieves detailed file information
-func (t *FileSystemTool) getFileInfo(ctx context.Context, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) getFileInfo(options map[string]any) (*mcp.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1215,7 +1215,7 @@ func (t *FileSystemTool) getFileInfo(ctx context.Context, options map[string]any
 }
 
 // listAllowedDirectories returns the list of allowed directories
-func (t *FileSystemTool) listAllowedDirectories(ctx context.Context) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listAllowedDirectories() (*mcp.CallToolResult, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 

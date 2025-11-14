@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -11,7 +10,7 @@ import (
 )
 
 // handleFormatRange applies formatting to a cell range
-func handleFormatRange(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleFormatRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -68,7 +67,7 @@ func handleFormatRange(ctx context.Context, logger *logrus.Logger, filePath stri
 
 	// Check for conditional formatting
 	if conditionalFormat, ok := options["conditional_format"].(map[string]any); ok {
-		return applyConditionalFormatting(ctx, logger, f, filePath, sheetName, rangeRef, conditionalFormat)
+		return applyConditionalFormatting(logger, f, filePath, sheetName, rangeRef, conditionalFormat)
 	}
 
 	// Build style from options
@@ -268,7 +267,7 @@ func handleFormatRange(ctx context.Context, logger *logrus.Logger, filePath stri
 }
 
 // applyConditionalFormatting applies conditional formatting rules
-func applyConditionalFormatting(ctx context.Context, logger *logrus.Logger, f *excelize.File, filePath string, sheetName string, rangeRef string, conditionalFormat map[string]any) (*mcp.CallToolResult, error) {
+func applyConditionalFormatting(logger *logrus.Logger, f *excelize.File, filePath string, sheetName string, rangeRef string, conditionalFormat map[string]any) (*mcp.CallToolResult, error) {
 	formatType, ok := conditionalFormat["type"].(string)
 	if !ok {
 		return nil, &ValidationError{

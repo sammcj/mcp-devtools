@@ -111,7 +111,7 @@ func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logg
 
 	// Check for batch processing (sources array)
 	if sources, ok := args["sources"].([]any); ok && len(sources) > 0 {
-		return t.executeBatch(ctx, args, sources)
+		return t.executeBatch(args, sources)
 	}
 
 	// Parse and validate arguments for single document

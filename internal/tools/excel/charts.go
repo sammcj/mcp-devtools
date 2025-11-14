@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -10,7 +9,7 @@ import (
 )
 
 // handleCreateChart creates a chart in the worksheet
-func handleCreateChart(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleCreateChart(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",

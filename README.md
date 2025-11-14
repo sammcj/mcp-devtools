@@ -40,8 +40,9 @@ graph LR
     A --> E[Intelligence &<br>Memory]
     A --> F[Utilities]
     A --> G[Agents]
+    A --> D[UI Component<br>Libraries]
 
-    B --> B_Tools[🎨 ShadCN UI Components<br>📝 Terraform Docs<br>☁️ AWS Doc]
+    B --> B_Tools[📝 Terraform Docs<br>☁️ AWS Doc]
 
     C --> C_Tools[📄 Document Processing<br>📈 Excel Spreadsheets<br>📑 PDF Processing]
 
@@ -51,16 +52,20 @@ graph LR
 
     G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>🅰️ Q Developer]
 
+    D --> D_Tools[🎨 ShadCN UI<br>✨ Magic UI<br>⚡ Aceternity UI]
+
     classDef components fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef llm fill:#E5F5E0,stroke:#31A354,color:#31A354
     classDef process fill:#EAF5EA,stroke:#C6E7C6,color:#77AD77
     classDef data fill:#EFF3FF,stroke:#9ECAE1,color:#3182BD
     classDef decision fill:#FFF5EB,stroke:#FD8D3C,color:#E6550D
     classDef api fill:#FFF5F0,stroke:#FD9272,color:#A63603
+    classDef ui fill:#F3E5F5,stroke:#AB47BC,color:#8E24AA
 
     class A components
     class B,B_Tools decision
     class C,C_Tools api
+    class D,D_Tools ui
     class E,E_Tools data
     class F,F_Tools process
     class G,G_Tools llm
@@ -102,7 +107,7 @@ Assuming you have Golang installed, you can use `go run` (similar to npx / uvx) 
       ],
       "env": {
         "NOTE": "The below environment variables are completely optional, see the README.md for available tools and configuration options",
-        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
+        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn,magic_ui,aceternity_ui",
         "DISABLED_TOOLS": ""
       }
     }
@@ -141,7 +146,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "command": "/path/to/mcp-devtools",
       "env": {
         "NOTE": "The below environment variables are completely optional, see the README.md for available tools and configuration options",
-        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn",
+        "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,shadcn,magic_ui,aceternity_ui",
         "DISABLED_TOOLS": ""
       }
     }
@@ -176,6 +181,8 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                                        | `murican_to_english`      | Organise, colour, centre                    |
 | **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details               | `code_skim`               | Reduced token consumption                   |
 | **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                              | `shadcn`                  | Button, Dialog, Form components             |
+| **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                         | `magic_ui`                | 74+ animated React components               |
+| **[Aceternity UI Component Library](docs/tools/aceternityui.md)**    | Animated component library                                         | `aceternity_ui`           | 24+ animated React components               |
 | **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            |
 | **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                                      | `process_document`        | PDF, DOCX → Markdown with OCR               |
 | **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                           | `pdf`                     | Quick PDF to Markdown                       |
