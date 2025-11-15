@@ -232,7 +232,7 @@ func TestUnifiedShadcnTool_Execute_ExamplesEmptyComponentName(t *testing.T) {
 }
 
 // Note: Tests that require actual HTTP requests are omitted to avoid external dependencies
-// and nil pointer issues with uninitialized HTTP client. The core parameter validation
+// and nil pointer issues with uninitialised HTTP client. The core parameter validation
 // logic is already tested through the other test functions above.
 
 // Test utility functions and data structures directly

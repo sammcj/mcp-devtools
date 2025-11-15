@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -11,7 +10,7 @@ import (
 
 // handleCreateTable creates an Excel table object in the worksheet
 // Optionally writes data first and auto-sizes columns for an all-in-one table creation
-func handleCreateTable(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleCreateTable(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",

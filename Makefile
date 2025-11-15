@@ -56,6 +56,11 @@ benchmark-tokens:
 		$(if $(HIGH_THRESHOLD),-high-threshold=$(HIGH_THRESHOLD)) \
 		$(if $(ALLOW_HIGH_TOKENS),-allow-high-tokens=$(ALLOW_HIGH_TOKENS))
 
+# List all tool definitions as seen by MCP clients
+.PHONY: list-tools
+list-tools:
+	@$(GOTEST) -tags=listtools -count=1 -v ./tests/benchmarks -run TestListTools 2>&1 | sed -n '/^{/,/^}/p' | (command -v jq >/dev/null 2>&1 && jq || cat)
+
 # Run VLM/LLM integration tests (requires external VLM/LLM server configuration)
 .PHONY: test-docling-vlm
 test-docling-vlm:
@@ -191,6 +196,7 @@ help:
 	@echo "  test 			: Run all tests (including external dependencies)"
 	@echo "  test-fast		: Run fast tests (no external dependencies)"
 	@echo "  benchmark-tokens	: Analyse token costs for all tools"
+	@echo "  list-tools		: List all tool definitions as seen by MCP clients"
 	@echo "  test-docling-vlm	: Run VLM/LLM integration tests (requires .env configuration)"
 	@echo "  gosec			: Run gosec security tests"
 	@echo "  clean			: Clean build artifacts"

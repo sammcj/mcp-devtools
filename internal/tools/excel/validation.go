@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -10,7 +9,7 @@ import (
 )
 
 // handleGetDataValidationInfo retrieves data validation rules from a worksheet
-func handleGetDataValidationInfo(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleGetDataValidationInfo(logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",

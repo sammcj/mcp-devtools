@@ -79,32 +79,32 @@ func (t *UnifiedShadcnTool) Execute(ctx context.Context, logger *logrus.Logger, 
 
 	switch action {
 	case "list":
-		return t.executeList(ctx, logger, cache)
+		return t.executeList(logger, cache)
 	case "search":
 		query, ok := args["query"].(string)
 		if !ok || query == "" {
 			return nil, fmt.Errorf("query parameter is required for search action")
 		}
-		return t.executeSearch(ctx, logger, cache, query)
+		return t.executeSearch(logger, cache, query)
 	case "details":
 		componentName, ok := args["componentName"].(string)
 		if !ok || componentName == "" {
 			return nil, fmt.Errorf("componentName parameter is required for details action")
 		}
-		return t.executeDetails(ctx, logger, cache, componentName)
+		return t.executeDetails(logger, cache, componentName)
 	case "examples":
 		componentName, ok := args["componentName"].(string)
 		if !ok || componentName == "" {
 			return nil, fmt.Errorf("componentName parameter is required for examples action")
 		}
-		return t.executeExamples(ctx, logger, cache, componentName)
+		return t.executeExamples(logger, cache, componentName)
 	default:
 		return nil, fmt.Errorf("invalid action: %s. Must be one of: list, search, details, examples", action)
 	}
 }
 
 // executeList handles the list action
-func (t *UnifiedShadcnTool) executeList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeList(logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
 	logger.Info("Listing shadcn ui components")
 
 	// Check cache
@@ -125,7 +125,7 @@ func (t *UnifiedShadcnTool) executeList(ctx context.Context, logger *logrus.Logg
 }
 
 // executeSearch handles the search action
-func (t *UnifiedShadcnTool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeSearch(logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
 	logger.Infof("Searching shadcn ui components with query: %s", query)
 
 	// Get component list (from cache or fetch)
@@ -161,7 +161,7 @@ func (t *UnifiedShadcnTool) executeSearch(ctx context.Context, logger *logrus.Lo
 }
 
 // executeDetails handles the details action
-func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeDetails(logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
 	logger.Infof("Getting details for shadcn ui component: %s", componentName)
 
 	cacheKey := getComponentDetailsCachePrefix + componentName
@@ -246,7 +246,7 @@ func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.L
 }
 
 // executeExamples handles the examples action
-func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeExamples(logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
 	logger.Infof("Getting examples for shadcn ui component: %s", componentName)
 
 	cacheKey := getComponentExamplesCachePrefix + componentName

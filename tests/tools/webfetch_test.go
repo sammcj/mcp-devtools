@@ -134,7 +134,7 @@ func TestFetchURLTool_Execute_InvalidStartIndex(t *testing.T) {
 }
 
 // Note: Tests that require actual HTTP requests are omitted to avoid external dependencies
-// and nil pointer issues with uninitialized WebClient. The core parameter validation
+// and nil pointer issues with uninitialised WebClient. The core parameter validation
 // logic is already tested through the other test functions above.
 
 // Test the DetectContentType function (pure function, no external dependencies)

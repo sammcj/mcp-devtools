@@ -14,6 +14,7 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
     - [7. Register the Tool for Import](#7-register-the-tool-for-import)
   - [Example: Hello World Tool](#example-hello-world-tool)
     - [Testing Your Tool](#testing-your-tool)
+    - [Verifying Token Cost](#verifying-token-cost)
   - [Testing](#testing)
   - [Extended Help for Complex Tools](#extended-help-for-complex-tools)
     - [Implementing Extended Help](#implementing-extended-help)
@@ -596,6 +597,8 @@ MCP DevTools includes an optional tool error logging feature that captures detai
 When enabled, any tool execution that returns an error will be logged to a dedicated log file at `~/.mcp-devtools/logs/tool-errors.log`.
 
 To enable tool error logging, set the `LOG_TOOL_ERRORS` environment variable to `true`
+
+If you want to view the tool descriptions, parameters and annotations as a MCP client would see it, you can optionally run `make list-tools`.
 
 ## Additional Considerations
 

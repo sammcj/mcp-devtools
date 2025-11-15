@@ -42,7 +42,7 @@ func NewClient(logger *logrus.Logger) *Client {
 }
 
 // makeRequest performs HTTP request with security checks
-func (c *Client) makeRequest(ctx context.Context, url string) ([]byte, error) {
+func (c *Client) makeRequest(url string) ([]byte, error) {
 	// Use security operations for HTTP GET
 	safeResp, err := c.ops.SafeHTTPGet(url)
 	if err != nil {
@@ -71,7 +71,7 @@ func (c *Client) SearchProviders(ctx context.Context, providerName, providerName
 
 	// Get latest version if not specified
 	if providerVersion == "" || providerVersion == "latest" {
-		latestVersion, err := c.getLatestProviderVersionInternal(ctx, providerNamespace, providerName)
+		latestVersion, err := c.getLatestProviderVersionInternal(providerNamespace, providerName)
 		if err != nil {
 			return nil, fmt.Errorf("getting latest provider version: %w", err)
 		}
@@ -80,7 +80,7 @@ func (c *Client) SearchProviders(ctx context.Context, providerName, providerName
 
 	// Check if we need to use v2 API for guides, functions, or overview
 	if isV2ProviderDataType(providerDataType) {
-		content, err := c.getProviderDetailsV2(ctx, providerNamespace, providerName, providerVersion, providerDataType)
+		content, err := c.getProviderDetailsV2(providerNamespace, providerName, providerVersion, providerDataType)
 		if err != nil {
 			return nil, fmt.Errorf("getting provider details from v2 API: %w", err)
 		}
@@ -97,7 +97,7 @@ func (c *Client) SearchProviders(ctx context.Context, providerName, providerName
 
 	// For resources/data-sources, use the v1 API
 	apiURL := fmt.Sprintf("%s/providers/%s/%s/%s", terraformRegistryAPIv1, providerNamespace, providerName, providerVersion)
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetching provider documentation: %w", err)
 	}
@@ -118,7 +118,7 @@ func (c *Client) SearchProviders(ctx context.Context, providerName, providerName
 		if doc.Language == "hcl" && doc.Category == providerDataType {
 			if containsSlug(doc.Slug, serviceSlug) || containsSlug(fmt.Sprintf("%s_%s", providerName, doc.Slug), serviceSlug) {
 				contentAvailable = true
-				descriptionSnippet, err := c.getContentSnippet(ctx, doc.ID)
+				descriptionSnippet, err := c.getContentSnippet(doc.ID)
 				if err != nil {
 					c.logger.Warnf("Error fetching content snippet for provider doc ID: %s: %v", doc.ID, err)
 				}
@@ -151,7 +151,7 @@ func (c *Client) GetProviderDetails(ctx context.Context, providerDocID string) (
 	}
 
 	apiURL := fmt.Sprintf("%s/provider-docs/%s", terraformRegistryAPIv2, providerDocID)
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetching provider documentation: %w", err)
 	}
@@ -179,7 +179,7 @@ func (c *Client) GetProviderDetails(ctx context.Context, providerDocID string) (
 func (c *Client) GetLatestProviderVersion(ctx context.Context, providerNamespace, providerName string) (*mcp.CallToolResult, error) {
 	c.logger.Infof("Getting latest version for provider: %s/%s", providerNamespace, providerName)
 
-	version, err := c.getLatestProviderVersionInternal(ctx, providerNamespace, providerName)
+	version, err := c.getLatestProviderVersionInternal(providerNamespace, providerName)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (c *Client) SearchModules(ctx context.Context, moduleQuery string, currentO
 	params.Set("limit", "10")
 
 	apiURL := fmt.Sprintf("%s/modules?%s", terraformRegistryAPIv1, params.Encode())
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("searching modules: %w", err)
 	}
@@ -246,7 +246,7 @@ func (c *Client) GetModuleDetails(ctx context.Context, moduleID string) (*mcp.Ca
 	c.logger.Infof("Getting module details for: %s", moduleID)
 
 	apiURL := fmt.Sprintf("%s/modules/%s", terraformRegistryAPIv1, moduleID)
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetching module details: %w", err)
 	}
@@ -297,7 +297,7 @@ func (c *Client) GetLatestModuleVersion(ctx context.Context, moduleID string) (*
 	c.logger.Infof("Getting latest version for module: %s", moduleID)
 
 	apiURL := fmt.Sprintf("%s/modules/%s", terraformRegistryAPIv1, moduleID)
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetching module version: %w", err)
 	}
@@ -327,7 +327,7 @@ func (c *Client) SearchPolicies(ctx context.Context, policyQuery string) (*mcp.C
 	params.Set("limit", "10")
 
 	apiURL := fmt.Sprintf("%s/policies?%s", terraformRegistryAPIv1, params.Encode())
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("searching policies: %w", err)
 	}
@@ -362,7 +362,7 @@ func (c *Client) GetPolicyDetails(ctx context.Context, policyID string) (*mcp.Ca
 	c.logger.Infof("Getting policy details for: %s", policyID)
 
 	apiURL := fmt.Sprintf("%s/policies/%s", terraformRegistryAPIv1, policyID)
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetching policy details: %w", err)
 	}
@@ -391,9 +391,9 @@ func (c *Client) GetPolicyDetails(ctx context.Context, policyID string) (*mcp.Ca
 
 // Helper functions
 
-func (c *Client) getLatestProviderVersionInternal(ctx context.Context, providerNamespace, providerName string) (string, error) {
+func (c *Client) getLatestProviderVersionInternal(providerNamespace, providerName string) (string, error) {
 	apiURL := fmt.Sprintf("%s/providers/%s/%s/versions", terraformRegistryAPIv1, providerNamespace, providerName)
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return "", fmt.Errorf("fetching provider versions: %w", err)
 	}
@@ -411,14 +411,14 @@ func (c *Client) getLatestProviderVersionInternal(ctx context.Context, providerN
 	return versionsResponse.Versions[0].Version, nil
 }
 
-func (c *Client) getProviderDetailsV2(ctx context.Context, providerNamespace, providerName, providerVersion, category string) (string, error) {
-	providerVersionID, err := c.getProviderVersionID(ctx, providerNamespace, providerName, providerVersion)
+func (c *Client) getProviderDetailsV2(providerNamespace, providerName, providerVersion, category string) (string, error) {
+	providerVersionID, err := c.getProviderVersionID(providerNamespace, providerName, providerVersion)
 	if err != nil {
 		return "", fmt.Errorf("getting provider version ID: %w", err)
 	}
 
 	if category == "overview" {
-		return c.getProviderOverviewDocs(ctx, providerVersionID)
+		return c.getProviderOverviewDocs(providerVersionID)
 	}
 
 	params := url.Values{}
@@ -427,7 +427,7 @@ func (c *Client) getProviderDetailsV2(ctx context.Context, providerNamespace, pr
 	params.Set("filter[language]", "hcl")
 
 	apiURL := fmt.Sprintf("%s/provider-docs?%s", terraformRegistryAPIv2, params.Encode())
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return "", fmt.Errorf("getting provider documentation: %w", err)
 	}
@@ -442,7 +442,7 @@ func (c *Client) getProviderDetailsV2(ctx context.Context, providerNamespace, pr
 		category, providerNamespace, providerName, providerVersion))
 
 	for _, doc := range docsResponse.Data {
-		descriptionSnippet, err := c.getContentSnippet(ctx, doc.ID)
+		descriptionSnippet, err := c.getContentSnippet(doc.ID)
 		if err != nil {
 			c.logger.Warnf("Error fetching content snippet for provider doc ID: %s: %v", doc.ID, err)
 		}
@@ -453,9 +453,9 @@ func (c *Client) getProviderDetailsV2(ctx context.Context, providerNamespace, pr
 	return builder.String(), nil
 }
 
-func (c *Client) getProviderVersionID(ctx context.Context, providerNamespace, providerName, providerVersion string) (string, error) {
+func (c *Client) getProviderVersionID(providerNamespace, providerName, providerVersion string) (string, error) {
 	apiURL := fmt.Sprintf("%s/providers/%s/%s/versions", terraformRegistryAPIv2, providerNamespace, providerName)
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return "", fmt.Errorf("fetching provider versions: %w", err)
 	}
@@ -474,9 +474,9 @@ func (c *Client) getProviderVersionID(ctx context.Context, providerNamespace, pr
 	return "", fmt.Errorf("provider version %s not found", providerVersion)
 }
 
-func (c *Client) getProviderOverviewDocs(ctx context.Context, providerVersionID string) (string, error) {
+func (c *Client) getProviderOverviewDocs(providerVersionID string) (string, error) {
 	apiURL := fmt.Sprintf("%s/provider-versions/%s", terraformRegistryAPIv2, providerVersionID)
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return "", fmt.Errorf("fetching provider overview: %w", err)
 	}
@@ -489,9 +489,9 @@ func (c *Client) getProviderOverviewDocs(ctx context.Context, providerVersionID 
 	return overviewResponse.Data.Attributes.Description, nil
 }
 
-func (c *Client) getContentSnippet(ctx context.Context, docID string) (string, error) {
+func (c *Client) getContentSnippet(docID string) (string, error) {
 	apiURL := fmt.Sprintf("%s/provider-docs/%s", terraformRegistryAPIv2, docID)
-	response, err := c.makeRequest(ctx, apiURL)
+	response, err := c.makeRequest(apiURL)
 	if err != nil {
 		return "", fmt.Errorf("fetching provider-docs/%s: %w", docID, err)
 	}

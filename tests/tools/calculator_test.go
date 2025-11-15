@@ -415,6 +415,47 @@ func TestCalculator_Execute_NoParameters(t *testing.T) {
 	testutils.AssertErrorContains(t, err, "missing required parameter")
 }
 
+func TestCalculator_Execute_Exponentiation(t *testing.T) {
+	tool := &calculator.Calculator{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	tests := []struct {
+		expression string
+		expected   any
+	}{
+		{"2^8", float64(256)},                   // Basic exponentiation
+		{"10^3", float64(1000)},                 // Another basic case
+		{"2^53 - 1", float64(9007199254740991)}, // JavaScript MAX_SAFE_INTEGER
+		{"2^3^2", float64(512)},                 // Right-associative: 2^(3^2) = 2^9 = 512
+		{"(2^3)^2", float64(64)},                // With parentheses: (2^3)^2 = 8^2 = 64
+		{"2 + 3 * 2^3", float64(26)},            // Precedence: 2 + 3 * 8 = 2 + 24 = 26
+		{"2^2 * 3", float64(12)},                // Precedence: 4 * 3 = 12
+		{"2 * 3^2", float64(18)},                // Precedence: 2 * 9 = 18
+		{"2^-2", float64(0.25)},                 // Negative exponent: 1/4 = 0.25
+		{"4^0.5", float64(2)},                   // Fractional exponent: square root of 4 = 2
+	}
+
+	for _, test := range tests {
+		t.Run(test.expression, func(t *testing.T) {
+			args := map[string]any{
+				"expression": test.expression,
+			}
+
+			result, err := tool.Execute(ctx, logger, cache, args)
+
+			testutils.AssertNoError(t, err)
+			testutils.AssertNotNil(t, result)
+
+			// Extract result from JSON response
+			actualResult, err := extractCalculatorResult(result)
+			testutils.AssertNoError(t, err)
+			testutils.AssertEqual(t, test.expected, actualResult)
+		})
+	}
+}
+
 func TestCalculator_Execute_ComplexExpressions(t *testing.T) {
 	tool := &calculator.Calculator{}
 	logger := testutils.CreateTestLogger()

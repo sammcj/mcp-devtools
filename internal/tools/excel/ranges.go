@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -10,7 +9,7 @@ import (
 )
 
 // handleMergeCells merges a range of cells
-func handleMergeCells(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleMergeCells(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -91,7 +90,7 @@ func handleMergeCells(ctx context.Context, logger *logrus.Logger, filePath strin
 }
 
 // handleUnmergeCells unmerges a range of cells
-func handleUnmergeCells(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleUnmergeCells(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -164,7 +163,7 @@ func handleUnmergeCells(ctx context.Context, logger *logrus.Logger, filePath str
 }
 
 // handleGetMergedCells gets all merged cell ranges in a worksheet
-func handleGetMergedCells(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleGetMergedCells(logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -228,7 +227,7 @@ func handleGetMergedCells(ctx context.Context, logger *logrus.Logger, filePath s
 }
 
 // handleCopyRange copies a range to another location
-func handleCopyRange(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleCopyRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -370,7 +369,7 @@ func handleCopyRange(ctx context.Context, logger *logrus.Logger, filePath string
 }
 
 // handleDeleteRange deletes a range and shifts cells
-func handleDeleteRange(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleDeleteRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -461,7 +460,7 @@ func handleDeleteRange(ctx context.Context, logger *logrus.Logger, filePath stri
 }
 
 // handleValidateRange validates that a range exists and returns its boundaries
-func handleValidateRange(ctx context.Context, logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleValidateRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",

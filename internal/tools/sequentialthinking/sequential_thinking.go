@@ -146,7 +146,7 @@ func (t *SequentialThinkingTool) processThought(thoughtData *ThoughtData, logger
 	t.thoughtHistoryMutex.Lock()
 	defer t.thoughtHistoryMutex.Unlock()
 
-	// Initialize branches map if nil
+	// Initialise branches map if nil
 	if t.branches == nil {
 		t.branches = make(map[string][]ThoughtData)
 	}

@@ -2,6 +2,7 @@ package registry
 
 import (
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -96,9 +97,13 @@ func requiresEnablement(toolName string) bool {
 		"aws_documentation",
 		"terraform_documentation",
 		"shadcn",
+		"shadcn_ui", // Alias for shadcn for consistency with other UI tools
+		"magic_ui",
+		"aceternity_ui",
 		"murican_to_english",
 		"excel",
 		"code_skim",
+		"code_rename",
 	}
 
 	// Normalise the tool name (lowercase, replace underscores with hyphens)
@@ -274,12 +279,25 @@ func isToolEnabled(toolName string) bool {
 	// Normalise the tool name (lowercase, replace underscores with hyphens)
 	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
 
+	// Tool name aliases for backwards compatibility
+	aliases := map[string][]string{
+		"shadcn": {"shadcn-ui"}, // shadcn tool can be enabled via either 'shadcn' or 'shadcn_ui' in ENABLE_ADDITIONAL_TOOLS
+	}
+
+	// Build list of names to check (tool name + any aliases)
+	namesToCheck := []string{normalisedToolName}
+	if toolAliases, hasAliases := aliases[normalisedToolName]; hasAliases {
+		namesToCheck = append(namesToCheck, toolAliases...)
+	}
+
 	// Split by comma and check each tool
 	toolsList := strings.SplitSeq(enabledTools, ",")
 	for tool := range toolsList {
 		// Normalise the tool from env var (trim spaces, lowercase, replace underscores with hyphens)
 		normalisedTool := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tool), "_", "-"))
-		if normalisedTool == normalisedToolName {
+
+		// Check if it matches the tool name or any alias
+		if slices.Contains(namesToCheck, normalisedTool) {
 			return true
 		}
 	}
