@@ -21,6 +21,7 @@ import (
 // - excel
 // - filesystem
 // - gemini-agent
+// - kiro-agent
 // - memory
 // - murican_to_english
 // - pdf

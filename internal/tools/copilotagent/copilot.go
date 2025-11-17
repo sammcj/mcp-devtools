@@ -51,6 +51,13 @@ func (t *CopilotTool) Definition() mcp.Tool {
 		mcp.WithString("session-id",
 			mcp.Description("Specify a session identifier for resuming specific sessions."),
 		),
+		mcp.WithString("agent",
+			mcp.Description("Specify a custom agent to use."),
+		),
+		mcp.WithArray("additional-mcp-config",
+			mcp.Description("Additional MCP servers configuration as JSON string or file path (prefix with @) (can be used multiple times)."),
+			mcp.WithStringItems(),
+		),
 		tools.AddConditionalParameter("yolo-mode",
 			"Trust all tools without confirmation (maps to --allow-all-tools)."),
 		mcp.WithArray("allow-tool",
@@ -127,6 +134,20 @@ func (t *CopilotTool) runCopilot(ctx context.Context, logger *logrus.Logger, tim
 		cmdArgs = append(cmdArgs, "--resume", sessionID)
 	} else if resume, ok := args["resume"].(bool); ok && resume {
 		cmdArgs = append(cmdArgs, "--continue")
+	}
+
+	// Agent selection
+	if agent, ok := args["agent"].(string); ok && strings.TrimSpace(agent) != "" {
+		cmdArgs = append(cmdArgs, "--agent", agent)
+	}
+
+	// Additional MCP configuration
+	if mcpConfigs, ok := args["additional-mcp-config"].([]any); ok {
+		for _, config := range mcpConfigs {
+			if c, ok := config.(string); ok && strings.TrimSpace(c) != "" {
+				cmdArgs = append(cmdArgs, "--additional-mcp-config", c)
+			}
+		}
 	}
 
 	// Permission management
@@ -405,6 +426,22 @@ func (t *CopilotTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				},
 				ExpectedResult: "Copilot resumes the specific session and continues the previous context",
 			},
+			{
+				Description: "Use a custom agent profile",
+				Arguments: map[string]any{
+					"prompt": "Review this Python code for security vulnerabilities",
+					"agent":  "security-review",
+				},
+				ExpectedResult: "Copilot uses the specified custom agent profile to analyse the code",
+			},
+			{
+				Description: "Add custom MCP server configuration",
+				Arguments: map[string]any{
+					"prompt":                "Analyse the database schema",
+					"additional-mcp-config": []string{`{"name":"db-server","command":"node","args":["db-mcp.js"]}`, "@~/.copilot/custom-mcp.json"},
+				},
+				ExpectedResult: "Copilot loads the additional MCP server configurations for this session",
+			},
 		},
 		CommonPatterns: []string{
 			"Use 'resume: true' to continue the most recent conversation",
@@ -438,15 +475,17 @@ func (t *CopilotTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 		},
 		ParameterDetails: map[string]string{
-			"prompt":              "Required instruction for Copilot. Cannot be empty.",
-			"override-model":      "Choose specific model - no validation, passed directly to Copilot",
-			"resume":              "Continue most recent session (uses --continue flag)",
-			"session-id":          "Resume specific session by ID (uses --resume flag, takes priority over 'resume')",
-			"yolo-mode":           "Trust all tools automatically (maps to --allow-all-tools, security consideration - use carefully)",
-			"allow-tool":          "Array of tool permission patterns to allow (e.g., 'shell(git:*)')",
-			"deny-tool":           "Array of tool permission patterns to deny",
-			"include-directories": "Array of additional directory paths to grant access to (no path validation)",
-			"disable-mcp-server":  "Array of MCP server names to disable during execution",
+			"prompt":                "Required instruction for Copilot. Cannot be empty.",
+			"override-model":        "Choose specific model - no validation, passed directly to Copilot",
+			"resume":                "Continue most recent session (uses --continue flag)",
+			"session-id":            "Resume specific session by ID (uses --resume flag, takes priority over 'resume')",
+			"agent":                 "Specify a custom agent/context profile to use",
+			"additional-mcp-config": "Array of MCP server configurations as JSON strings or file paths (prefix with @). Each element passed separately to CLI",
+			"yolo-mode":             "Trust all tools automatically (maps to --allow-all-tools, security consideration - use carefully)",
+			"allow-tool":            "Array of tool permission patterns to allow (e.g., 'shell(git:*)')",
+			"deny-tool":             "Array of tool permission patterns to deny",
+			"include-directories":   "Array of additional directory paths to grant access to (no path validation)",
+			"disable-mcp-server":    "Array of MCP server names to disable during execution",
 		},
 		WhenToUse:    "Use Copilot agent for code assistance, generation, and analysis. Copilot has broad programming knowledge and can help with various languages and frameworks.",
 		WhenNotToUse: "Avoid for tasks requiring specific agent capabilities (AWS knowledge - use Q Developer, Google services - use Gemini, etc.). Note that Copilot requires GitHub authentication.",
