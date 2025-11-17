@@ -637,9 +637,3 @@ Excel features fully supported:
 - Excel tables with styling
 - Data validation rules
 - Formulas (with security restrictions)
-
-## Dependencies
-
-- **Excelize v2**: Pure Go Excel library
-- No Python or external dependencies required
-- Works on macOS and Linux
