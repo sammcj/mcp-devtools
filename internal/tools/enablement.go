@@ -26,7 +26,6 @@ import (
 // - murican_to_english
 // - pdf
 // - process_document
-// - q-developer-agent
 // - sbom
 // - security
 // - security_override

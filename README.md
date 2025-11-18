@@ -50,7 +50,7 @@ graph LR
 
     F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem<br>✂️ Code Skim<br>🏷️ Code Rename]
 
-    G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>👻 Kiro<br>🅰️ Q Developer]
+    G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>👻 Kiro]
 
     D --> D_Tools[🎨 ShadCN UI<br>✨ Magic UI<br>⚡ Aceternity UI]
 
@@ -205,7 +205,6 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[Copilot Agent](docs/tools/copilot-agent.md)**         | GitHub Copilot CLI Agent  | `copilot-agent`           | 🟡       |
 | **[Gemini Agent](docs/tools/gemini-agent.md)**           | Gemini CLI Agent          | `gemini-agent`            | 🟡       |
 | **[Kiro Agent](docs/tools/kiro-agent.md)**               | Kiro CLI Agent            | `kiro-agent`              | 🟡       |
-| **[Q Developer Agent](docs/tools/q-developer-agent.md)** | AWS Q Developer CLI Agent | `q-developer-agent`       | 🟡       |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
@@ -321,7 +320,7 @@ mcp-devtools --transport http --port 18080 --oauth-enabled
 All environment variables are optional, but if you want to use specific search providers or document processing features, you may need to provide the the appropriate variables.
 
 **General:**
-- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,filesystem,claude-agent,codex-agent,gemini-agent,kiro-agent,q-developer-agent,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
+- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,filesystem,claude-agent,codex-agent,gemini-agent,kiro-agent,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
 - `DISABLED_TOOLS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 - `LOG_TOOL_ERRORS` - Enable logging of failed tool calls to `~/.mcp-devtools/logs/tool-errors.log` (set to `true` to enable). Logs older than 60 days are automatically removed on server startup.
 
