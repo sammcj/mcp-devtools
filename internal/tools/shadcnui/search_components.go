@@ -32,10 +32,10 @@ func (t *SearchShadcnComponentsTool) Definition() mcp.Tool {
 // fetchAndCacheComponentList is a helper function similar to ListShadcnComponentsTool.Execute
 // It fetches, parses, and caches the component list.
 // This is duplicated logic but avoids direct tool-to-tool calls or complex dependencies.
-func (t *SearchShadcnComponentsTool) fetchAndCacheComponentList(logger *logrus.Logger, cache *sync.Map) ([]ComponentInfo, error) {
+func (t *SearchShadcnComponentsTool) fetchAndCacheComponentList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) ([]ComponentInfo, error) {
 	// Use security helper for consistent security handling
 	ops := security.NewOperations("shadcnui")
-	safeResp, err := ops.SafeHTTPGet(ShadcnDocsComponents)
+	safeResp, err := ops.SafeHTTPGet(ctx, ShadcnDocsComponents)
 	if err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
 			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
@@ -112,7 +112,7 @@ func (t *SearchShadcnComponentsTool) Execute(ctx context.Context, logger *logrus
 	// If not in cache or expired, fetch it
 	if allComponents == nil {
 		logger.Info("Component list not in cache or expired, fetching for search...")
-		fetchedComponents, err := t.fetchAndCacheComponentList(logger, cache)
+		fetchedComponents, err := t.fetchAndCacheComponentList(ctx, logger, cache)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get component list for search: %w", err)
 		}

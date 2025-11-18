@@ -624,7 +624,7 @@ func (gc *GitHubClient) GetWorkflowRun(ctx context.Context, owner, repo string, 
 			gc.logger.Warnf("Failed to get workflow run logs: %v", err)
 		} else if logsURL != nil {
 			// Download and read logs using security helper
-			safeResp, err := ops.SafeHTTPGet(logsURL.String())
+			safeResp, err := ops.SafeHTTPGet(ctx, logsURL.String())
 			if err != nil {
 				if secErr, ok := err.(*security.SecurityError); ok {
 					gc.logger.Warnf("Security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())

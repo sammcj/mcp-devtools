@@ -1,0 +1,35 @@
+# Grafana Tempo Configuration
+# Lightweight tracing backend with native Grafana integration
+#
+# Use with: docker compose up tempo grafana
+# View traces in Grafana: http://localhost:3000
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
+    wal:
+      path: /var/tempo/wal
+
+query_frontend:
+  search:
+    enabled: true
+
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+      cluster: mcp-devtools-local

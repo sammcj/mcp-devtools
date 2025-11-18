@@ -1,0 +1,81 @@
+# OpenTelemetry Collector Configuration - AWS X-Ray
+# Export traces to AWS X-Ray service
+#
+# Prerequisites:
+#   - Set AWS credentials: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
+#   - Or use AWS_PROFILE environment variable
+#
+# Use with: docker compose up otel-collector
+# Point volume mount to this file in docker-compose.yaml
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 50
+
+  # Resource detection for AWS environment
+  resourcedetection:
+    detectors: [env, system, docker, ec2, ecs, lambda]
+    timeout: 5s
+
+  # Add resource attributes
+  resource:
+    attributes:
+      - key: service.name
+        value: mcp-devtools
+        action: upsert
+
+exporters:
+  # AWS X-Ray exporter
+  awsxray:
+    region: ${AWS_REGION}
+    # Optional: Use named AWS profile
+    # profile: ${AWS_PROFILE}
+
+  # Logging exporter for debugging
+  logging:
+    loglevel: info
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # Prometheus metrics exporter (optional)
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+extensions:
+  # Health check extension
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+  # zPages for debugging
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, zpages]
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resourcedetection, resource, batch]
+      exporters: [awsxray, logging]
+
+    # Optional metrics pipeline
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8889

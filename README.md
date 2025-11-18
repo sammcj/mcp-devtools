@@ -84,11 +84,11 @@ graph LR
 - Minimal memory footprint compared to multiple separate servers
 - Fast startup and response times
 - Download one binary, configure once - or compile from source
-- Optional dependencies only for specific tools
 - Works out of the box for most tools
+- OpenTelemetry support for tracing and metrics
 
-**🛠 Comprehensive Tool Suite**
-- 16+ essential developer tools in one package
+**🛠 Comprehensive Tool Suite For Agentic Coding**
+- 20+ essential developer agent tools in one package
 - No need to manage multiple MCP server installations
 - Consistent API across all tools
 - Modular design with tool registry allowing for easy addition of new tools
@@ -581,6 +581,30 @@ LOG_LEVEL=debug mcp-devtools --transport http
 # Enable tool error logging (works with any transport)
 LOG_TOOL_ERRORS=true mcp-devtools
 ```
+
+## Observability
+
+MCP DevTools includes optional OpenTelemetry integration for distributed tracing and metrics:
+
+**Tracing** - Track tool execution spans with HTTP client operations:
+```bash
+# Export traces to OTLP endpoint
+MCP_OTEL_ENDPOINT=http://localhost:4318
+```
+
+**Metrics** - Opt-in performance and usage metrics:
+```bash
+# Enable tool and session metrics (default groups)
+MCP_METRICS_GROUPS=tool,session
+
+# Include cache and security metrics
+MCP_METRICS_GROUPS=tool,session,cache,security
+```
+
+Available metric groups: `tool` (tool execution), `session` (session lifecycle), `cache` (cache operations), `security` (security checks)
+
+- **[Complete Observability Documentation](docs/observability.md)**
+- **[Example Configurations](docs/observability/examples/)**
 
 ### Creating New Tools
 

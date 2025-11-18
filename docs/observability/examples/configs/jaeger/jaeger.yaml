@@ -1,0 +1,54 @@
+# Jaeger Configuration for MCP DevTools
+# Jaeger has built-in OTLP receiver - no OTEL Collector needed for basic tracing
+#
+# Direct OTLP ingestion:
+#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+#
+# For advanced routing (metrics, multiple backends), uncomment OTEL Collector
+# config below and use that instead.
+
+# ==============================================================================
+# OTEL Collector Configuration (use only if you're using the otel collector)
+# ==============================================================================
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+exporters:
+  # Send traces to Jaeger
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+  # Debug logging
+  debug:
+    verbosity: basic
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/jaeger, debug]
+
+  telemetry:
+    logs:
+      level: info

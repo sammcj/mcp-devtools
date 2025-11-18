@@ -79,32 +79,32 @@ func (t *UnifiedShadcnTool) Execute(ctx context.Context, logger *logrus.Logger, 
 
 	switch action {
 	case "list":
-		return t.executeList(logger, cache)
+		return t.executeList(ctx, logger, cache)
 	case "search":
 		query, ok := args["query"].(string)
 		if !ok || query == "" {
 			return nil, fmt.Errorf("query parameter is required for search action")
 		}
-		return t.executeSearch(logger, cache, query)
+		return t.executeSearch(ctx, logger, cache, query)
 	case "details":
 		componentName, ok := args["componentName"].(string)
 		if !ok || componentName == "" {
 			return nil, fmt.Errorf("componentName parameter is required for details action")
 		}
-		return t.executeDetails(logger, cache, componentName)
+		return t.executeDetails(ctx, logger, cache, componentName)
 	case "examples":
 		componentName, ok := args["componentName"].(string)
 		if !ok || componentName == "" {
 			return nil, fmt.Errorf("componentName parameter is required for examples action")
 		}
-		return t.executeExamples(logger, cache, componentName)
+		return t.executeExamples(ctx, logger, cache, componentName)
 	default:
 		return nil, fmt.Errorf("invalid action: %s. Must be one of: list, search, details, examples", action)
 	}
 }
 
 // executeList handles the list action
-func (t *UnifiedShadcnTool) executeList(logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
 	logger.Info("Listing shadcn ui components")
 
 	// Check cache
@@ -115,7 +115,7 @@ func (t *UnifiedShadcnTool) executeList(logger *logrus.Logger, cache *sync.Map) 
 		}
 	}
 
-	components, err := t.fetchComponentsList(logger, cache)
+	components, err := t.fetchComponentsList(ctx, logger, cache)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch components list: %w", err)
 	}
@@ -125,7 +125,7 @@ func (t *UnifiedShadcnTool) executeList(logger *logrus.Logger, cache *sync.Map) 
 }
 
 // executeSearch handles the search action
-func (t *UnifiedShadcnTool) executeSearch(logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
 	logger.Infof("Searching shadcn ui components with query: %s", query)
 
 	// Get component list (from cache or fetch)
@@ -139,7 +139,7 @@ func (t *UnifiedShadcnTool) executeSearch(logger *logrus.Logger, cache *sync.Map
 
 	if allComponents == nil {
 		logger.Info("Component list not in cache or expired, fetching for search...")
-		fetchedComponents, err := t.fetchComponentsList(logger, cache)
+		fetchedComponents, err := t.fetchComponentsList(ctx, logger, cache)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get component list for search: %w", err)
 		}
@@ -161,7 +161,7 @@ func (t *UnifiedShadcnTool) executeSearch(logger *logrus.Logger, cache *sync.Map
 }
 
 // executeDetails handles the details action
-func (t *UnifiedShadcnTool) executeDetails(logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
 	logger.Infof("Getting details for shadcn ui component: %s", componentName)
 
 	cacheKey := getComponentDetailsCachePrefix + componentName
@@ -177,7 +177,7 @@ func (t *UnifiedShadcnTool) executeDetails(logger *logrus.Logger, cache *sync.Ma
 
 	// Use security helper for consistent security handling
 	ops := security.NewOperations("shadcnui")
-	safeResp, err := ops.SafeHTTPGet(componentURL)
+	safeResp, err := ops.SafeHTTPGet(ctx, componentURL)
 	if err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
 			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())
@@ -246,7 +246,7 @@ func (t *UnifiedShadcnTool) executeDetails(logger *logrus.Logger, cache *sync.Ma
 }
 
 // executeExamples handles the examples action
-func (t *UnifiedShadcnTool) executeExamples(logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
 	logger.Infof("Getting examples for shadcn ui component: %s", componentName)
 
 	cacheKey := getComponentExamplesCachePrefix + componentName
@@ -265,7 +265,7 @@ func (t *UnifiedShadcnTool) executeExamples(logger *logrus.Logger, cache *sync.M
 
 	// Use security helper for consistent security handling
 	ops := security.NewOperations("shadcnui")
-	safeResp, err := ops.SafeHTTPGet(componentURL)
+	safeResp, err := ops.SafeHTTPGet(ctx, componentURL)
 	if err != nil {
 		logger.Warnf("Failed to fetch component page %s for examples: %v", componentURL, err)
 	} else {
@@ -300,7 +300,7 @@ func (t *UnifiedShadcnTool) executeExamples(logger *logrus.Logger, cache *sync.M
 
 	// 2. Attempt to fetch the demo file from GitHub
 	demoURL := fmt.Sprintf("%s/apps/www/registry/default/example/%s-demo.tsx", ShadcnRawGitHubURL, componentName)
-	safeDemoResp, errDemo := ops.SafeHTTPGet(demoURL)
+	safeDemoResp, errDemo := ops.SafeHTTPGet(ctx, demoURL)
 
 	if errDemo != nil {
 		logger.Warnf("Failed to fetch demo file %s: %v. Proceeding without it.", demoURL, errDemo)
@@ -335,10 +335,10 @@ func (t *UnifiedShadcnTool) executeExamples(logger *logrus.Logger, cache *sync.M
 }
 
 // fetchComponentsList fetches and caches the component list
-func (t *UnifiedShadcnTool) fetchComponentsList(logger *logrus.Logger, cache *sync.Map) ([]ComponentInfo, error) {
+func (t *UnifiedShadcnTool) fetchComponentsList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) ([]ComponentInfo, error) {
 	// Use security helper for consistent security handling
 	ops := security.NewOperations("shadcnui")
-	safeResp, err := ops.SafeHTTPGet(ShadcnDocsComponents)
+	safeResp, err := ops.SafeHTTPGet(ctx, ShadcnDocsComponents)
 	if err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
 			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())

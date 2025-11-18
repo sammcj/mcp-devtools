@@ -1,0 +1,22 @@
+# Prometheus Configuration for MCP DevTools
+# Scrapes metrics from OTEL Collector
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: mcp-devtools-local
+    environment: development
+
+scrape_configs:
+  # OTEL Collector metrics endpoint
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8889']
+        labels:
+          service: 'mcp-devtools'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

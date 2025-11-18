@@ -48,7 +48,7 @@ func (t *GetComponentDetailsTool) Execute(ctx context.Context, logger *logrus.Lo
 
 	// Use security helper for consistent security handling
 	ops := security.NewOperations("shadcnui")
-	safeResp, err := ops.SafeHTTPGet(componentURL)
+	safeResp, err := ops.SafeHTTPGet(ctx, componentURL)
 	if err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
 			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())

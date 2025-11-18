@@ -81,7 +81,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 
 	// Use security helper for safe HTTP GET
 	ops := security.NewOperations("webfetch")
-	safeResp, err := ops.SafeHTTPGet(request.URL)
+	safeResp, err := ops.SafeHTTPGet(ctx, request.URL)
 	if err != nil {
 		// Handle security errors properly
 		if secErr, ok := err.(*security.SecurityError); ok {

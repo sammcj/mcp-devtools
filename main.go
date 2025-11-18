@@ -23,9 +23,11 @@ import (
 	"github.com/sammcj/mcp-devtools/internal/oauth/types"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
+	"github.com/sammcj/mcp-devtools/internal/telemetry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
+	"go.opentelemetry.io/otel/propagation"
 	"gopkg.in/yaml.v3"
 
 	// Import all tool packages to register them
@@ -44,8 +46,10 @@ var (
 // Global resources that need cleanup
 // Using atomic operations to prevent race conditions between signal handlers and cleanup
 var (
-	debugLogFile atomic.Pointer[os.File]
-	isStdioMode  atomic.Bool
+	debugLogFile      atomic.Pointer[os.File]
+	isStdioMode       atomic.Bool
+	telemetryShutdown func() error
+	metricsShutdown   func() error
 )
 
 const (
@@ -363,8 +367,29 @@ func main() {
 				}
 			}
 
+			// Initialise telemetry system (if enabled) - after logging is configured
+			logger.Debug("Initialising telemetry system")
+			shutdown, err := telemetry.InitTracer(logger)
+			if err != nil {
+				logger.WithError(err).Debug("Telemetry initialisation failed, continuing with noop tracer")
+				if transport != "stdio" {
+					logger.WithError(err).Warn("Telemetry initialisation failed, tracing disabled")
+				}
+			}
+			telemetryShutdown = shutdown
+
+			// Initialise metrics system (if enabled) - after tracing is configured
+			logger.Debug("Initialising metrics system")
+			metricsShutdown, err = telemetry.InitMetrics(logger)
+			if err != nil {
+				logger.WithError(err).Debug("Metrics initialisation failed, continuing with noop meter")
+				if transport != "stdio" {
+					logger.WithError(err).Warn("Metrics initialisation failed, metrics disabled")
+				}
+			}
+
 			// Initialise security system (if enabled) - after logging is configured
-			logger.Debug("Initializing security system")
+			logger.Debug("Initialising security system")
 			if err := security.InitGlobalSecurityManager(); err != nil {
 				logger.WithError(err).Debug("Security initialisation failed")
 				if transport != "stdio" {
@@ -411,8 +436,33 @@ func main() {
 						return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
 					}
 
+					// Start timing for metrics
+					startTime := time.Now()
+
+					// Start telemetry span for tool execution
+					spanCtx, span := telemetry.StartToolSpan(toolCtx, name, args)
+					defer func() {
+						// End span will be called with the error (if any) below
+					}()
+
 					// Execute tool with error recovery
-					result, err := currentTool.Execute(toolCtx, registry.GetLogger(), registry.GetCache(), args)
+					result, err := currentTool.Execute(spanCtx, registry.GetLogger(), registry.GetCache(), args)
+
+					// Calculate duration for metrics
+					durationMs := float64(time.Since(startTime).Milliseconds())
+
+					// Record metrics
+					telemetry.RecordToolCall(spanCtx, name, transport, err == nil, durationMs)
+
+					if err != nil {
+						// Categorise and record error metric
+						errorType := telemetry.CategoriseToolError(err)
+						telemetry.RecordToolError(spanCtx, name, errorType)
+					}
+
+					// End the telemetry span with success or error
+					telemetry.EndToolSpan(span, err)
+
 					if err != nil {
 						// Log error to stderr for debugging (won't interfere with stdio)
 						if transport != "stdio" {
@@ -443,6 +493,34 @@ func main() {
 			switch transport {
 			case "stdio":
 				logger.Debug("Starting stdio server")
+
+				// Track session start time for metrics
+				sessionStartTime := time.Now()
+
+				// Create a session span and track metrics (if tracing or metrics enabled)
+				if telemetry.IsEnabled() || telemetry.IsMetricsEnabled() {
+					sessionID := telemetry.GenerateSessionID()
+					ctx := telemetry.ContextWithSessionID(context.Background(), sessionID)
+
+					// Create session span (only if tracing enabled)
+					_, sessionSpan := telemetry.StartSessionSpan(ctx, sessionID, "stdio")
+
+					// Record session start metric (only if metrics enabled)
+					telemetry.RecordSessionStart(ctx, "stdio")
+
+					defer func() {
+						// Calculate session duration
+						sessionDuration := time.Since(sessionStartTime).Seconds()
+
+						// Record session end metric (only if metrics enabled)
+						telemetry.RecordSessionEnd(ctx, "stdio", sessionDuration, 0)
+
+						// Clear session span context when stdio server exits
+						telemetry.EndSessionSpan(sessionSpan, 0, 0, 0)
+					}()
+					logger.WithField("session_id", sessionID).Debug("Created session span/metrics for stdio transport")
+				}
+
 				return mcpserver.ServeStdio(mcpSrv)
 			case "sse":
 				logger.WithField("port", port).Debug("Starting SSE server")
@@ -480,6 +558,20 @@ func registerUpstreamProxyTools(ctx context.Context) error {
 
 // performCleanup handles cleanup of resources on shutdown
 func performCleanup(logger *logrus.Logger) {
+	// Shutdown metrics first to flush any pending metrics
+	if metricsShutdown != nil {
+		if err := metricsShutdown(); err != nil {
+			logger.WithError(err).Warn("Metrics shutdown failed")
+		}
+	}
+
+	// Shutdown telemetry to flush any pending traces
+	if telemetryShutdown != nil {
+		if err := telemetryShutdown(); err != nil {
+			logger.WithError(err).Warn("Telemetry shutdown failed")
+		}
+	}
+
 	// Close the debug log file if it was opened (atomic load to prevent races)
 	if file := debugLogFile.Load(); file != nil {
 		// Silently close - we're in cleanup and can't safely log errors
@@ -647,9 +739,24 @@ func startStreamableHTTPServer(ctx context.Context, cmd *cli.Command, mcpServer 
 	return httpServer.Start(":" + port)
 }
 
+// extractTraceContext extracts W3C Trace Context from HTTP request headers
+// This enables distributed tracing across HTTP boundaries
+func extractTraceContext(ctx context.Context, req *http.Request) context.Context {
+	if !telemetry.IsEnabled() {
+		return ctx
+	}
+
+	// Extract trace context from HTTP headers using the global propagator
+	// This was configured in telemetry.InitTracer() with W3C TraceContext and Baggage
+	propagator := telemetry.GetTextMapPropagator()
+	return propagator.Extract(ctx, propagation.HeaderCarrier(req.Header))
+}
+
 // createAuthMiddleware creates an HTTP context function for token authentication
 func createAuthMiddleware(expectedToken string, logger *logrus.Logger) mcpserver.HTTPContextFunc {
 	return func(ctx context.Context, req *http.Request) context.Context {
+		// Extract W3C Trace Context from request headers
+		ctx = extractTraceContext(ctx, req)
 		// Validate MCP Protocol Version header
 		protocolVersion := req.Header.Get("MCP-Protocol-Version")
 		if protocolVersion != "" {
@@ -737,9 +844,8 @@ type TimeoutSessionManager struct {
 }
 
 func (t *TimeoutSessionManager) Generate() string {
-	// Generate a simple UUID-like session ID
-	// In production, you'd want to use crypto/rand or a proper UUID library
-	return fmt.Sprintf("session-%d", time.Now().UnixNano())
+	// Use telemetry package's session ID generation for consistency
+	return telemetry.GenerateSessionID()
 }
 
 func (t *TimeoutSessionManager) Validate(sessionID string) (bool, error) {
@@ -803,6 +909,9 @@ func validateOAuthConfig(config *types.OAuth2Config) error {
 // createOAuthMiddleware creates OAuth 2.1 authentication middleware
 func createOAuthMiddleware(oauthServer *oauthserver.OAuth2Server, logger *logrus.Logger) func(context.Context, *http.Request) context.Context {
 	return func(ctx context.Context, req *http.Request) context.Context {
+		// Extract W3C Trace Context from request headers
+		ctx = extractTraceContext(ctx, req)
+
 		// Skip OAuth for metadata endpoints
 		if strings.HasPrefix(req.URL.Path, "/.well-known/") || req.URL.Path == "/oauth/register" {
 			logger.Debug("Skipping OAuth authentication for metadata endpoint")

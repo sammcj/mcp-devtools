@@ -42,7 +42,7 @@ func (t *ListShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.L
 
 	// Use security helper for consistent security handling
 	ops := security.NewOperations("shadcnui")
-	safeResp, err := ops.SafeHTTPGet(ShadcnDocsComponents)
+	safeResp, err := ops.SafeHTTPGet(ctx, ShadcnDocsComponents)
 	if err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
 			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())

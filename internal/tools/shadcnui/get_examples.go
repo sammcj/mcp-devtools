@@ -54,7 +54,7 @@ func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.L
 
 	// Use security helper for consistent security handling
 	ops := security.NewOperations("shadcnui")
-	safeResp, err := ops.SafeHTTPGet(componentURL)
+	safeResp, err := ops.SafeHTTPGet(ctx, componentURL)
 	if err != nil {
 		logger.Warnf("Failed to fetch component page %s for examples: %v", componentURL, err)
 		// Continue to try fetching from GitHub demo file
@@ -97,7 +97,7 @@ func (t *GetComponentExamplesTool) Execute(ctx context.Context, logger *logrus.L
 
 	// 2. Attempt to fetch the demo file from GitHub
 	demoURL := fmt.Sprintf("%s/apps/www/registry/default/example/%s-demo.tsx", ShadcnRawGitHubURL, componentName)
-	safeDemoResp, errDemo := ops.SafeHTTPGet(demoURL)
+	safeDemoResp, errDemo := ops.SafeHTTPGet(ctx, demoURL)
 
 	if errDemo != nil {
 		logger.Warnf("Failed to fetch demo file %s: %v. Proceeding without it.", demoURL, errDemo)

@@ -68,15 +68,17 @@ func (c *RateLimitedHTTPClient) Get(reqURL string) (*http.Response, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	ctx := context.Background()
+
 	// Wait for rate limiter to allow the request
-	err := c.limiter.Wait(context.Background())
+	err := c.limiter.Wait(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// Use security helper for consistent security handling
 	ops := security.NewOperations("shadcnui")
-	safeResp, err := ops.SafeHTTPGet(reqURL)
+	safeResp, err := ops.SafeHTTPGet(ctx, reqURL)
 	if err != nil {
 		return nil, err
 	}
