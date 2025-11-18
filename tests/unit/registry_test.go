@@ -335,37 +335,37 @@ func TestRegistry_ShouldRegisterTool(t *testing.T) {
 		registry.Init(logger)
 
 		// Test a tool that requires enablement but is not enabled
-		result := registry.ShouldRegisterTool("q-developer-agent")
+		result := registry.ShouldRegisterTool("kiro-agent")
 		testutils.AssertEqual(t, false, result)
 	})
 
 	t.Run("tool_requires_enablement_is_enabled", func(t *testing.T) {
 		_ = os.Unsetenv("DISABLED_TOOLS")
-		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "q-developer-agent")
+		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "kiro-agent")
 		registry.Init(logger)
 
 		// Tool requires enablement and is explicitly enabled
-		result := registry.ShouldRegisterTool("q-developer-agent")
+		result := registry.ShouldRegisterTool("kiro-agent")
 		testutils.AssertEqual(t, true, result)
 	})
 
 	t.Run("DISABLED_TOOLS_overrides_ENABLE_ADDITIONAL_TOOLS", func(t *testing.T) {
-		_ = os.Setenv("DISABLED_TOOLS", "q-developer-agent")
-		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "q-developer-agent")
+		_ = os.Setenv("DISABLED_TOOLS", "kiro-agent")
+		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "kiro-agent")
 		registry.Init(logger)
 
 		// DISABLED_TOOLS has highest priority
-		result := registry.ShouldRegisterTool("q-developer-agent")
+		result := registry.ShouldRegisterTool("kiro-agent")
 		testutils.AssertEqual(t, false, result)
 	})
 
 	t.Run("multiple_tools_in_ENABLE_ADDITIONAL_TOOLS", func(t *testing.T) {
 		_ = os.Unsetenv("DISABLED_TOOLS")
-		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "q-developer-agent,claude-agent,gemini-agent")
+		_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "kiro-agent,claude-agent,gemini-agent")
 		registry.Init(logger)
 
 		// All listed tools should be enabled
-		testutils.AssertEqual(t, true, registry.ShouldRegisterTool("q-developer-agent"))
+		testutils.AssertEqual(t, true, registry.ShouldRegisterTool("kiro-agent"))
 		testutils.AssertEqual(t, true, registry.ShouldRegisterTool("claude-agent"))
 		testutils.AssertEqual(t, true, registry.ShouldRegisterTool("gemini-agent"))
 

@@ -125,14 +125,14 @@ func TestIsToolEnabled_AllSupportedTools(t *testing.T) {
 	supportedTools := []string{
 		"claude-agent",
 		"gemini-agent",
-		"q-developer-agent",
+		"kiro-agent",
 		"filesystem",
 		"vulnerability_scan",
 		"vulnerability-scan", // Normalised version
 		"sbom",
 	}
 
-	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "claude-agent,gemini-agent,q-developer-agent,filesystem,vulnerability_scan,sbom")
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "claude-agent,gemini-agent,kiro-agent,filesystem,vulnerability_scan,sbom")
 	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
 
 	for _, toolName := range supportedTools {

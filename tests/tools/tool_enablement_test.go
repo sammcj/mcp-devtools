@@ -113,7 +113,7 @@ func TestTools_DisabledByDefault_DynamicCheck(t *testing.T) {
 			"codex-agent",
 			"copilot-agent",
 			"gemini-agent",
-			"q-developer-agent",
+			"kiro-agent",
 		}
 
 		for _, agentName := range agentToolsThatMustRequireEnablement {
