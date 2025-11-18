@@ -76,47 +76,41 @@ func parseDisabledTools() {
 	}
 }
 
-// requiresEnablement checks if a tool requires enablement via ENABLE_ADDITIONAL_TOOLS.
-// When adding new tools that should be disabled by default, add their names to the additionalTools list.
-func requiresEnablement(toolName string) bool {
-	additionalTools := []string{
-		"filesystem",
-		"security",
-		"security_override",
-		"sbom",
-		"vulnerability_scan",
-		"claude-agent",
-		"codex-agent",
-		"copilot-agent",
-		"gemini-agent",
-		"kiro-agent",
-		"generate_changelog",
-		"process_document",
-		"pdf",
-		"memory",
-		"aws_documentation",
-		"terraform_documentation",
-		"shadcn",
-		"shadcn_ui", // Alias for shadcn for consistency with other UI tools
-		"magic_ui",
-		"aceternity_ui",
-		"murican_to_english",
-		"excel",
-		"code_skim",
-		"code_rename",
+// enabledByDefault checks if a tool is enabled by default without requiring ENABLE_ADDITIONAL_TOOLS.
+// Tools NOT in this list require explicit enablement via ENABLE_ADDITIONAL_TOOLS.
+// This follows the principle of secure-by-default: tools must be explicitly blessed to be enabled.
+func enabledByDefault(toolName string) bool {
+	// Default tools that are safe to enable by default (read-only, non-destructive operations)
+	defaultTools := []string{
+		"calculator",
+		"fetch_url",
+		"get_library_documentation",
+		"get_tool_help",
+		"github",
+		"internet_search",
+		"resolve_library_id",
+		"search_packages",
+		"sequential_thinking",
+		"think",
 	}
 
 	// Normalise the tool name (lowercase, replace underscores with hyphens)
 	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
 
-	for _, tool := range additionalTools {
-		// Normalise the additional tool name (lowercase, replace underscores with hyphens)
-		normalisedAdditionalTool := strings.ToLower(strings.ReplaceAll(tool, "_", "-"))
-		if normalisedToolName == normalisedAdditionalTool {
+	for _, tool := range defaultTools {
+		// Normalise the core tool name (lowercase, replace underscores with hyphens)
+		normalisedCoreTool := strings.ToLower(strings.ReplaceAll(tool, "_", "-"))
+		if normalisedToolName == normalisedCoreTool {
 			return true
 		}
 	}
 	return false
+}
+
+// requiresEnablement checks if a tool requires explicit enablement via ENABLE_ADDITIONAL_TOOLS.
+// This is the inverse of enabledByDefault - any tool not enabled by default requires enablement.
+func requiresEnablement(toolName string) bool {
+	return !enabledByDefault(toolName)
 }
 
 // ShouldRegisterTool checks if a tool should be registered based on:

@@ -615,8 +615,7 @@ If you want to view the tool descriptions, parameters and annotations as a MCP c
 - Rather than creating lots of tools for one purpose / provider, instead favour creating a single tool with multiple functions and parameters.
 - Tools should have fast, concise unit tests that do not rely on external dependencies or services.
 - No tool should ever log to stdout or stderr when the MCP server is running in stdio mode as this breaks the MCP protocol.
-- Consider if the tool should be enabled or disabled by default, if unsure - make it disabled by default following existing patterns (Don't forget to enable it in tests).
-- **CRITICAL for disabled-by-default tools**: To disable a tool by default, add its name to the `additionalTools` list in the `requiresEnablement()` function in `internal/registry/registry.go`. The registry will automatically prevent the tool from being registered unless explicitly enabled via `ENABLE_ADDITIONAL_TOOLS`. No additional checks are needed in the tool's `Execute()` method - the centralised registration system handles all enablement logic.
+- Tool enablement decision: By default, ALL new tools should be DISABLED by default unless explicitly approved by Sam, if approved tool gets enabled by being added to the `defaultTools` list in the `enabledByDefault()` function in `registry.go`. Having tools disabled by default follows the secure-by-default principle and helps to prevent context bloat.
 - You should update docs/tools/overview.md with adding or changing a tool.
 - **SECURITY**: All tools that access files or make HTTP requests MUST integrate with the security system. See [Security Integration](#6-security-integration) above and [Security System Documentation](security.md) for details.
 - Follow least privilege security principles.
