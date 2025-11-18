@@ -6,33 +6,33 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sammcj/mcp-devtools/internal/tools/qdeveloperagent"
+	"github.com/sammcj/mcp-devtools/internal/tools/kiroagent"
 	"github.com/sammcj/mcp-devtools/tests/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 // Basic tests following the pattern of other agent tools (geminiagent_test.go, claudeagent_test.go)
 
-func TestQDeveloperTool_Definition(t *testing.T) {
-	tool := &qdeveloperagent.QDeveloperTool{}
+func TestKiroTool_Definition(t *testing.T) {
+	tool := &kiroagent.KiroTool{}
 	def := tool.Definition()
 
 	assert.NotNil(t, def)
-	assert.Equal(t, "q-developer-agent", def.GetName())
+	assert.Equal(t, "kiro-agent", def.GetName())
 }
 
-func TestQDeveloperTool_Definition_ParameterSchema(t *testing.T) {
-	tool := &qdeveloperagent.QDeveloperTool{}
+func TestKiroTool_Definition_ParameterSchema(t *testing.T) {
+	tool := &kiroagent.KiroTool{}
 	def := tool.Definition()
 
 	// Test basic definition properties
-	testutils.AssertEqual(t, "q-developer-agent", def.Name)
+	testutils.AssertEqual(t, "kiro-agent", def.Name)
 	testutils.AssertNotNil(t, def.Description)
 
 	// Test that description contains key phrases
 	desc := def.Description
-	if !testutils.Contains(desc, "AWS Q Developer CLI") {
-		t.Errorf("Expected description to contain 'AWS Q Developer CLI', got: %s", desc)
+	if !testutils.Contains(desc, "Kiro CLI") {
+		t.Errorf("Expected description to contain 'Kiro CLI', got: %s", desc)
 	}
 
 	// Test input schema exists
@@ -52,8 +52,8 @@ func TestQDeveloperTool_Definition_ParameterSchema(t *testing.T) {
 	testutils.AssertTrue(t, slices.Contains(schema.Required, "prompt"))
 }
 
-func TestQDeveloperTool_Definition_OptionalParameters(t *testing.T) {
-	tool := &qdeveloperagent.QDeveloperTool{}
+func TestKiroTool_Definition_OptionalParameters(t *testing.T) {
+	tool := &kiroagent.KiroTool{}
 	def := tool.Definition()
 	schema := def.InputSchema
 
@@ -79,8 +79,8 @@ func TestQDeveloperTool_Definition_OptionalParameters(t *testing.T) {
 	}
 }
 
-func TestQDeveloperTool_Definition_ParameterNamingConventions(t *testing.T) {
-	tool := &qdeveloperagent.QDeveloperTool{}
+func TestKiroTool_Definition_ParameterNamingConventions(t *testing.T) {
+	tool := &kiroagent.KiroTool{}
 	def := tool.Definition()
 	schema := def.InputSchema
 
@@ -113,7 +113,7 @@ func TestQDeveloperTool_Definition_ParameterNamingConventions(t *testing.T) {
 
 // Configuration tests (these are fast and don't execute CLI)
 
-func TestQDeveloperTool_TimeoutConfiguration_DefaultTimeout(t *testing.T) {
+func TestKiroTool_TimeoutConfiguration_DefaultTimeout(t *testing.T) {
 	// Save original environment variable
 	originalValue := os.Getenv("AGENT_TIMEOUT")
 	defer func() {
@@ -127,13 +127,13 @@ func TestQDeveloperTool_TimeoutConfiguration_DefaultTimeout(t *testing.T) {
 	// Clear environment variable to test default behaviour
 	_ = os.Unsetenv("AGENT_TIMEOUT")
 
-	tool := &qdeveloperagent.QDeveloperTool{}
+	tool := &kiroagent.KiroTool{}
 	timeout := tool.GetTimeout()
 
-	testutils.AssertEqual(t, qdeveloperagent.DefaultTimeout, timeout)
+	testutils.AssertEqual(t, kiroagent.DefaultTimeout, timeout)
 }
 
-func TestQDeveloperTool_TimeoutConfiguration_CustomTimeout(t *testing.T) {
+func TestKiroTool_TimeoutConfiguration_CustomTimeout(t *testing.T) {
 	// Save original environment variable
 	originalValue := os.Getenv("AGENT_TIMEOUT")
 	defer func() {
@@ -148,13 +148,13 @@ func TestQDeveloperTool_TimeoutConfiguration_CustomTimeout(t *testing.T) {
 	customTimeout := "300"
 	_ = os.Setenv("AGENT_TIMEOUT", customTimeout)
 
-	tool := &qdeveloperagent.QDeveloperTool{}
+	tool := &kiroagent.KiroTool{}
 	timeout := tool.GetTimeout()
 
 	testutils.AssertEqual(t, 300, timeout)
 }
 
-func TestQDeveloperTool_TimeoutConfiguration_InvalidTimeout(t *testing.T) {
+func TestKiroTool_TimeoutConfiguration_InvalidTimeout(t *testing.T) {
 	// Save original environment variable
 	originalValue := os.Getenv("AGENT_TIMEOUT")
 	defer func() {
@@ -168,14 +168,14 @@ func TestQDeveloperTool_TimeoutConfiguration_InvalidTimeout(t *testing.T) {
 	// Set invalid timeout value
 	_ = os.Setenv("AGENT_TIMEOUT", "not-a-number")
 
-	tool := &qdeveloperagent.QDeveloperTool{}
+	tool := &kiroagent.KiroTool{}
 	timeout := tool.GetTimeout()
 
 	// Should fall back to default when invalid value is provided
-	testutils.AssertEqual(t, qdeveloperagent.DefaultTimeout, timeout)
+	testutils.AssertEqual(t, kiroagent.DefaultTimeout, timeout)
 }
 
-func TestQDeveloperTool_ResponseSizeLimit_DefaultLimit(t *testing.T) {
+func TestKiroTool_ResponseSizeLimit_DefaultLimit(t *testing.T) {
 	// Save original environment variable
 	originalValue := os.Getenv("AGENT_MAX_RESPONSE_SIZE")
 	defer func() {
@@ -189,7 +189,7 @@ func TestQDeveloperTool_ResponseSizeLimit_DefaultLimit(t *testing.T) {
 	// Clear environment variable to test default behaviour
 	_ = os.Unsetenv("AGENT_MAX_RESPONSE_SIZE")
 
-	tool := &qdeveloperagent.QDeveloperTool{}
+	tool := &kiroagent.KiroTool{}
 	logger := testutils.CreateTestLogger()
 
 	// Test with small output (should not be truncated)
@@ -198,7 +198,7 @@ func TestQDeveloperTool_ResponseSizeLimit_DefaultLimit(t *testing.T) {
 	testutils.AssertEqual(t, smallOutput, result)
 
 	// Test with large output (should be truncated)
-	largeOutput := strings.Repeat("Q", 3*1024*1024) // 3MB
+	largeOutput := strings.Repeat("K", 3*1024*1024) // 3MB
 	result = tool.ApplyResponseSizeLimit(largeOutput, logger)
 
 	// Should be truncated to default 2MB limit
@@ -207,7 +207,7 @@ func TestQDeveloperTool_ResponseSizeLimit_DefaultLimit(t *testing.T) {
 	testutils.AssertTrue(t, strings.Contains(result, "exceeded 2.0MB limit"))
 }
 
-func TestQDeveloperTool_ResponseSizeLimit_CustomLimit(t *testing.T) {
+func TestKiroTool_ResponseSizeLimit_CustomLimit(t *testing.T) {
 	// Save original environment variable
 	originalValue := os.Getenv("AGENT_MAX_RESPONSE_SIZE")
 	defer func() {
@@ -221,11 +221,11 @@ func TestQDeveloperTool_ResponseSizeLimit_CustomLimit(t *testing.T) {
 	// Set custom limit (1MB = 1048576 bytes)
 	_ = os.Setenv("AGENT_MAX_RESPONSE_SIZE", "1048576")
 
-	tool := &qdeveloperagent.QDeveloperTool{}
+	tool := &kiroagent.KiroTool{}
 	logger := testutils.CreateTestLogger()
 
 	// Test with output larger than custom limit
-	largeOutput := strings.Repeat("Q", 1500000) // 1.5MB
+	largeOutput := strings.Repeat("K", 1500000) // 1.5MB
 	result := tool.ApplyResponseSizeLimit(largeOutput, logger)
 
 	// Should be truncated to custom 1MB limit
@@ -234,17 +234,17 @@ func TestQDeveloperTool_ResponseSizeLimit_CustomLimit(t *testing.T) {
 	testutils.AssertTrue(t, strings.Contains(result, "exceeded 1.0MB limit"))
 }
 
-func TestQDeveloperTool_Constants(t *testing.T) {
+func TestKiroTool_Constants(t *testing.T) {
 	// Test that constants are exported and have expected values
-	testutils.AssertEqual(t, "AGENT_MAX_RESPONSE_SIZE", qdeveloperagent.AgentMaxResponseSizeEnvVar)
-	testutils.AssertEqual(t, "AGENT_TIMEOUT", qdeveloperagent.AgentTimeoutEnvVar)
-	testutils.AssertEqual(t, 2*1024*1024, qdeveloperagent.DefaultMaxResponseSize)
-	testutils.AssertEqual(t, 300, qdeveloperagent.DefaultTimeout)
+	testutils.AssertEqual(t, "AGENT_MAX_RESPONSE_SIZE", kiroagent.AgentMaxResponseSizeEnvVar)
+	testutils.AssertEqual(t, "AGENT_TIMEOUT", kiroagent.AgentTimeoutEnvVar)
+	testutils.AssertEqual(t, 2*1024*1024, kiroagent.DefaultMaxResponseSize)
+	testutils.AssertEqual(t, 300, kiroagent.DefaultTimeout)
 }
 
 // Fast error handling tests that don't execute CLI
 
-func TestQDeveloperTool_Execute_ValidationErrors(t *testing.T) {
+func TestKiroTool_Execute_ValidationErrors(t *testing.T) {
 	// Save original environment variable
 	originalValue := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
 	defer func() {
@@ -256,9 +256,9 @@ func TestQDeveloperTool_Execute_ValidationErrors(t *testing.T) {
 	}()
 
 	// Enable the tool to bypass enablement check
-	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "q-developer-agent")
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "kiro-agent")
 
-	tool := &qdeveloperagent.QDeveloperTool{}
+	tool := &kiroagent.KiroTool{}
 	logger := testutils.CreateTestLogger()
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
@@ -311,9 +311,9 @@ func TestQDeveloperTool_Execute_ValidationErrors(t *testing.T) {
 
 // Tool registration tests
 
-func TestQDeveloperTool_ExtendedHelp(t *testing.T) {
+func TestKiroTool_ExtendedHelp(t *testing.T) {
 	// Test that the tool provides extended help information
-	tool := &qdeveloperagent.QDeveloperTool{}
+	tool := &kiroagent.KiroTool{}
 
 	// Test that ProvideExtendedInfo is implemented
 	extendedInfo := tool.ProvideExtendedInfo()
@@ -340,9 +340,9 @@ func TestQDeveloperTool_ExtendedHelp(t *testing.T) {
 	testutils.AssertTrue(t, extendedInfo.WhenNotToUse != "")
 }
 
-func TestQDeveloperTool_ExtendedHelp_ContentVerification(t *testing.T) {
+func TestKiroTool_ExtendedHelp_ContentVerification(t *testing.T) {
 	// Test specific content in extended help
-	tool := &qdeveloperagent.QDeveloperTool{}
+	tool := &kiroagent.KiroTool{}
 	extendedInfo := tool.ProvideExtendedInfo()
 
 	// Verify examples have required fields
