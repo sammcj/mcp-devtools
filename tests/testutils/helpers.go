@@ -154,6 +154,7 @@ func ExtractPackageVersions(t *testing.T, result any) []packageversions.PackageV
 
 // WithEnv sets an environment variable for the duration of a test and returns a cleanup function.
 // Usage:
+//
 //	cleanup := testutils.WithEnv(t, "ENABLE_ADDITIONAL_TOOLS", "tool-name")
 //	defer cleanup()
 func WithEnv(t *testing.T, key, value string) func() {
