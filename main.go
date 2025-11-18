@@ -84,11 +84,6 @@ func main() {
 	// Initialise the registry
 	registry.Init(logger)
 
-	// Initialise tool error logger
-	if err := tools.InitGlobalErrorLogger(logger); err != nil {
-		logger.WithError(err).Warn("Failed to initialise tool error logger")
-	}
-
 	// Ensure cleanup of embedded scripts and error logger on exit
 	defer func() {
 		// Close the tool error logger if it was initialised
@@ -313,6 +308,14 @@ func main() {
 						logrus.SetLevel(logrus.DebugLevel)
 						logger.WithError(err).Warn("Failed to get home directory, using stderr")
 					}
+				}
+			}
+
+			// Initialise tool error logger after logging is configured
+			if err := tools.InitGlobalErrorLogger(logger); err != nil {
+				logger.WithError(err).Debug("Failed to initialise tool error logger")
+				if transport != "stdio" {
+					logger.WithError(err).Warn("Failed to initialise tool error logger")
 				}
 			}
 
