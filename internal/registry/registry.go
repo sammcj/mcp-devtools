@@ -80,8 +80,8 @@ func parseDisabledTools() {
 // Tools NOT in this list require explicit enablement via ENABLE_ADDITIONAL_TOOLS.
 // This follows the principle of secure-by-default: tools must be explicitly blessed to be enabled.
 func enabledByDefault(toolName string) bool {
-	// Core tools that are safe to enable by default (read-only, non-destructive operations)
-	coreTools := []string{
+	// Default tools that are safe to enable by default (read-only, non-destructive operations)
+	defaultTools := []string{
 		"calculator",
 		"fetch_url",
 		"get_library_documentation",
@@ -97,7 +97,7 @@ func enabledByDefault(toolName string) bool {
 	// Normalise the tool name (lowercase, replace underscores with hyphens)
 	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
 
-	for _, tool := range coreTools {
+	for _, tool := range defaultTools {
 		// Normalise the core tool name (lowercase, replace underscores with hyphens)
 		normalisedCoreTool := strings.ToLower(strings.ReplaceAll(tool, "_", "-"))
 		if normalisedToolName == normalisedCoreTool {
