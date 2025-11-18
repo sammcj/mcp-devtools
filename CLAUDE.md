@@ -93,6 +93,17 @@ All tools follow this pattern:
 4. Implement `Execute()` for tool logic
 5. Use shared logger and cache for consistency
 
+## New Tool Registration Checklist
+
+**CRITICAL**: Before registering a new tool, verify the following:
+
+### Default Enablement Decision
+- **By default, ALL new tools are DISABLED** - this is the secure default
+- Only add tool to `defaultTools` list in `enabledByDefault()` (registry.go) if the user has explicitly stated it should be enabled by default
+- **If tool is NOT added to defaultTools**: It will require `ENABLE_ADDITIONAL_TOOLS` to use (this is correct for most tools)
+- Tests enable the tool via `ENABLE_ADDITIONAL_TOOLS` if not in defaultTools list
+- When in Doubt - **Leave the tool disabled by default.** It's safer to require explicit enablement than to accidentally expose destructive functionality.
+
 ## General Guidelines
 
 - CRITICAL: Ensure that when running in stdio mode that we NEVER log to stdout or stderr, as this will break the MCP protocol.

@@ -120,6 +120,9 @@ func TestToolHelpTool_Execute_ValidToolWithoutExtendedInfo(t *testing.T) {
 }
 
 func TestToolHelpTool_Execute_ValidToolWithExtendedInfo(t *testing.T) {
+	// Enable the mock tool (mock tools are not in defaultTools list)
+	defer testutils.WithEnv(t, "ENABLE_ADDITIONAL_TOOLS", "mock_extended_tool")()
+
 	// Set up registry with test logger
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)
@@ -231,6 +234,9 @@ func TestToolHelpTool_Execute_InvalidToolNameType(t *testing.T) {
 }
 
 func TestToolHelpTool_Execute_AlwaysIncludeExamples(t *testing.T) {
+	// Enable the mock tool (mock tools are not in defaultTools list)
+	defer testutils.WithEnv(t, "ENABLE_ADDITIONAL_TOOLS", "mock_extended_tool")()
+
 	// Set up registry with test logger
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)

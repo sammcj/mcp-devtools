@@ -3,6 +3,7 @@ package testutils
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"reflect"
 	"sync"
 	"testing"
@@ -149,4 +150,38 @@ func ExtractPackageVersions(t *testing.T, result any) []packageversions.PackageV
 	}
 
 	return versions
+}
+
+// WithEnv sets an environment variable for the duration of a test and returns a cleanup function.
+// Usage:
+//	cleanup := testutils.WithEnv(t, "ENABLE_ADDITIONAL_TOOLS", "tool-name")
+//	defer cleanup()
+func WithEnv(t *testing.T, key, value string) func() {
+	t.Helper()
+	original := os.Getenv(key)
+	_ = os.Setenv(key, value)
+
+	return func() {
+		if original == "" {
+			_ = os.Unsetenv(key)
+		} else {
+			_ = os.Setenv(key, original)
+		}
+	}
+}
+
+// WithEnvUnset unsets an environment variable for the duration of a test and returns a cleanup function.
+// Usage:
+//
+//	defer testutils.WithEnvUnset(t, "ENABLE_ADDITIONAL_TOOLS")()
+func WithEnvUnset(t *testing.T, key string) func() {
+	t.Helper()
+	original := os.Getenv(key)
+	_ = os.Unsetenv(key)
+
+	return func() {
+		if original != "" {
+			_ = os.Setenv(key, original)
+		}
+	}
 }

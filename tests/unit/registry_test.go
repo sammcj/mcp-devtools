@@ -24,6 +24,9 @@ func TestRegistry_Init(t *testing.T) {
 }
 
 func TestRegistry_RegisterAndGetTool(t *testing.T) {
+	// Enable the mock tool (mock tools are not in defaultTools list)
+	defer testutils.WithEnv(t, "ENABLE_ADDITIONAL_TOOLS", "test-tool")()
+
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)
 
@@ -50,6 +53,9 @@ func TestRegistry_GetTool_NotFound(t *testing.T) {
 }
 
 func TestRegistry_GetTools(t *testing.T) {
+	// Enable the mock tools (mock tools are not in defaultTools list)
+	defer testutils.WithEnv(t, "ENABLE_ADDITIONAL_TOOLS", "tool-1,tool-2")()
+
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)
 
@@ -72,18 +78,9 @@ func TestRegistry_GetTools(t *testing.T) {
 }
 
 func TestRegistry_DisabledFunctions(t *testing.T) {
-	// Save original environment
-	originalDisabled := os.Getenv("DISABLED_TOOLS")
-	defer func() {
-		if originalDisabled == "" {
-			_ = os.Unsetenv("DISABLED_TOOLS")
-		} else {
-			_ = os.Setenv("DISABLED_TOOLS", originalDisabled)
-		}
-	}()
-
-	// Set up disabled functions
-	_ = os.Setenv("DISABLED_TOOLS", "disabled-tool,another-disabled-tool")
+	// Set up disabled functions and enable mock tools
+	defer testutils.WithEnv(t, "DISABLED_TOOLS", "disabled-tool,another-disabled-tool")()
+	defer testutils.WithEnv(t, "ENABLE_ADDITIONAL_TOOLS", "enabled-tool,disabled-tool")()
 
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)
@@ -99,7 +96,7 @@ func TestRegistry_DisabledFunctions(t *testing.T) {
 	_, ok := registry.GetTool("enabled-tool")
 	testutils.AssertEqual(t, true, ok)
 
-	// Test that disabled tool is not available
+	// Test that disabled tool is not available (DISABLED_TOOLS has priority over ENABLE_ADDITIONAL_TOOLS)
 	_, ok = registry.GetTool("disabled-tool")
 	testutils.AssertEqual(t, false, ok)
 
@@ -141,16 +138,24 @@ func TestRegistry_DisabledFunctions_WithSpaces(t *testing.T) {
 func TestRegistry_DisabledFunctions_Empty(t *testing.T) {
 	// Save original environment
 	originalDisabled := os.Getenv("DISABLED_TOOLS")
+	originalEnabled := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
 	defer func() {
 		if originalDisabled == "" {
 			_ = os.Unsetenv("DISABLED_TOOLS")
 		} else {
 			_ = os.Setenv("DISABLED_TOOLS", originalDisabled)
 		}
+		if originalEnabled == "" {
+			_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		} else {
+			_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", originalEnabled)
+		}
 	}()
 
 	// Set empty disabled functions
 	_ = os.Setenv("DISABLED_TOOLS", "")
+	// Enable mock tool (mock tools are not in defaultTools list)
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "test-tool")
 
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)
@@ -169,6 +174,7 @@ func TestRegistry_LegacyDisabledFunctions(t *testing.T) {
 	// Save original environment
 	originalDisabled := os.Getenv("DISABLED_TOOLS")
 	originalLegacy := os.Getenv("DISABLED_FUNCTIONS")
+	originalEnabled := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
 	defer func() {
 		if originalDisabled == "" {
 			_ = os.Unsetenv("DISABLED_TOOLS")
@@ -180,11 +186,18 @@ func TestRegistry_LegacyDisabledFunctions(t *testing.T) {
 		} else {
 			_ = os.Setenv("DISABLED_FUNCTIONS", originalLegacy)
 		}
+		if originalEnabled == "" {
+			_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		} else {
+			_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", originalEnabled)
+		}
 	}()
 
 	// Clear DISABLED_TOOLS and set legacy DISABLED_FUNCTIONS
 	_ = os.Unsetenv("DISABLED_TOOLS")
 	_ = os.Setenv("DISABLED_FUNCTIONS", "legacy-disabled-tool")
+	// Enable mock tools (mock tools are not in defaultTools list)
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "enabled-tool,legacy-disabled-tool")
 
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)
@@ -208,6 +221,7 @@ func TestRegistry_LegacyDisabledFunctions_MergesWithNew(t *testing.T) {
 	// Save original environment
 	originalDisabled := os.Getenv("DISABLED_TOOLS")
 	originalLegacy := os.Getenv("DISABLED_FUNCTIONS")
+	originalEnabled := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
 	defer func() {
 		if originalDisabled == "" {
 			_ = os.Unsetenv("DISABLED_TOOLS")
@@ -219,11 +233,18 @@ func TestRegistry_LegacyDisabledFunctions_MergesWithNew(t *testing.T) {
 		} else {
 			_ = os.Setenv("DISABLED_FUNCTIONS", originalLegacy)
 		}
+		if originalEnabled == "" {
+			_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
+		} else {
+			_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", originalEnabled)
+		}
 	}()
 
 	// Set both env vars
 	_ = os.Setenv("DISABLED_TOOLS", "new-disabled-tool")
 	_ = os.Setenv("DISABLED_FUNCTIONS", "legacy-disabled-tool")
+	// Enable mock tools (mock tools are not in defaultTools list)
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "enabled-tool,legacy-disabled-tool,new-disabled-tool")
 
 	logger := testutils.CreateTestLogger()
 	registry.Init(logger)
