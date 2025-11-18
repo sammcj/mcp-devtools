@@ -89,7 +89,7 @@ func requiresEnablement(toolName string) bool {
 		"codex-agent",
 		"copilot-agent",
 		"gemini-agent",
-		"q-developer-agent",
+		"kiro-agent",
 		"generate_changelog",
 		"process_document",
 		"pdf",
