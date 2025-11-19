@@ -91,15 +91,67 @@ graph LR
 
 ## Quickstart
 
-You have a few options to make MCP DevTools available to your MCP client:
+### Quick Install / Update
+
+The easiest way to install MCP DevTools is using the automatic installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+```
+
+This will:
+- Download the latest release and installs to an appropriate location (respects `$GOPATH/bin` or uses `~/.local/bin`)
+- Remove macOS quarantine attributes automatically
+- Generate example MCP client configurations in `~/.mcp-devtools/examples/`
+- Open your file manager to show the example configs and show you where to configure your MCP clients
+
+<details>
+  <summary><b>🔗 Quick Install Customisation (Click Here)</b></summary>
+
+  **Customisation:**
+  ```bash
+  # Dry run (shows what would be done without making changes)
+  DRY_RUN=1 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+
+  # Install to a specific directory
+  INSTALL_DIR=/custom/path curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+
+  # Install a specific version
+  VERSION=0.50.0 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+
+  # Skip example config generation
+  NO_CONFIG=1 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+
+  # Skip all confirmation prompts (for automation)
+  FORCE=1 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+  ```
+
+</details>
+
+### Manual Installation
+
+<details>
+  <summary><b>🔗 Manual Installation (Click Here)</b></summary>
+
+You have a few other options to make MCP DevTools available to your MCP clients:
 1. <img src="screenshots/go-icon.png" alt="go" width="20"/> If you have Golang installed
 2. [If you do not have, and do not want to install Golang](#if-you-do-not-have-golang-installed)
 
 ### If you have Golang installed
 
-Note that while `go run` makes it easy to get started, it means every time your client starts to download the tool may not be what you want in the long run.
+#### Golang option 1: Use the automated installer
 
-#### Golang option 1: Download at runtime
+The automated installer works great even if you have Golang installed:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+```
+
+This will respect your `$GOPATH/bin` if it's in your PATH, and automatically configure example MCP client settings.
+
+#### Golang option 2: Download at runtime
+
+Note that while `go run` makes it easy to get started, it means every time your client starts to download the tool may not be what you want in the long run.
 
 MCP Client Configuration:
 
@@ -132,7 +184,7 @@ claude mcp add --transport stdio mcp-devtools go run github.com/sammcj/mcp-devto
 - [![Add MCP DevTools to LM Studio (Requires Golang installed)](https://files.lmstudio.ai/deeplink/mcp-install-dark.svg)](https://lmstudio.ai/install-mcp?name=dev-tools&config=eyJjb21tYW5kIjoiZ28iLCJhcmdzIjpbInJ1biIsImh0dHBzOi8vZ2l0aHViLmNvbS9zYW1tY2ovbWNwLWRldnRvb2xzQEhFQUQiXSwiZW52Ijp7IkVOQUJMRV9BRERJVElPTkFMX1RPT0xTIjoic2VjdXJpdHksc2VxdWVudGlhbF90aGlua2luZyxnaXRodWIsZ2V0X3Rvb2xfaGVscCIsIkRJU0FCTEVEX1RPT0xTIjoic2VhcmNoX3BhY2thZ2VzLHJlc29sdmVfbGlicmFyeV9pZCxnZXRfbGlicmFyeV9kb2N1bWVudGF0aW9uIiwiTk9URV9GT1JfSFVNQU5TIjoiQSBtaW5pbWFsIHNldCBvZiB0b29scyBhcmUgZW5hYmxlZCBieSBkZWZhdWx0LCBNQ1AgRGV2VG9vbHMgcHJvdmlkZXMgbWFueSBhZGRpdGlvbmFsIHVzZWZ1bCB0b29scyBpbmNsdWRpbmcgZWZmaWNpZW50IENvbnRleHQ3IGRvY3VtZW50YXRpb24gc2VhcmNoLCBBV1MgZG9jdW1lbnRhdGlvbiwgRnJvbnRlbmQgVUkgRnJhbWV3b3JrIHRlbXBsYXRlcywgQ29kZSBzZWFyY2ggYW5kIG9wdGltaXNhdGlvbiBhbmQgbWFueSBvdGhlcnMsIHZpc2l0IGh0dHBzOi8vZ2l0aHViLmNvbS9zYW1tY2ovbWNwLWRldnRvb2xzIGZvciBtb3JlIGluZm9ybWF0aW9uIG9uIGF2YWlsYWJsZSB0b29scyBhbmQgY29uZmlndXJhdGlvbiJ9fQ%3D%3D)
 - [![Install in VS Code (Requires Golang installed)](https://img.shields.io/badge/VS_Code-Install_dev--tools-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22dev-tools%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22go%22%2C%22args%22%3A%5B%22run%22%2C%22https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%40HEAD%22%5D%2C%22env%22%3A%7B%22ENABLE_ADDITIONAL_TOOLS%22%3A%22security%2Csequential_thinking%2Ccode_skim%2Ccode_rename%22%2C%22DISABLED_TOOLS%22%3A%22search_packages%2Cresolve_library_id%2Cget_library_documentation%22%2C%22NOTE_FOR_HUMANS%22%3A%22A%20minimal%20set%20of%20tools%20are%20enabled%20by%20default%2C%20MCP%20DevTools%20provides%20many%20additional%20useful%20tools%20including%20efficient%20Context7%20documentation%20search%2C%20AWS%20documentation%2C%20Frontend%20UI%20Framework%20templates%2C%20Code%20search%20and%20optimisation%20and%20many%20others%2C%20visit%20https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%20for%20more%20information%20on%20available%20tools%20and%20configuration%22%7D%7D)
 
-#### Golang option 2: Download, then run
+#### Golang option 3: Download, then run
 
 <details>
   <summary><b>🔗 Click here for instructions</b></summary>
@@ -201,6 +253,8 @@ Configure your MCP client to use the downloaded binary (replacing `/path/to/mcp-
 
 - [![Add MCP Server dev-tools to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-dark.svg)](https://lmstudio.ai/install-mcp?name=dev-tools&config=eyJjb21tYW5kIjoiL3BhdGgvdG8vbWNwLWRldnRvb2xzIiwiZW52Ijp7IkVOQUJMRV9BRERJVElPTkFMX1RPT0xTIjoic2VjdXJpdHksc2VxdWVudGlhbF90aGlua2luZyxnaXRodWIsZ2V0X3Rvb2xfaGVscCIsIkRJU0FCTEVEX1RPT0xTIjoic2VhcmNoX3BhY2thZ2VzLHJlc29sdmVfbGlicmFyeV9pZCxnZXRfbGlicmFyeV9kb2N1bWVudGF0aW9uIiwiTk9URV9GT1JfSFVNQU5TIjoiQSBtaW5pbWFsIHNldCBvZiB0b29scyBhcmUgZW5hYmxlZCBieSBkZWZhdWx0LCBNQ1AgRGV2VG9vbHMgcHJvdmlkZXMgbWFueSBhZGRpdGlvbmFsIHVzZWZ1bCB0b29scyBpbmNsdWRpbmcgZWZmaWNpZW50IENvbnRleHQ3IGRvY3VtZW50YXRpb24gc2VhcmNoLCBBV1MgZG9jdW1lbnRhdGlvbiwgRnJvbnRlbmQgVUkgRnJhbWV3b3JrIHRlbXBsYXRlcywgQ29kZSBzZWFyY2ggYW5kIG9wdGltaXNhdGlvbiBhbmQgbWFueSBvdGhlcnMsIHZpc2l0IGh0dHBzOi8vZ2l0aHViLmNvbS9zYW1tY2ovbWNwLWRldnRvb2xzIGZvciBtb3JlIGluZm9ybWF0aW9uIG9uIGF2YWlsYWJsZSB0b29scyBhbmQgY29uZmlndXJhdGlvbiJ9fQ%3D%3D)
 - [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_dev--tools-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22dev-tools%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22%2Fpath%2Fto%2Fmcp-devtools%22%2C%22env%22%3A%7B%22ENABLE_ADDITIONAL_TOOLS%22%3A%22security%2Csequential_thinking%2Ccode_skim%2Ccode_rename%22%2C%22DISABLED_TOOLS%22%3A%22search_packages%2Cresolve_library_id%2Cget_library_documentation%22%2C%22NOTE_FOR_HUMANS%22%3A%22A%20minimal%20set%20of%20tools%20are%20enabled%20by%20default%2C%20MCP%20DevTools%20provides%20many%20additional%20useful%20tools%20including%20efficient%20Context7%20documentation%20search%2C%20AWS%20documentation%2C%20Frontend%20UI%20Framework%20templates%2C%20Code%20search%20and%20optimisation%20and%20many%20others%2C%20visit%20https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%20for%20more%20information%20on%20available%20tools%20and%20configuration%22%7D%7D)
+
+</details>
 
 </details>
 
