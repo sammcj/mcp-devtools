@@ -490,7 +490,15 @@ jobs:
 
             ## Installation
 
-            ### Option 1: Install with `go install`
+            ### Quick Install
+
+            ```shell
+            curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+            ```
+
+            ### Manual Install
+
+            #### Option 1: Install with `go install`
 
               ```shell
               go install github.com/sammcj/mcp-devtools@HEAD
@@ -498,7 +506,7 @@ jobs:
               # Use this path in your MCP configuration, if your GOPATH is not set, please check your Go installation / configuration.
               ```
 
-            ### Option 2: Download pre-built binaries
+            #### Option 2: Download pre-built binaries
 
             1. Download the binary for your platform:
 
