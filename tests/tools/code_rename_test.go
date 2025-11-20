@@ -158,6 +158,7 @@ func TestCodeRenameTool_Execute_UnsupportedFileType(t *testing.T) {
 
 // TestCodeRenameTool_Execute_NoLSPServer tests the scenario where no LSP server is available
 func TestCodeRenameTool_Execute_RealRename(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("Skipping LSP integration test in short mode")
 	}
@@ -345,6 +346,7 @@ func TestCodeRenameTool_ProvideExtendedInfo(t *testing.T) {
 
 // TestCodeRenameTool_SymbolInBlockComment tests that symbols in block comments are skipped
 func TestCodeRenameTool_SymbolInBlockComment(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("Skipping LSP integration test in short mode")
 	}
@@ -422,6 +424,7 @@ func main() {
 
 // TestCodeRenameTool_ClientCaching tests that LSP clients are cached and reused
 func TestCodeRenameTool_ClientCaching(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("Skipping LSP integration test in short mode")
 	}
@@ -509,6 +512,7 @@ func main() {
 
 // TestCodeRenameTool_SymbolInStringLiteral tests symbol appearing in strings
 func TestCodeRenameTool_SymbolInStringLiteral(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("Skipping LSP integration test in short mode")
 	}

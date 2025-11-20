@@ -215,6 +215,50 @@ func TestExtractWorkflowRunID(t *testing.T) {
 	}
 }
 
+func TestCreateFileNotFoundError(t *testing.T) {
+	tests := []struct {
+		name           string
+		owner          string
+		repo           string
+		path           string
+		ref            string
+		expectedSubstr string // Substring to check in error message
+	}{
+		{
+			name:           "Fork-style ref (user:branch)",
+			owner:          "KKKZOZ",
+			repo:           "hugo-admonitions",
+			path:           "hugo.toml",
+			ref:            "sammcj:update",
+			expectedSubstr: "appears to be from a fork-based pull request",
+		},
+		{
+			name:           "Normal branch ref",
+			owner:          "microsoft",
+			repo:           "vscode",
+			path:           "README.md",
+			ref:            "main",
+			expectedSubstr: "Verify the file path exists by checking",
+		},
+		{
+			name:           "Empty ref (default branch)",
+			owner:          "golang",
+			repo:           "go",
+			path:           "README.md",
+			ref:            "",
+			expectedSubstr: "in the default branch",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := github.CreateFileNotFoundError(tt.owner, tt.repo, tt.path, tt.ref)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.expectedSubstr)
+		})
+	}
+}
+
 // Removed tests for unexported functions (parseRequest, splitPath, parseInt)
 // These are internal implementation details and should not be tested directly
 // The public API tests above provide sufficient coverage

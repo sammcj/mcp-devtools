@@ -21,6 +21,7 @@ func (m *MockHTTPClient) Do(req any) (any, error) {
 }
 
 func TestGoTool_Execute_SimpleFormat(t *testing.T) {
+	t.Parallel()
 	// Create a logger for testing
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests
@@ -56,6 +57,7 @@ func TestGoTool_Execute_SimpleFormat(t *testing.T) {
 }
 
 func TestGoTool_Execute_ComplexFormat(t *testing.T) {
+	t.Parallel()
 	// Create a logger for testing
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests
