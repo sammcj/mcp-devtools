@@ -216,6 +216,7 @@ func TestExtractWorkflowRunID(t *testing.T) {
 }
 
 func TestCreateFileNotFoundError(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		owner          string
