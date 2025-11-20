@@ -351,7 +351,7 @@ Download the latest binary from [releases](https://github.com/sammcj/mcp-devtool
 
 Replacing `/path/to/mcp-devtools` with your actual binary path (e.g., `/Users/yourname/go/bin/mcp-devtools`).
 
-_Note: The `BRAVE_API_KEY` is optional and only needed if you want to use the Brave Search provider, there are other providers available, see the various tools documentation for more details._
+_Note: The `BRAVE_API_KEY` is optional and only needed if you want to use the Brave Search provider. Other providers like Google, Kagi, SearXNG, and DuckDuckGo are also available. See the [Internet Search documentation](docs/tools/internet-search.md) for more details._
 
 **Streamable HTTP**
 
@@ -432,6 +432,7 @@ All environment variables are optional, but if you want to use specific search p
 - `BRAVE_API_KEY` - Enable Brave Search provider by providing a ([free Brave search API key](https://brave.com/search/api/))
 - `GOOGLE_SEARCH_API_KEY` - Enable Google search with API key from [Cloud Console](https://console.cloud.google.com/apis/credentials) (requires Custom Search API to be enabled)
 - `GOOGLE_SEARCH_ID` - Google Search Engine ID from [Programmable Search Engine](https://programmablesearchengine.google.com/) (required with `GOOGLE_SEARCH_API_KEY`, select "Search the entire web")
+- `KAGI_API_KEY` - Enable Kagi Search provider by providing your [Kagi API key](https://kagi.com/settings?p=api) (requires Kagi subscription)
 - `SEARXNG_BASE_URL` - Enable SearXNG search provider by providing the base URL (e.g. `https://searxng.example.com`)
 - `CONTEXT7_API_KEY` - Optional Context7 API key for higher rate limits and authentication with package documentation tools
 - `MEMORY_FILE_PATH` - Memory storage location (default: `~/.mcp-devtools/`)
