@@ -13,6 +13,7 @@ import (
 )
 
 func TestRustTool_Execute(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("Skipping Rust tool test in short mode")
 	}

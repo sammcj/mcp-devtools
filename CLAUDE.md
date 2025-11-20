@@ -10,7 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make run-http` - Build and run server with HTTP transport on port 18080
 
 ### Testing
-- `make test` - Run all tests including external dependencies
+- `make test` - Run all tests (includes external API tests, ~10s)
+- `make test-fast` - Run tests without external API calls (~7s)
+- `make test-verbose` - Show detailed per-test timing
+- `make test-slow` - Show slowest tests sorted by duration
 - `go test -short -v ./tests/...` - Run specific test suites
 
 ### Code Quality
@@ -77,6 +80,8 @@ Tests are organised in `tests/` directory:
 - `testutils/` - Test helpers and mocks
 - `tools/` - Tool-specific tests
 - `unit/` - Unit tests for core components
+
+Tests should not depend on external APIs or services unless cleared by the user as necessary.
 
 Use `make test-fast` for development to avoid external API calls.
 
