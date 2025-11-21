@@ -1809,7 +1809,7 @@ def analyze_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
             model = SmolDoclingVisionModel(vlm_model=vlm_model_name)
         except (ValueError, OSError, RuntimeError, ImportError) as e:
             logger.warning(f"Failed to initialise SmolDocling with model '{vlm_model_name}': {e}")
-            # Fallback to default initialization
+            # Fallback to default initialisation
             model = SmolDoclingVisionModel()
 
         # Analyze the image

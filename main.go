@@ -41,6 +41,7 @@ var (
 // Global resources that need cleanup
 var (
 	debugLogFile *os.File
+	isStdioMode  bool
 )
 
 const (
@@ -259,8 +260,11 @@ func main() {
 			port := cmd.String("port")
 			baseURL := cmd.String("base-url")
 
+			// Track stdio mode for error handling
+			isStdioMode = (transport == "stdio")
+
 			// Configure logger appropriately for transport mode
-			if transport == "stdio" {
+			if isStdioMode {
 				// For stdio mode, disable logging to prevent conflicts with MCP protocol
 				logger.SetOutput(os.Stderr)        // Use stderr instead of stdout
 				logger.SetLevel(logrus.ErrorLevel) // Only log errors to stderr
@@ -321,7 +325,7 @@ func main() {
 			// Initialise security system (if enabled) - after logging is configured
 			logger.Debug("Initializing security system")
 			if err := security.InitGlobalSecurityManager(); err != nil {
-				logger.WithError(err).Debug("Security initialization failed")
+				logger.WithError(err).Debug("Security initialisation failed")
 				if transport != "stdio" {
 					logger.WithError(err).Warn("Failed to initialise security system")
 				}
@@ -412,7 +416,13 @@ func main() {
 	}
 
 	if err := app.Run(ctx, os.Args); err != nil {
-		logger.Fatalf("Error: %v", err)
+		// CRITICAL: In stdio mode, we must NOT log to stdout or stderr as it breaks the MCP protocol
+		// Even though this occurs after ServeStdio() returns, initialisation errors could occur
+		// before the protocol starts, so we avoid all logging in stdio mode
+		if !isStdioMode {
+			logger.Fatalf("Error: %v", err)
+		}
+		os.Exit(1)
 	}
 }
 
