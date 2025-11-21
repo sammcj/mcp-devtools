@@ -196,7 +196,7 @@ The only exception is in tests, tests are allowed to write to stdout/stderr.
 
 ### Testing Requirements
 - Unit tests MUST be in `tests/tools/` directory
-- Tests should MUST NOT rely on external dependencies
+- Tests MUST NOT rely on external dependencies
 - Test error conditions and edge cases
 - Tests should be lightweight and fast
 
