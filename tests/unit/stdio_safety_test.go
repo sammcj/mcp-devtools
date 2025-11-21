@@ -86,9 +86,9 @@ func TestNoStdoutStderrWrites(t *testing.T) {
 	}
 
 	// Files/paths that are allowed to use these patterns (CLI commands, tests, etc.)
+	// NOTE: main.go is NOT in this list - it uses allowedExceptions instead for granular control
 	allowedPaths := []string{
 		"tests/",                      // All test files
-		"main.go",                     // CLI command handlers (version, security-config-*)
 		".github/",                    // GitHub workflows and docs
 		"docs/",                       // Documentation
 		"README.md",                   // Readme
@@ -103,51 +103,54 @@ func TestNoStdoutStderrWrites(t *testing.T) {
 			"print(torch.",       // Python print in shell command string
 		},
 		"main.go": {
-			"fmt.Printf(\"mcp-devtools version",          // version command
-			"fmt.Printf(\"Commit:",                       // version command
-			"fmt.Printf(\"Built:",                        // version command
-			"fmt.Printf(\"User config file does not",     // security-config-diff command
-			"fmt.Println(\"A default configuration",      // security-config-diff command
-			"fmt.Println(\"✅ User configuration matches", // security-config-diff command
-			"fmt.Println(\"📋 Configuration",              // security-config-diff command
-			"fmt.Printf(\"User config:",                  // security-config-diff command
-			"fmt.Println(\"Default config:",              // security-config-diff command
-			"fmt.Println(\"User config size:",            // security-config-diff command
-			"fmt.Println(\"Default config size:",         // security-config-diff command
-			"fmt.Printf(\"⚠️  Warning:",                  // security-config-diff command
-			"fmt.Printf(\"📄 Version difference:",         // security-config-diff command
-			"fmt.Printf(\"📊 Rules:",                      // security-config-diff command
-			"fmt.Printf(\"🆕 New rules",                   // security-config-diff command
-			"fmt.Printf(\"🆕 New setting",                 // security-config-diff command
-			"fmt.Println(\"\\n🔄 Updating",                // security-config-diff command
-			"fmt.Printf(\"📦 Backup created:",             // security-config-diff command
-			"fmt.Printf(\"✅ Configuration updated:",      // security-config-diff command
-			"fmt.Println(\"⚠️  Note:",                    // security-config-diff command
-			"fmt.Println(\"\\n💡 To update",               // security-config-diff command
-			"fmt.Printf(\"   mcp-devtools",               // security-config-diff command
-			"fmt.Printf(\"❌ Configuration file",          // security-config-validate command
-			"fmt.Println(\"💡 The file will",              // security-config-validate command
-			"fmt.Printf(\"🔍 Validating",                  // security-config-validate command
-			"fmt.Println(\"=\" + strings.Repeat",         // security-config-validate command
-			"fmt.Printf(\"❌ YAML parsing",                // security-config-validate command
-			"fmt.Printf(\"\\n📄 File has",                 // security-config-validate command
-			"fmt.Printf(\"⚠️  Line %d contains tabs",     // security-config-validate command
-			"fmt.Printf(\"⚠️  Line %d may have",          // security-config-validate command
-			"fmt.Println(\"✅ Configuration is valid\")",  // security-config-validate command
-			"fmt.Println(\"\\n📊 Configuration",           // security-config-validate command
-			"fmt.Println(\"========================",     // security-config-validate command
-			"fmt.Printf(\"Version:",                      // security-config-validate command
-			"fmt.Printf(\"Security enabled:",             // security-config-validate command
-			"fmt.Printf(\"Default action:",               // security-config-validate command
-			"fmt.Printf(\"Auto reload:",                  // security-config-validate command
-			"fmt.Printf(\"Max content size:",             // security-config-validate command
-			"fmt.Printf(\"Max scan size:",                // security-config-validate command
-			"fmt.Printf(\"Size exceeded behaviour:",      // security-config-validate command
-			"fmt.Printf(\"Rules defined:",                // security-config-validate command
-			"fmt.Printf(\"Trusted domains:",              // security-config-validate command
-			"fmt.Printf(\"Denied files:",                 // security-config-validate command
-			"fmt.Printf(\"Denied domains:",               // security-config-validate command
-			"fmt.Println(\"\\n✅ Configuration",           // security-config-validate command
+			"fmt.Printf(\"mcp-devtools version",           // version command
+			"fmt.Printf(\"Commit:",                        // version command
+			"fmt.Printf(\"Built:",                         // version command
+			"fmt.Printf(\"User config file does not",      // security-config-diff command
+			"fmt.Println(\"A default configuration",       // security-config-diff command
+			"fmt.Println(\"✅ User configuration matches",  // security-config-diff command
+			"fmt.Println(\"📋 Configuration",               // security-config-diff command
+			"fmt.Printf(\"User config:",                   // security-config-diff command
+			"fmt.Println(\"Default config:",               // security-config-diff command
+			"fmt.Println()",                               // security-config-diff command (blank lines)
+			"fmt.Println(\"User config size:",             // security-config-diff command
+			"fmt.Println(\"Default config size:",          // security-config-diff command
+			"fmt.Println(\"Run 'security-config-validate", // security-config-diff command
+			"fmt.Printf(\"⚠️  Warning:",                   // security-config-diff command
+			"fmt.Printf(\"📄 Version difference:",          // security-config-diff command
+			"fmt.Printf(\"📊 Rules:",                       // security-config-diff command
+			"fmt.Printf(\"🆕 New rules",                    // security-config-diff command
+			"fmt.Printf(\"🆕 New setting",                  // security-config-diff command
+			"fmt.Println(\"\\n🔄 Updating",                 // security-config-diff command
+			"fmt.Printf(\"📦 Backup created:",              // security-config-diff command
+			"fmt.Printf(\"✅ Configuration updated:",       // security-config-diff command
+			"fmt.Println(\"⚠️  Note:",                     // security-config-diff command
+			"fmt.Println(\"\\n💡 To update",                // security-config-diff command
+			"fmt.Printf(\"   mcp-devtools",                // security-config-diff command
+			"fmt.Println(\"   (This will create",          // security-config-diff command
+			"fmt.Printf(\"❌ Configuration file",           // security-config-validate command
+			"fmt.Println(\"💡 The file will",               // security-config-validate command
+			"fmt.Printf(\"🔍 Validating",                   // security-config-validate command
+			"fmt.Println(\"=\" + strings.Repeat",          // security-config-validate command
+			"fmt.Printf(\"❌ YAML parsing",                 // security-config-validate command
+			"fmt.Printf(\"\\n📄 File has",                  // security-config-validate command
+			"fmt.Printf(\"⚠️  Line %d contains tabs",      // security-config-validate command
+			"fmt.Printf(\"⚠️  Line %d may have",           // security-config-validate command
+			"fmt.Println(\"✅ Configuration is valid\")",   // security-config-validate command
+			"fmt.Println(\"\\n📊 Configuration",            // security-config-validate command
+			"fmt.Println(\"========================",      // security-config-validate command
+			"fmt.Printf(\"Version:",                       // security-config-validate command
+			"fmt.Printf(\"Security enabled:",              // security-config-validate command
+			"fmt.Printf(\"Default action:",                // security-config-validate command
+			"fmt.Printf(\"Auto reload:",                   // security-config-validate command
+			"fmt.Printf(\"Max content size:",              // security-config-validate command
+			"fmt.Printf(\"Max scan size:",                 // security-config-validate command
+			"fmt.Printf(\"Size exceeded behaviour:",       // security-config-validate command
+			"fmt.Printf(\"Rules defined:",                 // security-config-validate command
+			"fmt.Printf(\"Trusted domains:",               // security-config-validate command
+			"fmt.Printf(\"Denied files:",                  // security-config-validate command
+			"fmt.Printf(\"Denied domains:",                // security-config-validate command
+			"fmt.Println(\"\\n✅ Configuration",            // security-config-validate command
 		},
 	}
 

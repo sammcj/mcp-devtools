@@ -36,15 +36,15 @@ func cacheKey(language, workspaceRoot string) string {
 // This prevents goroutine accumulation that would occur with per-client cleanup goroutines
 func startCleanupRoutine(cache *sync.Map, logger *logrus.Logger) {
 	cleanupOnce.Do(func() {
-		// Check if cleanup was already stopped before starting
+		// Check if cleanup was already stopped before starting (mutex protects against races)
 		cleanupMu.Lock()
+		defer cleanupMu.Unlock()
+
 		if cleanupStopped {
-			cleanupMu.Unlock()
 			logger.Debug("LSP client cleanup routine not started - already stopped")
 			return
 		}
 		cleanupStop = make(chan struct{})
-		cleanupMu.Unlock()
 
 		go func() {
 			ticker := time.NewTicker(30 * time.Second)
