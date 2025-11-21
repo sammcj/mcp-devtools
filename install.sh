@@ -197,6 +197,12 @@ determine_install_dir() {
         return
     fi
 
+    # Try /usr/local/bin if it exists, is writable, and is in PATH
+    if [ -d "/usr/local/bin" ] && [ -w "/usr/local/bin" ] && is_in_path "/usr/local/bin"; then
+        echo "/usr/local/bin"
+        return
+    fi
+
     # If GOPATH is set and in PATH, use that
     if [ -n "${GOPATH:-}" ]; then
         local gopath_bin="${GOPATH}/bin"
@@ -264,63 +270,6 @@ check_install_dir() {
     return 0
 }
 
-# Verify checksum of downloaded file
-verify_checksum() {
-    local file="$1"
-    local expected_checksum="$2"
-
-    if [ -z "$expected_checksum" ]; then
-        warn "No checksum provided, skipping verification"
-        return 0
-    fi
-
-    local actual_checksum
-    if command -v sha256sum >/dev/null 2>&1; then
-        actual_checksum=$(sha256sum "$file" | awk '{print $1}')
-    elif command -v shasum >/dev/null 2>&1; then
-        actual_checksum=$(shasum -a 256 "$file" | awk '{print $1}')
-    else
-        warn "No SHA256 tool found (sha256sum or shasum), skipping checksum verification"
-        return 0
-    fi
-
-    if [ "$actual_checksum" != "$expected_checksum" ]; then
-        error "Checksum verification failed!"
-        error "Expected: ${expected_checksum}"
-        error "Actual:   ${actual_checksum}"
-        error "The downloaded file may be corrupted or compromised"
-        return 1
-    fi
-
-    success "Checksum verified"
-    return 0
-}
-
-# Download checksums file and extract checksum for specific file
-get_checksum_for_file() {
-    local version="$1"
-    local filename="$2"
-    local checksums_url="https://github.com/${GITHUB_REPO}/releases/download/v${version}/checksums.txt"
-
-    local checksums
-    if command -v curl >/dev/null 2>&1; then
-        checksums=$(curl -fsSL "$checksums_url" 2>/dev/null || echo "")
-    elif command -v wget >/dev/null 2>&1; then
-        checksums=$(wget -qO- "$checksums_url" 2>/dev/null || echo "")
-    fi
-
-    if [ -z "$checksums" ]; then
-        warn "Could not download checksums file, proceeding without verification"
-        return 0
-    fi
-
-    # Extract checksum for our specific file
-    local checksum
-    checksum=$(echo "$checksums" | grep "$filename" | awk '{print $1}')
-
-    echo "$checksum"
-}
-
 # Find existing installation
 find_existing_install() {
     command -v "$BINARY_NAME" 2>/dev/null || true
@@ -351,17 +300,6 @@ install_binary() {
         dry_run "Would download ${BINARY_NAME} v${version} for ${os}/${arch}:"
         dry_run "  ${download_url}"
         dry_run ""
-        dry_run "Would check for SHA256 checksum file (optional):"
-        dry_run "  https://github.com/${GITHUB_REPO}/releases/download/v${version}/checksums.txt"
-        dry_run ""
-
-        if [ -f "$binary_path" ]; then
-            local backup
-            backup="${binary_path}.backup.$(date +%Y%m%d-%H%M%S)"
-            dry_run "Would backup existing binary:"
-            dry_run "  ${binary_path} -> ${backup}"
-            dry_run ""
-        fi
 
         dry_run "Would install binary to:"
         dry_run "  ${binary_path}"
@@ -380,40 +318,16 @@ install_binary() {
     # Check install directory is writable before downloading
     check_install_dir "$install_dir"
 
-    info "Downloading ${BINARY_NAME} v${version} for ${os}/${arch}..."
-
-    # Get expected checksum (optional)
-    local expected_checksum
-    expected_checksum=$(get_checksum_for_file "$version" "$filename")
+    echo "Downloading..."
 
     # Create temporary directory
     TEMP_DIR=$(mktemp -d)
     local temp_binary="${TEMP_DIR}/${BINARY_NAME}"
 
     # Download binary directly
-    if ! download "$download_url" "$temp_binary"; then
+    if ! download "$download_url" "$temp_binary" 2>/dev/null; then
         error "Failed to download from $download_url"
-        error "Please check that the release exists for your platform"
         exit 1
-    fi
-
-    success "Downloaded ${filename}"
-
-    # Verify checksum if available
-    if [ -n "$expected_checksum" ]; then
-        info "Verifying checksum..."
-        if ! verify_checksum "$temp_binary" "$expected_checksum"; then
-            error "Aborting installation due to checksum mismatch"
-            exit 1
-        fi
-    fi
-
-    # Backup existing binary if it exists
-    if [ -f "$binary_path" ]; then
-        local backup
-        backup="${binary_path}.backup.$(date +%Y%m%d-%H%M%S)"
-        info "Backing up existing binary to ${backup}"
-        mv "$binary_path" "$backup"
     fi
 
     # Install new binary
@@ -425,15 +339,11 @@ install_binary() {
         xattr -d com.apple.quarantine "$binary_path" 2>/dev/null || true
     fi
 
-    success "Installed to ${binary_path}"
-
     # Verify installation
     if ! "$binary_path" --version >/dev/null 2>&1; then
-        error "Binary verification failed"
+        error "Installation failed - binary verification failed"
         exit 1
     fi
-
-    success "Installation verified"
 }
 
 # Generate example configurations
@@ -469,8 +379,6 @@ generate_configs() {
         fi
         return 0
     fi
-
-    info "Generating example configurations..."
 
     mkdir -p "$EXAMPLES_DIR"
 
@@ -554,100 +462,77 @@ Environment="ENABLE_ADDITIONAL_TOOLS=security,sequential_thinking,code_skim,code
 WantedBy=multi-user.target
 EOF
 
-    success "Example configurations created in ${EXAMPLES_DIR}/"
-
     # Open file manager to show the configs (platform-specific)
     if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ] || grep -qi microsoft /proc/version 2>/dev/null; then
         # WSL2 - use Windows Explorer
         if command -v explorer.exe >/dev/null 2>&1; then
-            # Convert WSL path to Windows path
             local win_path
             win_path=$(wslpath -w "$EXAMPLES_DIR" 2>/dev/null || echo "$EXAMPLES_DIR")
             explorer.exe "$win_path" >/dev/null 2>&1 || true
         fi
     elif command -v open >/dev/null 2>&1; then
         # macOS
-        open "$EXAMPLES_DIR"
+        open "$EXAMPLES_DIR" >/dev/null 2>&1 || true
     elif command -v xdg-open >/dev/null 2>&1; then
         # Linux with desktop environment
         xdg-open "$EXAMPLES_DIR" >/dev/null 2>&1 || true
     elif command -v explorer >/dev/null 2>&1; then
         # Windows (Git Bash, MSYS2, Cygwin)
-        explorer "$(cygpath -w "$EXAMPLES_DIR" 2>/dev/null || echo "$EXAMPLES_DIR")"
+        explorer "$(cygpath -w "$EXAMPLES_DIR" 2>/dev/null || echo "$EXAMPLES_DIR")" >/dev/null 2>&1 || true
     fi
 }
 
-# Show next steps
-show_next_steps() {
+# Automatically add install dir to PATH
+add_to_path() {
     local install_dir="$1"
-    local os="$2"
 
-    echo
-    bold "Installation complete! 🎉"
-    echo
-    echo "Next steps:"
-    echo
-
-    # Check if install dir is in PATH
-    if ! is_in_path "$install_dir"; then
-        warn "Installation directory is not in your PATH"
-        echo
-        echo "Add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
-        echo
-        echo "  export PATH=\"${install_dir}:\$PATH\""
-        echo
-        echo "Then reload your shell:"
-        echo
-        echo "  source ~/.bashrc  # or ~/.zshrc"
-        echo
+    # Don't modify in dry run mode
+    if [ -n "${DRY_RUN:-}" ]; then
+        dry_run "Would add ${install_dir} to PATH in shell RC file"
+        return 0
     fi
 
-    echo "1. Add MCP DevTools to your MCP client configuration"
-    echo
-    echo "   Example configs are available in:"
-    echo "   ${EXAMPLES_DIR}/"
-    echo
-    echo "   Common locations for MCP client configs:"
-
-    if [ "$os" = "darwin" ]; then
-        echo "   • Claude Desktop: ~/Library/Application Support/Claude/claude_desktop_config.json"
-        echo "   • VS Code (Cline): ~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"
-    else
-        echo "   • Claude Desktop: ~/.config/Claude/claude_desktop_config.json"
-        echo "   • VS Code (Cline): ~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"
+    # Skip if already in PATH
+    if is_in_path "$install_dir"; then
+        return 0
     fi
 
-    echo
-    echo "2. (Optional) Set up API keys for additional features:"
-    echo "   • BRAVE_API_KEY - For Brave Search (https://brave.com/search/api/)"
-    echo "   • GOOGLE_SEARCH_API_KEY - For Google Search"
-    echo "   • CONTEXT7_API_KEY - For higher rate limits on package docs"
-    echo
-    echo "3. Restart your MCP client to load the server"
-    echo
-    echo "Documentation: https://github.com/${GITHUB_REPO}"
-    echo "Available tools: https://github.com/${GITHUB_REPO}/blob/main/docs/tools/overview.md"
-    echo
+    # Detect shell RC file
+    local rc_file=""
+
+    if [ -n "${BASH_VERSION:-}" ] && [ -f "${HOME}/.bashrc" ]; then
+        rc_file="${HOME}/.bashrc"
+    elif [ -n "${ZSH_VERSION:-}" ] && [ -f "${HOME}/.zshrc" ]; then
+        rc_file="${HOME}/.zshrc"
+    elif [ -f "${HOME}/.bashrc" ]; then
+        rc_file="${HOME}/.bashrc"
+    elif [ -f "${HOME}/.zshrc" ]; then
+        rc_file="${HOME}/.zshrc"
+    fi
+
+    # If no RC file found, skip
+    if [ -z "$rc_file" ]; then
+        warn "Could not find shell RC file to update PATH"
+        return 1
+    fi
+
+    # Check if already in RC file
+    if grep -q "${install_dir}" "$rc_file" 2>/dev/null; then
+        return 0
+    fi
+
+    # Add to PATH silently
+    {
+        echo ""
+        echo "# Added by MCP DevTools installer on $(date +%Y-%m-%d)"
+        echo "export PATH=\"${install_dir}:\$PATH\""
+    } >> "$rc_file" 2>/dev/null
+    return 0
 }
 
 # Main installation flow
 main() {
-    echo
-    bold "═══════════════════════════════════════════════════════"
-    if [ -n "${DRY_RUN:-}" ]; then
-        bold "    MCP DevTools Installer (DRY RUN MODE)"
-    else
-        bold "         MCP DevTools Installer"
-    fi
-    bold "═══════════════════════════════════════════════════════"
-    echo
-
-    if [ -n "${DRY_RUN:-}" ]; then
-        warn "Running in DRY RUN mode - no changes will be made"
-        echo
-    fi
-
-    # Check dependencies
+    # Check dependencies silently
     check_dependencies
 
     # Detect platform
@@ -655,89 +540,80 @@ main() {
     os=$(detect_os)
     arch=$(detect_arch)
 
-    info "Detected platform: ${os}/${arch}"
-
     # Get version to install
     local version="${VERSION:-}"
     if [ -z "$version" ]; then
         version=$(get_latest_version)
     fi
 
-    info "Version to install: v${version}"
-
     # Check for existing installation
     local existing
     existing=$(find_existing_install)
-    if [ -n "$existing" ]; then
-        warn "Found existing installation: ${existing}"
-
-        # Get current version
-        local current_version
-        current_version=$("$existing" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
-        info "Current version: ${current_version}"
-
-        if [ -z "${FORCE:-}" ] && [ -z "${DRY_RUN:-}" ]; then
-            echo
-            read -p "Do you want to replace it? [y/N] " -n 1 -r
-            echo
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                info "Installation cancelled"
-                exit 0
-            fi
-        fi
-    fi
 
     # Determine installation directory
     local install_dir
     install_dir=$(determine_install_dir)
 
-    info "Installation directory: ${install_dir}"
+    # Simple summary
     echo
+    if [ -n "$existing" ]; then
+        echo "Updating mcp-devtools v${version} (${os}/${arch}) at ${install_dir}"
+    else
+        echo "Installing mcp-devtools v${version} (${os}/${arch}) to ${install_dir}"
+    fi
 
-    # Show summary and ask for confirmation (unless FORCE or DRY_RUN)
-    if [ -z "${FORCE:-}" ] && [ -z "${DRY_RUN:-}" ]; then
-        bold "Installation Summary:"
-        echo "  Platform:     ${os}/${arch}"
-        echo "  Version:      v${version}"
-        echo "  Install to:   ${install_dir}/${BINARY_NAME}"
-
-        if [ -n "$existing" ]; then
-            echo "  Action:       Update existing installation"
-        else
-            echo "  Action:       Fresh installation"
-        fi
-
-        if [ -z "${NO_CONFIG:-}" ]; then
-            echo "  Configs:      ${EXAMPLES_DIR}/"
-        fi
-
-        if ! is_in_path "$install_dir"; then
-            echo "  PATH:         ⚠ Not in PATH (instructions will be shown)"
-        else
-            echo "  PATH:         ✓ Already in PATH"
-        fi
-
-        echo
-        read -p "Proceed with installation? [y/N] " -n 1 -r
+    # Single confirmation (unless FORCE, DRY_RUN, or stdin is not a terminal)
+    if [ -z "${FORCE:-}" ] && [ -z "${DRY_RUN:-}" ] && [ -t 0 ]; then
+        read -p "Continue? [y/N] " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            info "Installation cancelled"
             exit 0
         fi
-        echo
     fi
 
     # Install binary
     install_binary "$version" "$os" "$arch" "$install_dir"
 
-    # Generate configs unless NO_CONFIG is set
-    if [ -z "${NO_CONFIG:-}" ]; then
-        echo
-        generate_configs "${install_dir}/${BINARY_NAME}"
+    # Add to PATH if not already there
+    local added_to_path=false
+    local rc_file=""
+    if ! is_in_path "$install_dir"; then
+        if add_to_path "$install_dir"; then
+            added_to_path=true
+            if [ -f "${HOME}/.bashrc" ] && grep -q "${install_dir}" "${HOME}/.bashrc" 2>/dev/null; then
+                rc_file="${HOME}/.bashrc"
+            elif [ -f "${HOME}/.zshrc" ] && grep -q "${install_dir}" "${HOME}/.zshrc" 2>/dev/null; then
+                rc_file="${HOME}/.zshrc"
+            fi
+        fi
     fi
 
-    # Show next steps
-    show_next_steps "$install_dir" "$os"
+    # Generate configs unless NO_CONFIG is set
+    if [ -z "${NO_CONFIG:-}" ]; then
+        generate_configs "${install_dir}/${BINARY_NAME}" >/dev/null 2>&1
+    fi
+
+    # Simple completion message
+    echo
+    success "Installed to ${install_dir}/${BINARY_NAME}"
+    ls -la "${install_dir}/${BINARY_NAME}"
+
+    if [ "$added_to_path" = true ] && [ -n "$rc_file" ]; then
+        success "Added to ${rc_file}"
+        echo
+        echo "To use now: source ${rc_file}"
+        echo "Or restart your shell"
+    elif ! is_in_path "$install_dir"; then
+        echo
+        warn "Not in PATH - add this to your shell profile:"
+        echo "  export PATH=\"${install_dir}:\$PATH\""
+    fi
+
+    if [ -z "${NO_CONFIG:-}" ]; then
+        echo
+        echo "Example configs: ${EXAMPLES_DIR}/"
+    fi
+    echo
 }
 
 main "$@"
