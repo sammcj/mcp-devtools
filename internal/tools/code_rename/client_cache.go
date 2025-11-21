@@ -11,8 +11,9 @@ import (
 
 // Global cleanup management
 var (
-	cleanupOnce sync.Once
-	cleanupStop chan struct{}
+	cleanupOnce     sync.Once
+	cleanupStop     chan struct{}
+	cleanupStopOnce sync.Once
 )
 
 // cachedLSPClient wraps an LSP client with metadata for caching
@@ -74,14 +75,18 @@ func startCleanupRoutine(cache *sync.Map, logger *logrus.Logger) {
 
 // StopCleanupRoutine stops the background cleanup routine and closes all cached LSP clients
 // Should be called during server shutdown to prevent goroutine leaks
+// This function is idempotent and safe to call multiple times
 func StopCleanupRoutine(cache *sync.Map, logger *logrus.Logger) {
-	// Stop the background cleanup goroutine
-	if cleanupStop != nil {
-		close(cleanupStop)
-		cleanupStop = nil
-	}
+	// Stop the background cleanup goroutine (idempotent via sync.Once)
+	cleanupStopOnce.Do(func() {
+		if cleanupStop != nil {
+			close(cleanupStop)
+			logger.Debug("LSP client cleanup routine stopped")
+		}
+	})
 
-	// Close all remaining cached clients
+	// Always close all remaining cached clients, even if called multiple times
+	// This ensures cleanup happens even if the routine wasn't started
 	if cache != nil {
 		cache.Range(func(key, value any) bool {
 			if c, ok := value.(*cachedLSPClient); ok {
