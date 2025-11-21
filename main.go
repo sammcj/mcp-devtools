@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -39,9 +40,10 @@ var (
 )
 
 // Global resources that need cleanup
+// Using atomic operations to prevent race conditions between signal handlers and cleanup
 var (
-	debugLogFile *os.File
-	isStdioMode  bool
+	debugLogFile atomic.Pointer[os.File]
+	isStdioMode  atomic.Bool
 )
 
 const (
@@ -260,11 +262,11 @@ func main() {
 			port := cmd.String("port")
 			baseURL := cmd.String("base-url")
 
-			// Track stdio mode for error handling
-			isStdioMode = (transport == "stdio")
+			// Track stdio mode for error handling (atomic to prevent races with signal handlers)
+			isStdioMode.Store(transport == "stdio")
 
 			// Configure logger appropriately for transport mode
-			if isStdioMode {
+			if isStdioMode.Load() {
 				// For stdio mode, disable logging to prevent conflicts with MCP protocol
 				logger.SetOutput(os.Stderr)        // Use stderr instead of stdout
 				logger.SetLevel(logrus.ErrorLevel) // Only log errors to stderr
@@ -279,8 +281,8 @@ func main() {
 						if err := os.MkdirAll(logDir, 0700); err == nil {
 							logFile := filepath.Join(logDir, "mcp-devtools.log")
 							if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
-								// Store file handle for cleanup
-								debugLogFile = file
+								// Store file handle for cleanup (atomic to prevent races with signal handlers)
+								debugLogFile.Store(file)
 								// Configure both instance and global loggers for file output
 								logger.SetOutput(file)
 								logrus.SetOutput(file)
@@ -419,7 +421,7 @@ func main() {
 		// CRITICAL: In stdio mode, we must NOT log to stdout or stderr as it breaks the MCP protocol
 		// Even though this occurs after ServeStdio() returns, initialisation errors could occur
 		// before the protocol starts, so we avoid all logging in stdio mode
-		if !isStdioMode {
+		if !isStdioMode.Load() {
 			logger.Fatalf("Error: %v", err)
 		}
 		os.Exit(1)
@@ -428,11 +430,11 @@ func main() {
 
 // performCleanup handles cleanup of resources on shutdown
 func performCleanup(logger *logrus.Logger) {
-	// Close the debug log file if it was opened
-	if debugLogFile != nil {
+	// Close the debug log file if it was opened (atomic load to prevent races)
+	if file := debugLogFile.Load(); file != nil {
 		// Silently close - we're in cleanup and can't safely log errors
 		// (stdio mode: no output allowed; non-stdio: logger might write to this file)
-		_ = debugLogFile.Close()
+		_ = file.Close()
 	}
 
 	// Close the tool error logger if it was initialised
