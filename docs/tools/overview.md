@@ -25,6 +25,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 #### Research Workflow
 ```
 1. Internet Search → Find relevant information
+   (Supports: Brave, Google, Kagi, SearXNG, DuckDuckGo)
 2. Web Fetch → Retrieve detailed content
 3. Memory → Store findings for later reference
 ```

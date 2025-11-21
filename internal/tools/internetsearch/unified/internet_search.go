@@ -16,6 +16,7 @@ import (
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/brave"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/duckduckgo"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/google"
+	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/kagi"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/searxng"
 	"github.com/sirupsen/logrus"
 )
@@ -39,7 +40,7 @@ const (
 )
 
 // providerPriorityOrder defines the order providers are tried during fallback
-var providerPriorityOrder = []string{"brave", "google", "searxng", "duckduckgo"}
+var providerPriorityOrder = []string{"brave", "google", "kagi", "searxng", "duckduckgo"}
 
 func init() {
 	tool := &InternetSearchTool{
@@ -53,6 +54,10 @@ func init() {
 
 	if googleProvider := google.NewGoogleProvider(); googleProvider != nil && googleProvider.IsAvailable() {
 		tool.providers["google"] = googleProvider
+	}
+
+	if kagiProvider := kagi.NewKagiProvider(); kagiProvider != nil && kagiProvider.IsAvailable() {
+		tool.providers["kagi"] = kagiProvider
 	}
 
 	if searxngProvider := searxng.NewSearXNGProvider(); searxngProvider != nil && searxngProvider.IsAvailable() {
@@ -111,6 +116,7 @@ func (t *InternetSearchTool) Definition() mcp.Tool {
 	// Check which providers are available
 	_, hasBrave := t.providers["brave"]
 	_, hasGoogle := t.providers["google"]
+	_, hasKagi := t.providers["kagi"]
 	_, hasSearXNG := t.providers["searxng"]
 
 	// Build provider-specific parameter description
@@ -120,6 +126,9 @@ func (t *InternetSearchTool) Definition() mcp.Tool {
 	}
 	if hasGoogle {
 		providerSpecificParams = append(providerSpecificParams, "- Google: start (pagination offset)")
+	}
+	if hasKagi {
+		providerSpecificParams = append(providerSpecificParams, "- Kagi: No provider-specific parameters")
 	}
 	if hasSearXNG {
 		providerSpecificParams = append(providerSpecificParams, "- SearXNG: pageno, time_range (day/month/year), language, safesearch")

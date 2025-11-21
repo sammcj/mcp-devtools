@@ -11,11 +11,16 @@ Instead of managing separate tools for different search providers, the Internet 
 ## Supported Providers
 
 ### Brave Search
+Requires free API key
+
 - **Internet Search**: General internet search with fresh results
 - **Image Search**: Search for images with metadata
 - **News Search**: Recent news articles and events
 - **Video Search**: Video content with metadata
 - **Local Search**: Local businesses and points of interest (Pro API required)
+
+### DuckDuckGo
+- **Internet Search**: Free privacy-focused internet search (no API key required)
 
 ### Google Custom Search
 - **Internet Search**: General internet search with Google's quality
@@ -23,13 +28,14 @@ Instead of managing separate tools for different search providers, the Internet 
 - **Note**: Requires Google API key and Custom Search Engine ID
 
 ### SearXNG
-- **Internet Search**: Privacy-focused search aggregation
+- **Internet Search**: Privacy-focused self-hosted search aggregation
 - **Image Search**: Images via SearXNG instance
 - **News Search**: News articles via SearXNG
 - **Video Search**: Video content via SearXNG
 
-### DuckDuckGo
-- **Internet Search**: Privacy-focused internet search (no API key required)
+### Kagi Search
+- **Internet Search**: Fast, privacy-focused search with high-quality results
+- **Note**: Requires Kagi API key (requires Kagi subscription and search API enabled, see https://help.kagi.com/kagi/api/search.html)
 
 ## Configuration
 
@@ -45,6 +51,7 @@ Example MCP Client Configuration:
         "BRAVE_API_KEY": "your-brave-api-key",
         "GOOGLE_SEARCH_API_KEY": "your-google-api-key",
         "GOOGLE_SEARCH_ID": "your-search-engine-id",
+        "KAGI_API_KEY": "your-kagi-api-key",
         "SEARXNG_BASE_URL": "https://your-searxng-instance.com"
       }
     }
@@ -57,21 +64,23 @@ Example MCP Client Configuration:
 Providers are **only registered if properly configured**:
 
 - **Brave**: Registered only if `BRAVE_API_KEY` is set
+- **DuckDuckGo**: Always registered (no configuration required)
 - **Google**: Registered only if both `GOOGLE_SEARCH_API_KEY` and `GOOGLE_SEARCH_ID` are set
 - **SearXNG**: Registered only if `SEARXNG_BASE_URL` is set and valid
-- **DuckDuckGo**: Always registered (no configuration required)
+- **Kagi**: Registered only if `KAGI_API_KEY` is set
 
 The fallback chain automatically adjusts based on which providers are available with progressive delays (1s, 2s, 3s) between attempts to prevent rapid-fire rate limiting:
 
 **Example Scenarios:**
 
-| Configuration                                         | Fallback Order                        | Behaviour                                                  |
-|-------------------------------------------------------|---------------------------------------|------------------------------------------------------------|
-| Only `BRAVE_API_KEY` set                              | Brave → DuckDuckGo                    | If Brave fails, waits 1s then tries DuckDuckGo             |
-| Only `GOOGLE_SEARCH_API_KEY` + `GOOGLE_SEARCH_ID` set | Google → DuckDuckGo                   | If Google fails, waits 1s then tries DuckDuckGo            |
-| Only `SEARXNG_BASE_URL` set                           | SearXNG → DuckDuckGo                  | If SearXNG fails, waits 1s then tries DuckDuckGo           |
-| All providers configured                              | Brave → Google → SearXNG → DuckDuckGo | Maximum resilience: tries all four with progressive delays |
-| Nothing configured                                    | DuckDuckGo only                       | Only DuckDuckGo available, no fallback needed              |
+| Configuration                                         | Fallback Order                               | Behaviour                                                  |
+|-------------------------------------------------------|----------------------------------------------|------------------------------------------------------------|
+| Only `BRAVE_API_KEY` set                              | Brave → DuckDuckGo                           | If Brave fails, waits 1s then tries DuckDuckGo             |
+| Only `GOOGLE_SEARCH_API_KEY` + `GOOGLE_SEARCH_ID` set | Google → DuckDuckGo                          | If Google fails, waits 1s then tries DuckDuckGo            |
+| Only `KAGI_API_KEY` set                               | Kagi → DuckDuckGo                            | If Kagi fails, waits 1s then tries DuckDuckGo              |
+| Only `SEARXNG_BASE_URL` set                           | SearXNG → DuckDuckGo                         | If SearXNG fails, waits 1s then tries DuckDuckGo           |
+| All providers configured                              | Brave → Google → Kagi → SearXNG → DuckDuckGo | Maximum resilience: tries all five with progressive delays |
+| Nothing configured                                    | DuckDuckGo only                              | Only DuckDuckGo available, no fallback needed              |
 
 **Important**: Unconfigured providers are **not** included in the fallback chain. The tool won't waste time attempting to use providers that aren't properly set up.
 
@@ -81,6 +90,15 @@ Get your API key from [Brave Search API](https://brave.com/search/api/) and set:
 ```bash
 BRAVE_API_KEY="your-brave-api-key"
 ```
+
+### Kagi Search Setup
+Get your API key from [Kagi Search API](https://kagi.com/settings?p=api) (requires Kagi subscription) and set:
+
+```bash
+KAGI_API_KEY="your-kagi-api-key"
+```
+
+**Note**: Kagi API access requires an active Kagi subscription. API tokens can be generated from your Kagi account settings.
 
 ### SearXNG Setup
 For self-hosted or public SearXNG instances:
@@ -144,7 +162,7 @@ The Internet Search tool supports configurable rate limiting to protect external
 - **Rate Limiting**: Configurable request rate limiting protects against overwhelming external search provider APIs
 - **Input Validation**: Comprehensive validation of search parameters and provider selection
 - **Error Handling**: Graceful handling of network issues and API failures
-- **Trusted Sources**: Only queries established search provider APIs (Brave, SearXNG, DuckDuckGo)
+- **Trusted Sources**: Only queries established search provider APIs (Brave, Google, Kagi, SearXNG, DuckDuckGo)
 
 ## Usage Examples
 
@@ -213,6 +231,19 @@ While intended to be activated via a prompt to an agent, below are some example 
     "query": "coffee shops near Fitzroy",
     "count": 5,
     "provider": "brave"
+  }
+}
+```
+
+### Kagi Internet Search
+```json
+{
+  "name": "internet_search",
+  "arguments": {
+    "type": "web",
+    "query": "golang best practices",
+    "count": 10,
+    "provider": "kagi"
   }
 }
 ```
@@ -322,8 +353,9 @@ The Internet Search tool automatically handles provider failures with intelligen
 The tool uses this priority order when selecting providers:
 1. **Brave** - Best performance and features (when API key configured)
 2. **Google** - High quality results with comprehensive metadata (when API key + CX configured)
-3. **SearXNG** - Privacy-focused with language options (when instance configured)
-4. **DuckDuckGo** - Always available fallback (no configuration needed)
+3. **Kagi** - Fast, privacy-focused search with high-quality results (when API key configured)
+4. **SearXNG** - Privacy-focused with language options (when instance configured)
+5. **DuckDuckGo** - Always available fallback (no configuration needed)
 
 ### Metadata in Fallback Results
 
@@ -343,6 +375,11 @@ When fallback occurs, search results include additional metadata:
 - **Best for**: High-quality results with comprehensive metadata
 - **Pros**: Google's search quality, good for web and image search, well-structured results
 - **Cons**: Requires API key + Custom Search Engine ID, 100 queries/day free limit, $5 per 1000 queries paid
+
+### When to Use Kagi Search
+- **Best for**: Fast, high-quality results with privacy focus
+- **Pros**: No ads, no tracking, high-quality results, fast performance, includes thumbnails when available
+- **Cons**: Requires paid Kagi subscription, API access requires subscription
 
 ### When to Use SearXNG
 - **Best for**: Privacy-focused search, aggregated results
@@ -385,6 +422,11 @@ When fallback occurs, search results include additional metadata:
 - **Free Tier**: 100 queries/day
 - **Paid Tier**: $5 per 1000 queries (up to 10,000/day)
 - **Note**: Requires both API key and Custom Search Engine configuration
+
+### Kagi Search
+- Based on your Kagi subscription plan
+- API access requires an active Kagi subscription
+- No separate API quota limits beyond your subscription
 
 ### SearXNG
 - Depends on instance configuration
