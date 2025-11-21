@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
@@ -17,7 +18,7 @@ type KagiProvider struct {
 
 // NewKagiProvider creates a new Kagi search provider
 func NewKagiProvider() *KagiProvider {
-	apiKey := os.Getenv("KAGI_API_KEY")
+	apiKey := strings.TrimSpace(os.Getenv("KAGI_API_KEY"))
 	if apiKey == "" {
 		return nil
 	}
@@ -34,7 +35,7 @@ func (p *KagiProvider) GetName() string {
 
 // IsAvailable checks if the provider is available
 func (p *KagiProvider) IsAvailable() bool {
-	return p.client != nil && os.Getenv("KAGI_API_KEY") != ""
+	return p.client != nil && strings.TrimSpace(os.Getenv("KAGI_API_KEY")) != ""
 }
 
 // GetSupportedTypes returns the search types this provider supports

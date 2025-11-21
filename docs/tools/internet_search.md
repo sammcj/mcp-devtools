@@ -11,29 +11,31 @@ Instead of managing separate tools for different search providers, the Internet 
 ## Supported Providers
 
 ### Brave Search
+Requires free API key
+
 - **Internet Search**: General internet search with fresh results
 - **Image Search**: Search for images with metadata
 - **News Search**: Recent news articles and events
 - **Video Search**: Video content with metadata
 - **Local Search**: Local businesses and points of interest (Pro API required)
 
+### DuckDuckGo
+- **Internet Search**: Free privacy-focused internet search (no API key required)
+
 ### Google Custom Search
 - **Internet Search**: General internet search with Google's quality
 - **Image Search**: Search for images with comprehensive metadata
 - **Note**: Requires Google API key and Custom Search Engine ID
 
-### Kagi Search
-- **Internet Search**: Fast, privacy-focused search with high-quality results
-- **Note**: Requires Kagi API key (requires Kagi subscription)
-
 ### SearXNG
-- **Internet Search**: Privacy-focused search aggregation
+- **Internet Search**: Privacy-focused self-hosted search aggregation
 - **Image Search**: Images via SearXNG instance
 - **News Search**: News articles via SearXNG
 - **Video Search**: Video content via SearXNG
 
-### DuckDuckGo
-- **Internet Search**: Privacy-focused internet search (no API key required)
+### Kagi Search
+- **Internet Search**: Fast, privacy-focused search with high-quality results
+- **Note**: Requires Kagi API key (requires Kagi subscription and search API enabled, see https://help.kagi.com/kagi/api/search.html)
 
 ## Configuration
 
@@ -62,23 +64,23 @@ Example MCP Client Configuration:
 Providers are **only registered if properly configured**:
 
 - **Brave**: Registered only if `BRAVE_API_KEY` is set
-- **Google**: Registered only if both `GOOGLE_SEARCH_API_KEY` and `GOOGLE_SEARCH_ID` are set
-- **Kagi**: Registered only if `KAGI_API_KEY` is set
-- **SearXNG**: Registered only if `SEARXNG_BASE_URL` is set and valid
 - **DuckDuckGo**: Always registered (no configuration required)
+- **Google**: Registered only if both `GOOGLE_SEARCH_API_KEY` and `GOOGLE_SEARCH_ID` are set
+- **SearXNG**: Registered only if `SEARXNG_BASE_URL` is set and valid
+- **Kagi**: Registered only if `KAGI_API_KEY` is set
 
 The fallback chain automatically adjusts based on which providers are available with progressive delays (1s, 2s, 3s) between attempts to prevent rapid-fire rate limiting:
 
 **Example Scenarios:**
 
-| Configuration                                         | Fallback Order                        | Behaviour                                                  |
-|-------------------------------------------------------|---------------------------------------|------------------------------------------------------------|
-| Only `BRAVE_API_KEY` set                              | Brave → DuckDuckGo                          | If Brave fails, waits 1s then tries DuckDuckGo                |
-| Only `GOOGLE_SEARCH_API_KEY` + `GOOGLE_SEARCH_ID` set | Google → DuckDuckGo                         | If Google fails, waits 1s then tries DuckDuckGo               |
-| Only `KAGI_API_KEY` set                               | Kagi → DuckDuckGo                           | If Kagi fails, waits 1s then tries DuckDuckGo                 |
-| Only `SEARXNG_BASE_URL` set                           | SearXNG → DuckDuckGo                        | If SearXNG fails, waits 1s then tries DuckDuckGo              |
-| All providers configured                              | Brave → Google → Kagi → SearXNG → DuckDuckGo | Maximum resilience: tries all five with progressive delays  |
-| Nothing configured                                    | DuckDuckGo only                             | Only DuckDuckGo available, no fallback needed                |
+| Configuration                                         | Fallback Order                               | Behaviour                                                  |
+|-------------------------------------------------------|----------------------------------------------|------------------------------------------------------------|
+| Only `BRAVE_API_KEY` set                              | Brave → DuckDuckGo                           | If Brave fails, waits 1s then tries DuckDuckGo             |
+| Only `GOOGLE_SEARCH_API_KEY` + `GOOGLE_SEARCH_ID` set | Google → DuckDuckGo                          | If Google fails, waits 1s then tries DuckDuckGo            |
+| Only `KAGI_API_KEY` set                               | Kagi → DuckDuckGo                            | If Kagi fails, waits 1s then tries DuckDuckGo              |
+| Only `SEARXNG_BASE_URL` set                           | SearXNG → DuckDuckGo                         | If SearXNG fails, waits 1s then tries DuckDuckGo           |
+| All providers configured                              | Brave → Google → Kagi → SearXNG → DuckDuckGo | Maximum resilience: tries all five with progressive delays |
+| Nothing configured                                    | DuckDuckGo only                              | Only DuckDuckGo available, no fallback needed              |
 
 **Important**: Unconfigured providers are **not** included in the fallback chain. The tool won't waste time attempting to use providers that aren't properly set up.
 
