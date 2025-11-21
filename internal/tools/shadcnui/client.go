@@ -69,6 +69,7 @@ func (c *RateLimitedHTTPClient) Get(reqURL string) (*http.Response, error) {
 	defer c.mu.Unlock()
 
 	// Wait for rate limiter to allow the request
+	// Use background context as Get() doesn't receive a context parameter
 	err := c.limiter.Wait(context.Background())
 	if err != nil {
 		return nil, err

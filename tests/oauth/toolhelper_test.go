@@ -28,7 +28,7 @@ func TestOAuthHelper_GetUserClaims(t *testing.T) {
 			Scope:    "openid profile mcp:tools",
 		}
 
-		ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, claims)
+		ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, claims)
 
 		result, err := helper.GetUserClaims(ctx)
 		require.NoError(t, err)
@@ -38,7 +38,7 @@ func TestOAuthHelper_GetUserClaims(t *testing.T) {
 	})
 
 	t.Run("NoClaims", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		_, err := helper.GetUserClaims(ctx)
 		assert.Error(t, err)
@@ -46,7 +46,7 @@ func TestOAuthHelper_GetUserClaims(t *testing.T) {
 	})
 
 	t.Run("WrongType", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, "not-claims")
+		ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, "not-claims")
 
 		_, err := helper.GetUserClaims(ctx)
 		assert.Error(t, err)
@@ -67,7 +67,7 @@ func TestOAuthHelper_HasScope(t *testing.T) {
 			Scope: "openid profile mcp:documents:read mcp:tools",
 		}
 
-		ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, claims)
+		ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, claims)
 
 		assert.True(t, helper.HasScope(ctx, "mcp:documents:read"))
 		assert.True(t, helper.HasScope(ctx, "openid"))
@@ -80,7 +80,7 @@ func TestOAuthHelper_HasScope(t *testing.T) {
 			Scope: "openid profile",
 		}
 
-		ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, claims)
+		ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, claims)
 
 		assert.False(t, helper.HasScope(ctx, "mcp:documents:read"))
 		assert.False(t, helper.HasScope(ctx, "mcp:admin"))
@@ -91,13 +91,13 @@ func TestOAuthHelper_HasScope(t *testing.T) {
 			Scope: "",
 		}
 
-		ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, claims)
+		ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, claims)
 
 		assert.False(t, helper.HasScope(ctx, "openid"))
 	})
 
 	t.Run("NoClaims", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		assert.False(t, helper.HasScope(ctx, "openid"))
 	})
@@ -107,7 +107,7 @@ func TestOAuthHelper_HasScope(t *testing.T) {
 			Scope: "  openid   profile   mcp:tools  ",
 		}
 
-		ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, claims)
+		ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, claims)
 
 		assert.True(t, helper.HasScope(ctx, "openid"))
 		assert.True(t, helper.HasScope(ctx, "profile"))
@@ -125,7 +125,7 @@ func TestOAuthHelper_RequireScope(t *testing.T) {
 			Scope: "openid profile mcp:documents:read",
 		}
 
-		ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, claims)
+		ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, claims)
 
 		err := helper.RequireScope(ctx, "mcp:documents:read")
 		assert.NoError(t, err)
@@ -136,7 +136,7 @@ func TestOAuthHelper_RequireScope(t *testing.T) {
 			Scope: "openid profile",
 		}
 
-		ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, claims)
+		ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, claims)
 
 		err := helper.RequireScope(ctx, "mcp:documents:write")
 		assert.Error(t, err)
@@ -145,7 +145,7 @@ func TestOAuthHelper_RequireScope(t *testing.T) {
 	})
 
 	t.Run("NoClaims", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		err := helper.RequireScope(ctx, "openid")
 		assert.Error(t, err)
@@ -163,7 +163,7 @@ func TestOAuthHelper_GetUserToken(t *testing.T) {
 			Scope: "openid profile",
 		}
 
-		ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, claims)
+		ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, claims)
 
 		_, err := helper.GetUserToken(ctx)
 		assert.Error(t, err)
@@ -172,7 +172,7 @@ func TestOAuthHelper_GetUserToken(t *testing.T) {
 	})
 
 	t.Run("NoClaims", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		_, err := helper.GetUserToken(ctx)
 		assert.Error(t, err)
@@ -235,7 +235,7 @@ func TestServiceOAuthClient_GetAuthenticatedHTTPClient(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("NotYetImplemented", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		_, err := client.GetAuthenticatedHTTPClient(ctx)
 		assert.Error(t, err)
@@ -261,7 +261,7 @@ func TestServiceOAuthClient_Authenticate(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("NotYetImplemented", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		err := client.Authenticate(ctx)
 		assert.Error(t, err)
@@ -332,7 +332,7 @@ func TestScopeParsing(t *testing.T) {
 				Scope: tc.scope,
 			}
 
-			ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, claims)
+			ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, claims)
 
 			result := helper.HasScope(ctx, tc.required)
 			assert.Equal(t, tc.expected, result, "Scope: '%s', Required: '%s'", tc.scope, tc.required)
@@ -358,7 +358,7 @@ func TestOAuthHelper_ToolIntegration(t *testing.T) {
 			Scope:    "openid profile mcp:documents:read mcp:documents:write",
 		}
 
-		ctx := context.WithValue(context.Background(), types.OAuthClaimsKey, claims)
+		ctx := context.WithValue(t.Context(), types.OAuthClaimsKey, claims)
 
 		// Tool checks authentication
 		userClaims, err := helper.GetUserClaims(ctx)
@@ -384,7 +384,7 @@ func TestOAuthHelper_ToolIntegration(t *testing.T) {
 
 	t.Run("UnauthenticatedUser", func(t *testing.T) {
 		// Simulate unauthenticated request
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Tool should fail to get claims
 		_, err := helper.GetUserClaims(ctx)
