@@ -48,6 +48,10 @@ func TestNoStdoutStderrWrites(t *testing.T) {
 			description: "fmt.Fprint(os.Stderr, ...) (use logger instead)",
 		},
 		{
+			pattern:     regexp.MustCompile(`\bfmt\.Fprintf\(os\.Stderr`),
+			description: "fmt.Fprintf(os.Stderr, ...) (use logger instead)",
+		},
+		{
 			pattern:     regexp.MustCompile(`\bfmt\.Fprintln\(os\.Stderr`),
 			description: "fmt.Fprintln(os.Stderr, ...) (use logger instead)",
 		},

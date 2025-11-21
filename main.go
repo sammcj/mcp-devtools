@@ -536,7 +536,12 @@ func startStreamableHTTPServer(ctx context.Context, cmd *cli.Command, mcpServer 
 		serverErr := make(chan error, 1)
 		go func() {
 			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				serverErr <- err
+				// Use select to prevent blocking if context is cancelled
+				select {
+				case serverErr <- err:
+				case <-ctx.Done():
+					// Context cancelled, error no longer relevant
+				}
 			}
 		}()
 

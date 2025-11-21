@@ -11,9 +11,10 @@ import (
 
 // Global cleanup management
 var (
-	cleanupOnce     sync.Once
-	cleanupStop     chan struct{}
-	cleanupStopOnce sync.Once
+	cleanupOnce    sync.Once
+	cleanupStop    chan struct{}
+	cleanupStopped bool       // Set to true when stopped to prevent restart
+	cleanupMu      sync.Mutex // Protects cleanupStop and cleanupStopped
 )
 
 // cachedLSPClient wraps an LSP client with metadata for caching
@@ -35,7 +36,16 @@ func cacheKey(language, workspaceRoot string) string {
 // This prevents goroutine accumulation that would occur with per-client cleanup goroutines
 func startCleanupRoutine(cache *sync.Map, logger *logrus.Logger) {
 	cleanupOnce.Do(func() {
+		// Check if cleanup was already stopped before starting
+		cleanupMu.Lock()
+		if cleanupStopped {
+			cleanupMu.Unlock()
+			logger.Debug("LSP client cleanup routine not started - already stopped")
+			return
+		}
 		cleanupStop = make(chan struct{})
+		cleanupMu.Unlock()
+
 		go func() {
 			ticker := time.NewTicker(30 * time.Second)
 			defer ticker.Stop()
@@ -75,15 +85,17 @@ func startCleanupRoutine(cache *sync.Map, logger *logrus.Logger) {
 
 // StopCleanupRoutine stops the background cleanup routine and closes all cached LSP clients
 // Should be called during server shutdown to prevent goroutine leaks
-// This function is idempotent and safe to call multiple times
+// This function is idempotent and safe to call multiple times, including before startCleanupRoutine
 func StopCleanupRoutine(cache *sync.Map, logger *logrus.Logger) {
-	// Stop the background cleanup goroutine (idempotent via sync.Once)
-	cleanupStopOnce.Do(func() {
-		if cleanupStop != nil {
-			close(cleanupStop)
-			logger.Debug("LSP client cleanup routine stopped")
-		}
-	})
+	// Stop the background cleanup goroutine (mutex-protected for true idempotence)
+	cleanupMu.Lock()
+	if cleanupStop != nil {
+		close(cleanupStop)
+		cleanupStop = nil // Clear to prevent double-close
+		logger.Debug("LSP client cleanup routine stopped")
+	}
+	cleanupStopped = true // Mark as stopped to prevent future starts
+	cleanupMu.Unlock()
 
 	// Always close all remaining cached clients, even if called multiple times
 	// This ensures cleanup happens even if the routine wasn't started
