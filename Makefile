@@ -229,6 +229,6 @@ help:
 	@echo "  sec-mcp-scan		: Run security scan with mcp-scan"
 	@echo "  sec-semgrep		: Run security scan with semgrep"
 	@echo "  sec-safedep-vet	: Run security scan with safedep vet"
-	@ecoh "  sec-performance	: Run security utility performance tests"
+	@echo "  sec-performance	: Run security utility performance tests"
 	@echo "  inspect		: Run MCP's inspector tool"
 	@echo "  help			: Show this help message"

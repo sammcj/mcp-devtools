@@ -165,9 +165,9 @@ func (t *ClaudeTool) runClaude(ctx context.Context, logger *logrus.Logger, timeo
 		}
 		stderr := errb.String()
 		if stderr != "" {
-			return "", fmt.Errorf("error: %v, stderr: %s", err, stderr)
+			return "", fmt.Errorf("error: %w, stderr: %s", err, stderr)
 		}
-		return "", fmt.Errorf("error: %v", err)
+		return "", fmt.Errorf("error: %w", err)
 	}
 
 	return outb.String(), nil

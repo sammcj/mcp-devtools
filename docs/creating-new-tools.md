@@ -37,7 +37,7 @@ type Tool interface {
     Definition() mcp.Tool
 
     // Execute executes the tool's logic
-    Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error)
+    Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error)
 }
 ```
 
@@ -109,7 +109,7 @@ func (t *YourTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     // Log the start of execution
     logger.Info("Executing your tool")
 
@@ -158,7 +158,7 @@ func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
         }
     }
 
-    result := map[string]interface{}{
+    result := map[string]any{
         "message": fmt.Sprintf("Tool executed with param1=%s, param2=%f", param1, param2),
         "content": content,
         // Add more result fields as needed
@@ -185,7 +185,7 @@ For each parameter, you can specify:
 - **Description**: `mcp.Description("...")` - Provide a description
 - **Default Value**: `mcp.DefaultString("...")`, `mcp.DefaultNumber(10)`, `mcp.DefaultBool(false)` - Set a default value
 - **Enum**: `mcp.Enum("value1", "value2", ...)` - Restrict to a set of values
-- **Properties**: `mcp.Properties(map[string]interface{}{...})` - Define properties for object parameters
+- **Properties**: `mcp.Properties(map[string]any{...})` - Define properties for object parameters
 
 ### 4. Result Schema
 
@@ -195,7 +195,7 @@ The result of a tool execution should be a `*mcp.CallToolResult` object, which c
 mcp.NewCallToolResult(result)
 ```
 
-Where `result` is a `map[string]interface{}` containing the tool's output data.
+Where `result` is a `map[string]any` containing the tool's output data.
 
 For structured results, you can use:
 
@@ -426,7 +426,7 @@ func (t *HelloTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *HelloTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *HelloTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     // Parse parameters
     name := "World"
     if nameRaw, ok := args["name"].(string); ok && nameRaw != "" {
@@ -434,7 +434,7 @@ func (t *HelloTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
     }
 
     // Create result
-    result := map[string]interface{}{
+    result := map[string]any{
         "message": fmt.Sprintf("Hello, %s!", name),
     }
 
@@ -508,7 +508,7 @@ func (t *YourTool) ProvideExtendedInfo() *tools.ExtendedHelp {
         Examples: []tools.ToolExample{
             {
                 Description: "Basic usage example",
-                Arguments: map[string]interface{}{
+                Arguments: map[string]any{
                     "param1": "example_value",
                     "param2": 42,
                 },

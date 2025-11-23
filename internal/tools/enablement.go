@@ -47,8 +47,8 @@ func IsToolEnabled(toolName string) bool {
 	toolsList := strings.SplitSeq(enabledTools, ",")
 	for tool := range toolsList {
 		// Normalise the tool from env var (trim spaces, lowercase, replace underscores with hyphens)
-		NormalisedTool := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tool), "_", "-"))
-		if NormalisedTool == normalisedToolName {
+		normalisedTool := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tool), "_", "-"))
+		if normalisedTool == normalisedToolName {
 			return true
 		}
 	}
