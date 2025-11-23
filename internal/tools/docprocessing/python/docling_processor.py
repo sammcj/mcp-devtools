@@ -1147,7 +1147,7 @@ def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
                 # Count the number of image placeholders to create appropriate synthetic figures
                 image_count = markdown_content.count("<!-- image -->") + markdown_content.count("<img")
 
-                # Analyze surrounding context to determine what type of images these are
+                # Analyse surrounding context to determine what type of images these are
                 lines = markdown_content.split('\n')
                 for i, line in enumerate(lines):
                     if "<!-- image -->" in line or "<img" in line:
@@ -1170,7 +1170,7 @@ def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
                             caption = "Architecture diagram detected in document"
                         elif any(keyword in context_text for keyword in ['table', 'data']):
                             image_type = "chart"
-                            caption = "Data visualization chart detected in document"
+                            caption = "Data visualisation chart detected in document"
 
                         # Create a synthetic figure element for each detected image
                         synthetic_figure = type('SyntheticFigure', (), {
@@ -1219,7 +1219,7 @@ def extract_diagram_descriptions(document, args) -> List[Dict[str, Any]]:
 
             # If no VLM description, try context-based analysis for synthetic figures
             if not vision_description and hasattr(figure, 'surrounding_text'):
-                vision_description = analyze_with_context_data(figure, args)
+                vision_description = analyse_with_context_data(figure, args)
 
             if vision_description:
                 diagram_data["description"] = vision_description.get("description", diagram_data["description"])
@@ -1313,14 +1313,14 @@ def generate_vlm_description(figure, args) -> Optional[Dict[str, Any]]:
 
         if vision_mode == 'smoldocling':
             logger.info("Using SmolDocling VLM Pipeline")
-            vision_result = analyze_with_vlm_pipeline(image_data, figure, 'smoldocling')
+            vision_result = analyse_with_vlm_pipeline(image_data, figure, 'smoldocling')
         elif vision_mode == 'advanced' and getattr(args, 'enable_remote_services', False):
             logger.info("Using external VLM API (Ollama)")
-            vision_result = analyze_with_vlm_pipeline(image_data, figure, 'external')
+            vision_result = analyse_with_vlm_pipeline(image_data, figure, 'external')
         else:
             logger.info("Using basic vision analysis (no VLM API)")
             # Fallback to basic analysis using available Docling features
-            vision_result = analyze_with_basic_vision(image_data, figure)
+            vision_result = analyse_with_basic_vision(image_data, figure)
 
         logger.info("=== VLM DESCRIPTION GENERATION COMPLETED ===")
         return vision_result
@@ -1351,12 +1351,12 @@ def generate_vision_description(figure, args) -> Optional[Dict[str, Any]]:
         vision_mode = getattr(args, 'vision_mode', 'standard')
 
         if vision_mode == 'smoldocling':
-            vision_result = analyze_with_smoldocling(image_data, figure)
+            vision_result = analyse_with_smoldocling(image_data, figure)
         elif vision_mode == 'advanced' and getattr(args, 'enable_remote_services', False):
-            vision_result = analyze_with_advanced_vision(image_data, figure)
+            vision_result = analyse_with_advanced_vision(image_data, figure)
         else:
             # Fallback to basic analysis using available Docling features
-            vision_result = analyze_with_basic_vision(image_data, figure)
+            vision_result = analyse_with_basic_vision(image_data, figure)
 
         return vision_result
 
@@ -1481,8 +1481,8 @@ def extract_image_data_from_figure(figure) -> Optional[bytes]:
         logger.warning(f"Failed to extract image data: {e}")
         return None
 
-def analyze_with_vlm_pipeline(image_data: bytes, figure, pipeline_type: str) -> Dict[str, Any]:
-    """Analyze image using VLM Pipeline with configurable OpenAI-compatible endpoints."""
+def analyse_with_vlm_pipeline(image_data: bytes, figure, pipeline_type: str) -> Dict[str, Any]:
+    """Analyse image using VLM Pipeline with configurable OpenAI-compatible endpoints."""
     try:
         import os
         import requests
@@ -1559,13 +1559,13 @@ def analyze_with_vlm_pipeline(image_data: bytes, figure, pipeline_type: str) -> 
                         return analysis_result
                     else:
                         logger.warning("VLM API response missing expected structure")
-                        return analyze_with_basic_vision(image_data, figure)
+                        return analyse_with_basic_vision(image_data, figure)
 
                 else:
                     logger.error(f"VLM API request failed: {response.status_code} - {response.text}")
                     if vlm_fallback_local:
                         logger.info("Falling back to local analysis")
-                        return analyze_with_basic_vision(image_data, figure)
+                        return analyse_with_basic_vision(image_data, figure)
                     else:
                         return {
                             "description": f"VLM API request failed: {response.status_code}",
@@ -1580,7 +1580,7 @@ def analyze_with_vlm_pipeline(image_data: bytes, figure, pipeline_type: str) -> 
                 logger.error(f"VLM API request exception: {e}")
                 if vlm_fallback_local:
                     logger.info("Falling back to local analysis due to API error")
-                    return analyze_with_basic_vision(image_data, figure)
+                    return analyse_with_basic_vision(image_data, figure)
                 else:
                     return {
                         "description": f"VLM API connection failed: {str(e)}",
@@ -1594,16 +1594,16 @@ def analyze_with_vlm_pipeline(image_data: bytes, figure, pipeline_type: str) -> 
         elif pipeline_type == 'smoldocling' or (not vlm_api_url and vlm_fallback_local):
             # Try to use local SmolDocling if available
             logger.info("Attempting to use local SmolDocling model")
-            return analyze_with_smoldocling(image_data, figure)
+            return analyse_with_smoldocling(image_data, figure)
 
         else:
             # No VLM configuration available
             logger.warning("No VLM configuration available, falling back to basic analysis")
-            return analyze_with_basic_vision(image_data, figure)
+            return analyse_with_basic_vision(image_data, figure)
 
     except Exception as e:
         logger.error(f"VLM Pipeline analysis failed: {e}")
-        return analyze_with_basic_vision(image_data, figure)
+        return analyse_with_basic_vision(image_data, figure)
 
 def parse_vlm_response(content: str, figure) -> Dict[str, Any]:
     """Parse VLM API response content and extract structured information."""
@@ -1769,7 +1769,7 @@ def auto_detect_optimal_vlm_model() -> str:
         except ImportError:
             pass
 
-        # Fallback to CPU-optimized model
+        # Fallback to CPU-optimised model
         return "HuggingFace/SmolVLM-Instruct-CPU"
 
     except Exception as e:
@@ -1796,7 +1796,7 @@ Please convert the diagram to valid Mermaid syntax and return it in a single ```
         logger.warning(f"Failed to create VLM analysis prompt: {e}")
         return "Convert this diagram to Mermaid syntax using ```mermaid code blocks."
 
-def analyze_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
+def analyse_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
     """Analyse image using SmolDocling vision-language model."""
     try:
         # Import SmolDocling components if available
@@ -1809,10 +1809,10 @@ def analyze_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
             model = SmolDoclingVisionModel(vlm_model=vlm_model_name)
         except (ValueError, OSError, RuntimeError, ImportError) as e:
             logger.warning(f"Failed to initialise SmolDocling with model '{vlm_model_name}': {e}")
-            # Fallback to default initialization
+            # Fallback to default initialisation
             model = SmolDoclingVisionModel()
 
-        # Analyze the image
+        # Analyse the image
         result = model.analyze_image(image_data,
                                    task="describe_diagram",
                                    include_mermaid=True)
@@ -1828,18 +1828,17 @@ def analyze_with_smoldocling(image_data: bytes, figure) -> Dict[str, Any]:
 
     except ImportError:
         logger.warning("SmolDocling not available, falling back to basic analysis")
-        return analyze_with_basic_vision(image_data, figure)
+        return analyse_with_basic_vision(image_data, figure)
     except Exception as e:
         logger.warning(f"SmolDocling analysis failed: {e}")
-        return analyze_with_basic_vision(image_data, figure)
+        return analyse_with_basic_vision(image_data, figure)
 
-def analyze_with_advanced_vision(image_data: bytes, figure) -> Dict[str, Any]:
-    """Analyze image using advanced vision services (placeholder for external APIs)."""
+def analyse_with_advanced_vision(image_data: bytes, figure) -> Dict[str, Any]:
+    """Analyse image using advanced vision services (placeholder for external APIs)."""
     try:
         # This would integrate with external vision APIs like:
         # - OpenAI Vision API
         # - Google Vision API
-        # - Azure Computer Vision
         # - AWS Rekognition
 
         # For now, return a structured response indicating the capability
@@ -1854,10 +1853,10 @@ def analyze_with_advanced_vision(image_data: bytes, figure) -> Dict[str, Any]:
 
     except Exception as e:
         logger.warning(f"Advanced vision analysis failed: {e}")
-        return analyze_with_basic_vision(image_data, figure)
+        return analyse_with_basic_vision(image_data, figure)
 
-def analyze_with_context_data(figure, args) -> Dict[str, Any]:
-    """Analyze chart/diagram using surrounding text context from the document."""
+def analyse_with_context_data(figure, args) -> Dict[str, Any]:
+    """Analyse chart/diagram using surrounding text context from the document."""
     try:
         # Get the surrounding text context
         context_text = getattr(figure, 'surrounding_text', '')
@@ -1918,7 +1917,7 @@ def analyze_with_context_data(figure, args) -> Dict[str, Any]:
             "suggested_format": "mermaid"
         }
 
-def analyze_with_basic_vision(image_data: bytes, figure) -> Dict[str, Any]:
+def analyse_with_basic_vision(image_data: bytes, figure) -> Dict[str, Any]:
     """Perform basic image analysis using available Docling features."""
     try:
         # Use basic image analysis capabilities
@@ -2036,7 +2035,7 @@ def generate_structured_data_and_prompt(analysis_result: Dict[str, Any], text_el
                 "chart_elements": text_elements
             }
 
-            recreation_prompt = f"""Based on the extracted chart data, recreate this chart using appropriate visualization:
+            recreation_prompt = f"""Based on the extracted chart data, recreate this chart using appropriate visualisation:
 
 Data Points: {numbers[:10] if numbers else 'No numerical data extracted'}
 Labels: {labels[:10] if labels else 'No labels extracted'}
@@ -2112,7 +2111,7 @@ Text Elements: {text_elements}
 Numerical Data: {numbers if numbers else 'None'}
 Labels: {labels if labels else 'None'}
 
-Please analyze the content and create an appropriate diagram using:
+Please analyse the content and create an appropriate diagram using:
 1. Mermaid syntax if it's a structured diagram
 2. ASCII art for simple layouts
 3. Table format if it contains tabular data
@@ -2314,7 +2313,7 @@ def generate_ai_recreation_prompt(image_type: str, caption: str, extracted_text:
         # Determine the most appropriate format based on image type and content
         suggested_format = "mermaid"
 
-        # Analyze extracted text to better understand the content
+        # Analyse extracted text to better understand the content
         text_content = " ".join(extracted_text).lower() if extracted_text else ""
 
         # Determine image category and appropriate format
@@ -2331,7 +2330,7 @@ Please recreate this table using proper markdown table syntax with:
 3. All data accurately represented
 4. Consistent formatting
 
-If the extracted text contains tabular data, organize it into appropriate rows and columns."""
+If the extracted text contains tabular data, organise it into appropriate rows and columns."""
 
         elif any(keyword in text_content for keyword in ['flowchart', 'process', 'flow', 'step', 'decision']):
             suggested_format = "mermaid"
@@ -2726,7 +2725,7 @@ def generate_chart_mermaid(description: str, text_elements: List[str]) -> str:
 def generate_generic_mermaid(description: str, text_elements: List[str], diagram_type: str) -> str:
     """Generate generic Mermaid diagram based on available information."""
     try:
-        # Analyze content to determine best diagram type
+        # Analyse content to determine best diagram type
         text_content = f"{description} {' '.join(text_elements)}".lower()
 
         if any(keyword in text_content for keyword in ['flow', 'process', 'step', 'sequence']):
@@ -2876,14 +2875,14 @@ def process_images_with_vlm_pipeline(images: List[Dict[str, Any]], args) -> List
                 'id': image.get('id', f'image_{i+1}')
             })()
 
-            # Use VLM Pipeline to analyze the image
+            # Use VLM Pipeline to analyse the image
             vision_mode = getattr(args, 'vision_mode', 'standard')
             enable_remote_services = getattr(args, 'enable_remote_services', False)
 
             if enable_remote_services and vision_mode == 'advanced':
-                vlm_result = analyze_with_vlm_pipeline(image_data, synthetic_figure, 'external')
+                vlm_result = analyse_with_vlm_pipeline(image_data, synthetic_figure, 'external')
             else:
-                vlm_result = analyze_with_basic_vision(image_data, synthetic_figure)
+                vlm_result = analyse_with_basic_vision(image_data, synthetic_figure)
 
             if vlm_result and vlm_result.get('mermaid_code'):
                 mermaid_results.append({

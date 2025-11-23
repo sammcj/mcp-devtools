@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v76/github"
@@ -253,6 +254,25 @@ func CreateFileNotFoundError(owner, repo, path, ref string) error {
 		refInfo = fmt.Sprintf(" in ref '%s'", ref)
 	} else {
 		refInfo = " in the default branch"
+	}
+
+	// Check if ref looks like a fork-style ref (contains ':')
+	if ref != "" && strings.Contains(ref, ":") {
+		parts := strings.SplitN(ref, ":", 2)
+		if len(parts) == 2 {
+			forkUser := parts[0]
+			branchName := parts[1]
+			return fmt.Errorf("file '%s' not found in repository %s/%s%s. "+
+				"IMPORTANT: The ref '%s' appears to be from a fork-based pull request. "+
+				"To fetch files from a fork PR, you must use the head repository and ref separately. "+
+				"When you call get_pull_request, check the 'head_repo' and 'head_ref' fields in the response. "+
+				"Then use: repository='%s/%s', ref='%s' instead of repository='%s/%s', ref='%s'. "+
+				"For example, if the PR response shows head_repo='%s/%s' and head_ref='%s', "+
+				"call get_file_contents with repository='%s/%s' and ref='%s'",
+				path, owner, repo, refInfo, ref,
+				forkUser, repo, branchName, owner, repo, ref,
+				forkUser, repo, branchName, forkUser, repo, branchName)
+		}
 	}
 
 	return fmt.Errorf("file '%s' not found in repository %s/%s%s. "+

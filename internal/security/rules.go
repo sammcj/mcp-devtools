@@ -215,7 +215,7 @@ func (r *YAMLRuleEngine) LoadRules() error {
 	// Skip cache clearing during initial setup to avoid deadlock with globalManagerMutex
 	logrus.Debug("Checking if cache clearing is safe")
 
-	// Try to acquire the lock with a timeout to avoid deadlock during initialization
+	// Try to acquire the lock with a timeout to avoid deadlock during initialisation
 	done := make(chan bool, 1)
 	var manager *SecurityManager
 
@@ -240,8 +240,8 @@ func (r *YAMLRuleEngine) LoadRules() error {
 			logrus.Debug("No security cache to clear (manager not ready)")
 		}
 	case <-time.After(100 * time.Millisecond):
-		// Timeout - likely during initialization, skip cache clearing
-		logrus.Debug("Skipping cache clear due to mutex timeout (likely during initialization)")
+		// Timeout - likely during initialisation, skip cache clearing
+		logrus.Debug("Skipping cache clear due to mutex timeout (likely during initialisation)")
 	}
 
 	logrus.Debug("Security rules loaded successfully")

@@ -12,7 +12,7 @@ on:
 
 concurrency:
   group: claude-${{ github.event.issue.number || github.event.pull_request.number }}-${{ github.event_name }}
-  cancel-in-progress: true
+  cancel-in-progress: false # this causes issues if enabled
 jobs:
   claude:
     if: |

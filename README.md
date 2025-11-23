@@ -266,7 +266,7 @@ These tools can be disabled by adding their function name to the `DISABLED_TOOLS
 
 | Tool                                                             | Purpose                               | Dependencies                  | Example Usage                   | Maturity |
 |------------------------------------------------------------------|---------------------------------------|-------------------------------|---------------------------------|----------|
-| **[Internet Search](docs/tools/internet-search.md)**             | Multi-provider internet search        | None (Provider keys optional) | Web, image, news, video search  | 🟢       |
+| **[Internet Search](docs/tools/internet_search.md)**             | Multi-provider internet search        | None (Provider keys optional) | Web, image, news, video search  | 🟢       |
 | **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve internet content as Markdown | None                          | Documentation and articles      | 🟢       |
 | **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data          | None (GitHub token optional)  | Issues, PRs, repos, cloning     | 🟢       |
 | **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, mark3labs/mcp-go         | 🟢       |
@@ -280,35 +280,35 @@ These tools can be disabled by adding their function name to the `DISABLED_TOOLS
 
 These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment variable in your MCP configuration.
 
-| Tool                                                                 | Purpose                                                            | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                               | Maturity |
-|----------------------------------------------------------------------|--------------------------------------------------------------------|---------------------------|---------------------------------------------|----------|
-| **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                                        | `murican_to_english`      | Organise, colour, centre                    | 🟡       |
-| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details               | `code_skim`               | Reduced token consumption                   | 🟡       |
-| **[Code Rename](docs/tools/code_rename.md)**                         | LSP-based symbol renaming across files (Experimental)              | `code_rename`             | Rename functions, variables, types          | 🔴       |
-| **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                              | `shadcn`                  | Button, Dialog, Form components             | 🟢       |
-| **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                         | `magic_ui`                | Frontend React components                   | 🟠       |
-| **[Aceternity UI Component Library](docs/tools/aceternityui.md)**    | Animated component library                                         | `aceternity_ui`           | Frontend React components                   | 🟠       |
-| **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                                        | `memory`                  | Store entities and relationships            | 🟡       |
-| **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                                      | `process_document`        | PDF, DOCX → Markdown with OCR               | 🟡       |
-| **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                           | `pdf`                     | Quick PDF to Markdown                       | 🟢       |
-| **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                            | `excel`                   | Workbooks, charts, pivot tables, formulas   | 🟢       |
-| **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                             | `aws_documentation`       | Search and read AWS docs, recommendations   | 🟡       |
-| **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API access for providers, modules, and policies | `terraform_documentation` | Provider docs, module search, policy lookup | 🟡       |
-| **[Security Framework](docs/security.md)**                           | Context injection security protections                             | `security`                | Content analysis, access control            | 🟢       |
-| **[Security Override](docs/security.md)**                            | Agent managed security warning overrides                           | `security_override`       | Bypass false positives                      | 🟡       |
-| **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts                | `sequential-thinking`     | Step-by-step analysis, revision, branching  | 🟢       |
-| **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                                       | `api`                     | Configure any REST API via YAML             | 🔴       |
-| **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                                      | `filesystem`              | Read, write, edit, search files             | 🟡       |
+| Tool                                                                 | Purpose                                                   | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                               | Maturity |
+|----------------------------------------------------------------------|-----------------------------------------------------------|---------------------------|---------------------------------------------|----------|
+| **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                               | `murican_to_english`      | Organise, colour, centre                    | 🟡       |
+| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details      | `code_skim`               | Reduced token consumption                   | 🟡       |
+| **[Code Rename](docs/tools/code_rename.md)**                         | LSP-based symbol renaming across files (experimental)     | `code_rename`             | Rename functions, variables, types          | 🔴       |
+| **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                     | `shadcn`                  | Button, Dialog, Form components             | 🟢       |
+| **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                | `magic_ui`                | Frontend React components                   | 🟠       |
+| **[Aceternity UI Component Library](docs/tools/aceternityui.md)**    | Animated component library                                | `aceternity_ui`           | Frontend React components                   | 🟠       |
+| **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                               | `memory`                  | Store entities and relationships            | 🟡       |
+| **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                             | `process_document`        | PDF, DOCX → Markdown with OCR               | 🟡       |
+| **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                  | `pdf`                     | Quick PDF to Markdown                       | 🟢       |
+| **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                   | `excel`                   | Workbooks, charts, pivot tables, formulas   | 🟢       |
+| **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                    | `aws_documentation`       | Search and read AWS docs, recommendations   | 🟡       |
+| **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API (providers, modules, and policies) | `terraform_documentation` | Provider docs, module search, policy lookup | 🟡       |
+| **[Security Framework](docs/security.md)**                           | Context injection security protections                    | `security`                | Content analysis, access control            | 🟢       |
+| **[Security Override](docs/security.md)**                            | Agent managed security warning overrides                  | `security_override`       | Bypass false positives                      | 🟡       |
+| **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts       | `sequential-thinking`     | Step-by-step analysis, revision, branching  | 🟢       |
+| **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                              | `api`                     | Configure any REST API via YAML             | 🔴       |
+| **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                             | `filesystem`              | Read, write, edit, search files             | 🟡       |
 
 **Agents as Tools** - In addition to the above tools, MCP DevTools can provide access to AI agents as tools by integrating with external LLMs.
 
-| Agent                                                    | Purpose                   | `ENABLE_ADDITIONAL_TOOLS` | Maturity |
-|----------------------------------------------------------|---------------------------|---------------------------|----------|
-| **[Claude Agent](docs/tools/claude-agent.md)**           | Claude Code CLI Agent     | `claude-agent`            | 🟡       |
-| **[Codex Agent](docs/tools/codex-agent.md)**             | Codex CLI Agent           | `codex-agent`             | 🟡       |
-| **[Copilot Agent](docs/tools/copilot-agent.md)**         | GitHub Copilot CLI Agent  | `copilot-agent`           | 🟡       |
-| **[Gemini Agent](docs/tools/gemini-agent.md)**           | Gemini CLI Agent          | `gemini-agent`            | 🟡       |
-| **[Kiro Agent](docs/tools/kiro-agent.md)**               | Kiro CLI Agent            | `kiro-agent`              | 🟡       |
+| Agent                                            | Purpose                  | `ENABLE_ADDITIONAL_TOOLS` | Maturity |
+|--------------------------------------------------|--------------------------|---------------------------|----------|
+| **[Claude Agent](docs/tools/claude-agent.md)**   | Claude Code CLI Agent    | `claude-agent`            | 🟡       |
+| **[Codex Agent](docs/tools/codex-agent.md)**     | Codex CLI Agent          | `codex-agent`             | 🟡       |
+| **[Copilot Agent](docs/tools/copilot-agent.md)** | GitHub Copilot CLI Agent | `copilot-agent`           | 🟡       |
+| **[Gemini Agent](docs/tools/gemini-agent.md)**   | Gemini CLI Agent         | `gemini-agent`            | 🟡       |
+| **[Kiro Agent](docs/tools/kiro-agent.md)**       | Kiro CLI Agent           | `kiro-agent`              | 🟡       |
 
 👉 **[See detailed tool documentation](docs/tools/overview.md)**
 
@@ -351,7 +351,7 @@ Download the latest binary from [releases](https://github.com/sammcj/mcp-devtool
 
 Replacing `/path/to/mcp-devtools` with your actual binary path (e.g., `/Users/yourname/go/bin/mcp-devtools`).
 
-_Note: The `BRAVE_API_KEY` is optional and only needed if you want to use the Brave Search provider, there are other providers available, see the various tools documentation for more details._
+_Note: The `BRAVE_API_KEY` is optional and only needed if you want to use the Brave Search provider. Other providers like Google, Kagi, SearXNG, and DuckDuckGo are also available. See the [Internet Search documentation](docs/tools/internet_search.md) for more details._
 
 **Streamable HTTP**
 
@@ -432,6 +432,7 @@ All environment variables are optional, but if you want to use specific search p
 - `BRAVE_API_KEY` - Enable Brave Search provider by providing a ([free Brave search API key](https://brave.com/search/api/))
 - `GOOGLE_SEARCH_API_KEY` - Enable Google search with API key from [Cloud Console](https://console.cloud.google.com/apis/credentials) (requires Custom Search API to be enabled)
 - `GOOGLE_SEARCH_ID` - Google Search Engine ID from [Programmable Search Engine](https://programmablesearchengine.google.com/) (required with `GOOGLE_SEARCH_API_KEY`, select "Search the entire web")
+- `KAGI_API_KEY` - Enable Kagi Search provider by providing your [Kagi API key](https://kagi.com/settings?p=api) (requires Kagi subscription)
 - `SEARXNG_BASE_URL` - Enable SearXNG search provider by providing the base URL (e.g. `https://searxng.example.com`)
 - `CONTEXT7_API_KEY` - Optional Context7 API key for higher rate limits and authentication with package documentation tools
 - `MEMORY_FILE_PATH` - Memory storage location (default: `~/.mcp-devtools/`)
