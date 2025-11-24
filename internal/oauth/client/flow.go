@@ -47,7 +47,7 @@ func (f *BrowserAuthFlow) Authenticate(ctx context.Context) (*TokenResponse, err
 			f.logger.Info("OAuth authentication completed successfully")
 			return result.TokenResponse, nil
 		}
-		return nil, fmt.Errorf("authentication failed: %v", result.Error)
+		return nil, fmt.Errorf("authentication failed: %w", result.Error)
 
 	case err := <-session.ErrorCh:
 		return nil, fmt.Errorf("authentication error: %w", err)

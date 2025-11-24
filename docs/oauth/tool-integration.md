@@ -122,7 +122,7 @@ type MyTool struct {
     oauthHelper *toolhelper.OAuthHelper
 }
 
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     // Create OAuth helper
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
@@ -135,7 +135,7 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 ### Check User Authentication
 
 ```go
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Get user's OAuth claims
@@ -158,7 +158,7 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 ### Require Specific Permissions
 
 ```go
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Require specific scope for this tool
@@ -174,7 +174,7 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 ### Check Optional Permissions
 
 ```go
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Check if user has admin permissions
@@ -196,7 +196,7 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 ### Basic Service Authentication Setup
 
 ```go
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Configure OAuth for external service (e.g., Confluence)
@@ -265,7 +265,7 @@ func (t *DocumentTool) Definition() mcp.Tool {
     )
 }
 
-func (t *DocumentTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *DocumentTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Parse arguments
@@ -374,7 +374,7 @@ Configure your OAuth provider (Authentik, Keycloak, etc.) with these scopes and 
 ### Graceful Authentication Failures
 
 ```go
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Check if user is authenticated
@@ -411,7 +411,7 @@ func TestDocumentToolWithOAuth(t *testing.T) {
 
     // Test tool execution
     tool := &DocumentTool{}
-    result, err := tool.Execute(ctx, logrus.New(), &sync.Map{}, map[string]interface{}{
+    result, err := tool.Execute(ctx, logrus.New(), &sync.Map{}, map[string]any{
         "action":      "read",
         "document_id": "doc123",
     })
