@@ -426,7 +426,7 @@ func (t *BedrockTool) getLatestClaudeSonnet(ctx context.Context) (*mcp.CallToolR
 		}
 	}
 
-	return nil, fmt.Errorf("claude Sonnet model not found")
+	return nil, fmt.Errorf("model not found: Claude Sonnet")
 }
 
 // matchesClaudeAlias checks if a query matches common Claude model aliases

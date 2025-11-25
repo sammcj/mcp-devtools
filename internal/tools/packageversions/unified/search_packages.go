@@ -40,7 +40,7 @@ func init() {
 func (t *SearchPackagesTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"search_packages",
-		mcp.WithDescription("Search for software packages / libraries (by name) and check versions across multiple ecosystems (npm, Go, Python, Java, Swift, GitHub Actions, Docker, Anthropic, AWS Bedrock, Rust). Use when adding or updating dependencies in projects or add Anthropic model IDs to ensure you get the latest stable version. When checking multiple packages, pass them all in a single call using the 'data' parameter rather than making separate calls for each package."),
+		mcp.WithDescription("Search for software packages / libraries (by name) and check versions across multiple ecosystems (npm, Go, Python, Java, Swift, GitHub Actions, Docker, Anthropic, AWS Bedrock, Rust). Use when adding or updating dependencies in projects or adding Anthropic model IDs to ensure you get the latest stable version. When checking multiple packages, pass them all in a single call using the 'data' parameter rather than making separate calls for each package."),
 		mcp.WithString("ecosystem",
 			mcp.Description("Package ecosystem to search. Options: 'npm' (Node.js packages), 'go' (Go modules), 'python' (PyPI packages), 'python-pyproject' (pyproject.toml format), 'java-maven' (Maven dependencies), 'java-gradle' (Gradle dependencies), 'swift' (Swift Package Manager), 'github-actions' (GitHub Actions), 'docker' (container images), 'anthropic' (Anthropic Claude models with all platform IDs), 'bedrock' (AWS Bedrock models), 'rust' (Rust crates)"),
 			mcp.Enum("npm", "go", "python", "python-pyproject", "java-maven", "java-gradle", "swift", "github-actions", "docker", "anthropic", "bedrock", "rust"),
