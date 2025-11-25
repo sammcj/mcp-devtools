@@ -17,6 +17,7 @@ type AnthropicTool struct {
 	parser *Parser
 	cache  *sync.Map
 	logger *logrus.Logger
+	once   sync.Once
 }
 
 // NewAnthropicTool creates a new Anthropic tool
@@ -28,12 +29,12 @@ func NewAnthropicTool() *AnthropicTool {
 func (t *AnthropicTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting Anthropic model information")
 
-	// Initialise parser if not already done
-	if t.parser == nil {
+	// Initialise parser thread-safely using sync.Once
+	t.once.Do(func() {
 		t.parser = NewParser(logger, cache)
 		t.cache = cache
 		t.logger = logger
-	}
+	})
 
 	// Parse action
 	action := "list"

@@ -19,6 +19,7 @@ type BedrockTool struct {
 	anthropicTool *anthropic.AnthropicTool
 	cache         *sync.Map
 	logger        *logrus.Logger
+	once          sync.Once
 }
 
 // Definition returns the tool's definition for MCP registration
@@ -50,12 +51,12 @@ func (t *BedrockTool) Definition() mcp.Tool {
 func (t *BedrockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting AWS Bedrock model information")
 
-	// Initialise Anthropic tool if not already done
-	if t.anthropicTool == nil {
+	// Initialise Anthropic tool thread-safely using sync.Once
+	t.once.Do(func() {
 		t.anthropicTool = anthropic.NewAnthropicTool()
 		t.cache = cache
 		t.logger = logger
-	}
+	})
 
 	// Parse action
 	action := "list"
