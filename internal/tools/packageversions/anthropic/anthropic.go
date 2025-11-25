@@ -200,9 +200,7 @@ func matchesQuery(model AnthropicModel, query string) bool {
 // matchesModelAlias checks if query matches common model aliases
 func matchesModelAlias(query string, model AnthropicModel) bool {
 	// Normalise query - remove "claude-" or "claude " prefix if present
-	normalisedQuery := query
-	normalisedQuery = strings.TrimPrefix(normalisedQuery, "claude-")
-	normalisedQuery = strings.TrimPrefix(normalisedQuery, "claude ")
+	normalisedQuery := strings.TrimPrefix(strings.TrimPrefix(query, "claude-"), "claude ")
 
 	// Direct family match (e.g., "sonnet", "haiku", "opus")
 	if normalisedQuery == model.ModelFamily {

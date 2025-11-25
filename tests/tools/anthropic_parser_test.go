@@ -97,17 +97,8 @@ func TestAnthropicParser_ParseModelTable(t *testing.T) {
 		t.Fatalf("Failed to parse mock HTML: %v", err)
 	}
 
-	// Create parser
-	logger := logrus.New()
-	logger.SetLevel(logrus.ErrorLevel) // Suppress logs during tests
-	cache := &sync.Map{}
-	parser := anthropic.NewParser(logger, cache)
-
-	// Use reflection to access private parseTableRows method
-	// For testing purposes, we'll test the full GetLatestModels with a mock
-	// In this test, we'll just verify the structure
-
-	// Parse table
+	// Parse table directly to test the parsing logic
+	// (Parser methods are tested separately in integration tests)
 	var models []anthropic.AnthropicModel
 	doc.Find("table").Each(func(i int, table *goquery.Selection) {
 		headers := []string{}
@@ -183,8 +174,6 @@ func TestAnthropicParser_ParseModelTable(t *testing.T) {
 			t.Errorf("Expected AWS Bedrock ID 'anthropic.claude-sonnet-4-5-20250929-v1:0', got '%s'", sonnet.AWSBedrockID)
 		}
 	}
-
-	_ = parser // Use parser to avoid unused warning
 }
 
 // TestAnthropicParser_ExtractModelFamilyAndVersion tests family and version extraction
@@ -314,8 +303,6 @@ func TestAnthropicParser_Cache(t *testing.T) {
 			t.Errorf("Expected cached model name 'Claude Sonnet 4.5', got '%s'", models[0].ModelName)
 		}
 	}
-
-	_ = parser
 }
 
 // stringToInt is a helper for parsing version numbers

@@ -83,14 +83,12 @@ func (t *BedrockTool) Execute(ctx context.Context, logger *logrus.Logger, cache 
 func (t *BedrockTool) getModels(ctx context.Context) ([]packageversions.BedrockModel, error) {
 	// Fetch latest Anthropic models using the Anthropic tool
 	anthropicModels := []anthropic.AnthropicModel{}
-	var parserError string
 
 	// Use Anthropic tool to get models
 	anthropicArgs := map[string]any{"action": "list"}
 	anthropicResult, err := t.anthropicTool.Execute(ctx, t.logger, t.cache, anthropicArgs)
 	if err != nil {
-		t.logger.WithError(err).Warn("Failed to fetch latest Anthropic models, using fallback data")
-		parserError = "Parser error: Failed to fetch latest Anthropic model information. Please visit https://platform.claude.com/docs/en/about-claude/models/overview#latest-models-comparison to check for the latest model IDs."
+		t.logger.WithError(err).Warn("Failed to fetch latest Anthropic models, using fallback data. Visit https://platform.claude.com/docs/en/about-claude/models/overview#latest-models-comparison for latest model IDs.")
 	} else {
 		// Extract models from the result
 		anthropicModels = extractAnthropicModelsFromResult(anthropicResult)
@@ -280,11 +278,6 @@ func (t *BedrockTool) getModels(ctx context.Context) ([]packageversions.BedrockM
 		}
 		return models[i].ModelName < models[j].ModelName
 	})
-
-	// If there was a parser error, log it
-	if parserError != "" {
-		t.logger.Warn(parserError)
-	}
 
 	// Defensive check - should never happen, but if we have no models, return error
 	if len(models) == 0 {
