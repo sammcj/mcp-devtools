@@ -11,6 +11,7 @@ import (
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
+	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/anthropic"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/bedrock"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/docker"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/githubactions"
@@ -39,10 +40,10 @@ func init() {
 func (t *SearchPackagesTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"search_packages",
-		mcp.WithDescription("Search for software packages / libraries (by name) and check versions across multiple ecosystems (npm, Go, Python, Java, Swift, GitHub Actions, Docker, AWS Bedrock, Rust). This tool is especially useful when writing software and adding dependencies to projects to ensure you get the latest stable version. TIP: When checking multiple packages, pass them all in a single call using the 'data' parameter rather than making separate calls for each package - this is significantly more efficient than individual calls per package."),
+		mcp.WithDescription("Search for software packages / libraries (by name) and check versions across multiple ecosystems (npm, Go, Python, Java, Swift, GitHub Actions, Docker, Anthropic, AWS Bedrock, Rust). Use when adding or updating dependencies in projects or adding Anthropic model IDs to ensure you get the latest stable version. When checking multiple packages, pass them all in a single call using the 'data' parameter rather than making separate calls for each package."),
 		mcp.WithString("ecosystem",
-			mcp.Description("Package ecosystem to search. Options: 'npm' (Node.js packages), 'go' (Go modules), 'python' (PyPI packages), 'python-pyproject' (pyproject.toml format), 'java-maven' (Maven dependencies), 'java-gradle' (Gradle dependencies), 'swift' (Swift Package Manager), 'github-actions' (GitHub Actions), 'docker' (container images), 'bedrock' (AWS Bedrock models), 'rust' (Rust crates)"),
-			mcp.Enum("npm", "go", "python", "python-pyproject", "java-maven", "java-gradle", "swift", "github-actions", "docker", "bedrock", "rust"),
+			mcp.Description("Package ecosystem to search. Options: 'npm' (Node.js packages), 'go' (Go modules), 'python' (PyPI packages), 'python-pyproject' (pyproject.toml format), 'java-maven' (Maven dependencies), 'java-gradle' (Gradle dependencies), 'swift' (Swift Package Manager), 'github-actions' (GitHub Actions), 'docker' (container images), 'anthropic' (Anthropic Claude models with all platform IDs), 'bedrock' (AWS Bedrock models), 'rust' (Rust crates)"),
+			mcp.Enum("npm", "go", "python", "python-pyproject", "java-maven", "java-gradle", "swift", "github-actions", "docker", "anthropic", "bedrock", "rust"),
 			mcp.Required(),
 		),
 		mcp.WithString("query",
@@ -113,6 +114,8 @@ func (t *SearchPackagesTool) Execute(ctx context.Context, logger *logrus.Logger,
 		result, err = t.handleGitHubActions(ctx, logger, cache, args)
 	case "docker":
 		result, err = t.handleDocker(ctx, logger, cache, args)
+	case "anthropic":
+		result, err = t.handleAnthropic(ctx, logger, cache, args)
 	case "bedrock":
 		result, err = t.handleBedrock(ctx, logger, cache, args)
 	case "rust":
@@ -302,6 +305,22 @@ func (t *SearchPackagesTool) handleDocker(ctx context.Context, logger *logrus.Lo
 	}
 
 	tool := docker.NewDockerTool(t.client)
+	return tool.Execute(ctx, logger, cache, args)
+}
+
+// handleAnthropic handles Anthropic Claude model searches
+func (t *SearchPackagesTool) handleAnthropic(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+	// Set default action if not provided
+	if _, ok := args["action"]; !ok {
+		if query, ok := args["query"].(string); ok && query != "" {
+			args["action"] = "search"
+			args["query"] = query
+		} else {
+			args["action"] = "list"
+		}
+	}
+
+	tool := anthropic.NewAnthropicTool()
 	return tool.Execute(ctx, logger, cache, args)
 }
 
