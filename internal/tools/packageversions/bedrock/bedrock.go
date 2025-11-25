@@ -10,11 +10,16 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
+	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/anthropic"
 	"github.com/sirupsen/logrus"
 )
 
 // BedrockTool handles AWS Bedrock model checking
-type BedrockTool struct{}
+type BedrockTool struct {
+	anthropicTool *anthropic.AnthropicTool
+	cache         *sync.Map
+	logger        *logrus.Logger
+}
 
 // Definition returns the tool's definition for MCP registration
 func (t *BedrockTool) Definition() mcp.Tool {
@@ -45,6 +50,13 @@ func (t *BedrockTool) Definition() mcp.Tool {
 func (t *BedrockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	logger.Info("Getting AWS Bedrock model information")
 
+	// Initialise Anthropic tool if not already done
+	if t.anthropicTool == nil {
+		t.anthropicTool = anthropic.NewAnthropicTool()
+		t.cache = cache
+		t.logger = logger
+	}
+
 	// Parse action
 	action := "list"
 	if actionRaw, ok := args["action"].(string); ok && actionRaw != "" {
@@ -54,22 +66,36 @@ func (t *BedrockTool) Execute(ctx context.Context, logger *logrus.Logger, cache 
 	// Handle different actions
 	switch action {
 	case "list":
-		return t.listModels()
+		return t.listModels(ctx)
 	case "search":
-		return t.searchModels(args)
+		return t.searchModels(ctx, args)
 	case "get":
-		return t.getModel(args)
+		return t.getModel(ctx, args)
 	case "get_latest_claude_sonnet":
-		return t.getLatestClaudeSonnet()
+		return t.getLatestClaudeSonnet(ctx)
 	default:
 		return nil, fmt.Errorf("invalid action: %s", action)
 	}
 }
 
-// listModels lists all available AWS Bedrock models
-func (t *BedrockTool) listModels() (*mcp.CallToolResult, error) {
-	// In a real implementation, this would fetch data from AWS Bedrock API
-	// For now, we'll return a static list of models
+// getModels gets all available AWS Bedrock models (internal helper)
+func (t *BedrockTool) getModels(ctx context.Context) ([]packageversions.BedrockModel, error) {
+	// Fetch latest Anthropic models using the Anthropic tool
+	anthropicModels := []anthropic.AnthropicModel{}
+	var parserError string
+
+	// Use Anthropic tool to get models
+	anthropicArgs := map[string]any{"action": "list"}
+	anthropicResult, err := t.anthropicTool.Execute(ctx, t.logger, t.cache, anthropicArgs)
+	if err != nil {
+		t.logger.WithError(err).Warn("Failed to fetch latest Anthropic models, using fallback data")
+		parserError = "Parser error: Failed to fetch latest Anthropic model information. Please visit https://platform.claude.com/docs/en/about-claude/models/overview#latest-models-comparison to check for the latest model IDs."
+	} else {
+		// Extract models from the result
+		anthropicModels = extractAnthropicModelsFromResult(anthropicResult)
+	}
+
+	// Start with statically defined non-Anthropic models
 	models := []packageversions.BedrockModel{
 		{
 			Provider:           "amazon",
@@ -162,33 +188,6 @@ func (t *BedrockTool) listModels() (*mcp.CallToolResult, error) {
 			StreamingSupported: true,
 		},
 		{
-			Provider:           "anthropic",
-			ModelName:          "Claude Sonnet 4",
-			ModelID:            "anthropic.claude-sonnet-4-20250514-v1:0",
-			RegionsSupported:   []string{"us-east-1", "us-east-2", "us-west-2", "ap-northeast-1", "ap-northeast-2", "ap-northeast-3", "ap-south-1", "ap-south-2", "ap-southeast-1", "ap-southeast-2", "eu-central-1", "eu-north-1", "eu-south-1", "eu-south-2", "eu-west-1", "eu-west-3"},
-			InputModalities:    []string{"text", "image"},
-			OutputModalities:   []string{"text"},
-			StreamingSupported: true,
-		},
-		{
-			Provider:           "anthropic",
-			ModelName:          "Claude 3.5 Haiku",
-			ModelID:            "anthropic.claude-3-5-haiku-20241022-v1:0",
-			RegionsSupported:   []string{"us-east-1", "us-east-2", "us-west-2"},
-			InputModalities:    []string{"text", "image"},
-			OutputModalities:   []string{"text"},
-			StreamingSupported: true,
-		},
-		{
-			Provider:           "anthropic",
-			ModelName:          "Claude Opus 4",
-			ModelID:            "anthropic.claude-opus-4-20250514-v1:0",
-			RegionsSupported:   []string{"us-east-1", "us-east-2", "us-west-2"},
-			InputModalities:    []string{"text", "image"},
-			OutputModalities:   []string{"text"},
-			StreamingSupported: true,
-		},
-		{
 			Provider:           "cohere",
 			ModelName:          "Embed English",
 			ModelID:            "cohere.embed-english-v3",
@@ -253,6 +252,26 @@ func (t *BedrockTool) listModels() (*mcp.CallToolResult, error) {
 		},
 	}
 
+	// Add dynamically fetched Anthropic models
+	for _, anthropicModel := range anthropicModels {
+		bedrockModel := packageversions.BedrockModel{
+			Provider:           "anthropic",
+			ModelName:          anthropicModel.ModelName,
+			ModelID:            anthropicModel.AWSBedrockID,
+			RegionsSupported:   anthropicModel.RegionsSupported,
+			InputModalities:    []string{"text", "image"}, // All Claude models support text and image
+			OutputModalities:   []string{"text"},
+			StreamingSupported: true, // All Claude models support streaming
+		}
+
+		// If no regions specified, use common regions
+		if len(bedrockModel.RegionsSupported) == 0 {
+			bedrockModel.RegionsSupported = []string{"us-east-1", "us-east-2", "us-west-2"}
+		}
+
+		models = append(models, bedrockModel)
+	}
+
 	// Sort models by provider and name
 	sort.Slice(models, func(i, j int) bool {
 		if models[i].Provider != models[j].Provider {
@@ -260,6 +279,26 @@ func (t *BedrockTool) listModels() (*mcp.CallToolResult, error) {
 		}
 		return models[i].ModelName < models[j].ModelName
 	})
+
+	// If there was a parser error, log it
+	if parserError != "" {
+		t.logger.Warn(parserError)
+	}
+
+	// Defensive check - should never happen, but if we have no models, return error
+	if len(models) == 0 {
+		return nil, fmt.Errorf("no models available")
+	}
+
+	return models, nil
+}
+
+// listModels lists all available AWS Bedrock models
+func (t *BedrockTool) listModels(ctx context.Context) (*mcp.CallToolResult, error) {
+	models, err := t.getModels(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	result := packageversions.BedrockModelSearchResult{
 		Models:     models,
@@ -270,29 +309,11 @@ func (t *BedrockTool) listModels() (*mcp.CallToolResult, error) {
 }
 
 // searchModels searches for AWS Bedrock models
-func (t *BedrockTool) searchModels(args map[string]any) (*mcp.CallToolResult, error) {
-	// Get all models
-	result, err := t.listModels()
+func (t *BedrockTool) searchModels(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	// Get all models directly
+	models, err := t.getModels(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	// Convert result to JSON string
-	resultJSON, err := json.Marshal(result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal result: %w", err)
-	}
-
-	// Parse result
-	var data map[string]any
-	if err := json.Unmarshal(resultJSON, &data); err != nil {
-		return nil, fmt.Errorf("failed to parse model data: %w", err)
-	}
-
-	// Get models
-	modelsRaw, ok := data["models"].([]any)
-	if !ok {
-		return nil, fmt.Errorf("invalid model data format")
 	}
 
 	// Parse query
@@ -315,28 +336,23 @@ func (t *BedrockTool) searchModels(args map[string]any) (*mcp.CallToolResult, er
 
 	// Filter models
 	var filteredModels []packageversions.BedrockModel
-	for _, modelRaw := range modelsRaw {
-		modelMap, ok := modelRaw.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		// Convert to BedrockModel
-		var model packageversions.BedrockModel
-		modelJSON, err := json.Marshal(modelMap)
-		if err != nil {
-			continue
-		}
-		if err := json.Unmarshal(modelJSON, &model); err != nil {
-			continue
-		}
-
+	for _, model := range models {
 		// Apply filters
 		if query != "" {
+			// Standard search fields
 			nameMatch := strings.Contains(strings.ToLower(model.ModelName), query)
 			idMatch := strings.Contains(strings.ToLower(model.ModelID), query)
 			providerMatch := strings.Contains(strings.ToLower(model.Provider), query)
-			if !nameMatch && !idMatch && !providerMatch {
+
+			// Enhanced matching for common Claude model family aliases
+			aliasMatch := false
+			if model.Provider == "anthropic" {
+				lowerModelName := strings.ToLower(model.ModelName)
+				// Support queries like "sonnet", "claude-sonnet", "haiku", "opus"
+				aliasMatch = matchesClaudeAlias(query, lowerModelName)
+			}
+
+			if !nameMatch && !idMatch && !providerMatch && !aliasMatch {
 				continue
 			}
 		}
@@ -378,47 +394,23 @@ func (t *BedrockTool) searchModels(args map[string]any) (*mcp.CallToolResult, er
 }
 
 // getModel gets a specific AWS Bedrock model
-func (t *BedrockTool) getModel(args map[string]any) (*mcp.CallToolResult, error) {
+func (t *BedrockTool) getModel(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse model ID
 	modelID, ok := args["modelId"].(string)
 	if !ok || modelID == "" {
 		return nil, fmt.Errorf("missing required parameter: modelId")
 	}
 
-	// Get all models
-	result, err := t.listModels()
+	// Get all models directly
+	models, err := t.getModels(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert result to JSON string
-	resultJSON, err := json.Marshal(result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal result: %w", err)
-	}
-
-	// Parse result
-	var data map[string]any
-	if err := json.Unmarshal(resultJSON, &data); err != nil {
-		return nil, fmt.Errorf("failed to parse model data: %w", err)
-	}
-
-	// Get models
-	modelsRaw, ok := data["models"].([]any)
-	if !ok {
-		return nil, fmt.Errorf("invalid model data format")
-	}
-
-	// Find model
-	for _, modelRaw := range modelsRaw {
-		modelMap, ok := modelRaw.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		// Check model ID
-		if id, ok := modelMap["modelId"].(string); ok && id == modelID {
-			return packageversions.NewToolResultJSON(modelMap)
+	// Find model by ID
+	for _, model := range models {
+		if model.ModelID == modelID {
+			return packageversions.NewToolResultJSON(model)
 		}
 	}
 
@@ -426,53 +418,67 @@ func (t *BedrockTool) getModel(args map[string]any) (*mcp.CallToolResult, error)
 }
 
 // getLatestClaudeSonnet gets the latest Claude Sonnet model
-func (t *BedrockTool) getLatestClaudeSonnet() (*mcp.CallToolResult, error) {
-	// Get all models
-	result, err := t.listModels()
+func (t *BedrockTool) getLatestClaudeSonnet(ctx context.Context) (*mcp.CallToolResult, error) {
+	// Get all models directly
+	models, err := t.getModels(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert result to JSON string
-	resultJSON, err := json.Marshal(result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal result: %w", err)
-	}
-
-	// Parse result
-	var data map[string]any
-	if err := json.Unmarshal(resultJSON, &data); err != nil {
-		return nil, fmt.Errorf("failed to parse model data: %w", err)
-	}
-
-	// Get models
-	modelsRaw, ok := data["models"].([]any)
-	if !ok {
-		return nil, fmt.Errorf("invalid model data format")
-	}
-
 	// Find Claude Sonnet model
-	for _, modelRaw := range modelsRaw {
-		modelMap, ok := modelRaw.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		// Convert to BedrockModel
-		var model packageversions.BedrockModel
-		modelJSON, err := json.Marshal(modelMap)
-		if err != nil {
-			continue
-		}
-		if err := json.Unmarshal(modelJSON, &model); err != nil {
-			continue
-		}
-
-		// Check if it's Claude Sonnet
+	for _, model := range models {
 		if model.Provider == "anthropic" && strings.Contains(model.ModelName, "Sonnet") {
 			return packageversions.NewToolResultJSON(model)
 		}
 	}
 
-	return nil, fmt.Errorf("claude Sonnet model not found") // Lowercased "claude"
+	return nil, fmt.Errorf("claude Sonnet model not found")
+}
+
+// matchesClaudeAlias checks if a query matches common Claude model aliases
+func matchesClaudeAlias(query, modelName string) bool {
+	query = strings.TrimSpace(strings.ToLower(query))
+
+	// Normalise query - remove "claude-" or "claude " prefix if present
+	normalisedQuery := query
+	normalisedQuery = strings.TrimPrefix(normalisedQuery, "claude-")
+	normalisedQuery = strings.TrimPrefix(normalisedQuery, "claude ")
+
+	// Check for model family matches
+	families := []string{"sonnet", "haiku", "opus"}
+	for _, family := range families {
+		if strings.Contains(modelName, family) {
+			// Direct family match (e.g., "sonnet" or "haiku")
+			if normalisedQuery == family {
+				return true
+			}
+			// Family with version (e.g., "sonnet-4.5", "haiku-4")
+			if strings.HasPrefix(normalisedQuery, family+"-") || strings.HasPrefix(normalisedQuery, family+" ") {
+				return true
+			}
+			// Original query with claude- prefix (e.g., "claude-sonnet")
+			if query == "claude-"+family || query == "claude "+family {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// extractAnthropicModelsFromResult extracts Anthropic models from an MCP result
+func extractAnthropicModelsFromResult(result *mcp.CallToolResult) []anthropic.AnthropicModel {
+	if result == nil || len(result.Content) == 0 {
+		return []anthropic.AnthropicModel{}
+	}
+
+	// The result is a JSON string in the first content item (text type)
+	var searchResult anthropic.AnthropicModelSearchResult
+	if textContent, ok := result.Content[0].(mcp.TextContent); ok {
+		if err := json.Unmarshal([]byte(textContent.Text), &searchResult); err == nil {
+			return searchResult.Models
+		}
+	}
+
+	return []anthropic.AnthropicModel{}
 }
