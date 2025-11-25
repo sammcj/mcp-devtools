@@ -12,7 +12,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/codexagent"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/copilotagent"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/geminiagent"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/qdeveloperagent"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/kiroagent"
 )
 
 // TestTools_DisabledByDefault_DynamicCheck verifies that tools requiring enablement
@@ -113,7 +113,7 @@ func TestTools_DisabledByDefault_DynamicCheck(t *testing.T) {
 			"codex-agent",
 			"copilot-agent",
 			"gemini-agent",
-			"q-developer-agent",
+			"kiro-agent",
 		}
 
 		for _, agentName := range agentToolsThatMustRequireEnablement {

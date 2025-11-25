@@ -22,7 +22,7 @@ Excel (xlsx) file manipulation tool providing workbook, worksheet, data, formatt
 ### Environment Variables
 
 - `ENABLE_ADDITIONAL_TOOLS` - Must include `excel` to enable this tool
-- `EXCEL_FILES_PATH` - Base directory for Excel files in HTTP mode (default: `~/.mcp-devtools/excel/`)
+- `EXCEL_FILES_PATH` - (Only required when running the server is running in HTTP mode) Allows you to set a base directory for Excel files in HTTP mode (default: `~/.mcp-devtools/excel/`)
 
 ### Transport Modes
 
@@ -637,9 +637,3 @@ Excel features fully supported:
 - Excel tables with styling
 - Data validation rules
 - Formulas (with security restrictions)
-
-## Dependencies
-
-- **Excelize v2**: Pure Go Excel library
-- No Python or external dependencies required
-- Works on macOS and Linux

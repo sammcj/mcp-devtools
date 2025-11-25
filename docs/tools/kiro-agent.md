@@ -1,23 +1,23 @@
-# Q Developer Agent Tool
+# Kiro Agent Tool
 
-The Q Developer Agent tool provides integration with AWS Q Developer CLI through the MCP (Model Context Protocol) server. This tool enables AI agents to leverage Q Developer's capabilities for AWS-focused code analysis, generation, and assistance.
+The Kiro Agent tool provides integration with Kiro CLI through the MCP (Model Context Protocol) server. This tool enables AI agents to leverage Kiro's capabilities for AWS-focused code analysis, generation, and assistance.
 
 ## Overview
 
-AWS Q Developer is Amazon's AI coding assistant that provides code completions, explanations, and solutions with deep knowledge of AWS services and best practices. The Q Developer Agent tool allows MCP clients to interact with Q Developer CLI commands programmatically, enabling automated code assistance workflows.
+Kiro is an AI coding assistant that provides code completions, explanations, and solutions with deep knowledge of AWS services and best practices. The Kiro Agent tool allows MCP clients to interact with Kiro CLI commands programmatically, enabling automated code assistance workflows.
 
 ## Configuration
 
 ### Requirements
 
-- AWS Q Developer CLI must be installed and available in PATH
+- The `kiro-cli` command must be installed and available in PATH ([installation guide](https://kiro.dev/cli))
 - AWS credentials must be configured
-- Q Developer must be authenticated (`q auth`)
+- Kiro must be authenticated
 
 ### Environment Variables
 
-- `ENABLE_ADDITIONAL_TOOLS`: Must include `q-developer-agent` to enable the tool
-- `AGENT_TIMEOUT`: (optional) Timeout for Q Developer operations in seconds (default: 300)
+- `ENABLE_ADDITIONAL_TOOLS`: Must include `kiro-agent` to enable the tool
+- `AGENT_TIMEOUT`: (optional) Timeout for Kiro operations in seconds (default: 300)
 - `AGENT_MAX_RESPONSE_SIZE`: (optional) Maximum response size in bytes (default: 2MB)
 - `AGENT_PERMISSIONS_MODE`: (optional) Controls whether yolo-mode parameter is exposed and its default behaviour. Options: `yolo` (force yolo-mode on, hide parameter), `disabled`/`false` (force yolo-mode off, hide parameter). If unset, agent can control yolo-mode via parameter. This controls the `--trust-all-tools` flag.
 
@@ -26,17 +26,17 @@ AWS Q Developer is Amazon's AI coding assistant that provides code completions, 
 The tool is disabled by default for security reasons. It must be explicitly enabled by setting:
 
 ```bash
-export ENABLE_ADDITIONAL_TOOLS="q-developer-agent"
+export ENABLE_ADDITIONAL_TOOLS="kiro-agent"
 ```
 
 ## Usage
 
 ### Basic Parameters
 
-- **prompt** (required): The instruction or question for Q Developer
+- **prompt** (required): The instruction or question for Kiro
 - **resume** (optional): Continue previous conversation from current directory
 - **agent** (optional): Context profile to use for the conversation
-- **override-model** (optional): Specify model (claude-3.5-sonnet, claude-3.7-sonnet, claude-sonnet-4)
+- **override-model** (optional): Specify which Claude model to use
 - **yolo-mode** (optional): Trust all tools without confirmation
 - **trust-tools** (optional): Comma-separated list of specific tools to trust
 - **verbose** (optional): Enable detailed logging
@@ -46,7 +46,7 @@ export ENABLE_ADDITIONAL_TOOLS="q-developer-agent"
 #### Basic Code Analysis
 ```json
 {
-  "name": "q-developer-agent",
+  "name": "kiro-agent",
   "arguments": {
     "prompt": "Review this Lambda function for security best practices and suggest improvements"
   }
@@ -56,7 +56,7 @@ export ENABLE_ADDITIONAL_TOOLS="q-developer-agent"
 #### Continue Previous Conversation
 ```json
 {
-  "name": "q-developer-agent",
+  "name": "kiro-agent",
   "arguments": {
     "prompt": "Now implement the caching mechanism we discussed",
     "resume": true
@@ -67,10 +67,9 @@ export ENABLE_ADDITIONAL_TOOLS="q-developer-agent"
 #### Specify Model and Enable Tools
 ```json
 {
-  "name": "q-developer-agent",
+  "name": "kiro-agent",
   "arguments": {
     "prompt": "Help me troubleshoot this CloudFormation template",
-    "override-model": "claude-sonnet-4",
     "yolo-mode": true,
     "verbose": true
   }
@@ -86,7 +85,7 @@ export ENABLE_ADDITIONAL_TOOLS="q-developer-agent"
 
 ### Model Selection
 - Support for multiple Claude models
-- Default uses Q Developer's current default model
+- Default uses Kiro's current default model
 - Override with specific model versions
 
 ### Tool Integration
@@ -125,17 +124,17 @@ export ENABLE_ADDITIONAL_TOOLS="q-developer-agent"
 
 #### Tool Not Enabled
 ```
-Error: Q Developer agent tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'q-developer-agent'
+Error: Kiro agent tool is not enabled. Set ENABLE_ADDITIONAL_TOOLS environment variable to include 'kiro-agent'
 ```
 
 #### CLI Not Found
 ```
-Error: Q Developer CLI not found. Please install Q Developer CLI and ensure it's available in your PATH
+Error: Kiro CLI not found. Please install kiro-cli and ensure it's available in your PATH
 ```
 
 #### Authentication Issues
 ```
-Error: Q Developer authentication failed. Please ensure you are authenticated with AWS and Q Developer is configured properly
+Error: Kiro authentication failed. Please ensure kiro-cli is configured properly
 ```
 
 #### Tool Approval Required
@@ -146,7 +145,7 @@ Error: Tool approval required but --no-interactive was specified. Use yolo-mode 
 ## Performance Considerations
 
 ### Timeouts
-- Default timeout: 180 seconds (3 minutes)
+- Default timeout: 300 seconds (5 minutes)
 - Configurable via `AGENT_TIMEOUT` environment variable
 - Operations exceeding timeout return partial output with notification
 
@@ -180,13 +179,14 @@ Error: Tool approval required but --no-interactive was specified. Use yolo-mode 
 ## Troubleshooting
 
 ### Installation Issues
-1. Verify Q Developer CLI installation: `which q`
-2. Check AWS CLI configuration: `aws configure list`
-3. Test Q Developer authentication: `q auth`
+1. Install Kiro CLI: see [Kiro CLI Installation Guide](https://kiro.dev/cli)
+2. Verify Kiro CLI installation: `which kiro-cli`
+3. Check AWS CLI configuration: `aws configure list`
+4. Test Kiro authentication status
 
 ### Permission Problems
-1. Ensure `ENABLE_ADDITIONAL_TOOLS` includes `q-developer-agent`
-2. Check working directory permissions for `.q` session files
+1. Ensure `ENABLE_ADDITIONAL_TOOLS` includes `kiro-agent`
+2. Check working directory permissions for `.kiro` session files
 3. Verify AWS credentials and permissions
 
 ### Performance Issues
@@ -196,21 +196,21 @@ Error: Tool approval required but --no-interactive was specified. Use yolo-mode 
 
 ### Tool Integration Problems
 1. Enable verbose mode for detailed logging
-2. Check tool compatibility with Q Developer version
+2. Check tool compatibility with Kiro version
 3. Use explicit tool trust configuration
 
 ## Comparison with Other Agents
 
-| Feature | Q Developer | Claude Agent | Gemini Agent |
-|---------|-------------|--------------|--------------|
-| Focus | AWS/Cloud | General Purpose | General Purpose |
-| File Context | No @ syntax | @ syntax supported | @ syntax supported |
-| Models | Claude only | Claude models | Gemini models |
-| Session Management | Directory-based | Session ID based | Include files |
-| Tool Trust | Granular control | All or nothing | All or nothing |
+| Feature | Kiro | Q Developer | Claude Agent | Gemini Agent |
+|---------|------|-------------|--------------|--------------|
+| Focus | AWS/Cloud | AWS/Cloud | General Purpose | General Purpose |
+| File Context | No @ syntax | No @ syntax | @ syntax supported | @ syntax supported |
+| Models | Claude only | Claude only | Claude models | Gemini models |
+| Session Management | Directory-based | Directory-based | Session ID based | Include files |
+| Tool Trust | Granular control | Granular control | All or nothing | All or nothing |
 
 ## Related Documentation
 
-- [AWS Q Developer Documentation](https://docs.aws.amazon.com/q/)
-- [Q Developer CLI Reference](https://docs.aws.amazon.com/q/latest/userguide/q-cli.html)
+- [Kiro CLI Documentation](https://kiro.dev)
 - [AWS CLI Configuration](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html)
+- [MCP DevTools Documentation](https://github.com/sammcj/mcp-devtools)

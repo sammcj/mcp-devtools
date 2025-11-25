@@ -217,8 +217,12 @@ type FilteredPullRequestDetails struct {
 	Body      string `json:"body,omitempty"`
 	State     string `json:"state"`
 	Login     string `json:"login"`      // user.login
-	HeadLabel string `json:"head_label"` // head.label
-	BaseLabel string `json:"base_label"` // base.label
+	HeadLabel string `json:"head_label"` // head.label (e.g., "user:branch")
+	HeadRepo  string `json:"head_repo"`  // head repository full name (e.g., "user/repo")
+	HeadRef   string `json:"head_ref"`   // head branch/ref name (e.g., "branch")
+	BaseLabel string `json:"base_label"` // base.label (e.g., "owner:main")
+	BaseRepo  string `json:"base_repo"`  // base repository full name (e.g., "owner/repo")
+	BaseRef   string `json:"base_ref"`   // base branch/ref name (e.g., "main")
 	Comments  int    `json:"comments"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`

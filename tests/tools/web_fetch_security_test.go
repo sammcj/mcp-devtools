@@ -104,6 +104,7 @@ func TestFetchURLTool_SecurityIntegration_ContentAnalysis(t *testing.T) {
 }
 
 func TestWebFetchConstants_SecurityMigration(t *testing.T) {
+	t.Parallel()
 	// Test that we can create a web client without issues
 	client := webfetch.NewWebClient()
 	if client == nil {

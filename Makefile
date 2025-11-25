@@ -35,14 +35,29 @@ run-http: build
 	./$(BINARY_PATH) --transport http --port 18080 --base-url http://localhost
 
 # Run tests (all tests including external dependencies)
+# Note: Takes ~10s due to external API calls (npm, crates.io, etc.)
 .PHONY: test
 test:
-	$(GOTEST) $(GOFLAGS) ./tests/...
+	@echo "Running tests (includes external API integration tests, ~10s)..."
+	@$(GOTEST) -count=1 $(GOFLAGS) ./tests/...
 
-# Run fast tests (no external dependencies)
+# Run fast tests (no external dependencies, ~7s)
 .PHONY: test-fast
 test-fast:
-	$(GOTEST) -short ./tests/...
+	@echo "Running fast tests (skips external API integration tests)..."
+	@$(GOTEST) -short ./tests/...
+
+# Run tests with detailed per-test timing (shows all tests with time > 0.00s)
+.PHONY: test-verbose
+test-verbose:
+	@echo "Running tests with detailed timing for each test..."
+	@$(GOTEST) -count=1 -v $(GOFLAGS) ./tests/... | grep -E "(^=== RUN|^--- PASS|^--- FAIL)" | grep -E "(PASS|FAIL).*[0-9]+\.[0-9]+s" | sed 's/^--- PASS: /  ✓ /' | sed 's/^--- FAIL: /  ✗ /'
+
+# Show slowest tests (useful for optimisation)
+.PHONY: test-slow
+test-slow:
+	@echo "Running tests and showing slowest tests..."
+	@$(GOTEST) -count=1 -v $(GOFLAGS) ./tests/... 2>&1 | grep -E "^--- PASS:" | grep -v "(0.00s)" | sed 's/^--- PASS: /  /' | sort -t'(' -k2 -rn
 
 # Benchmark tool token costs
 .PHONY: benchmark-tokens
@@ -214,6 +229,6 @@ help:
 	@echo "  sec-mcp-scan		: Run security scan with mcp-scan"
 	@echo "  sec-semgrep		: Run security scan with semgrep"
 	@echo "  sec-safedep-vet	: Run security scan with safedep vet"
-	@ecoh "  sec-performance	: Run security utility performance tests"
+	@echo "  sec-performance	: Run security utility performance tests"
 	@echo "  inspect		: Run MCP's inspector tool"
 	@echo "  help			: Show this help message"

@@ -15,6 +15,7 @@ import (
 // TestNpmBatchRequestRegression tests the exact scenario from the bug report
 // where multiple npm packages failed with "unexpected end of JSON input"
 func TestNpmBatchRequestRegression(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("Skipping external npm registry test in short mode")
 	}
@@ -84,6 +85,7 @@ func TestNpmBatchRequestRegression(t *testing.T) {
 
 // TestNpmBatchRequestConcurrent tests concurrent batch requests to verify thread safety
 func TestNpmBatchRequestConcurrent(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("Skipping concurrent external npm registry test in short mode")
 	}

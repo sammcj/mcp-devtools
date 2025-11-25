@@ -10,7 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make run-http` - Build and run server with HTTP transport on port 18080
 
 ### Testing
-- `make test` - Run all tests including external dependencies
+- `make test` - Run all tests (includes external API tests, ~10s)
+- `make test-fast` - Run tests without external API calls (~7s)
+- `make test-verbose` - Show detailed per-test timing
+- `make test-slow` - Show slowest tests sorted by duration
 - `go test -short -v ./tests/...` - Run specific test suites
 
 ### Code Quality
@@ -78,6 +81,8 @@ Tests are organised in `tests/` directory:
 - `tools/` - Tool-specific tests
 - `unit/` - Unit tests for core components
 
+Tests should not depend on external APIs or services unless cleared by the user as necessary.
+
 Use `make test-fast` for development to avoid external API calls.
 
 ## Build System
@@ -92,6 +97,17 @@ All tools follow this pattern:
 3. Implement `Definition()` for MCP tool schema
 4. Implement `Execute()` for tool logic
 5. Use shared logger and cache for consistency
+
+## New Tool Registration Checklist
+
+**CRITICAL**: Before registering a new tool, verify the following:
+
+### Default Enablement Decision
+- **By default, ALL new tools are DISABLED** - this is the secure default
+- Only add tool to `defaultTools` list in `enabledByDefault()` (registry.go) if the user has explicitly stated it should be enabled by default
+- **If tool is NOT added to defaultTools**: It will require `ENABLE_ADDITIONAL_TOOLS` to use (this is correct for most tools)
+- Tests enable the tool via `ENABLE_ADDITIONAL_TOOLS` if not in defaultTools list
+- When in Doubt - **Leave the tool disabled by default.** It's safer to require explicit enablement than to accidentally expose destructive functionality.
 
 ## General Guidelines
 

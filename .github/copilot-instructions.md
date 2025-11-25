@@ -1,4 +1,124 @@
-# GitHub Copilot Code Review Instructions for MCP DevTools
+# GitHub Copilot Instructions for MCP DevTools
+
+## Project Overview
+
+**MCP DevTools** is a single, high-performance MCP (Model Context Protocol) server written in Go that replaces many Node.js and Python-based MCP servers with one efficient binary. It provides access to essential developer tools through a unified, modular interface that can be easily extended with new tools.
+
+**Key Features:**
+- Single binary solution replacing multiple resource-heavy servers
+- 16+ essential developer tools in one package
+- Built in Go for speed, efficiency, and minimal memory footprint
+- Fast startup and response times
+- Modular tool registry architecture allowing easy addition of new tools
+- Supports multiple transports: stdio (default) and streamable HTTP
+
+## Development Setup
+
+### Building the Project
+
+```bash
+# Build the server
+make build
+
+# The binary will be created at: bin/mcp-devtools
+```
+
+### Running the Server
+
+```bash
+# Run with stdio transport (default)
+make run
+
+# Run with HTTP transport
+make run-http
+```
+
+### Testing
+
+```bash
+# Run all tests (includes external API integration tests, ~10s)
+make test
+
+# Run fast tests (skips external dependencies, ~7s)
+make test-fast
+
+# Run tests with detailed timing
+make test-verbose
+```
+
+### Linting and Code Quality
+
+```bash
+# Format code
+make fmt
+
+# Run linters and modernisation checks
+make lint
+# This runs: gofmt, golangci-lint, and gopls modernize
+```
+
+### Dependencies
+
+```bash
+# Install Go dependencies
+make deps
+
+# Install all dependencies (Go + Python for document processing)
+make install-all
+```
+
+## Project Structure
+
+```
+mcp-devtools/
+├── internal/
+│   ├── tools/           # All tool implementations
+│   ├── registry/        # Tool registration system
+│   ├── security/        # Security framework for file/network operations
+│   ├── handlers/        # MCP protocol handlers
+│   ├── config/          # Configuration management
+│   ├── oauth/           # OAuth functionality
+│   ├── cache/           # Caching utilities
+│   ├── utils/           # Utility functions
+│   └── imports/         # Import management
+├── tests/
+│   ├── tools/           # Unit tests for tools (REQUIRED for all tools)
+│   ├── benchmarks/      # Performance and token cost tests
+│   ├── oauth/           # OAuth tests
+│   └── unit/            # Unit tests for internal packages
+├── docs/
+│   └── tools/           # Tool documentation (REQUIRED when adding tools)
+├── main.go              # Entry point - import new tools here
+├── Makefile             # Build, test, and development commands
+└── mcp.json             # MCP server configuration
+```
+
+## Contribution Guidelines
+
+### Before Committing
+
+1. **Format your code:** `make fmt`
+2. **Run linters:** `make lint` (must pass without errors)
+3. **Run tests:** `make test-fast` (must pass all tests)
+4. **Build successfully:** `make build` (must compile without errors)
+
+### Code Standards
+
+- Follow Go best practices and idiomatic patterns
+- Use British English spelling throughout code and documentation
+- No marketing terms like "comprehensive" or "production-grade"
+- Focus on clear, concise, actionable technical guidance
+- Keep responses token-efficient (avoid returning unnecessary data)
+
+### Adding New Tools
+
+1. Implement `tools.Tool` interface in `internal/tools/`
+2. Register tool via `registry.Register()` in tool's `init()` function
+3. Import tool in `main.go` to trigger registration
+4. Add unit tests in `tests/tools/`
+5. Add documentation in `docs/tools/`
+6. Update `docs/tools/overview.md`
+7. Integrate with security framework if accessing files/URLs
 
 ## Architecture & Structure
 
@@ -76,7 +196,7 @@ The only exception is in tests, tests are allowed to write to stdout/stderr.
 
 ### Testing Requirements
 - Unit tests MUST be in `tests/tools/` directory
-- Tests should MUST NOT rely on external dependencies
+- Tests MUST NOT rely on external dependencies
 - Test error conditions and edge cases
 - Tests should be lightweight and fast
 

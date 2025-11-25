@@ -263,6 +263,16 @@ func (gc *GitHubClient) GetPullRequest(ctx context.Context, owner, repo string, 
 		return nil, nil, fmt.Errorf("failed to get pull request: %w", err)
 	}
 
+	// Extract repository and ref information from head and base
+	headRepo := ""
+	if pr.Head.Repo != nil {
+		headRepo = pr.Head.Repo.GetFullName()
+	}
+	baseRepo := ""
+	if pr.Base.Repo != nil {
+		baseRepo = pr.Base.Repo.GetFullName()
+	}
+
 	pullRequest := &FilteredPullRequestDetails{
 		ID:        pr.GetID(),
 		Number:    pr.GetNumber(),
@@ -271,7 +281,11 @@ func (gc *GitHubClient) GetPullRequest(ctx context.Context, owner, repo string, 
 		State:     pr.GetState(),
 		Login:     pr.User.GetLogin(),
 		HeadLabel: pr.Head.GetLabel(),
+		HeadRepo:  headRepo,
+		HeadRef:   pr.Head.GetRef(),
 		BaseLabel: pr.Base.GetLabel(),
+		BaseRepo:  baseRepo,
+		BaseRef:   pr.Base.GetRef(),
 		Comments:  pr.GetComments(),
 		CreatedAt: pr.GetCreatedAt().Format("2006-01-02T15:04:05Z"),
 		UpdatedAt: pr.GetUpdatedAt().Format("2006-01-02T15:04:05Z"),

@@ -37,7 +37,7 @@ type Tool interface {
     Definition() mcp.Tool
 
     // Execute executes the tool's logic
-    Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error)
+    Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error)
 }
 ```
 
@@ -109,7 +109,7 @@ func (t *YourTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     // Log the start of execution
     logger.Info("Executing your tool")
 
@@ -158,7 +158,7 @@ func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
         }
     }
 
-    result := map[string]interface{}{
+    result := map[string]any{
         "message": fmt.Sprintf("Tool executed with param1=%s, param2=%f", param1, param2),
         "content": content,
         // Add more result fields as needed
@@ -185,7 +185,7 @@ For each parameter, you can specify:
 - **Description**: `mcp.Description("...")` - Provide a description
 - **Default Value**: `mcp.DefaultString("...")`, `mcp.DefaultNumber(10)`, `mcp.DefaultBool(false)` - Set a default value
 - **Enum**: `mcp.Enum("value1", "value2", ...)` - Restrict to a set of values
-- **Properties**: `mcp.Properties(map[string]interface{}{...})` - Define properties for object parameters
+- **Properties**: `mcp.Properties(map[string]any{...})` - Define properties for object parameters
 
 ### 4. Result Schema
 
@@ -195,7 +195,7 @@ The result of a tool execution should be a `*mcp.CallToolResult` object, which c
 mcp.NewCallToolResult(result)
 ```
 
-Where `result` is a `map[string]interface{}` containing the tool's output data.
+Where `result` is a `map[string]any` containing the tool's output data.
 
 For structured results, you can use:
 
@@ -426,7 +426,7 @@ func (t *HelloTool) Definition() mcp.Tool {
 }
 
 // Execute executes the tool's logic
-func (t *HelloTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]interface{}) (*mcp.CallToolResult, error) {
+func (t *HelloTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
     // Parse parameters
     name := "World"
     if nameRaw, ok := args["name"].(string); ok && nameRaw != "" {
@@ -434,7 +434,7 @@ func (t *HelloTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
     }
 
     // Create result
-    result := map[string]interface{}{
+    result := map[string]any{
         "message": fmt.Sprintf("Hello, %s!", name),
     }
 
@@ -508,7 +508,7 @@ func (t *YourTool) ProvideExtendedInfo() *tools.ExtendedHelp {
         Examples: []tools.ToolExample{
             {
                 Description: "Basic usage example",
-                Arguments: map[string]interface{}{
+                Arguments: map[string]any{
                     "param1": "example_value",
                     "param2": 42,
                 },
@@ -615,8 +615,7 @@ If you want to view the tool descriptions, parameters and annotations as a MCP c
 - Rather than creating lots of tools for one purpose / provider, instead favour creating a single tool with multiple functions and parameters.
 - Tools should have fast, concise unit tests that do not rely on external dependencies or services.
 - No tool should ever log to stdout or stderr when the MCP server is running in stdio mode as this breaks the MCP protocol.
-- Consider if the tool should be enabled or disabled by default, if unsure - make it disabled by default following existing patterns (Don't forget to enable it in tests).
-- **CRITICAL for disabled-by-default tools**: To disable a tool by default, add its name to the `additionalTools` list in the `requiresEnablement()` function in `internal/registry/registry.go`. The registry will automatically prevent the tool from being registered unless explicitly enabled via `ENABLE_ADDITIONAL_TOOLS`. No additional checks are needed in the tool's `Execute()` method - the centralised registration system handles all enablement logic.
+- Tool enablement decision: By default, ALL new tools should be DISABLED by default unless explicitly approved by Sam, if approved tool gets enabled by being added to the `defaultTools` list in the `enabledByDefault()` function in `registry.go`. Having tools disabled by default follows the secure-by-default principle and helps to prevent context bloat.
 - You should update docs/tools/overview.md with adding or changing a tool.
 - **SECURITY**: All tools that access files or make HTTP requests MUST integrate with the security system. See [Security Integration](#6-security-integration) above and [Security System Documentation](security.md) for details.
 - Follow least privilege security principles.

@@ -61,6 +61,8 @@ func TestCopilotTool_Definition_OptionalParameters(t *testing.T) {
 		"override-model",
 		"resume",
 		"session-id",
+		"agent",
+		"additional-mcp-config",
 		"yolo-mode",
 		"allow-tool",
 		"deny-tool",
@@ -94,15 +96,17 @@ func TestCopilotTool_Definition_ParameterNamingConventions(t *testing.T) {
 
 	// Test that we use consistent naming conventions
 	expectedParams := map[string]bool{
-		"prompt":              true, // required
-		"override-model":      true, // follows decision log standardisation
-		"resume":              true, // optional boolean
-		"session-id":          true, // optional string
-		"yolo-mode":           true, // matches other agent convention
-		"allow-tool":          true, // array
-		"deny-tool":           true, // array
-		"include-directories": true, // array
-		"disable-mcp-server":  true, // array
+		"prompt":                true, // required
+		"override-model":        true, // follows decision log standardisation
+		"resume":                true, // optional boolean
+		"session-id":            true, // optional string
+		"agent":                 true, // optional string
+		"additional-mcp-config": true, // array
+		"yolo-mode":             true, // matches other agent convention
+		"allow-tool":            true, // array
+		"deny-tool":             true, // array
+		"include-directories":   true, // array
+		"disable-mcp-server":    true, // array
 	}
 
 	// Verify we have exactly these parameters (no more, no less)
@@ -390,6 +394,8 @@ func TestCopilotTool_ExtendedHelp_ContentVerification(t *testing.T) {
 		"override-model",
 		"resume",
 		"session-id",
+		"agent",
+		"additional-mcp-config",
 		"yolo-mode",
 		"allow-tool",
 		"deny-tool",

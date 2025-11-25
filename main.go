@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime/debug"
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -34,6 +37,13 @@ var (
 	Version   = "dev"
 	Commit    = "none"
 	BuildDate = "unknown"
+)
+
+// Global resources that need cleanup
+// Using atomic operations to prevent race conditions between signal handlers and cleanup
+var (
+	debugLogFile atomic.Pointer[os.File]
+	isStdioMode  atomic.Bool
 )
 
 const (
@@ -74,6 +84,10 @@ func main() {
 	// Set memory limit for the Go application
 	setMemoryLimit()
 
+	// Create context with signal handling for graceful shutdown
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	// Create a logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.InfoLevel)
@@ -84,27 +98,8 @@ func main() {
 	// Initialise the registry
 	registry.Init(logger)
 
-	// Initialise tool error logger
-	if err := tools.InitGlobalErrorLogger(logger); err != nil {
-		logger.WithError(err).Warn("Failed to initialise tool error logger")
-	}
-
-	// Ensure cleanup of embedded scripts and error logger on exit
-	defer func() {
-		// Close the tool error logger if it was initialised
-		if errorLogger := tools.GetGlobalErrorLogger(); errorLogger != nil {
-			if err := errorLogger.Close(); err != nil {
-				logger.WithError(err).Warn("Failed to close tool error logger")
-			}
-		}
-
-		// Stop LSP client cleanup routine and close all cached LSP clients
-		coderename.StopCleanupRoutine(registry.GetCache(), logger)
-
-		// Import the docprocessing package to access cleanup function
-		// We can't import it at the top level due to circular dependencies
-		// So we'll use a simple approach - the OS will clean up temp files anyway
-	}()
+	// Ensure cleanup runs on normal exit OR signal
+	defer performCleanup(logger)
 
 	// Create and run the CLI app
 	app := &cli.Command{
@@ -261,14 +256,17 @@ func main() {
 				},
 			},
 		},
-		Action: func(ctx context.Context, cmd *cli.Command) error {
+		Action: func(cliCtx context.Context, cmd *cli.Command) error {
 			// Get transport settings first
 			transport := cmd.String("transport")
 			port := cmd.String("port")
 			baseURL := cmd.String("base-url")
 
+			// Track stdio mode for error handling (atomic to prevent races with signal handlers)
+			isStdioMode.Store(transport == "stdio")
+
 			// Configure logger appropriately for transport mode
-			if transport == "stdio" {
+			if isStdioMode.Load() {
 				// For stdio mode, disable logging to prevent conflicts with MCP protocol
 				logger.SetOutput(os.Stderr)        // Use stderr instead of stdout
 				logger.SetLevel(logrus.ErrorLevel) // Only log errors to stderr
@@ -283,6 +281,8 @@ func main() {
 						if err := os.MkdirAll(logDir, 0700); err == nil {
 							logFile := filepath.Join(logDir, "mcp-devtools.log")
 							if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
+								// Store file handle for cleanup (atomic to prevent races with signal handlers)
+								debugLogFile.Store(file)
 								// Configure both instance and global loggers for file output
 								logger.SetOutput(file)
 								logrus.SetOutput(file)
@@ -316,10 +316,18 @@ func main() {
 				}
 			}
 
+			// Initialise tool error logger after logging is configured
+			if err := tools.InitGlobalErrorLogger(logger); err != nil {
+				logger.WithError(err).Debug("Failed to initialise tool error logger")
+				if transport != "stdio" {
+					logger.WithError(err).Warn("Failed to initialise tool error logger")
+				}
+			}
+
 			// Initialise security system (if enabled) - after logging is configured
 			logger.Debug("Initializing security system")
 			if err := security.InitGlobalSecurityManager(); err != nil {
-				logger.WithError(err).Debug("Security initialization failed")
+				logger.WithError(err).Debug("Security initialisation failed")
 				if transport != "stdio" {
 					logger.WithError(err).Warn("Failed to initialise security system")
 				}
@@ -402,20 +410,48 @@ func main() {
 				return sseServer.Start(":" + port)
 			case "http":
 				logger.WithField("port", port).Debug("Starting HTTP server")
-				return startStreamableHTTPServer(cmd, mcpSrv, logger)
+				return startStreamableHTTPServer(cliCtx, cmd, mcpSrv, logger)
 			default:
 				return fmt.Errorf("unsupported transport: %s", transport)
 			}
 		},
 	}
 
-	if err := app.Run(context.Background(), os.Args); err != nil {
-		logger.Fatalf("Error: %v", err)
+	if err := app.Run(ctx, os.Args); err != nil {
+		// CRITICAL: In stdio mode, we must NOT log to stdout or stderr as it breaks the MCP protocol
+		// Even though this occurs after ServeStdio() returns, initialisation errors could occur
+		// before the protocol starts, so we avoid all logging in stdio mode
+		if !isStdioMode.Load() {
+			logger.Fatalf("Error: %v", err)
+		}
+		os.Exit(1)
 	}
 }
 
-// startStreamableHTTPServer configures and starts the Streamable HTTP server
-func startStreamableHTTPServer(cmd *cli.Command, mcpServer *mcpserver.MCPServer, logger *logrus.Logger) error {
+// performCleanup handles cleanup of resources on shutdown
+func performCleanup(logger *logrus.Logger) {
+	// Close the debug log file if it was opened (atomic load to prevent races)
+	if file := debugLogFile.Load(); file != nil {
+		// Silently close - we're in cleanup and can't safely log errors
+		// (stdio mode: no output allowed; non-stdio: logger might write to this file)
+		_ = file.Close()
+	}
+
+	// Close the tool error logger if it was initialised
+	if errorLogger := tools.GetGlobalErrorLogger(); errorLogger != nil {
+		// Use Warn level - in stdio mode this won't output (ErrorLevel only)
+		if err := errorLogger.Close(); err != nil {
+			logger.WithError(err).Warn("Failed to close tool error logger")
+		}
+	}
+
+	// Stop LSP client cleanup routine and close all cached LSP clients
+	// Uses Debug level logging internally - won't output in stdio mode
+	coderename.StopCleanupRoutine(registry.GetCache(), logger)
+}
+
+// startStreamableHTTPServer configures and starts the Streamable HTTP server with graceful shutdown
+func startStreamableHTTPServer(ctx context.Context, cmd *cli.Command, mcpServer *mcpserver.MCPServer, logger *logrus.Logger) error {
 	port := cmd.String("port")
 	authToken := cmd.String("auth-token")
 	endpointPath := cmd.String("endpoint-path")
@@ -496,7 +532,39 @@ func startStreamableHTTPServer(cmd *cli.Command, mcpServer *mcpserver.MCPServer,
 			IdleTimeout:    120 * time.Second, // Close idle connections
 			MaxHeaderBytes: 1 << 20,           // 1MB max header size
 		}
-		return server.ListenAndServe()
+
+		// Start server in goroutine to allow graceful shutdown
+		serverErr := make(chan error, 1)
+		go func() {
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				// Use select to prevent blocking if context is cancelled
+				select {
+				case serverErr <- err:
+				case <-ctx.Done():
+					// Context cancelled, error no longer relevant
+				}
+			}
+		}()
+
+		// Wait for context cancellation or server error
+		select {
+		case err := <-serverErr:
+			return fmt.Errorf("HTTP server failed: %w", err)
+		case <-ctx.Done():
+			logger.Info("Shutdown signal received, stopping HTTP server")
+		}
+
+		// Graceful shutdown with timeout
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer shutdownCancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			logger.WithError(err).Error("HTTP server shutdown failed")
+			return err
+		}
+
+		logger.Info("HTTP server stopped gracefully")
+		return nil
 
 	} else if authToken != "" {
 		// Use legacy token authentication
@@ -523,6 +591,10 @@ func startStreamableHTTPServer(cmd *cli.Command, mcpServer *mcpserver.MCPServer,
 	logger.Info("MCP Protocol compliance: Full specification support")
 
 	// Start server
+	// Note: The mcp-go StreamableHTTPServer.Start() method doesn't currently support
+	// context-based graceful shutdown. Consider using OAuth mode (which creates its own
+	// http.Server) for production deployments requiring graceful shutdown.
+	// TODO: Update when mcp-go library adds graceful shutdown support
 	return httpServer.Start(":" + port)
 }
 
