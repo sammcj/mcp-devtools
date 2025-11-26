@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os/exec"
 	"runtime"
 	"sync"
@@ -405,8 +406,8 @@ func openBrowser(url string) error {
 	// Create command and redirect stdout/stderr to prevent stdio pollution
 	// This is critical when running in stdio mode - any output would corrupt the MCP protocol
 	cmd := exec.Command(cmdName, args...)
-	cmd.Stdout = nil
-	cmd.Stderr = nil
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to open browser: %w", err)
