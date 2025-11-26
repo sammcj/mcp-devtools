@@ -232,3 +232,98 @@ func TestEnsureCacheDir(t *testing.T) {
 		t.Errorf("unexpected permissions: %v (expected 0700)", info.Mode().Perm())
 	}
 }
+
+func TestParseConfig_IncludeTools(t *testing.T) {
+	upstreams := []types.UpstreamConfig{
+		{
+			Name:         "server1",
+			URL:          "https://api.example.com/mcp",
+			Transport:    "http-first",
+			IncludeTools: []string{"get_*", "search_*"},
+		},
+	}
+
+	upstreamsJSON, err := json.Marshal(upstreams)
+	if err != nil {
+		t.Fatalf("failed to marshal test upstreams: %v", err)
+	}
+
+	os.Setenv("PROXY_UPSTREAMS", string(upstreamsJSON))
+	defer os.Unsetenv("PROXY_UPSTREAMS")
+
+	config, err := proxy.ParseConfig()
+	if err != nil {
+		t.Fatalf("ParseConfig failed: %v", err)
+	}
+
+	if len(config.Upstreams[0].IncludeTools) != 2 {
+		t.Errorf("expected 2 include tools, got %d", len(config.Upstreams[0].IncludeTools))
+	}
+
+	if config.Upstreams[0].IncludeTools[0] != "get_*" {
+		t.Errorf("expected first include pattern 'get_*', got %s", config.Upstreams[0].IncludeTools[0])
+	}
+}
+
+func TestParseConfig_IncludeAndIgnoreTools(t *testing.T) {
+	upstreams := []types.UpstreamConfig{
+		{
+			Name:         "server1",
+			URL:          "https://api.example.com/mcp",
+			Transport:    "http-first",
+			IncludeTools: []string{"*user*", "*account*"},
+			IgnoreTools:  []string{"*delete*", "*remove*"},
+		},
+	}
+
+	upstreamsJSON, err := json.Marshal(upstreams)
+	if err != nil {
+		t.Fatalf("failed to marshal test upstreams: %v", err)
+	}
+
+	os.Setenv("PROXY_UPSTREAMS", string(upstreamsJSON))
+	defer os.Unsetenv("PROXY_UPSTREAMS")
+
+	config, err := proxy.ParseConfig()
+	if err != nil {
+		t.Fatalf("ParseConfig failed: %v", err)
+	}
+
+	if len(config.Upstreams[0].IncludeTools) != 2 {
+		t.Errorf("expected 2 include tools, got %d", len(config.Upstreams[0].IncludeTools))
+	}
+
+	if len(config.Upstreams[0].IgnoreTools) != 2 {
+		t.Errorf("expected 2 ignore tools, got %d", len(config.Upstreams[0].IgnoreTools))
+	}
+}
+
+func TestParseConfig_SimplifiedFormat_IncludeTools(t *testing.T) {
+	os.Setenv("PROXY_URL", "https://mcp.example.com/sse")
+	os.Setenv("PROXY_INCLUDE_TOOLS", "get_*, search_*")
+	os.Setenv("PROXY_IGNORE_TOOLS", "debug_*")
+	defer func() {
+		os.Unsetenv("PROXY_URL")
+		os.Unsetenv("PROXY_INCLUDE_TOOLS")
+		os.Unsetenv("PROXY_IGNORE_TOOLS")
+	}()
+
+	config, err := proxy.ParseConfig()
+	if err != nil {
+		t.Fatalf("ParseConfig failed: %v", err)
+	}
+
+	upstream := config.Upstreams[0]
+
+	if len(upstream.IncludeTools) != 2 {
+		t.Errorf("expected 2 include tools, got %d", len(upstream.IncludeTools))
+	}
+
+	if len(upstream.IgnoreTools) != 1 {
+		t.Errorf("expected 1 ignore tool, got %d", len(upstream.IgnoreTools))
+	}
+
+	if upstream.IncludeTools[0] != "get_*" {
+		t.Errorf("expected first include pattern 'get_*', got %s", upstream.IncludeTools[0])
+	}
+}

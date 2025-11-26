@@ -12,12 +12,13 @@ import (
 
 // UpstreamConfig represents configuration for a single upstream MCP server.
 type UpstreamConfig struct {
-	Name        string            `json:"name"`
-	URL         string            `json:"url"`
-	Transport   string            `json:"transport"` // http-first, sse-first, http-only, sse-only
-	OAuth       *OAuthConfig      `json:"oauth,omitempty"`
-	Headers     map[string]string `json:"headers,omitempty"`
-	IgnoreTools []string          `json:"ignore_tools,omitempty"`
+	Name         string            `json:"name"`
+	URL          string            `json:"url"`
+	Transport    string            `json:"transport"` // http-first, sse-first, http-only, sse-only
+	OAuth        *OAuthConfig      `json:"oauth,omitempty"`
+	Headers      map[string]string `json:"headers,omitempty"`
+	IgnoreTools  []string          `json:"ignore_tools,omitempty"`
+	IncludeTools []string          `json:"include_tools,omitempty"`
 }
 
 // OAuthConfig holds OAuth-specific configuration.

@@ -55,6 +55,15 @@ func ParseConfig() (*types.ProxyConfig, error) {
 			Transport: getEnvOrDefault("PROXY_TRANSPORT", "http-first"),
 		}
 
+		// Parse include tools
+		includeTools := os.Getenv("PROXY_INCLUDE_TOOLS")
+		if includeTools != "" {
+			upstream.IncludeTools = strings.Split(includeTools, ",")
+			for i := range upstream.IncludeTools {
+				upstream.IncludeTools[i] = strings.TrimSpace(upstream.IncludeTools[i])
+			}
+		}
+
 		// Parse ignore tools
 		ignoreTools := os.Getenv("PROXY_IGNORE_TOOLS")
 		if ignoreTools != "" {

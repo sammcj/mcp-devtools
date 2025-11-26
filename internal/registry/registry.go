@@ -173,9 +173,9 @@ func Register(tool tools.Tool) {
 }
 
 // RegisterProxiedTool adds a tool proxied from an upstream MCP server to the registry.
-// Only used if `proxy` tool is enabled and configured with upstreams.
-// This is used for tools discovered from upstream proxy servers where the proxy tool itself
-// has already been enabled, so proxied tools should also be available.
+// Only called if `proxy` tool is enabled via ENABLE_ADDITIONAL_TOOLS and configured with upstreams.
+// This is used for tools discovered from upstream proxy servers. The caller (RegisterUpstreamTools)
+// is responsible for checking that proxy is enabled before calling this function.
 // Proxied tools bypass the normal ENABLE_ADDITIONAL_TOOLS check but still respect DISABLED_TOOLS.
 func RegisterProxiedTool(tool tools.Tool) {
 	if toolRegistry == nil {

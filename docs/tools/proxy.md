@@ -18,6 +18,8 @@ _Note: The proxy tool does not utilise the `security` middleware, it provides to
 
 ## Configuration
 
+**IMPORTANT**: The proxy tool must be explicitly enabled via `ENABLE_ADDITIONAL_TOOLS` to function. Upstream tools will not be registered if `proxy` is not enabled.
+
 The proxy tool is configured via the `PROXY_UPSTREAMS` environment variable, which accepts a JSON array of upstream server configurations.
 
 ### Basic Configuration
@@ -41,8 +43,8 @@ Each upstream server configuration supports these parameters:
   - `http-first` (default): Try HTTP first, fall back to SSE if needed
   - `http`: Use streamable HTTP transport only
   - `sse`: Use Server-Sent Events transport only
-- **`ignore_patterns`** (optional): Array of glob patterns for tools to exclude
-- **`include_patterns`** (optional): Array of glob patterns for tools to include (when specified, only matching tools are exposed)
+- **`ignore_tools`** (optional): Array of glob patterns for tools to exclude
+- **`include_tools`** (optional): Array of glob patterns for tools to include (when specified, only matching tools are exposed)
 - **`headers`** (optional): Custom HTTP headers as key-value pairs
 
 ### Multiple Upstreams
@@ -54,13 +56,13 @@ Each upstream server configuration supports these parameters:
     {
       \"name\": \"example-atlassian-sse\",
       \"url\": \"https://mcp.atlassian.com/v1/sse\",
-      \"transport\": \"http-first\"
+      \"transport\": \"http-first\",
+      \"ignore_tools\": [\"*update*\", \"*create*\", \"*add*\", \"*edit*\", \"*delete*\", \"*jira*\"]
     },
     {
       \"name\": \"example-http-mcp\",
       \"url\": \"https://mcp.example.com/mcp\",
       \"transport\": \"http\",
-      \"ignore_patterns\": [\"debug_*\", \"internal_*\"]
     }
   ]"
 }
@@ -147,7 +149,7 @@ Exclude specific tools from registration:
 {
   "name": "example",
   "url": "https://mcp.example.com",
-  "ignore_patterns": ["debug_*", "internal_*", "admin_*"]
+  "ignore_tools": ["debug_*", "internal_*", "admin_*"]
 }
 ```
 
@@ -159,11 +161,14 @@ Only expose specific tools (whitelist mode):
 {
   "name": "example",
   "url": "https://mcp.example.com",
-  "include_patterns": ["search*", "get*"]
+  "include_tools": ["search*", "get*"]
 }
 ```
 
-**Note**: If both `include_patterns` and `ignore_patterns` are specified, tools must match an include pattern AND not match any ignore pattern.
+**Pattern Matching Rules**:
+- Patterns use glob syntax where `*` matches any characters
+- Matching is **case-insensitive** (e.g., `*jira*` matches both `getJiraIssue` and `getJIRATicket`)
+- If both `include_tools` and `ignore_tools` are specified, tools must match an include pattern AND not match any ignore pattern
 
 ## How It Works
 
@@ -250,13 +255,13 @@ This exposes 27 Atlassian tools including:
       \"name\": \"atlassian\",
       \"url\": \"https://mcp.atlassian.com/v1/sse\",
       \"transport\": \"http-first\",
-      \"include_patterns\": [\"search*\", \"get*\"]
+      \"include_tools\": [\"search*\", \"get*\"]
     },
     {
       \"name\": \"internal\",
       \"url\": \"https://internal-mcp.corp/api\",
       \"transport\": \"http\",
-      \"ignore_patterns\": [\"debug_*\", \"test_*\"],
+      \"ignore_tools\": [\"debug_*\", \"test_*\"],
       \"headers\": {
         \"X-Environment\": \"production\"
       }

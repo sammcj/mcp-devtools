@@ -36,11 +36,12 @@ func NewAggregator(config *types.ProxyConfig) *Aggregator {
 	// Create filters for each upstream
 	for i := range config.Upstreams {
 		upstream := &config.Upstreams[i]
-		if len(upstream.IgnoreTools) > 0 {
-			agg.filters[upstream.Name] = NewFilter(upstream.IgnoreTools)
+		if len(upstream.IncludeTools) > 0 || len(upstream.IgnoreTools) > 0 {
+			agg.filters[upstream.Name] = NewFilter(upstream.IncludeTools, upstream.IgnoreTools)
 			logrus.WithFields(logrus.Fields{
-				"upstream": upstream.Name,
-				"count":    len(upstream.IgnoreTools),
+				"upstream":      upstream.Name,
+				"include_count": len(upstream.IncludeTools),
+				"ignore_count":  len(upstream.IgnoreTools),
 			}).Debug("created filter for upstream")
 		}
 	}

@@ -425,9 +425,10 @@ mcp-devtools --transport http --port 18080 --oauth-enabled
 All environment variables are optional, but if you want to use specific search providers or document processing features, you may need to provide the the appropriate variables.
 
 **General:**
+- `LOG_LEVEL` - Logging level: `debug`, `info`, `warn`, `error` (default: `warn`). Logs are written to `~/.mcp-devtools/logs/mcp-devtools.log` for all transports. Stdio transport uses minimum `warn` level and never logs to stdout/stderr to prevent MCP protocol pollution.
+- `LOG_TOOL_ERRORS` - Enable logging of failed tool calls to `~/.mcp-devtools/logs/tool-errors.log` (set to `true` to enable). Logs older than 60 days are automatically removed on server startup.
 - `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,filesystem,claude-agent,codex-agent,gemini-agent,kiro-agent,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
 - `DISABLED_TOOLS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
-- `LOG_TOOL_ERRORS` - Enable logging of failed tool calls to `~/.mcp-devtools/logs/tool-errors.log` (set to `true` to enable). Logs older than 60 days are automatically removed on server startup.
 
 **Default Tools:**
 - `BRAVE_API_KEY` - Enable Brave Search provider by providing a ([free Brave search API key](https://brave.com/search/api/))
@@ -452,7 +453,7 @@ All environment variables are optional, but if you want to use specific search p
 - `--port` - Port for HTTP transports. Default: `18080`
 - `--base-url` - Base URL for HTTP transports. Default: `http://localhost`
 - `--auth-token` - Authentication token for HTTP transport
-- `--debug`, `-d` - Enable debug logging
+- `--debug`, `-d` - Shortcut for `LOG_LEVEL=debug` (sets debug logging if LOG_LEVEL not already set)
 
 ## Architecture
 
@@ -549,6 +550,32 @@ docker run -d --name mcp-devtools -p 18080:18080 --restart always ghcr.io/sammcj
 docker run -d --name mcp-devtools -p 18080:18080 \
   -e HTTPS_PROXY="http://proxy.company.com:8080" \
   --restart always ghcr.io/sammcj/mcp-devtools:main
+```
+
+## Logging
+
+MCP DevTools maintains two log files in `~/.mcp-devtools/logs/`:
+
+**Application Logs** (`mcp-devtools.log`):
+- Contains all application logs at the configured level
+- Configure via `LOG_LEVEL` environment variable: `debug`, `info`, `warn`, `error` (default: `warn`)
+- Use `--debug` flag as shortcut for `LOG_LEVEL=debug`
+- **Stdio transport**: Always logs to file (never to stderr to prevent MCP protocol pollution)
+- **HTTP/SSE transports**: Logs to file at configured level
+
+**Tool Error Logs** (`tool-errors.log`):
+- Failed tool executions with arguments and error details
+- Enable via `LOG_TOOL_ERRORS=true` environment variable
+- Automatically rotates logs older than 60 days
+- Useful for debugging tool calling issues
+
+Example:
+```bash
+# Enable debug logging for HTTP mode
+LOG_LEVEL=debug mcp-devtools --transport http
+
+# Enable tool error logging (works with any transport)
+LOG_TOOL_ERRORS=true mcp-devtools
 ```
 
 ### Creating New Tools

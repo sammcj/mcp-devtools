@@ -5,11 +5,36 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sirupsen/logrus"
 )
+
+// isProxyEnabled checks if the proxy tool is enabled via ENABLE_ADDITIONAL_TOOLS.
+func isProxyEnabled() bool {
+	enabledTools := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
+	if enabledTools == "" {
+		return false
+	}
+
+	// Check if "all" is specified to enable all tools
+	if strings.TrimSpace(strings.ToLower(enabledTools)) == "all" {
+		return true
+	}
+
+	// Split by comma and check each tool
+	for tool := range strings.SplitSeq(enabledTools, ",") {
+		// Normalise: trim spaces, lowercase, replace underscores with hyphens
+		normalisedTool := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tool), "_", "-"))
+		if normalisedTool == "proxy" {
+			return true
+		}
+	}
+
+	return false
+}
 
 // RegisterUpstreamTools attempts to connect to configured upstreams and register their tools.
 // This function supports two modes controlled by the fastPath parameter:
@@ -24,6 +49,12 @@ import (
 // The fallback ProxyTool is registered via init() and is always available.
 func RegisterUpstreamTools(ctx context.Context, fastPath bool) bool {
 	logger := logrus.StandardLogger()
+
+	// Check if proxy tool is enabled via ENABLE_ADDITIONAL_TOOLS
+	if !isProxyEnabled() {
+		logger.Debug("Proxy: not enabled in ENABLE_ADDITIONAL_TOOLS, skipping upstream tool registration")
+		return false
+	}
 
 	// Check if proxy is configured
 	if os.Getenv("PROXY_UPSTREAMS") == "" && os.Getenv("PROXY_URL") == "" {
