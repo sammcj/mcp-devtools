@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -30,6 +31,7 @@ import (
 	// Import all tool packages to register them
 	_ "github.com/sammcj/mcp-devtools/internal/imports"
 	coderename "github.com/sammcj/mcp-devtools/internal/tools/code_rename"
+	"github.com/sammcj/mcp-devtools/internal/tools/proxy"
 )
 
 // Version information (set during build)
@@ -51,6 +53,36 @@ const (
 	DefaultMemoryLimit = 5 * 1024 * 1024 * 1024
 )
 
+// parseLogLevel parses the LOG_LEVEL environment variable and returns the appropriate logrus level.
+// Defaults to WarnLevel if not set or invalid.
+func parseLogLevel() logrus.Level {
+	logLevelStr := os.Getenv("LOG_LEVEL")
+	if logLevelStr == "" {
+		return logrus.WarnLevel // Default to warn
+	}
+
+	// Normalise to lowercase for comparison
+	logLevelStr = strings.ToLower(strings.TrimSpace(logLevelStr))
+
+	switch logLevelStr {
+	case "debug":
+		return logrus.DebugLevel
+	case "info":
+		return logrus.InfoLevel
+	case "warn", "warning":
+		return logrus.WarnLevel
+	case "error":
+		return logrus.ErrorLevel
+	case "fatal":
+		return logrus.FatalLevel
+	case "panic":
+		return logrus.PanicLevel
+	default:
+		// Invalid value, default to warn
+		return logrus.WarnLevel
+	}
+}
+
 // setMemoryLimit configures the Go runtime memory limit
 func setMemoryLimit() {
 	// Check for environment variable override
@@ -67,17 +99,6 @@ func setMemoryLimit() {
 	// This is a soft limit - Go will try to keep memory usage under this value
 	// The Go runtime will automatically adjust GC behaviour to stay under this limit
 	debug.SetMemoryLimit(memLimit)
-
-	// Log the memory limit (but only to stderr in a way that won't break stdio mode)
-	// We'll use a simple approach - write to a log file
-	if homeDir, err := os.UserHomeDir(); err == nil {
-		logPath := filepath.Join(homeDir, ".mcp-devtools", "debug.log")
-		if logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
-			defer func() { _ = logFile.Close() }()
-			_, _ = fmt.Fprintf(logFile, "[%s] Memory limit set to %d bytes (%.2f GB)\n",
-				time.Now().Format("2006-01-02 15:04:05"), memLimit, float64(memLimit)/(1024*1024*1024))
-		}
-	}
 }
 
 func main() {
@@ -88,9 +109,11 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// Create a logger
+	// Create a logger with default configuration
+	// Initially discard output - will be reconfigured in Action based on transport mode
 	logger := logrus.New()
-	logger.SetLevel(logrus.InfoLevel)
+	logger.SetOutput(io.Discard)     // Prevent any early logging before we know the transport mode
+	logger.SetLevel(parseLogLevel()) // Use LOG_LEVEL env var (default: WarnLevel)
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
 	})
@@ -100,6 +123,18 @@ func main() {
 
 	// Ensure cleanup runs on normal exit OR signal
 	defer performCleanup(logger)
+
+	// Register upstream proxy tools BEFORE creating MCP server
+	// This can block for OAuth authentication - that's fine, we haven't started the server yet
+	// MCP clients will wait during connection, which is normal behaviour
+	if err := registerUpstreamProxyTools(ctx); err != nil {
+		logger.WithError(err).Error("Proxy: upstream registration failed (fallback proxy tool available)")
+	} else {
+		// Check if proxy was configured
+		if os.Getenv("PROXY_UPSTREAMS") != "" || os.Getenv("PROXY_URL") != "" {
+			logger.Info("Proxy: upstream tools registered successfully")
+		}
+	}
 
 	// Create and run the CLI app
 	app := &cli.Command{
@@ -136,12 +171,6 @@ func main() {
 				Name:  "session-timeout",
 				Value: 30 * time.Minute,
 				Usage: "Session timeout for Streamable HTTP transport",
-			},
-			&cli.BoolFlag{
-				Name:    "debug",
-				Aliases: []string{"d"},
-				Value:   false,
-				Usage:   "Enable debug logging",
 			},
 			// OAuth 2.0/2.1 flags
 			&cli.BoolFlag{
@@ -257,7 +286,7 @@ func main() {
 			},
 		},
 		Action: func(cliCtx context.Context, cmd *cli.Command) error {
-			// Get transport settings first
+			// Get transport settings
 			transport := cmd.String("transport")
 			port := cmd.String("port")
 			baseURL := cmd.String("base-url")
@@ -265,55 +294,65 @@ func main() {
 			// Track stdio mode for error handling (atomic to prevent races with signal handlers)
 			isStdioMode.Store(transport == "stdio")
 
-			// Configure logger appropriately for transport mode
-			if isStdioMode.Load() {
-				// For stdio mode, disable logging to prevent conflicts with MCP protocol
-				logger.SetOutput(os.Stderr)        // Use stderr instead of stdout
-				logger.SetLevel(logrus.ErrorLevel) // Only log errors to stderr
-				logrus.SetLevel(logrus.ErrorLevel) // Also set global logrus level for security module
-			} else {
-				// For non-stdio modes, set up file logging if debug is enabled
-				if cmd.Bool("debug") {
-					// Set up debug logging to file
-					homeDir, err := os.UserHomeDir()
-					if err == nil {
-						logDir := filepath.Join(homeDir, ".mcp-devtools", "logs")
-						if err := os.MkdirAll(logDir, 0700); err == nil {
-							logFile := filepath.Join(logDir, "mcp-devtools.log")
-							if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
-								// Store file handle for cleanup (atomic to prevent races with signal handlers)
-								debugLogFile.Store(file)
-								// Configure both instance and global loggers for file output
-								logger.SetOutput(file)
-								logrus.SetOutput(file)
-								logger.SetLevel(logrus.DebugLevel)
-								logrus.SetLevel(logrus.DebugLevel)
-								logger.Debug("Debug logging enabled - writing to file")
-							} else {
-								// Fallback to stderr if file creation fails
-								logger.SetOutput(os.Stderr)
-								logrus.SetOutput(os.Stderr)
-								logger.SetLevel(logrus.DebugLevel)
-								logrus.SetLevel(logrus.DebugLevel)
-								logger.WithError(err).Warn("Failed to open log file, using stderr")
-							}
+			// Configure logger - ALWAYS use file logging to avoid breaking stdio protocol
+			homeDir, err := os.UserHomeDir()
+			if err == nil {
+				logDir := filepath.Join(homeDir, ".mcp-devtools", "logs")
+				if err := os.MkdirAll(logDir, 0700); err == nil {
+					logFile := filepath.Join(logDir, "mcp-devtools.log")
+					if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
+						// Store file handle for cleanup
+						debugLogFile.Store(file)
+						// Configure loggers for file output
+						logger.SetOutput(file)
+						logrus.SetOutput(file)
+						// Apply LOG_LEVEL setting (stdio mode uses warn level minimum)
+						logLevel := parseLogLevel()
+						if isStdioMode.Load() && logLevel < logrus.WarnLevel {
+							logLevel = logrus.WarnLevel // Minimum warn level for stdio mode
+						}
+						logger.SetLevel(logLevel)
+						logrus.SetLevel(logLevel)
+						logger.WithField("level", logLevel.String()).Debug("Logging configured")
+					} else {
+						// Critical: Cannot create log file - use io.Discard in stdio mode to prevent protocol breakage
+						if isStdioMode.Load() {
+							logger.SetOutput(io.Discard)
+							logrus.SetOutput(io.Discard)
 						} else {
-							// Fallback to stderr if directory creation fails
+							// Non-stdio mode can fallback to stderr
 							logger.SetOutput(os.Stderr)
 							logrus.SetOutput(os.Stderr)
-							logger.SetLevel(logrus.DebugLevel)
-							logrus.SetLevel(logrus.DebugLevel)
-							logger.WithError(err).Warn("Failed to create log directory, using stderr")
 						}
+						logLevel := parseLogLevel()
+						logger.SetLevel(logLevel)
+						logrus.SetLevel(logLevel)
+					}
+				} else {
+					// Critical: Cannot create log directory
+					if isStdioMode.Load() {
+						logger.SetOutput(io.Discard)
+						logrus.SetOutput(io.Discard)
 					} else {
-						// Fallback to stderr if home directory detection fails
 						logger.SetOutput(os.Stderr)
 						logrus.SetOutput(os.Stderr)
-						logger.SetLevel(logrus.DebugLevel)
-						logrus.SetLevel(logrus.DebugLevel)
-						logger.WithError(err).Warn("Failed to get home directory, using stderr")
 					}
+					logLevel := parseLogLevel()
+					logger.SetLevel(logLevel)
+					logrus.SetLevel(logLevel)
 				}
+			} else {
+				// Critical: Cannot get home directory
+				if isStdioMode.Load() {
+					logger.SetOutput(io.Discard)
+					logrus.SetOutput(io.Discard)
+				} else {
+					logger.SetOutput(os.Stderr)
+					logrus.SetOutput(os.Stderr)
+				}
+				logLevel := parseLogLevel()
+				logger.SetLevel(logLevel)
+				logrus.SetLevel(logLevel)
 			}
 
 			// Initialise tool error logger after logging is configured
@@ -342,6 +381,7 @@ func main() {
 			}
 
 			// Create MCP server
+			// Note: Upstream proxy tools are already registered in main() before CLI runs
 			logger.Debug("Creating MCP server")
 			mcpSrv := mcpserver.NewMCPServer("mcp-devtools", "MCP DevTools Server")
 
@@ -426,6 +466,16 @@ func main() {
 		}
 		os.Exit(1)
 	}
+}
+
+// registerUpstreamProxyTools attempts to register upstream tools before MCP server starts.
+// This can block for OAuth authentication, which is acceptable before server creation.
+func registerUpstreamProxyTools(ctx context.Context) error {
+	// Call proxy registration with no fast-path mode (allow full OAuth)
+	if proxy.RegisterUpstreamTools(ctx, false) {
+		return nil
+	}
+	return fmt.Errorf("upstream tools not registered")
 }
 
 // performCleanup handles cleanup of resources on shutdown

@@ -280,25 +280,26 @@ These tools can be disabled by adding their function name to the `DISABLED_TOOLS
 
 These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment variable in your MCP configuration.
 
-| Tool                                                                 | Purpose                                                   | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                               | Maturity |
-|----------------------------------------------------------------------|-----------------------------------------------------------|---------------------------|---------------------------------------------|----------|
-| **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                               | `murican_to_english`      | Organise, colour, centre                    | 🟡       |
-| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details      | `code_skim`               | Reduced token consumption                   | 🟡       |
-| **[Code Rename](docs/tools/code_rename.md)**                         | LSP-based symbol renaming across files (experimental)     | `code_rename`             | Rename functions, variables, types          | 🔴       |
-| **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                     | `shadcn`                  | Button, Dialog, Form components             | 🟢       |
-| **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                | `magic_ui`                | Frontend React components                   | 🟠       |
-| **[Aceternity UI Component Library](docs/tools/aceternityui.md)**    | Animated component library                                | `aceternity_ui`           | Frontend React components                   | 🟠       |
-| **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                               | `memory`                  | Store entities and relationships            | 🟡       |
-| **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                             | `process_document`        | PDF, DOCX → Markdown with OCR               | 🟡       |
-| **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                  | `pdf`                     | Quick PDF to Markdown                       | 🟢       |
-| **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                   | `excel`                   | Workbooks, charts, pivot tables, formulas   | 🟢       |
-| **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                    | `aws_documentation`       | Search and read AWS docs, recommendations   | 🟡       |
-| **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API (providers, modules, and policies) | `terraform_documentation` | Provider docs, module search, policy lookup | 🟡       |
-| **[Security Framework](docs/security.md)**                           | Context injection security protections                    | `security`                | Content analysis, access control            | 🟢       |
-| **[Security Override](docs/security.md)**                            | Agent managed security warning overrides                  | `security_override`       | Bypass false positives                      | 🟡       |
-| **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts       | `sequential-thinking`     | Step-by-step analysis, revision, branching  | 🟢       |
-| **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                              | `api`                     | Configure any REST API via YAML             | 🔴       |
-| **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                             | `filesystem`              | Read, write, edit, search files             | 🟡       |
+| Tool                                                                 | Purpose                                                   | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                                 | Maturity |
+|----------------------------------------------------------------------|-----------------------------------------------------------|---------------------------|-----------------------------------------------|----------|
+| **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                               | `murican_to_english`      | Organise, colour, centre                      | 🟡       |
+| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details      | `code_skim`               | Reduced token consumption                     | 🟡       |
+| **[Code Rename](docs/tools/code_rename.md)**                         | LSP-based symbol renaming across files (experimental)     | `code_rename`             | Rename functions, variables, types            | 🔴       |
+| **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                     | `shadcn`                  | Button, Dialog, Form components               | 🟢       |
+| **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                | `magic_ui`                | Frontend React components                     | 🟠       |
+| **[Aceternity UI Component Library](docs/tools/aceternityui.md)**    | Animated component library                                | `aceternity_ui`           | Frontend React components                     | 🟠       |
+| **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                               | `memory`                  | Store entities and relationships              | 🟡       |
+| **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                             | `process_document`        | PDF, DOCX → Markdown with OCR                 | 🟡       |
+| **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                  | `pdf`                     | Quick PDF to Markdown                         | 🟢       |
+| **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                   | `excel`                   | Workbooks, charts, pivot tables, formulas     | 🟢       |
+| **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                    | `aws_documentation`       | Search and read AWS docs, recommendations     | 🟡       |
+| **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API (providers, modules, and policies) | `terraform_documentation` | Provider docs, module search, policy lookup   | 🟡       |
+| **[Security Framework](docs/security.md)**                           | Context injection security protections                    | `security`                | Content analysis, access control              | 🟢       |
+| **[Security Override](docs/security.md)**                            | Agent managed security warning overrides                  | `security_override`       | Bypass false positives                        | 🟡       |
+| **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts       | `sequential-thinking`     | Step-by-step analysis, revision, branching    | 🟢       |
+| **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                              | `api`                     | Configure any REST API via YAML               | 🔴       |
+| **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                             | `filesystem`              | Read, write, edit, search files               | 🟡       |
+| **[MCP Proxy](docs/tools/proxy.md)**                                 | Proxies MCP requests from upstream HTTP/SSE servers       | `proxy`                   | Provide HTTP/SSE MCP servers to STDIO clients | 🟡       |
 
 **Agents as Tools** - In addition to the above tools, MCP DevTools can provide access to AI agents as tools by integrating with external LLMs.
 
@@ -424,9 +425,10 @@ mcp-devtools --transport http --port 18080 --oauth-enabled
 All environment variables are optional, but if you want to use specific search providers or document processing features, you may need to provide the the appropriate variables.
 
 **General:**
+- `LOG_LEVEL` - Logging level: `debug`, `info`, `warn`, `error` (default: `warn`). Logs are written to `~/.mcp-devtools/logs/mcp-devtools.log` for all transports. Stdio transport uses minimum `warn` level and never logs to stdout/stderr to prevent MCP protocol pollution.
+- `LOG_TOOL_ERRORS` - Enable logging of failed tool calls to `~/.mcp-devtools/logs/tool-errors.log` (set to `true` to enable). Logs older than 60 days are automatically removed on server startup.
 - `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,filesystem,claude-agent,codex-agent,gemini-agent,kiro-agent,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
 - `DISABLED_TOOLS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
-- `LOG_TOOL_ERRORS` - Enable logging of failed tool calls to `~/.mcp-devtools/logs/tool-errors.log` (set to `true` to enable). Logs older than 60 days are automatically removed on server startup.
 
 **Default Tools:**
 - `BRAVE_API_KEY` - Enable Brave Search provider by providing a ([free Brave search API key](https://brave.com/search/api/))
@@ -451,7 +453,6 @@ All environment variables are optional, but if you want to use specific search p
 - `--port` - Port for HTTP transports. Default: `18080`
 - `--base-url` - Base URL for HTTP transports. Default: `http://localhost`
 - `--auth-token` - Authentication token for HTTP transport
-- `--debug`, `-d` - Enable debug logging
 
 ## Architecture
 
@@ -548,6 +549,31 @@ docker run -d --name mcp-devtools -p 18080:18080 --restart always ghcr.io/sammcj
 docker run -d --name mcp-devtools -p 18080:18080 \
   -e HTTPS_PROXY="http://proxy.company.com:8080" \
   --restart always ghcr.io/sammcj/mcp-devtools:main
+```
+
+## Logging
+
+MCP DevTools maintains two log files in `~/.mcp-devtools/logs/`:
+
+**Application Logs** (`mcp-devtools.log`):
+- Contains all application logs at the configured level
+- Configure via `LOG_LEVEL` environment variable: `debug`, `info`, `warn`, `error` (default: `warn`)
+- **Stdio transport**: Always logs to file (never to stderr to prevent MCP protocol pollution)
+- **HTTP/SSE transports**: Logs to file at configured level
+
+**Tool Error Logs** (`tool-errors.log`):
+- Failed tool executions with arguments and error details
+- Enable via `LOG_TOOL_ERRORS=true` environment variable
+- Automatically rotates logs older than 60 days
+- Useful for debugging tool calling issues
+
+Example:
+```bash
+# Enable debug logging for HTTP mode
+LOG_LEVEL=debug mcp-devtools --transport http
+
+# Enable tool error logging (works with any transport)
+LOG_TOOL_ERRORS=true mcp-devtools
 ```
 
 ### Creating New Tools

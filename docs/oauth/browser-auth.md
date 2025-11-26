@@ -104,12 +104,13 @@ OAUTH_AUDIENCE="https://mcp.example.com" \
 
 ```bash
 # Development setup with HTTP localhost
+LOG_LEVEL=debug \
 OAUTH_BROWSER_AUTH=true \
 OAUTH_CLIENT_ID="dev-client" \
 OAUTH_ISSUER="http://localhost:8080" \
 OAUTH_AUDIENCE="http://localhost:18080" \
 OAUTH_REQUIRE_HTTPS=false \
-./mcp-devtools --transport=http --debug
+./mcp-devtools --transport=http
 ```
 
 ## Security Features
@@ -220,7 +221,7 @@ The temporary callback server provides:
 Enable debug logging to see detailed OAuth flow information:
 
 ```bash
-./mcp-devtools --debug --oauth-browser-auth \
+LOG_LEVEL=debug ./mcp-devtools --oauth-browser-auth \
     --oauth-client-id="test-client" \
     --oauth-issuer="https://auth.example.com"
 ```
