@@ -212,7 +212,7 @@ The only exception is in tests, tests are allowed to write to stdout/stderr.
 ### Documentation Standards
 - Tool documentation belongs in `docs/tools/`
 - Update `docs/tools/overview.md` when adding tools
-- Use British English spelling throughout
+- Australian English spelling used throughout, No American English spelling used (unless it's a function or parameter to an upstream library)
 - Provide clear examples and usage patterns
 - Document security requirements and limitations
 - Documentation should be concise, favouring clear technical information over verbosity
@@ -256,13 +256,13 @@ The only exception is in tests, tests are allowed to write to stdout/stderr.
 
 Before approving any pull request, verify:
 
-1. ✅ **[CRITICAL]** No stdout/stderr writes in stdio mode (see section above)
-2. ✅ All new tools implement `tools.Tool` interface correctly
-3. ✅ Security framework integration for file/network operations
-4. ✅ Documentation updated in `docs/tools/` if required
-5. ✅ British English spelling used throughout
-6. ✅ Error handling uses wrapped errors (`fmt.Errorf` with `%w`)
-7. ✅ Context cancellation handled properly
-8. ✅ Resource cleanup with defer statements
-9. ✅ No American English spelling used
-10. ✅ If you are re-reviewing a PR you've reviewed in the past and your previous comments / suggestions have been addressed or are no longer valid please resolve those previous review comments to keep the review history clean and easy to follow.
+1. [ ] **[CRITICAL]** No stdout/stderr writes in stdio mode (see section above)
+2. [ ] All new tools implement `tools.Tool` interface correctly
+3. [ ] Security framework integration for file/network operations
+4. [ ] Documentation updated in `docs/tools/` if required
+5. [ ] Error handling uses wrapped errors (`fmt.Errorf` with `%w`)
+6. [ ] Context cancellation handled properly
+7. [ ] Resource cleanup with defer statements
+8. [ ] Australian English spelling used throughout, No American English spelling used (unless it's a function or parameter to an upstream library)
+
+If you are re-reviewing a PR you've reviewed in the past and your previous comments / suggestions have been addressed or are no longer valid please resolve those previous review comments to keep the review history clean and easy to follow.

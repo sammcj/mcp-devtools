@@ -35,25 +35,25 @@ Functions and their required parameters:
 • search_pull_requests: repository (r), options.query (o), options.limit (o)
 • get_issue: repository (r), options.number (required unless repository contains full issue URL), options.include_comments (o)
 • get_pull_request: repository (r), options.number (required unless repository contains full PR URL), options.include_comments (o)
-• get_file_contents: repository (r), options.paths (r), options.ref (o) - Returns partial results even if some files fail. Large files are automatically truncated with guidance on retrieving remaining lines using options.line_start
-• list_directory: repository (r), options.path (optional, defaults to root), options.ref (o) - Lists directory contents to explore repository structure
+• get_file_contents: repository (r), options.paths (r), options.ref (o) - Returns partial results even if some files fail. Large files get truncated with guidance on retrieving remaining lines using options.line_start
+• list_directory: repository (r), options.path (optional), options.ref (o) - List directory contents to explore repository structure
 • clone_repository: repository (r), options.local_path (o)
 • get_workflow_run: repository (r), options.run_id (required unless repository contains full workflow URL), options.include_logs (o)
 
 (o) = optional
 (r) = required
 
-Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow URLs.`),
+Repository accepts: owner/repo, GitHub URLs, or full issue/PR/workflow URLs.`),
 		mcp.WithString("function",
 			mcp.Required(),
 			mcp.Description("Function to execute"),
 			mcp.Enum("search_repositories", "search_issues", "search_pull_requests", "get_issue", "get_pull_request", "get_file_contents", "list_directory", "clone_repository", "get_workflow_run"),
 		),
 		mcp.WithString("repository",
-			mcp.Description("Repository identifier: owner/repo, GitHub URL, or full URL for specific issue/PR/workflow"),
+			mcp.Description("Identifier: owner/repo, GitHub URL, or full URL for specific issue/PR/workflow"),
 		),
 		mcp.WithObject("options",
-			mcp.Description("Function-specific options - see function description for parameters"),
+			mcp.Description("Function-specific options - see function description parameters"),
 			mcp.Properties(map[string]any{
 				"query": map[string]any{
 					"type":        "string",
@@ -61,7 +61,7 @@ Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow
 				},
 				"limit": map[string]any{
 					"type":        "number",
-					"description": "Maximum number of results (for search functions, default: 30)",
+					"description": "Maximum number of results (for search functions, 30)",
 					"default":     30,
 				},
 				"number": map[string]any{
@@ -74,17 +74,17 @@ Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow
 				},
 				"include_comments": map[string]any{
 					"type":        "boolean",
-					"description": "Include comments for issues/PRs (default: false)",
+					"description": "Include comments for issues/PRs (false)",
 					"default":     false,
 				},
 				"include_logs": map[string]any{
 					"type":        "boolean",
-					"description": "Include workflow run logs (default: false)",
+					"description": "Include workflow run logs (false)",
 					"default":     false,
 				},
 				"include_closed": map[string]any{
 					"type":        "boolean",
-					"description": "Include closed issues/PRs in search results (default: false, only open)",
+					"description": "Include closed issues/PRs in search results (false, only open)",
 					"default":     false,
 				},
 				"paths": map[string]any{
@@ -96,7 +96,7 @@ Repository parameter accepts: owner/repo, GitHub URLs, or full issue/PR/workflow
 				},
 				"path": map[string]any{
 					"type":        "string",
-					"description": "Directory path to list (optional for list_directory, defaults to root)",
+					"description": "Directory path to list (optional for list_directory)",
 				},
 				"ref": map[string]any{
 					"type":        "string",
