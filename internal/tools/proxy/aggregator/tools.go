@@ -136,8 +136,9 @@ func (agg *Aggregator) GetUpstreamForTool(toolName string) (string, error) {
 
 // GetOriginalToolName extracts the original tool name from a potentially prefixed name.
 func (agg *Aggregator) GetOriginalToolName(toolName string) string {
-	// Check if tool name has upstream prefix
-	for upstreamName := range agg.toolMap {
+	// Check if tool name has upstream prefix by checking against configured upstreams
+	for i := range agg.config.Upstreams {
+		upstreamName := agg.config.Upstreams[i].Name
 		prefix := upstreamName + ":"
 		if len(toolName) > len(prefix) && toolName[:len(prefix)] == prefix {
 			return toolName[len(prefix):]

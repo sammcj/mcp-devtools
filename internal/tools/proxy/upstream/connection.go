@@ -386,22 +386,27 @@ func transportName(useSSE bool) string {
 
 // openBrowser opens a URL in the default system browser
 func openBrowser(url string) error {
-	var cmd string
+	var cmdName string
 	var args []string
 
 	switch runtime.GOOS {
 	case "darwin":
-		cmd = "open"
+		cmdName = "open"
 		args = []string{url}
 	case "linux":
-		cmd = "xdg-open"
+		cmdName = "xdg-open"
 		args = []string{url}
 	default:
 		return fmt.Errorf("unsupported operating system for browser opening: %s", runtime.GOOS)
 	}
 
-	// Execute the command to open the browser
-	if err := exec.Command(cmd, args...).Start(); err != nil {
+	// Create command and redirect stdout/stderr to prevent stdio pollution
+	// This is critical when running in stdio mode - any output would corrupt the MCP protocol
+	cmd := exec.Command(cmdName, args...)
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+
+	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to open browser: %w", err)
 	}
 

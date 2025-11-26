@@ -143,6 +143,10 @@ func (m *Manager) ExecuteTool(ctx context.Context, toolName string, args map[str
 // parseToolName extracts the upstream name and tool name from a potentially prefixed tool name.
 // Format: "upstream:tool" or just "tool" (uses first available upstream).
 func (m *Manager) parseToolName(toolName string) (upstreamName string, actualToolName string) {
+	// Hold lock for entire function to prevent race conditions
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	// Check if tool name contains upstream prefix
 	for name := range m.connections {
 		prefix := name + ":"
@@ -152,9 +156,6 @@ func (m *Manager) parseToolName(toolName string) (upstreamName string, actualToo
 	}
 
 	// No prefix found - use first available upstream (or default if only one)
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	if len(m.connections) == 1 {
 		for name := range m.connections {
 			return name, toolName
