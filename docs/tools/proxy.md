@@ -2,7 +2,13 @@
 
 Connect to upstream MCP servers and expose their tools via mcp-devtools, enabling access to external MCP ecosystems with OAuth support, dynamic tool registration, and transparent request proxying.
 
-Example use case: You have an upstream HTTP or SSE MCP server with OAuth (e.g., Atlassian's MCP server) - but your MCP client doesn't properly support HTTP/SSE or OAuth. By using the proxy tool, you can connect to the upstream server, authenticate via OAuth, and expose its tools as native mcp-devtools tools.
+Example use cases:
+
+- You have an upstream HTTP or SSE MCP server (e.g., Atlassian's MCP server) - but your MCP client doesn't support HTTP/SSE yet.
+- You have an upstream HTTP MCP server with OAuth, but your client fails to handle OAuth flows.
+- You have an upstream MCP server where you want to filter or restrict which tools are available to your clients.
+
+By using the proxy tool, you can connect to the upstream server, authenticate via OAuth, and expose its tools (all or filtered) as native mcp-devtools tools.
 
 ## Features
 
