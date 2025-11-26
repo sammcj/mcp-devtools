@@ -7,6 +7,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/calculator"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/claudeagent"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/code_rename"
+
 	// codeskim is conditionally imported in tools_codeskim.go based on platform support
 	_ "github.com/sammcj/mcp-devtools/internal/tools/aceternityui"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/codexagent"
@@ -25,6 +26,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packagedocs"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/packageversions/unified"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/pdf"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/proxy"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/securityoverride"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/sequentialthinking"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/shadcnui"

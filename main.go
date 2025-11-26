@@ -30,6 +30,7 @@ import (
 	// Import all tool packages to register them
 	_ "github.com/sammcj/mcp-devtools/internal/imports"
 	coderename "github.com/sammcj/mcp-devtools/internal/tools/code_rename"
+	"github.com/sammcj/mcp-devtools/internal/tools/proxy"
 )
 
 // Version information (set during build)
@@ -100,6 +101,34 @@ func main() {
 
 	// Ensure cleanup runs on normal exit OR signal
 	defer performCleanup(logger)
+
+	// Register upstream proxy tools BEFORE creating MCP server
+	// This can block for OAuth authentication - that's fine, we haven't started the server yet
+	// MCP clients will wait during connection, which is normal behaviour
+	if err := registerUpstreamProxyTools(ctx); err != nil {
+		logger.WithError(err).Error("Proxy: upstream registration failed (fallback proxy tool available)")
+		// Write to debug log file so user can see in stdio mode
+		if homeDir, err := os.UserHomeDir(); err == nil {
+			logPath := filepath.Join(homeDir, ".mcp-devtools", "proxy-debug.log")
+			if logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
+				fmt.Fprintf(logFile, "[%s] Proxy registration failed: %v\n", time.Now().Format("2006-01-02 15:04:05"), err)
+				logFile.Close()
+			}
+		}
+	} else {
+		// Check if proxy was configured
+		if os.Getenv("PROXY_UPSTREAMS") != "" || os.Getenv("PROXY_URL") != "" {
+			logger.Info("Proxy: upstream tools registered successfully")
+			// Write to debug log file so user can see in stdio mode
+			if homeDir, err := os.UserHomeDir(); err == nil {
+				logPath := filepath.Join(homeDir, ".mcp-devtools", "proxy-debug.log")
+				if logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
+					fmt.Fprintf(logFile, "[%s] Proxy registration successful\n", time.Now().Format("2006-01-02 15:04:05"))
+					logFile.Close()
+				}
+			}
+		}
+	}
 
 	// Create and run the CLI app
 	app := &cli.Command{
@@ -342,6 +371,7 @@ func main() {
 			}
 
 			// Create MCP server
+			// Note: Upstream proxy tools are already registered in main() before CLI runs
 			logger.Debug("Creating MCP server")
 			mcpSrv := mcpserver.NewMCPServer("mcp-devtools", "MCP DevTools Server")
 
@@ -426,6 +456,16 @@ func main() {
 		}
 		os.Exit(1)
 	}
+}
+
+// registerUpstreamProxyTools attempts to register upstream tools before MCP server starts.
+// This can block for OAuth authentication, which is acceptable before server creation.
+func registerUpstreamProxyTools(ctx context.Context) error {
+	// Call proxy registration with no fast-path mode (allow full OAuth)
+	if proxy.RegisterUpstreamTools(ctx, false) {
+		return nil
+	}
+	return fmt.Errorf("upstream tools not registered")
 }
 
 // performCleanup handles cleanup of resources on shutdown

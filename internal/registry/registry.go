@@ -15,6 +15,9 @@ var (
 	// toolRegistry is a map of tool names to tool implementations
 	toolRegistry = make(map[string]tools.Tool) // Initialise here
 
+	// proxiedTools tracks tools proxied from upstream MCP servers
+	proxiedTools = make(map[string]bool)
+
 	// disabledTools is a set of tool names to disable
 	disabledTools = make(map[string]bool)
 
@@ -169,6 +172,33 @@ func Register(tool tools.Tool) {
 	}
 }
 
+// RegisterProxiedTool adds a tool proxied from an upstream MCP server to the registry.
+// Only used if `proxy` tool is enabled and configured with upstreams.
+// This is used for tools discovered from upstream proxy servers where the proxy tool itself
+// has already been enabled, so proxied tools should also be available.
+// Proxied tools bypass the normal ENABLE_ADDITIONAL_TOOLS check but still respect DISABLED_TOOLS.
+func RegisterProxiedTool(tool tools.Tool) {
+	if toolRegistry == nil {
+		toolRegistry = make(map[string]tools.Tool)
+	}
+
+	toolName := tool.Definition().Name
+
+	// Check if explicitly disabled (always respect DISABLED_TOOLS)
+	if disabledTools[toolName] {
+		if logger != nil {
+			logger.WithField("tool", toolName).Debug("Proxied tool not registered (explicitly disabled)")
+		}
+		return
+	}
+
+	toolRegistry[toolName] = tool
+	proxiedTools[toolName] = true // Mark as proxied from upstream
+	if logger != nil {
+		logger.WithField("tool", toolName).Debug("Proxied tool registered (bypassed enablement check)")
+	}
+}
+
 // GetTool retrieves a tool by name, returns false if disabled
 func GetTool(name string) (tools.Tool, bool) {
 	// Check if function is disabled
@@ -198,6 +228,12 @@ func GetEnabledTools() map[string]tools.Tool {
 	for name, tool := range toolRegistry {
 		// Skip disabled functions
 		if disabledTools[name] {
+			continue
+		}
+
+		// Include proxied tools (bypass enablement check)
+		if proxiedTools[name] {
+			filteredTools[name] = tool
 			continue
 		}
 
