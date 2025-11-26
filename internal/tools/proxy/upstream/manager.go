@@ -3,6 +3,7 @@ package upstream
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/sammcj/mcp-devtools/internal/tools/proxy/types"
@@ -150,8 +151,9 @@ func (m *Manager) parseToolName(toolName string) (upstreamName string, actualToo
 	// Check if tool name contains upstream prefix
 	for name := range m.connections {
 		prefix := name + ":"
-		if len(toolName) > len(prefix) && toolName[:len(prefix)] == prefix {
-			return name, toolName[len(prefix):]
+		before, after, found := strings.Cut(toolName, prefix)
+		if found && before == "" {
+			return name, after
 		}
 	}
 

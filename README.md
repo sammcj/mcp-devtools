@@ -453,7 +453,6 @@ All environment variables are optional, but if you want to use specific search p
 - `--port` - Port for HTTP transports. Default: `18080`
 - `--base-url` - Base URL for HTTP transports. Default: `http://localhost`
 - `--auth-token` - Authentication token for HTTP transport
-- `--debug`, `-d` - Shortcut for `LOG_LEVEL=debug` (sets debug logging if LOG_LEVEL not already set)
 
 ## Architecture
 
@@ -559,7 +558,6 @@ MCP DevTools maintains two log files in `~/.mcp-devtools/logs/`:
 **Application Logs** (`mcp-devtools.log`):
 - Contains all application logs at the configured level
 - Configure via `LOG_LEVEL` environment variable: `debug`, `info`, `warn`, `error` (default: `warn`)
-- Use `--debug` flag as shortcut for `LOG_LEVEL=debug`
 - **Stdio transport**: Always logs to file (never to stderr to prevent MCP protocol pollution)
 - **HTTP/SSE transports**: Logs to file at configured level
 

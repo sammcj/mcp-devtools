@@ -231,9 +231,7 @@ func (c *Connection) authenticateAndConnect(ctx context.Context, useSSE bool, tr
 
 // Port returns the OAuth callback port (needed for auth provider access).
 func (c *Connection) Port() int {
-	// This is a helper method to access the callback port through the auth provider
-	// In practice, we'd track this separately, but for simplicity using a default
-	return 3334
+	return c.authProvider.Port()
 }
 
 // FetchTools fetches the list of tools from the upstream server.

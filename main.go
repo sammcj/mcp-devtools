@@ -172,12 +172,6 @@ func main() {
 				Value: 30 * time.Minute,
 				Usage: "Session timeout for Streamable HTTP transport",
 			},
-			&cli.BoolFlag{
-				Name:    "debug",
-				Aliases: []string{"d"},
-				Value:   false,
-				Usage:   "Enable debug logging",
-			},
 			// OAuth 2.0/2.1 flags
 			&cli.BoolFlag{
 				Name:    "oauth-enabled",
@@ -292,11 +286,6 @@ func main() {
 			},
 		},
 		Action: func(cliCtx context.Context, cmd *cli.Command) error {
-			// Handle --debug flag as a shortcut for LOG_LEVEL=debug
-			if cmd.Bool("debug") && os.Getenv("LOG_LEVEL") == "" {
-				os.Setenv("LOG_LEVEL", "debug")
-			}
-
 			// Get transport settings
 			transport := cmd.String("transport")
 			port := cmd.String("port")

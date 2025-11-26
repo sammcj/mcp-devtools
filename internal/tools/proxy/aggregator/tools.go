@@ -2,6 +2,7 @@ package aggregator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sammcj/mcp-devtools/internal/tools/proxy/types"
 	"github.com/sammcj/mcp-devtools/internal/tools/proxy/upstream"
@@ -140,8 +141,9 @@ func (agg *Aggregator) GetOriginalToolName(toolName string) string {
 	for i := range agg.config.Upstreams {
 		upstreamName := agg.config.Upstreams[i].Name
 		prefix := upstreamName + ":"
-		if len(toolName) > len(prefix) && toolName[:len(prefix)] == prefix {
-			return toolName[len(prefix):]
+		before, after, found := strings.Cut(toolName, prefix)
+		if found && before == "" {
+			return after
 		}
 	}
 	// No prefix found, return as-is

@@ -312,6 +312,7 @@ http://127.0.0.1:18080/oauth/callback
 ```bash
 # Allow HTTP for development with browser auth
 OAUTH_REQUIRE_HTTPS=false
+LOG_LEVEL=debug
 OAUTH_BROWSER_AUTH=true
 OAUTH_CLIENT_ID="dev-client-from-authentik"
 OAUTH_ISSUER="http://localhost:8080/application/o/mcp-devtools/"
@@ -319,20 +320,21 @@ OAUTH_AUDIENCE="http://localhost:18080"
 OAUTH_SCOPE="openid profile mcp:tools"
 OAUTH_CALLBACK_PORT=8888
 
-./mcp-devtools --transport=http --port=18080 --debug
+./mcp-devtools --transport=http --port=18080
 ```
 
 ### Resource Server Development
 
 ```bash
 # Allow HTTP for development with resource server mode
+LOG_LEVEL=debug
 OAUTH_REQUIRE_HTTPS=false
 OAUTH_ENABLED=true
 OAUTH_ISSUER="http://localhost:8080/application/o/mcp-devtools/"
 OAUTH_AUDIENCE="http://localhost:18080"
 OAUTH_JWKS_URL="http://localhost:8080/application/o/mcp-devtools/jwks/"
 
-./mcp-devtools --transport=http --port=18080 --debug
+./mcp-devtools --transport=http --port=18080
 ```
 
 ## Testing the Setup
@@ -364,10 +366,11 @@ Test the browser authentication mode:
 
 ```bash
 # Start MCP server with browser auth
+LOG_LEVEL=debug \
 OAUTH_BROWSER_AUTH=true \
 OAUTH_CLIENT_ID="your-client-id" \
 OAUTH_ISSUER="https://your-authentik.example.com/application/o/mcp-devtools/" \
-./mcp-devtools --transport=http --debug
+./mcp-devtools --transport=http
 
 # Expected output:
 # INFO Browser-based OAuth authentication enabled
@@ -438,14 +441,14 @@ Enable debug logging for browser authentication:
 
 ```bash
 # Debug browser authentication
-./mcp-devtools --transport=http --debug \
+LOG_LEVEL=debug ./mcp-devtools --transport=http \
     --oauth-browser-auth \
     --oauth-client-id="your-client-id" \
     --oauth-issuer="..." \
     --oauth-callback-port=8888
 
 # Debug resource server mode
-./mcp-devtools --transport=http --debug \
+LOG_LEVEL=debug ./mcp-devtools --transport=http \
     --oauth-enabled \
     --oauth-issuer="..." \
     --oauth-audience="..." \
