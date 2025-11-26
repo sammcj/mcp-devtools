@@ -41,6 +41,7 @@ graph LR
     A --> F[Utilities]
     A --> G[Agents]
     A --> D[UI Component<br>Libraries]
+    A --> H[MCP]
 
     B --> B_Tools[📝 Terraform Docs<br>☁️ AWS Doc]
 
@@ -53,6 +54,8 @@ graph LR
     G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>👻 Kiro]
 
     D --> D_Tools[🎨 ShadCN UI<br>✨ Magic UI<br>⚡ Aceternity UI]
+
+    H --> H_Proxy[🌐 MCP Proxy]
 
     classDef components fill:#E6E6FA,stroke:#756BB1,color:#756BB1
     classDef llm fill:#E5F5E0,stroke:#31A354,color:#31A354
@@ -69,6 +72,7 @@ graph LR
     class E,E_Tools data
     class F,F_Tools process
     class G,G_Tools llm
+    class H_Proxy api
 ```
 
 ## Why I Built MCP DevTools
