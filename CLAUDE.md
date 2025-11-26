@@ -112,7 +112,7 @@ All tools follow this pattern:
 ## General Guidelines
 
 - CRITICAL: Ensure that when running in stdio mode that we NEVER log to stdout or stderr, as this will break the MCP protocol.
-- Any tools we create must work on both macOS and Linux unless the user states otherwise (we don't care about MS Windows).
+- Any tools we create must work on both macOS and Linux unless the user states otherwise (only add windows workarounds if they're easy to implement, don't reduce functionality for macOS/Linux and are low maintenance).
 - When testing the docprocessing tool, unless otherwise instructed always call it with "clear_file_cache": true and do not enable return_inline_only
 - If you're wanting to call a tool you've just made changes to directly (rather than using the command line approach), you have to let the user know to restart the conversation otherwise you'll only have access to the old version of the tool functions directly.
 - When adding new tools ensure they are registered in the list of available tools in the server (within their init function), ensure they have a basic unit test, and that they have docs/tools/<toolname>.md with concise, clear information about the tool and that they're mentioned in the main README.md and docs/tools/overview.md.

@@ -396,6 +396,10 @@ func openBrowser(url string) error {
 	case "linux":
 		cmdName = "xdg-open"
 		args = []string{url}
+	case "windows":
+		// Windows requires cmd /c start with an empty title parameter
+		cmdName = "cmd"
+		args = []string{"/c", "start", "", url}
 	default:
 		return fmt.Errorf("unsupported operating system for browser opening: %s", runtime.GOOS)
 	}
