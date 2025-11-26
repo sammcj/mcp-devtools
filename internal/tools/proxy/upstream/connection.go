@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
@@ -322,8 +320,11 @@ func (c *Connection) ExecuteTool(ctx context.Context, toolName string, args map[
 		Params:  paramsJSON,
 	}
 
-	// Log to file for debugging in stdio mode
-	c.logToFile(fmt.Sprintf("Executing tool %s with ID %v", toolName, req.ID))
+	logrus.WithFields(logrus.Fields{
+		"name": c.config.Name,
+		"tool": toolName,
+		"id":   req.ID,
+	}).Debug("Proxy: executing tool with request ID")
 
 	// Add timeout to context (60 seconds for tool execution)
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
@@ -336,40 +337,28 @@ func (c *Connection) ExecuteTool(ctx context.Context, toolName string, args map[
 	} else if _, ok := c.transport.(*SSETransport); ok {
 		transportType = "SSE"
 	}
-	c.logToFile(fmt.Sprintf("Calling SendReceive for tool %s using %s transport", toolName, transportType))
+
+	logrus.WithFields(logrus.Fields{
+		"name":      c.config.Name,
+		"tool":      toolName,
+		"transport": transportType,
+	}).Debug("Proxy: calling SendReceive")
 
 	msg, err := c.transport.SendReceive(ctx, req)
 	if err != nil {
-		c.logToFile(fmt.Sprintf("SendReceive failed for tool %s: %v", toolName, err))
+		logrus.WithError(err).WithFields(logrus.Fields{
+			"name": c.config.Name,
+			"tool": toolName,
+		}).Debug("Proxy: SendReceive failed")
 		return nil, fmt.Errorf("failed to execute tool on upstream: %w", err)
 	}
 
-	c.logToFile(fmt.Sprintf("Received response for tool %s with ID %v", toolName, msg.ID))
+	logrus.WithFields(logrus.Fields{
+		"name": c.config.Name,
+		"tool": toolName,
+		"id":   msg.ID,
+	}).Debug("Proxy: received response")
 	return msg, nil
-}
-
-// logToFile writes a debug message to the proxy execution log file
-func (c *Connection) logToFile(message string) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return
-	}
-
-	logDir := filepath.Join(homeDir, ".mcp-devtools")
-	logPath := filepath.Join(logDir, "proxy-execution.log")
-
-	// Ensure directory exists
-	if err := os.MkdirAll(logDir, 0700); err != nil {
-		return
-	}
-
-	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	if err != nil {
-		return
-	}
-	defer logFile.Close()
-
-	fmt.Fprintf(logFile, "[%s] [%s] %s\n", time.Now().Format("2006-01-02 15:04:05.000"), c.config.Name, message)
 }
 
 // Close closes the connection.

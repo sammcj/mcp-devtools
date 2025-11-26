@@ -7,10 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sync"
-	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -92,18 +89,25 @@ func (t *HTTPTransport) Start(ctx context.Context) error {
 
 // SendReceive sends a JSON-RPC message via HTTP POST and returns the response.
 func (t *HTTPTransport) SendReceive(ctx context.Context, msg *Message) (*Message, error) {
-	t.logToFile(fmt.Sprintf("SendReceive called for ID %v method %s", msg.ID, msg.Method))
+	logrus.WithFields(logrus.Fields{
+		"id":     msg.ID,
+		"method": msg.Method,
+	}).Debug("HTTP: SendReceive called")
 
 	data, err := json.Marshal(msg)
 	if err != nil {
-		t.logToFile(fmt.Sprintf("Marshal failed: %v", err))
+		logrus.WithError(err).Debug("HTTP: marshal failed")
 		return nil, fmt.Errorf("failed to marshal message: %w", err)
 	}
 
-	t.logToFile(fmt.Sprintf("Creating POST request to %s", t.config.ServerURL))
+	logrus.WithFields(logrus.Fields{
+		"url":   t.config.ServerURL,
+		"bytes": len(data),
+	}).Debug("HTTP: creating POST request")
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, t.config.ServerURL, bytes.NewReader(data))
 	if err != nil {
-		t.logToFile(fmt.Sprintf("Create request failed: %v", err))
+		logrus.WithError(err).Debug("HTTP: create request failed")
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -120,75 +124,54 @@ func (t *HTTPTransport) SendReceive(ctx context.Context, msg *Message) (*Message
 		token, err := t.config.AuthProvider.GetAccessToken(ctx)
 		if err == nil && token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
-			t.logToFile("Added auth header")
+			logrus.Debug("HTTP: added authorisation header")
 		}
 	}
 
-	t.logToFile(fmt.Sprintf("Sending POST request (%d bytes)", len(data)))
+	logrus.WithField("bytes", len(data)).Debug("HTTP: sending POST request")
 	resp, err := t.client.Do(req)
 	if err != nil {
-		t.logToFile(fmt.Sprintf("POST request failed: %v", err))
+		logrus.WithError(err).Debug("HTTP: POST request failed")
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	t.logToFile(fmt.Sprintf("Received response status %d", resp.StatusCode))
+	logrus.WithField("status", resp.StatusCode).Debug("HTTP: received response")
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		t.logToFile("Response: unauthorised")
+		logrus.Debug("HTTP: unauthorised response")
 		return nil, ErrUnauthorised
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		t.logToFile("Response: not found")
+		logrus.Debug("HTTP: not found response")
 		return nil, ErrNotFound
 	}
 
 	if resp.StatusCode == http.StatusMethodNotAllowed {
-		t.logToFile("Response: method not allowed")
+		logrus.Debug("HTTP: method not allowed response")
 		return nil, ErrMethodNotAllowed
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
-		t.logToFile(fmt.Sprintf("Unexpected status %d: %s", resp.StatusCode, string(body)))
+		logrus.WithFields(logrus.Fields{
+			"status": resp.StatusCode,
+			"body":   string(body),
+		}).Debug("HTTP: unexpected status")
 		return nil, fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
 	}
 
-	t.logToFile("Decoding response JSON")
+	logrus.Debug("HTTP: decoding response JSON")
 	// Parse response
 	var response Message
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		t.logToFile(fmt.Sprintf("Decode failed: %v", err))
+		logrus.WithError(err).Debug("HTTP: decode failed")
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	t.logToFile(fmt.Sprintf("Successfully received response for ID %v", response.ID))
+	logrus.WithField("id", response.ID).Debug("HTTP: successfully received response")
 	return &response, nil
-}
-
-// logToFile writes a debug message to the proxy execution log file
-func (t *HTTPTransport) logToFile(message string) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return
-	}
-
-	logDir := filepath.Join(homeDir, ".mcp-devtools")
-	logPath := filepath.Join(logDir, "proxy-execution.log")
-
-	// Ensure directory exists
-	if err := os.MkdirAll(logDir, 0700); err != nil {
-		return
-	}
-
-	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	if err != nil {
-		return
-	}
-	defer logFile.Close()
-
-	fmt.Fprintf(logFile, "[%s] [HTTP] %s\n", time.Now().Format("2006-01-02 15:04:05.000"), message)
 }
 
 // Close closes the HTTP transport.
