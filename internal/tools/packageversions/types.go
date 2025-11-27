@@ -9,6 +9,7 @@ type PackageVersion struct {
 	Skipped        bool            `json:"skipped,omitempty"`
 	SkipReason     string          `json:"skipReason,omitempty"`
 	Details        *PackageDetails `json:"details,omitempty"`
+	Cooldown       *CooldownInfo   `json:"cooldown,omitempty"`
 }
 
 // PackageDetails contains detailed metadata about a package

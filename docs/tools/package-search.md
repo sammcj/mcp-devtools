@@ -30,6 +30,56 @@ The Package Search tool supports the following configuration options:
   - **Description**: Controls the rate of HTTP requests to prevent overwhelming package registry APIs
   - **Example**: `PACKAGES_RATE_LIMIT=20` allows up to 20 requests per second
 
+- **`PACKAGE_COOLDOWN_HOURS`**: Hours to wait before recommending newly published packages
+  - **Default**: `72` (3 days)
+  - **Description**: Protects against supply chain attacks by avoiding very recently published package versions
+  - **Example**: `PACKAGE_COOLDOWN_HOURS=168` for 7-day cooldown, `PACKAGE_COOLDOWN_HOURS=0` to disable
+
+- **`PACKAGE_COOLDOWN_ECOSYSTEMS`**: Comma-separated list of ecosystems to apply cooldown to
+  - **Default**: `npm`
+  - **Description**: Controls which ecosystems have cooldown protection applied
+  - **Example**: `PACKAGE_COOLDOWN_ECOSYSTEMS=npm,python,go,rust`
+  - **Special values**: `none` disables cooldown for all ecosystems
+
+### Dependency Cooldown (Supply Chain Protection)
+
+The Package Search tool includes an optional "dependency cooldown" feature that helps protect against supply chain attacks. Most supply chain attacks have a short exploitation window (hours to days) before being detected and removed. By waiting a configurable period before recommending newly published versions, you avoid being an early victim.
+
+**How it works:**
+1. When a package's latest version was published within the cooldown window (default: 72 hours)
+2. The tool recommends the most recent version *outside* the cooldown window instead
+3. Before recommending that older version, it checks the [OSV (Open Source Vulnerabilities)](https://osv.dev/) database
+4. If the cooldown version has known CVEs, the tool bypasses cooldown and recommends the latest version
+
+**Response format when cooldown applies:**
+```json
+{
+  "name": "lodash",
+  "latestVersion": "4.17.20",
+  "registry": "npm",
+  "cooldown": {
+    "applied": true,
+    "reason": "Version 4.17.21 published 2 days ago, cooldown requires 72 hours",
+    "newerVersion": "4.17.21",
+    "publishedAt": "2025-11-25T10:00:00Z",
+    "cooldownEndsAt": "2025-11-28T10:00:00Z"
+  }
+}
+```
+
+**When cooldown is bypassed due to vulnerabilities:**
+```json
+{
+  "name": "lodash",
+  "latestVersion": "4.17.21",
+  "registry": "npm",
+  "cooldown": {
+    "applied": false,
+    "reason": "Cooldown version 4.17.20 has known vulnerabilities"
+  }
+}
+```
+
 ### Security Features
 
 - **Rate Limiting**: Configurable request rate limiting protects against overwhelming external package registries

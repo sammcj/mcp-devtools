@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
@@ -169,12 +170,36 @@ func (t *NpmTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 			}
 		}
 
+		// Apply cooldown if enabled for npm
+		var cooldownInfo *packageversions.CooldownInfo
+		versionsWithDates := t.extractVersionDates(info)
+		if len(versionsWithDates) > 0 {
+			selectedVersion, cdInfo, err := packageversions.ApplyCooldown(
+				logger,
+				t.client,
+				"npm",
+				name,
+				versionsWithDates,
+				latestVersion,
+			)
+			if err != nil {
+				logger.WithFields(logrus.Fields{
+					"package": name,
+					"error":   err.Error(),
+				}).Debug("Cooldown application failed, using latest version")
+			} else {
+				latestVersion = selectedVersion
+				cooldownInfo = cdInfo
+			}
+		}
+
 		// Add result
 		results = append(results, packageversions.PackageVersion{
 			Name:           name,
 			CurrentVersion: packageversions.StringPtrUnlessLatest(currentVersion),
 			LatestVersion:  latestVersion,
 			Registry:       "npm",
+			Cooldown:       cooldownInfo,
 		})
 	}
 
@@ -190,9 +215,32 @@ func (t *NpmTool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 type NpmPackageInfo struct {
 	Name     string            `json:"name"`
 	DistTags map[string]string `json:"dist-tags"`
+	Time     map[string]string `json:"time"` // Maps version -> publish timestamp (RFC3339)
 	Versions map[string]struct {
 		Version string `json:"version"`
 	} `json:"versions"`
+}
+
+// extractVersionDates extracts version dates from npm package info
+func (t *NpmTool) extractVersionDates(info *NpmPackageInfo) []packageversions.VersionWithDate {
+	if info == nil || len(info.Time) == 0 {
+		return nil
+	}
+
+	versions := make([]packageversions.VersionWithDate, 0, len(info.Versions))
+	for version := range info.Versions {
+		if timeStr, ok := info.Time[version]; ok {
+			// npm uses RFC3339 format (ISO 8601 profile)
+			if publishedAt, err := time.Parse(time.RFC3339, timeStr); err == nil {
+				versions = append(versions, packageversions.VersionWithDate{
+					Version:     version,
+					PublishedAt: publishedAt,
+				})
+			}
+		}
+	}
+
+	return versions
 }
 
 // getPackageInfo gets information about an npm package
