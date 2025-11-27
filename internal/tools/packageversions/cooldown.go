@@ -1,9 +1,11 @@
 package packageversions
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -26,6 +28,9 @@ const (
 
 	// OSVCacheDuration is how long to cache OSV results
 	OSVCacheDuration = 5 * time.Minute
+
+	// MaxOSVResponseSize is the maximum size of OSV API responses (10MB)
+	MaxOSVResponseSize = 10 * 1024 * 1024
 )
 
 // CooldownConfig holds the cooldown configuration
@@ -253,12 +258,16 @@ func checkOSVVulnerabilities(
 	// Check cache first
 	cacheKey := fmt.Sprintf("osv:%s:%s:%s", ecosystem, packageName, version)
 	if cached, ok := osvCache.Load(cacheKey); ok {
-		entry := cached.(osvCacheEntry)
-		if time.Now().Before(entry.expiresAt) {
+		entry, ok := cached.(osvCacheEntry)
+		if !ok {
+			osvCache.Delete(cacheKey)
+			// Continue with fresh lookup
+		} else if time.Now().Before(entry.expiresAt) {
 			return entry.hasVulns, nil
+		} else {
+			// Expired, delete from cache
+			osvCache.Delete(cacheKey)
 		}
-		// Expired, delete from cache
-		osvCache.Delete(cacheKey)
 	}
 
 	// Map our ecosystem names to OSV ecosystem names
@@ -286,7 +295,7 @@ func checkOSVVulnerabilities(
 	defer cancel()
 
 	// Make request
-	req, err := http.NewRequestWithContext(ctx, "POST", OSVURL, strings.NewReader(string(reqBytes)))
+	req, err := http.NewRequestWithContext(ctx, "POST", OSVURL, bytes.NewReader(reqBytes))
 	if err != nil {
 		return false, fmt.Errorf("failed to create OSV request: %w", err)
 	}
@@ -302,8 +311,10 @@ func checkOSVVulnerabilities(
 		return false, fmt.Errorf("OSV returned status %d", resp.StatusCode)
 	}
 
+	// Limit response size to prevent memory exhaustion
+	limitedReader := io.LimitReader(resp.Body, MaxOSVResponseSize)
 	var osvResp osvResponse
-	if err := json.NewDecoder(resp.Body).Decode(&osvResp); err != nil {
+	if err := json.NewDecoder(limitedReader).Decode(&osvResp); err != nil {
 		return false, fmt.Errorf("failed to decode OSV response: %w", err)
 	}
 

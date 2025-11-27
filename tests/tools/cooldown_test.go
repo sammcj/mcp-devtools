@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -360,6 +361,7 @@ func TestOSVEcosystemMapping(t *testing.T) {
 	for _, tc := range ecosystems {
 		t.Run(tc.ecosystem, func(t *testing.T) {
 			packageversions.ResetCooldownConfigForTesting()
+			packageversions.ClearOSVCacheForTesting()
 			os.Setenv("PACKAGE_COOLDOWN_HOURS", "72")
 			os.Setenv("PACKAGE_COOLDOWN_ECOSYSTEMS", tc.ecosystem)
 
@@ -412,7 +414,7 @@ func TestCooldownDuration(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run("", func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d_hours", tt.hours), func(t *testing.T) {
 			config := &packageversions.CooldownConfig{Hours: tt.hours}
 			if config.GetCooldownDuration() != tt.expectedDuration {
 				t.Errorf("expected duration %v, got %v", tt.expectedDuration, config.GetCooldownDuration())

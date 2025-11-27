@@ -230,7 +230,7 @@ func (t *NpmTool) extractVersionDates(info *NpmPackageInfo) []packageversions.Ve
 	versions := make([]packageversions.VersionWithDate, 0, len(info.Versions))
 	for version := range info.Versions {
 		if timeStr, ok := info.Time[version]; ok {
-			// npm uses ISO 8601 format
+			// npm uses RFC3339 format (ISO 8601 profile)
 			if publishedAt, err := time.Parse(time.RFC3339, timeStr); err == nil {
 				versions = append(versions, packageversions.VersionWithDate{
 					Version:     version,
