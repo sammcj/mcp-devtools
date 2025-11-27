@@ -81,7 +81,8 @@ func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 // Do implements the HTTPClient interface with rate limiting
 func (c *RateLimitedHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	// Wait for rate limiter to allow the request (thread-safe)
-	err := c.limiter.Wait(context.Background())
+	// Use request context for proper cancellation support
+	err := c.limiter.Wait(req.Context())
 	if err != nil {
 		return nil, err
 	}

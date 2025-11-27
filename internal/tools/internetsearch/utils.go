@@ -74,7 +74,8 @@ func (c *RateLimitedHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	defer c.mu.Unlock()
 
 	// Wait for rate limiter to allow the request
-	err := c.limiter.Wait(context.Background())
+	// Use request context for proper cancellation support
+	err := c.limiter.Wait(req.Context())
 	if err != nil {
 		return nil, err
 	}
