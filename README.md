@@ -442,6 +442,8 @@ All environment variables are optional, but if you want to use specific search p
 - `SEARXNG_BASE_URL` - Enable SearXNG search provider by providing the base URL (e.g. `https://searxng.example.com`)
 - `CONTEXT7_API_KEY` - Optional Context7 API key for higher rate limits and authentication with package documentation tools
 - `MEMORY_FILE_PATH` - Memory storage location (default: `~/.mcp-devtools/`)
+- `PACKAGE_COOLDOWN_HOURS` - Hours to wait before recommending newly published packages (default: `72`, set to `0` to disable)
+- `PACKAGE_COOLDOWN_ECOSYSTEMS` - Comma-separated ecosystems for cooldown protection (default: `npm`, use `none` to disable)
 
 **Security Configuration:**
 - `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories (only for filesystem tool)
