@@ -564,7 +564,7 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"Range validation: Use validate_range before using ranges in formulas to catch errors early",
 			"Flexible cell references: write_data accepts either start_cell='F32' OR start_row=32, start_col=6 (automatically converted)",
 			"Formula debugging: read_data_with_metadata returns formula text, cached value, and has_formula flag for all cells",
-			"AI-friendly data export: Use read_all_data with format='csv' or 'tsv' for efficient multi-sheet data extraction suitable for analysis",
+			"Data export: Use read_all_data with format='csv' or 'tsv' for efficient multi-sheet data extraction suitable for analysis",
 			"Large spreadsheet handling: Use read_all_data with options.max_rows to limit output and prevent token overflow with large files",
 			"Pagination: Combine offset and max_rows for paginated reading of large sheets (e.g., offset=0 max_rows=100, then offset=100 max_rows=100)",
 		},
