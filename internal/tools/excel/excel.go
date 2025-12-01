@@ -165,15 +165,15 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				// Formatting parameters
 				"font": map[string]any{
 					"type":        "object",
-					"description": "Font properties for format_range. Example: {bold: true, size: 12, colour: 'FF0000'}.",
+					"description": "Font properties for format_range. Example: {bold: true, size: 12, colour: 'FF0000'}",
 				},
 				"fill": map[string]any{
 					"type":        "object",
-					"description": "Fill properties for format_range. Example: {colour: 'E2EFDA', pattern: 'solid'}.",
+					"description": "Fill properties for format_range. Example: {colour: 'E2EFDA', pattern: 'solid'}",
 				},
 				"borders": map[string]any{
 					"type":        "object",
-					"description": "Border properties for format_range. Example: {style: 'thin', colour: '000000', sides: ['top','bottom']}. Defaults to all slides.",
+					"description": "Border properties for format_range. Example: {style: 'thin', colour: '000000', sides: ['top','bottom']}. Defaults to all slides",
 				},
 				"alignment": map[string]any{
 					"type":        "object",
@@ -224,11 +224,11 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				// Table parameters
 				"name": map[string]any{
 					"type":        "string",
-					"description": "Table name for create_table. If omitted, auto-generates from sheet name (e.g., 'Dogs' sheet → 'DogsTable'). Specify unique names when creating multiple tables.",
+					"description": "Table name for create_table. If omitted, auto-generates from sheet name (e.g., 'Dogs' sheet → 'DogsTable'). Specify unique names when creating multiple tables",
 				},
 				"style": map[string]any{
 					"type":        "string",
-					"description": "Table style name for create_table. Examples: 'TableStyleMedium9' (blue), 'TableStyleLight2' (minimal), 'TableStyleDark1' (dark).",
+					"description": "Table style name for create_table. Examples: 'TableStyleMedium9' (blue), 'TableStyleLight2' (minimal), 'TableStyleDark1' (dark)",
 				},
 				"auto_size": map[string]any{
 					"type":        "boolean",
@@ -260,7 +260,7 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				},
 				"max_rows": map[string]any{
 					"type":        "number",
-					"description": "Maximum rows per sheet to prevent token overflow (optional). Useful for large spreadsheets.",
+					"description": "Maximum rows per sheet to prevent token overflow (optional)",
 				},
 			}),
 		),
