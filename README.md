@@ -43,7 +43,7 @@ graph LR
     A --> D[UI Component<br>Libraries]
     A --> H[MCP]
 
-    B --> B_Tools[📝 Terraform Docs<br>☁️ AWS Doc]
+    B --> B_Tools[📝 Terraform Docs<br>☁️ AWS Documentation & Pricing]
 
     C --> C_Tools[📄 Document Processing<br>📈 Excel Spreadsheets<br>📑 PDF Processing]
 
@@ -296,7 +296,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                             | `process_document`        | PDF, DOCX → Markdown with OCR                 | 🟡       |
 | **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                  | `pdf`                     | Quick PDF to Markdown                         | 🟢       |
 | **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                   | `excel`                   | Workbooks, charts, pivot tables, formulas     | 🟢       |
-| **[AWS Documentation](docs/tools/aws_documentation.md)**             | AWS documentation search and retrieval                    | `aws_documentation`       | Search and read AWS docs, recommendations     | 🟡       |
+| **[AWS Documentation & Pricing](docs/tools/aws_documentation.md)**   | AWS documentation & pricing search and retrieval          | `aws_documentation`       | Search and read AWS docs, recommendations     | 🟡       |
 | **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API (providers, modules, and policies) | `terraform_documentation` | Provider docs, module search, policy lookup   | 🟡       |
 | **[Security Framework](docs/security.md)**                           | Context injection security protections                    | `security`                | Content analysis, access control              | 🟢       |
 | **[Security Override](docs/security.md)**                            | Agent managed security warning overrides                  | `security_override`       | Bypass false positives                        | 🟡       |

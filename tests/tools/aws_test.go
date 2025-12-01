@@ -445,3 +445,147 @@ func stringPtr(s string) *string {
 func intPtr(i int) *int {
 	return &i
 }
+
+func TestAWSDocumentationTool_Execute_ListPricingServicesAction(t *testing.T) {
+	// Enable AWS tools for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws_documentation")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
+	// Note: This test requires AWS credentials to be set
+	// If credentials are not available, the test will verify error handling
+	// If credentials are available, it will verify the action executes
+	t.Run("list_pricing_services", func(t *testing.T) {
+		tool := &aws.AWSDocumentationTool{}
+		logger := logrus.New()
+		logger.SetLevel(logrus.PanicLevel) // Suppress output during tests
+		cache := &sync.Map{}
+
+		result, err := tool.Execute(context.Background(), logger, cache, map[string]any{
+			"action": "list_pricing_services",
+		})
+
+		// If AWS credentials are not available, expect an error
+		// If credentials are available, expect success
+		if err != nil {
+			assert.Contains(t, err.Error(), "AWS credentials required for pricing operations")
+		} else {
+			assert.NotNil(t, result)
+		}
+	})
+}
+
+func TestAWSDocumentationTool_Execute_GetServicePricingAction(t *testing.T) {
+	// Enable AWS tools for testing
+	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws_documentation")
+	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
+
+	tool := &aws.AWSDocumentationTool{}
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel) // Suppress output during tests
+	cache := &sync.Map{}
+
+	testCases := []struct {
+		name          string
+		args          map[string]any
+		expectedError string
+	}{
+		{
+			name: "missing service_code",
+			args: map[string]any{
+				"action": "get_service_pricing",
+			},
+			expectedError: "missing required parameter for get_service_pricing action: service_code",
+		},
+		{
+			name: "empty service_code",
+			args: map[string]any{
+				"action":       "get_service_pricing",
+				"service_code": "",
+			},
+			expectedError: "service_code cannot be empty",
+		},
+		{
+			name: "max_results too low",
+			args: map[string]any{
+				"action":       "get_service_pricing",
+				"service_code": "AmazonEC2",
+				"max_results":  0.0,
+			},
+			expectedError: "max_results must be at least 1",
+		},
+		{
+			name: "filter missing field",
+			args: map[string]any{
+				"action":       "get_service_pricing",
+				"service_code": "AmazonEC2",
+				"filters": []any{
+					map[string]any{
+						"value": "t2.micro",
+					},
+				},
+			},
+			expectedError: "filter at index 0 missing required 'field' property",
+		},
+		{
+			name: "filter missing value",
+			args: map[string]any{
+				"action":       "get_service_pricing",
+				"service_code": "AmazonEC2",
+				"filters": []any{
+					map[string]any{
+						"field": "instanceType",
+					},
+				},
+			},
+			expectedError: "filter at index 0 missing required 'value' property",
+		},
+		{
+			name: "filter with empty field",
+			args: map[string]any{
+				"action":       "get_service_pricing",
+				"service_code": "AmazonEC2",
+				"filters": []any{
+					map[string]any{
+						"field": "  ",
+						"value": "t2.micro",
+					},
+				},
+			},
+			expectedError: "filter at index 0 missing required 'field' property",
+		},
+		{
+			name: "filter with empty value",
+			args: map[string]any{
+				"action":       "get_service_pricing",
+				"service_code": "AmazonEC2",
+				"filters": []any{
+					map[string]any{
+						"field": "instanceType",
+						"value": "  ",
+					},
+				},
+			},
+			expectedError: "filter at index 0 missing required 'value' property",
+		},
+		{
+			name: "filter not an object",
+			args: map[string]any{
+				"action":       "get_service_pricing",
+				"service_code": "AmazonEC2",
+				"filters": []any{
+					"invalid_filter",
+				},
+			},
+			expectedError: "filter at index 0 is not a valid object",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := tool.Execute(context.Background(), logger, cache, tc.args)
+			assert.Nil(t, result)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tc.expectedError)
+		})
+	}
+}
