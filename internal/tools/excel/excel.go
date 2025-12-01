@@ -55,7 +55,7 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				// Workbook operations
 				"create_workbook", "get_workbook_metadata", "create_worksheet",
 				// Data operations
-				"read_data", "write_data", "read_data_with_metadata",
+				"read_data", "write_data", "read_data_with_metadata", "read_all_data",
 				// Worksheet management
 				"copy_worksheet", "delete_worksheet", "rename_worksheet",
 				// Formatting
@@ -93,7 +93,7 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				},
 				"end_cell": map[string]any{
 					"type":        "string",
-					"description": "Ending cell reference (e.g., 'D10')",
+					"description": "Ending cell reference",
 				},
 				"data": map[string]any{
 					"type":        "array",
@@ -110,7 +110,7 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				},
 				"initial_sheets": map[string]any{
 					"type":        "array",
-					"description": "Array of sheet names for create_workbook. Example: ['Dogs','Cats','Birds'] More efficient than creating workbook then adding sheets individually.",
+					"description": "Array of sheet names for create_workbook. Example: ['Dogs','Cats'] More efficient than creating workbook then adding sheets individually.",
 					"items": map[string]any{
 						"type": "string",
 					},
@@ -165,15 +165,15 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				// Formatting parameters
 				"font": map[string]any{
 					"type":        "object",
-					"description": "Font properties for format_range. Example: {bold: true, size: 12, colour: 'FF0000'}.",
+					"description": "Font properties for format_range. Example: {bold: true, size: 12, colour: 'FF0000'}",
 				},
 				"fill": map[string]any{
 					"type":        "object",
-					"description": "Fill properties for format_range. Example: {colour: 'E2EFDA', pattern: 'solid'}.",
+					"description": "Fill properties for format_range. Example: {colour: 'E2EFDA', pattern: 'solid'}",
 				},
 				"borders": map[string]any{
 					"type":        "object",
-					"description": "Border properties for format_range. Example: {style: 'thin', colour: '000000', sides: ['top','bottom']}. Defaults to all slides.",
+					"description": "Border properties for format_range. Example: {style: 'thin', colour: '000000', sides: ['top','bottom']}. Defaults to all slides",
 				},
 				"alignment": map[string]any{
 					"type":        "object",
@@ -224,11 +224,11 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				// Table parameters
 				"name": map[string]any{
 					"type":        "string",
-					"description": "Table name for create_table. If omitted, auto-generates from sheet name (e.g., 'Dogs' sheet → 'DogsTable'). Specify unique names when creating multiple tables.",
+					"description": "Table name for create_table. If omitted, auto-generates from sheet name (e.g., 'Dogs' sheet → 'DogsTable'). Specify unique names when creating multiple tables",
 				},
 				"style": map[string]any{
 					"type":        "string",
-					"description": "Table style name for create_table. Examples: 'TableStyleMedium9' (blue), 'TableStyleLight2' (minimal), 'TableStyleDark1' (dark).",
+					"description": "Table style name for create_table. Examples: 'TableStyleMedium9' (blue), 'TableStyleLight2' (minimal), 'TableStyleDark1' (dark)",
 				},
 				"auto_size": map[string]any{
 					"type":        "boolean",
@@ -243,6 +243,29 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				"formula": map[string]any{
 					"type":        "string",
 					"description": "Excel formula (must start with '=')",
+				},
+				// read_all_data parameters
+				"sheet_names": map[string]any{
+					"type":        "array",
+					"description": "Array of sheet names to read (for read_all_data). If omitted, reads all sheets. Example: ['Sales', 'Expenses']",
+					"items": map[string]any{
+						"type": "string",
+					},
+				},
+				"format": map[string]any{
+					"type":        "string",
+					"description": "Output format for read_all_data: 'csv' (default), 'tsv', or 'json'",
+					"enum":        []string{"csv", "tsv", "json"},
+					"default":     "csv",
+				},
+				"max_rows": map[string]any{
+					"type":        "number",
+					"description": "Maximum rows per sheet to prevent token overflow (optional). Useful for large spreadsheets",
+				},
+				"offset": map[string]any{
+					"type":        "number",
+					"description": "Skip first N rows before applying max_rows, equivalent to \"| tail -n +N | head -N\". Works with read_all_data for pagination (optional)",
+					"default":     0,
 				},
 			}),
 		),
@@ -307,6 +330,8 @@ func (t *ExcelTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 		return handleWriteData(logger, fullPath, sheetName, options)
 	case "read_data_with_metadata":
 		return handleReadDataWithMetadata(logger, fullPath, sheetName, options)
+	case "read_all_data":
+		return handleReadAllData(logger, fullPath, sheetName, options)
 	case "copy_worksheet":
 		return handleCopyWorksheet(logger, fullPath, sheetName, options)
 	case "delete_worksheet":
@@ -490,6 +515,43 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				},
 				ExpectedResult: "Creates formulas referencing other sheets using 'SheetName!CellRef' syntax.",
 			},
+			{
+				Description: "Read all data from all sheets in CSV format",
+				Arguments: map[string]any{
+					"function": "read_all_data",
+					"filepath": "/path/to/report.xlsx",
+					"options": map[string]any{
+						"format": "csv",
+					},
+				},
+				ExpectedResult: "Returns all sheets with data in CSV format, perfect for AI agent ingestion. Each sheet includes sheet_name, format, data (as CSV string), and dimensions.",
+			},
+			{
+				Description: "Read specific sheets with row limit",
+				Arguments: map[string]any{
+					"function": "read_all_data",
+					"filepath": "/path/to/large-report.xlsx",
+					"options": map[string]any{
+						"sheet_names": []string{"Sales", "Expenses"},
+						"format":      "tsv",
+						"max_rows":    100,
+					},
+				},
+				ExpectedResult: "Returns only 'Sales' and 'Expenses' sheets in TSV format, limited to 100 rows each to prevent token overflow.",
+			},
+			{
+				Description: "Paginate through large sheet data",
+				Arguments: map[string]any{
+					"function": "read_all_data",
+					"filepath": "/path/to/large-report.xlsx",
+					"options": map[string]any{
+						"format":   "csv",
+						"max_rows": 50,
+						"offset":   100,
+					},
+				},
+				ExpectedResult: "Returns rows 101-150 from all sheets. Response includes pagination_hint with next offset value for continued reading.",
+			},
 		},
 		CommonPatterns: []string{
 			"For simple formatted tables: Use create_table with options.data, options.style, and options.auto_size=true for all-in-one creation",
@@ -502,6 +564,9 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"Range validation: Use validate_range before using ranges in formulas to catch errors early",
 			"Flexible cell references: write_data accepts either start_cell='F32' OR start_row=32, start_col=6 (automatically converted)",
 			"Formula debugging: read_data_with_metadata returns formula text, cached value, and has_formula flag for all cells",
+			"Data export: Use read_all_data with format='csv' or 'tsv' for efficient multi-sheet data extraction suitable for analysis",
+			"Large spreadsheet handling: Use read_all_data with options.max_rows to limit output and prevent token overflow with large files",
+			"Pagination: Combine offset and max_rows for paginated reading of large sheets (e.g., offset=0 max_rows=100, then offset=100 max_rows=100)",
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
 			{
@@ -542,20 +607,25 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 		},
 		ParameterDetails: map[string]string{
-			"function":                      "Operation to perform. Key workflows: create_table (all-in-one), write_data (supports formulas), format_range (styling), create_chart/pivot_table (visualisation).",
-			"options.data":                  "2D array for write_data or create_table. Values starting with '=' are auto-detected as formulas. Example: [['Total', '=SUM(B2:B5)'], ['Tax', '=B6*0.2']]",
-			"options.start_cell":            "Starting cell in A1 notation (e.g., 'F32') for write_data. Alternative: use start_row + start_col instead.",
-			"options.start_row/start_col":   "Alternative to start_cell for write_data. Provide BOTH (e.g., start_row=32, start_col=6 for F32). Automatically converted to start_cell internally.",
-			"options.number_format":         "Excel number format string. Examples: '#,##0.00' (thousands separator), '£#,##0.00' (currency), '0.00%' (percentage), 'dd/mm/yyyy' (date).",
-			"options.range":                 "Cell range in A1 notation (e.g., 'A1:D10'). Required for format_range, create_table, and many operations. Use validate_range to check validity.",
-			"create_table.options":          "Combine data, style, name, and auto_size for efficient table creation. options.data writes content, options.style applies table style (e.g., 'TableStyleMedium9'), options.auto_size=true auto-fits columns.",
-			"options.style":                 "Table style name for create_table. Examples: 'TableStyleMedium2', 'TableStyleLight9', 'TableStyleDark1'. Applies professional formatting in one parameter.",
-			"options.formula":               "Excel formula without leading '='. Used in apply_formula. For write_data/create_table, formulas are auto-detected when values start with '='.",
-			"options.initial_sheets":        "Array of sheet names to create when creating a new workbook. Alternative to creating workbook then adding sheets individually.",
-			"format_range.options.font":     "Font properties object: {bold: true, italic: true, size: 12, colour: 'FF0000', family: 'Arial'}. Accepts both 'colour' and 'color' spellings.",
-			"format_range.options.fill":     "Fill properties object: {colour: 'E2EFDA', pattern: 'solid'}. Use hex colours without '#' prefix.",
-			"read_data_with_metadata":       "Returns cells with formula='=SUM(A1:A5)', has_formula=true/false, value='123' (calculated or cached), validation rules. Supports range='N17:N22' or start_cell/end_cell. Essential for debugging formula issues.",
-			"read_data_with_metadata.range": "Cell range in A1 notation (e.g., 'N17:N22'). More convenient than separate start_cell/end_cell parameters. Calculates formula values when possible.",
+			"function":                          "Operation to perform. Key workflows: create_table (all-in-one), write_data (supports formulas), format_range (styling), create_chart/pivot_table (visualisation).",
+			"options.data":                      "2D array for write_data or create_table. Values starting with '=' are auto-detected as formulas. Example: [['Total', '=SUM(B2:B5)'], ['Tax', '=B6*0.2']]",
+			"options.start_cell":                "Starting cell in A1 notation (e.g., 'F32') for write_data. Alternative: use start_row + start_col instead.",
+			"options.start_row/start_col":       "Alternative to start_cell for write_data. Provide BOTH (e.g., start_row=32, start_col=6 for F32). Automatically converted to start_cell internally.",
+			"options.number_format":             "Excel number format string. Examples: '#,##0.00' (thousands separator), '£#,##0.00' (currency), '0.00%' (percentage), 'dd/mm/yyyy' (date).",
+			"options.range":                     "Cell range in A1 notation (e.g., 'A1:D10'). Required for format_range, create_table, and many operations. Use validate_range to check validity.",
+			"create_table.options":              "Combine data, style, name, and auto_size for efficient table creation. options.data writes content, options.style applies table style (e.g., 'TableStyleMedium9'), options.auto_size=true auto-fits columns.",
+			"options.style":                     "Table style name for create_table. Examples: 'TableStyleMedium2', 'TableStyleLight9', 'TableStyleDark1'. Applies professional formatting in one parameter.",
+			"options.formula":                   "Excel formula without leading '='. Used in apply_formula. For write_data/create_table, formulas are auto-detected when values start with '='.",
+			"options.initial_sheets":            "Array of sheet names to create when creating a new workbook. Alternative to creating workbook then adding sheets individually.",
+			"format_range.options.font":         "Font properties object: {bold: true, italic: true, size: 12, colour: 'FF0000', family: 'Arial'}. Accepts both 'colour' and 'color' spellings.",
+			"format_range.options.fill":         "Fill properties object: {colour: 'E2EFDA', pattern: 'solid'}. Use hex colours without '#' prefix.",
+			"read_data_with_metadata":           "Returns cells with formula='=SUM(A1:A5)', has_formula=true/false, value='123' (calculated or cached), validation rules. Supports range='N17:N22' or start_cell/end_cell. Essential for debugging formula issues.",
+			"read_data_with_metadata.range":     "Cell range in A1 notation (e.g., 'N17:N22'). More convenient than separate start_cell/end_cell parameters. Calculates formula values when possible.",
+			"read_all_data":                     "Exports all data from one or more sheets in AI-agent-friendly format (CSV, TSV, or JSON). Returns array of {sheet_name, format, data, dimensions}. Use sheet_name parameter for single sheet, options.sheet_names for multiple, or omit both for all sheets. Supports pagination via offset and max_rows.",
+			"read_all_data.options.format":      "Output format: 'csv' (default, token-optimised, no trailing newline), 'tsv' (tab-separated), or 'json' (2D array). CSV is most token-efficient for agents.",
+			"read_all_data.options.max_rows":    "Limit rows per sheet (e.g., 100). Essential for large spreadsheets to prevent token overflow. Works with offset for pagination.",
+			"read_all_data.options.offset":      "Skip first N rows before reading (0-based index). Combine with max_rows for pagination. Default: 0. Response includes pagination_hint when more data available.",
+			"read_all_data.options.sheet_names": "Array of specific sheet names to read (e.g., ['Sales', 'Expenses']). If omitted, reads all sheets. Use get_workbook_metadata to discover sheet names first.",
 		},
 		WhenToUse:    "Creating, editing, or formatting Excel spreadsheets with formulas, charts, tables, or data validation. Ideal for generating reports, data analysis outputs, structured data exports, or financial documents. Supports complex formatting, conditional formatting, pivot tables, and cross-sheet formula references.",
 		WhenNotToUse: "For simple CSV data export without formatting (use CSV tools instead). For reading extremely large datasets >100k rows (consider streaming or database approaches). For complex manual spreadsheet calculations better suited to interactive Excel usage. For real-time collaborative editing (use Google Sheets API instead).",
