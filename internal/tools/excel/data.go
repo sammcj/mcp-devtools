@@ -1,6 +1,7 @@
 package excel
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -961,4 +962,252 @@ func splitExcelList(list string) []string {
 	}
 
 	return parts
+}
+
+// handleReadAllData reads all data from one or more sheets in AI-agent-friendly format
+func handleReadAllData(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+	logger.WithField("filepath", filePath).Info("Reading all data from sheets")
+
+	// Open workbook
+	f, err := excelize.OpenFile(filePath)
+	if err != nil {
+		return nil, &WorkbookError{
+			Operation: "open",
+			Path:      filePath,
+			Cause:     fmt.Errorf("failed to open workbook: %w", err),
+		}
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			logger.WithError(err).Warn("Failed to close workbook")
+		}
+	}()
+
+	// Determine which sheets to read
+	var sheetsToRead []string
+
+	if sheetName != "" {
+		// Single sheet specified via sheet_name parameter
+		sheetIndex, err := f.GetSheetIndex(sheetName)
+		if err != nil || sheetIndex < 0 {
+			return nil, &SheetError{
+				Operation: "read_all_data",
+				SheetName: sheetName,
+				Cause:     fmt.Errorf("worksheet not found"),
+			}
+		}
+		sheetsToRead = []string{sheetName}
+	} else if sheetNamesOption, ok := options["sheet_names"].([]any); ok && len(sheetNamesOption) > 0 {
+		// Multiple sheets specified via options.sheet_names
+		for _, sheetNameAny := range sheetNamesOption {
+			name, ok := sheetNameAny.(string)
+			if !ok || name == "" {
+				return nil, &ValidationError{
+					Field:   "sheet_names",
+					Value:   sheetNameAny,
+					Message: "all sheet names must be non-empty strings",
+				}
+			}
+			// Verify sheet exists
+			sheetIndex, err := f.GetSheetIndex(name)
+			if err != nil || sheetIndex < 0 {
+				return nil, &SheetError{
+					Operation: "read_all_data",
+					SheetName: name,
+					Cause:     fmt.Errorf("worksheet not found"),
+				}
+			}
+			sheetsToRead = append(sheetsToRead, name)
+		}
+	} else {
+		// Read all sheets
+		sheetsToRead = f.GetSheetList()
+	}
+
+	// Get format option (default: csv)
+	format, _ := options["format"].(string)
+	if format == "" {
+		format = "csv"
+	}
+	if format != "csv" && format != "tsv" && format != "json" {
+		return nil, &ValidationError{
+			Field:   "format",
+			Value:   format,
+			Message: "format must be one of: csv, tsv, json",
+		}
+	}
+
+	// Get max_rows option (optional limit)
+	maxRows := 0
+	if maxRowsVal, ok := options["max_rows"].(float64); ok {
+		maxRows = int(maxRowsVal)
+		if maxRows < 0 {
+			return nil, &ValidationError{
+				Field:   "max_rows",
+				Value:   maxRows,
+				Message: "max_rows must be non-negative",
+			}
+		}
+	}
+
+	// Read data from each sheet
+	sheetResults := make([]map[string]any, 0, len(sheetsToRead))
+
+	for _, sheet := range sheetsToRead {
+		rows, err := f.GetRows(sheet)
+		if err != nil {
+			logger.WithError(err).WithField("sheet", sheet).Warn("Failed to get rows, skipping sheet")
+			continue
+		}
+
+		// Apply max_rows limit if specified
+		if maxRows > 0 && len(rows) > maxRows {
+			rows = rows[:maxRows]
+			logger.WithFields(logrus.Fields{
+				"sheet":    sheet,
+				"max_rows": maxRows,
+			}).Debug("Limited rows to max_rows")
+		}
+
+		// Skip empty sheets
+		if len(rows) == 0 {
+			logger.WithField("sheet", sheet).Debug("Skipping empty sheet")
+			continue
+		}
+
+		// Determine max columns
+		maxCols := 0
+		for _, row := range rows {
+			if len(row) > maxCols {
+				maxCols = len(row)
+			}
+		}
+
+		// Convert to requested format
+		var dataOutput string
+		switch format {
+		case "csv":
+			dataOutput = formatAsCSV(rows, maxCols, true)
+		case "tsv":
+			dataOutput = formatAsTSV(rows, maxCols, true)
+		case "json":
+			dataOutput = formatAsJSON(rows, maxCols, true)
+		}
+
+		sheetResult := map[string]any{
+			"sheet_name": sheet,
+			"data":       dataOutput,
+			"dimensions": map[string]any{
+				"rows":    len(rows),
+				"columns": maxCols,
+			},
+		}
+
+		sheetResults = append(sheetResults, sheetResult)
+	}
+
+	result := map[string]any{
+		"sheets": sheetResults,
+	}
+
+	return mcp.NewToolResultJSON(result)
+}
+
+// formatAsCSV formats rows as CSV string
+func formatAsCSV(rows [][]string, maxCols int, includeEmpty bool) string {
+	var sb strings.Builder
+
+	for rowIdx, row := range rows {
+		// Ensure row has maxCols elements
+		normalised := normaliseRow(row, maxCols, includeEmpty)
+
+		for colIdx, cell := range normalised {
+			if colIdx > 0 {
+				sb.WriteString(",")
+			}
+
+			// Escape CSV special characters
+			needsQuotes := strings.ContainsAny(cell, ",\"\n\r")
+			if needsQuotes {
+				sb.WriteString("\"")
+				// Escape quotes by doubling them
+				escapedCell := strings.ReplaceAll(cell, "\"", "\"\"")
+				sb.WriteString(escapedCell)
+				sb.WriteString("\"")
+			} else {
+				sb.WriteString(cell)
+			}
+		}
+
+		// Add newline except after last row
+		if rowIdx < len(rows)-1 {
+			sb.WriteString("\n")
+		}
+	}
+
+	return sb.String()
+}
+
+// formatAsTSV formats rows as TSV string
+func formatAsTSV(rows [][]string, maxCols int, includeEmpty bool) string {
+	var sb strings.Builder
+
+	for rowIdx, row := range rows {
+		// Ensure row has maxCols elements
+		normalised := normaliseRow(row, maxCols, includeEmpty)
+
+		for colIdx, cell := range normalised {
+			if colIdx > 0 {
+				sb.WriteString("\t")
+			}
+			// TSV doesn't need quoting, but replace tabs and newlines with spaces
+			safeCell := strings.ReplaceAll(cell, "\t", " ")
+			safeCell = strings.ReplaceAll(safeCell, "\n", " ")
+			safeCell = strings.ReplaceAll(safeCell, "\r", " ")
+			sb.WriteString(safeCell)
+		}
+
+		// Add newline except after last row
+		if rowIdx < len(rows)-1 {
+			sb.WriteString("\n")
+		}
+	}
+
+	return sb.String()
+}
+
+// formatAsJSON formats rows as JSON string
+func formatAsJSON(rows [][]string, maxCols int, includeEmpty bool) string {
+	// Convert to [][]any for JSON marshalling
+	data := make([][]any, 0, len(rows))
+
+	for _, row := range rows {
+		normalised := normaliseRow(row, maxCols, includeEmpty)
+		rowData := make([]any, len(normalised))
+		for i, cell := range normalised {
+			rowData[i] = cell
+		}
+		data = append(data, rowData)
+	}
+
+	// Marshal to JSON
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return "[]"
+	}
+
+	return string(jsonBytes)
+}
+
+// normaliseRow ensures all rows have the same number of columns
+func normaliseRow(row []string, maxCols int, includeEmpty bool) []string {
+	if !includeEmpty {
+		// Return row as-is if we're not padding with empty cells
+		return row
+	}
+
+	// Pad row to maxCols with empty strings
+	normalised := make([]string, maxCols)
+	copy(normalised, row)
+	return normalised
 }

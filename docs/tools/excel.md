@@ -116,6 +116,58 @@ Read data from a cell range.
 }
 ```
 
+#### `read_all_data`
+Export all data from one or more sheets in AI-agent-friendly format (CSV, TSV, or JSON).
+
+**Parameters:**
+- `filepath` (required): Path to Excel file
+- `sheet_name` (optional): Single sheet to read
+- `options.sheet_names` (optional): Array of sheet names to read
+- `options.format` (optional): Output format - `"csv"` (default), `"tsv"`, or `"json"`
+- `options.max_rows` (optional): Limit rows per sheet to prevent token overflow
+
+**Note:** If neither `sheet_name` nor `options.sheet_names` is specified, reads all sheets. All rows are padded to the same length with empty strings for consistency.
+
+**Example - Read all sheets as CSV:**
+```json
+{
+  "function": "read_all_data",
+  "filepath": "/path/to/workbook.xlsx",
+  "options": {
+    "format": "csv"
+  }
+}
+```
+
+**Example - Read specific sheets with row limit:**
+```json
+{
+  "function": "read_all_data",
+  "filepath": "/path/to/large-report.xlsx",
+  "options": {
+    "sheet_names": ["Sales", "Expenses"],
+    "format": "tsv",
+    "max_rows": 100
+  }
+}
+```
+
+**Response format:**
+```json
+{
+  "sheets": [
+    {
+      "sheet_name": "Sales",
+      "data": "Month,Revenue,Tax\nJan,5000,1000\nFeb,6500,1300",
+      "dimensions": {
+        "rows": 3,
+        "columns": 3
+      }
+    }
+  ]
+}
+```
+
 #### `write_data`
 Write data to cells. Formulas can be included directly in the data array.
 

@@ -1452,3 +1452,221 @@ func TestExcel_InvalidWorksheetName(t *testing.T) {
 		})
 	}
 }
+
+// createMultiSheetTestWorkbook creates a test workbook with multiple sheets
+func createMultiSheetTestWorkbook(t *testing.T, path string) {
+	t.Helper()
+
+	f := excelize.NewFile()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Logf("Warning: failed to close workbook: %v", err)
+		}
+	}()
+
+	// Rename default sheet to "Sales"
+	defaultSheet := f.GetSheetName(0)
+	_ = f.SetSheetName(defaultSheet, "Sales")
+
+	// Add Sales data
+	_ = f.SetCellValue("Sales", "A1", "Month")
+	_ = f.SetCellValue("Sales", "B1", "Revenue")
+	_ = f.SetCellValue("Sales", "A2", "Jan")
+	_ = f.SetCellValue("Sales", "B2", 5000)
+	_ = f.SetCellValue("Sales", "A3", "Feb")
+	_ = f.SetCellValue("Sales", "B3", 6500)
+
+	// Create Expenses sheet
+	_, _ = f.NewSheet("Expenses")
+	_ = f.SetCellValue("Expenses", "A1", "Category")
+	_ = f.SetCellValue("Expenses", "B1", "Amount")
+	_ = f.SetCellValue("Expenses", "A2", "Rent")
+	_ = f.SetCellValue("Expenses", "B2", 2000)
+	_ = f.SetCellValue("Expenses", "A3", "Utilities")
+	_ = f.SetCellValue("Expenses", "B3", 500)
+
+	// Create Empty sheet
+	_, _ = f.NewSheet("Empty")
+
+	if err := f.SaveAs(path); err != nil {
+		t.Fatalf("Failed to create multi-sheet test workbook: %v", err)
+	}
+}
+
+func TestExcel_ReadAllData_AllSheets_CSV(t *testing.T) {
+	// Enable the tool for this test
+	defer enableExcelTool(t)()
+
+	tool := &excel.ExcelTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Create temp directory and test file
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.xlsx")
+	createMultiSheetTestWorkbook(t, testFile)
+
+	args := map[string]any{
+		"function": "read_all_data",
+		"filepath": testFile,
+		"options": map[string]any{
+			"format": "csv",
+		},
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
+
+	// Verify result has content
+	testutils.AssertTrue(t, len(result.Content) > 0)
+}
+
+func TestExcel_ReadAllData_SpecificSheets_TSV(t *testing.T) {
+	// Enable the tool for this test
+	defer enableExcelTool(t)()
+
+	tool := &excel.ExcelTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Create temp directory and test file
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.xlsx")
+	createMultiSheetTestWorkbook(t, testFile)
+
+	args := map[string]any{
+		"function": "read_all_data",
+		"filepath": testFile,
+		"options": map[string]any{
+			"sheet_names": []any{"Sales"},
+			"format":      "tsv",
+		},
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
+
+	// Verify result has content
+	testutils.AssertTrue(t, len(result.Content) > 0)
+}
+
+func TestExcel_ReadAllData_MaxRows(t *testing.T) {
+	// Enable the tool for this test
+	defer enableExcelTool(t)()
+
+	tool := &excel.ExcelTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Create temp directory and test file
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.xlsx")
+	createMultiSheetTestWorkbook(t, testFile)
+
+	args := map[string]any{
+		"function": "read_all_data",
+		"filepath": testFile,
+		"options": map[string]any{
+			"sheet_names": []any{"Sales"},
+			"format":      "csv",
+			"max_rows":    float64(2), // Only read 2 rows (header + 1 data row)
+		},
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
+
+	// Verify result has content
+	testutils.AssertTrue(t, len(result.Content) > 0)
+}
+
+func TestExcel_ReadAllData_JSON(t *testing.T) {
+	// Enable the tool for this test
+	defer enableExcelTool(t)()
+
+	tool := &excel.ExcelTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Create temp directory and test file
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.xlsx")
+	createMultiSheetTestWorkbook(t, testFile)
+
+	args := map[string]any{
+		"function": "read_all_data",
+		"filepath": testFile,
+		"options": map[string]any{
+			"sheet_names": []any{"Sales"},
+			"format":      "json",
+		},
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
+
+	// Verify result has content
+	testutils.AssertTrue(t, len(result.Content) > 0)
+}
+
+func TestExcel_ReadAllData_InvalidFormat(t *testing.T) {
+	// Enable the tool for this test
+	defer enableExcelTool(t)()
+
+	tool := &excel.ExcelTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Create temp directory and test file
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.xlsx")
+	createMultiSheetTestWorkbook(t, testFile)
+
+	args := map[string]any{
+		"function": "read_all_data",
+		"filepath": testFile,
+		"options": map[string]any{
+			"format": "invalid_format",
+		},
+	}
+
+	_, err := tool.Execute(ctx, logger, cache, args)
+	testutils.AssertError(t, err)
+	testutils.AssertErrorContains(t, err, "format must be one of")
+}
+
+func TestExcel_ReadAllData_NonExistentSheet(t *testing.T) {
+	// Enable the tool for this test
+	defer enableExcelTool(t)()
+
+	tool := &excel.ExcelTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Create temp directory and test file
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.xlsx")
+	createMultiSheetTestWorkbook(t, testFile)
+
+	args := map[string]any{
+		"function": "read_all_data",
+		"filepath": testFile,
+		"options": map[string]any{
+			"sheet_names": []any{"NonExistent"},
+		},
+	}
+
+	_, err := tool.Execute(ctx, logger, cache, args)
+	testutils.AssertError(t, err)
+	testutils.AssertErrorContains(t, err, "worksheet not found")
+}
