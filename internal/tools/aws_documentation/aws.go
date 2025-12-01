@@ -327,15 +327,7 @@ func (t *AWSDocumentationTool) executeListPricingServices(ctx context.Context, l
 
 // executeGetServicePricing gets pricing for a specific AWS service
 func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, logger *logrus.Logger, args map[string]any) (*mcp.CallToolResult, error) {
-	// Initialise pricing client if needed (thread-safe)
-	t.pricingClientOnce.Do(func() {
-		t.pricingClient, t.pricingClientErr = pricing.NewClient(ctx, logger)
-	})
-	if t.pricingClientErr != nil {
-		return nil, fmt.Errorf("AWS credentials required for pricing operations: %w", t.pricingClientErr)
-	}
-
-	// Parse service_code (required)
+	// Parse service_code (required) - validate BEFORE initialising AWS client
 	serviceCode, ok := args["service_code"].(string)
 	if !ok {
 		return nil, fmt.Errorf("missing required parameter for get_service_pricing action: service_code")
@@ -346,7 +338,7 @@ func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, log
 		return nil, fmt.Errorf("service_code cannot be empty")
 	}
 
-	// Parse max_results (optional)
+	// Parse max_results (optional) - validate BEFORE initialising AWS client
 	maxResults := int32(10)
 	if maxResultsRaw, ok := args["max_results"].(float64); ok {
 		maxResults = int32(maxResultsRaw)
@@ -355,7 +347,7 @@ func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, log
 		}
 	}
 
-	// Parse filters (optional) - directly create AWS SDK Filter types
+	// Parse filters (optional) - validate BEFORE initialising AWS client
 	var awsFilters []types.Filter
 	if filtersRaw, ok := args["filters"].([]any); ok {
 		for i, filterRaw := range filtersRaw {
@@ -387,6 +379,14 @@ func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, log
 				Type:  filterType,
 			})
 		}
+	}
+
+	// Initialise pricing client if needed (thread-safe) - only AFTER parameter validation
+	t.pricingClientOnce.Do(func() {
+		t.pricingClient, t.pricingClientErr = pricing.NewClient(ctx, logger)
+	})
+	if t.pricingClientErr != nil {
+		return nil, fmt.Errorf("AWS credentials required for pricing operations: %w", t.pricingClientErr)
 	}
 
 	// Get pricing products
