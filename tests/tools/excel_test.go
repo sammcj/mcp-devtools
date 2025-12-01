@@ -1670,3 +1670,72 @@ func TestExcel_ReadAllData_NonExistentSheet(t *testing.T) {
 	testutils.AssertError(t, err)
 	testutils.AssertErrorContains(t, err, "worksheet not found")
 }
+
+func TestExcel_ReadAllData_Pagination(t *testing.T) {
+	// Enable the tool for this test
+	defer enableExcelTool(t)()
+
+	tool := &excel.ExcelTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Create temp directory and test file
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.xlsx")
+	createMultiSheetTestWorkbook(t, testFile)
+
+	// Test 1: Read first 2 rows with offset 0
+	args := map[string]any{
+		"function": "read_all_data",
+		"filepath": testFile,
+		"options": map[string]any{
+			"sheet_names": []any{"Sales"},
+			"format":      "csv",
+			"max_rows":    float64(2),
+			"offset":      float64(0),
+		},
+	}
+
+	result, err := tool.Execute(ctx, logger, cache, args)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result)
+	testutils.AssertTrue(t, len(result.Content) > 0)
+
+	// Test 2: Read next 2 rows using offset
+	args["options"] = map[string]any{
+		"sheet_names": []any{"Sales"},
+		"format":      "csv",
+		"max_rows":    float64(2),
+		"offset":      float64(2),
+	}
+
+	result2, err := tool.Execute(ctx, logger, cache, args)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result2)
+	testutils.AssertTrue(t, len(result2.Content) > 0)
+
+	// Test 3: Offset beyond data range - should return empty sheets array
+	args["options"] = map[string]any{
+		"sheet_names": []any{"Sales"},
+		"format":      "csv",
+		"max_rows":    float64(10),
+		"offset":      float64(1000),
+	}
+
+	result3, err := tool.Execute(ctx, logger, cache, args)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, result3)
+	testutils.AssertTrue(t, len(result3.Content) > 0)
+
+	// Test 4: Negative offset should return error
+	args["options"] = map[string]any{
+		"sheet_names": []any{"Sales"},
+		"format":      "csv",
+		"offset":      float64(-1),
+	}
+
+	_, err = tool.Execute(ctx, logger, cache, args)
+	testutils.AssertError(t, err)
+	testutils.AssertErrorContains(t, err, "offset must be non-negative")
+}

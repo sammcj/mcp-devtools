@@ -1050,6 +1050,19 @@ func handleReadAllData(logger *logrus.Logger, filePath string, sheetName string,
 		}
 	}
 
+	// Get offset option (optional pagination)
+	offset := 0
+	if offsetVal, ok := options["offset"].(float64); ok {
+		offset = int(offsetVal)
+		if offset < 0 {
+			return nil, &ValidationError{
+				Field:   "offset",
+				Value:   offset,
+				Message: "offset must be non-negative",
+			}
+		}
+	}
+
 	// Read data from each sheet
 	sheetResults := make([]map[string]any, 0, len(sheetsToRead))
 
@@ -1060,24 +1073,49 @@ func handleReadAllData(logger *logrus.Logger, filePath string, sheetName string,
 			continue
 		}
 
-		// Apply max_rows limit if specified
-		if maxRows > 0 && len(rows) > maxRows {
-			rows = rows[:maxRows]
-			logger.WithFields(logrus.Fields{
-				"sheet":    sheet,
-				"max_rows": maxRows,
-			}).Debug("Limited rows to max_rows")
-		}
+		totalRows := len(rows)
 
 		// Skip empty sheets
-		if len(rows) == 0 {
+		if totalRows == 0 {
 			logger.WithField("sheet", sheet).Debug("Skipping empty sheet")
 			continue
 		}
 
+		// Apply offset (skip first N rows)
+		startRow := offset
+		endRow := totalRows
+
+		// Check if offset is beyond total rows
+		if startRow >= totalRows {
+			logger.WithFields(logrus.Fields{
+				"sheet":      sheet,
+				"offset":     offset,
+				"total_rows": totalRows,
+			}).Debug("Offset beyond total rows, skipping sheet")
+			continue
+		}
+
+		// Apply max_rows limit if specified (after offset)
+		if maxRows > 0 {
+			endRow = min(startRow+maxRows, totalRows)
+		}
+
+		// Extract the requested slice of rows
+		paginatedRows := rows[startRow:endRow]
+		returnedRows := len(paginatedRows)
+		remainingRows := totalRows - endRow
+
+		logger.WithFields(logrus.Fields{
+			"sheet":          sheet,
+			"total_rows":     totalRows,
+			"offset":         startRow,
+			"returned_rows":  returnedRows,
+			"remaining_rows": remainingRows,
+		}).Debug("Applied pagination")
+
 		// Determine max columns
 		maxCols := 0
-		for _, row := range rows {
+		for _, row := range paginatedRows {
 			if len(row) > maxCols {
 				maxCols = len(row)
 			}
@@ -1087,11 +1125,11 @@ func handleReadAllData(logger *logrus.Logger, filePath string, sheetName string,
 		var dataOutput string
 		switch format {
 		case "csv":
-			dataOutput = formatAsCSV(rows, maxCols, true)
+			dataOutput = formatAsCSV(paginatedRows, maxCols, true)
 		case "tsv":
-			dataOutput = formatAsTSV(rows, maxCols, true)
+			dataOutput = formatAsTSV(paginatedRows, maxCols, true)
 		case "json":
-			dataOutput = formatAsJSON(rows, maxCols, true)
+			dataOutput = formatAsJSON(paginatedRows, maxCols, true)
 		}
 
 		sheetResult := map[string]any{
@@ -1099,9 +1137,19 @@ func handleReadAllData(logger *logrus.Logger, filePath string, sheetName string,
 			"format":     format,
 			"data":       dataOutput,
 			"dimensions": map[string]any{
-				"rows":    len(rows),
-				"columns": maxCols,
+				"total_rows":     totalRows,
+				"returned_rows":  returnedRows,
+				"start_row":      startRow + 1, // 1-based for user display
+				"end_row":        endRow,       // 1-based (exclusive in slice, but inclusive for display)
+				"remaining_rows": remainingRows,
+				"columns":        maxCols,
 			},
+		}
+
+		// Add pagination hint if there are remaining rows
+		if remainingRows > 0 {
+			nextOffset := endRow
+			sheetResult["pagination_hint"] = fmt.Sprintf("More data available. To fetch next page, use offset=%d", nextOffset)
 		}
 
 		sheetResults = append(sheetResults, sheetResult)

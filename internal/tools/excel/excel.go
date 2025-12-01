@@ -260,7 +260,12 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				},
 				"max_rows": map[string]any{
 					"type":        "number",
-					"description": "Maximum rows per sheet to prevent token overflow (optional)",
+					"description": "Maximum rows per sheet to prevent token overflow (optional). Useful for large spreadsheets.",
+				},
+				"offset": map[string]any{
+					"type":        "number",
+					"description": "Skip first N rows before applying max_rows, equivalent to \"| tail -n +N | head -N\". Works with read_all_data for pagination. (Optional)",
+					"default":     0,
 				},
 			}),
 		),
@@ -534,6 +539,19 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				},
 				ExpectedResult: "Returns only 'Sales' and 'Expenses' sheets in TSV format, limited to 100 rows each to prevent token overflow.",
 			},
+			{
+				Description: "Paginate through large sheet data",
+				Arguments: map[string]any{
+					"function": "read_all_data",
+					"filepath": "/path/to/large-report.xlsx",
+					"options": map[string]any{
+						"format":   "csv",
+						"max_rows": 50,
+						"offset":   100,
+					},
+				},
+				ExpectedResult: "Returns rows 101-150 from all sheets. Response includes pagination_hint with next offset value for continued reading.",
+			},
 		},
 		CommonPatterns: []string{
 			"For simple formatted tables: Use create_table with options.data, options.style, and options.auto_size=true for all-in-one creation",
@@ -548,6 +566,7 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"Formula debugging: read_data_with_metadata returns formula text, cached value, and has_formula flag for all cells",
 			"AI-friendly data export: Use read_all_data with format='csv' or 'tsv' for efficient multi-sheet data extraction suitable for analysis",
 			"Large spreadsheet handling: Use read_all_data with options.max_rows to limit output and prevent token overflow with large files",
+			"Pagination: Combine offset and max_rows for paginated reading of large sheets (e.g., offset=0 max_rows=100, then offset=100 max_rows=100)",
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
 			{
@@ -602,9 +621,10 @@ func (t *ExcelTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"format_range.options.fill":         "Fill properties object: {colour: 'E2EFDA', pattern: 'solid'}. Use hex colours without '#' prefix.",
 			"read_data_with_metadata":           "Returns cells with formula='=SUM(A1:A5)', has_formula=true/false, value='123' (calculated or cached), validation rules. Supports range='N17:N22' or start_cell/end_cell. Essential for debugging formula issues.",
 			"read_data_with_metadata.range":     "Cell range in A1 notation (e.g., 'N17:N22'). More convenient than separate start_cell/end_cell parameters. Calculates formula values when possible.",
-			"read_all_data":                     "Exports all data from one or more sheets in AI-agent-friendly format (CSV, TSV, or JSON). Returns array of {sheet_name, format, data, dimensions}. Use sheet_name parameter for single sheet, options.sheet_names for multiple, or omit both for all sheets.",
+			"read_all_data":                     "Exports all data from one or more sheets in AI-agent-friendly format (CSV, TSV, or JSON). Returns array of {sheet_name, format, data, dimensions}. Use sheet_name parameter for single sheet, options.sheet_names for multiple, or omit both for all sheets. Supports pagination via offset and max_rows.",
 			"read_all_data.options.format":      "Output format: 'csv' (default, RFC 4180 compliant), 'tsv' (tab-separated), or 'json' (2D array). CSV is most token-efficient for agents.",
-			"read_all_data.options.max_rows":    "Limit rows per sheet (e.g., 100). Essential for large spreadsheets to prevent token overflow. Reads from top of sheet.",
+			"read_all_data.options.max_rows":    "Limit rows per sheet (e.g., 100). Essential for large spreadsheets to prevent token overflow. Works with offset for pagination.",
+			"read_all_data.options.offset":      "Skip first N rows before reading (0-based index). Combine with max_rows for pagination. Default: 0. Response includes pagination_hint when more data available.",
 			"read_all_data.options.sheet_names": "Array of specific sheet names to read (e.g., ['Sales', 'Expenses']). If omitted, reads all sheets. Use get_workbook_metadata to discover sheet names first.",
 		},
 		WhenToUse:    "Creating, editing, or formatting Excel spreadsheets with formulas, charts, tables, or data validation. Ideal for generating reports, data analysis outputs, structured data exports, or financial documents. Supports complex formatting, conditional formatting, pivot tables, and cross-sheet formula references.",
