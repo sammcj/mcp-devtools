@@ -1,14 +1,15 @@
 # AWS Documentation Tool
 
-The AWS documentation tool provides unified access to AWS official documentation through three action modes: search, fetch, and recommend.
+The AWS documentation tool provides unified access to AWS official documentation and pricing information through five action modes: search, fetch, recommend, list_pricing_services, and get_service_pricing.
 
 - AWS documentation tool: "What is this service and how does it work?"
+- AWS pricing tool: "How much does this service cost?"
 - Context7 tools (`resolve_library_id` & `get_library_documentation`): "How do I code against this service?"
 
 ## Tool Overview
 
 **Tool Name:** `aws_documentation`
-**Actions:** `search`, `fetch`, `recommend`
+**Actions:** `search`, `fetch`, `recommend`, `list_pricing_services`, `get_service_pricing`
 **Enablement:** Requires `ENABLE_ADDITIONAL_TOOLS=aws`
 
 ## Parameters
@@ -29,6 +30,17 @@ For `fetch` action:
 
 For `recommend` action:
 - `url` (required): AWS documentation URL to get recommendations for
+
+For `list_pricing_services` action:
+- No additional parameters required
+
+For `get_service_pricing` action:
+- `service_code` (required): AWS service code (e.g., "AmazonEC2", "AmazonS3")
+- `max_results` (optional): Maximum number of products to return (default: 10)
+- `filters` (optional): Array of filter objects, each containing:
+  - `field` (required): Attribute name to filter on (e.g., "instanceType", "location", "operatingSystem")
+  - `value` (required): Value to match (e.g., "t2.micro", "US East (N. Virginia)")
+  - `type` (optional): Comparison type - "TERM_MATCH" (default)
 
 ## Usage Examples
 
@@ -89,6 +101,56 @@ For `recommend` action:
 - `recommendations`: Array of recommendation results with url, title, and context
 - `recommendations_count`: Number of recommendations found
 
+### List All AWS Services with Pricing
+```json
+{
+  "name": "aws_documentation",
+  "arguments": {
+    "action": "list_pricing_services"
+  }
+}
+```
+
+**Returns:**
+- `action`: "list_pricing_services"
+- `services_count`: Number of services with pricing data
+- `services`: Array of AWS service codes (e.g., ["AmazonEC2", "AmazonS3", "AmazonRDS", ...])
+
+### Get Service Pricing
+```json
+{
+  "name": "aws_documentation",
+  "arguments": {
+    "action": "get_service_pricing",
+    "service_code": "AmazonEC2",
+    "max_results": 5
+  }
+}
+```
+
+**Returns:**
+- `action`: "get_service_pricing"
+- `service_code`: AWS service code
+- `product_count`: Number of products returned
+- `price_list`: Array of pricing data (JSON strings containing product details and pricing terms)
+
+### Get Filtered Pricing
+```json
+{
+  "name": "aws_documentation",
+  "arguments": {
+    "action": "get_service_pricing",
+    "service_code": "AmazonEC2",
+    "filters": [
+      {"field": "instanceType", "value": "t2.micro"},
+      {"field": "location", "value": "US East (N. Virginia)"},
+      {"field": "operatingSystem", "value": "Linux"}
+    ],
+    "max_results": 3
+  }
+}
+```
+
 ## Configuration
 
 The AWS tools are **disabled by default** for security purposes. Enable them by adding to your MCP configuration:
@@ -107,7 +169,24 @@ The AWS tools are **disabled by default** for security purposes. Enable them by 
 }
 ```
 
-**No API keys required** - these tools use AWS's public documentation APIs.
+### AWS Credentials for Pricing
+
+**Documentation actions** (`search`, `fetch`, `recommend`) use AWS's public APIs and **require no credentials**.
+
+**Pricing actions** (`list_pricing_services`, `get_service_pricing`) use the AWS Pricing API and **require AWS credentials**. The tool automatically detects credentials from:
+
+1. **Environment variables**:
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `AWS_SESSION_TOKEN` (for temporary credentials/SSO)
+
+2. **AWS SSO**: If logged in via `aws sso login`, credentials are automatically used
+
+3. **Shared credentials file**: `~/.aws/credentials` and `~/.aws/config`
+
+4. **IAM instance profile**: When running on EC2
+
+If pricing actions are called without credentials, a clear error message will be returned. Documentation actions continue to work without credentials.
 
 ## Common Workflows
 
@@ -116,6 +195,13 @@ The AWS tools are **disabled by default** for security purposes. Enable them by 
 2. Use `fetch` action with URLs from search results to read detailed content
 3. Use `recommend` action to discover related AWS services and features
 4. Use pagination for large documents with `start_index` and `max_length`
+
+### AWS Pricing Research
+1. Ensure you have AWS credentials configured (see Configuration section)
+2. Use `list_pricing_services` to discover available AWS services with pricing
+3. Use `get_service_pricing` with service code to get pricing information
+4. Apply filters to narrow down pricing results (instance types, locations, operating systems, etc.)
+5. Pricing data is fetched on-demand via AWS Pricing API - no caching required
 
 ### AWS Strands Agents SDK Learning
 1. Use `resolve_library_id` with 'strands agents' to find available library IDs
@@ -156,6 +242,14 @@ The AWS tools are **disabled by default** for security purposes. Enable them by 
 - Use `resolve_library_id` tool to find appropriate Strands library IDs
 - Use `get_library_documentation` with specific topics for focused documentation
 - Library IDs are in format '/strands-agents/[component]'
+
+### Pricing Filters
+- Use `field` and `value` pairs to filter pricing results
+- Common EC2 filters: `instanceType`, `location`, `operatingSystem`, `tenancy`, `preInstalledSw`
+- Common S3 filters: `storageClass`, `location`, `volumeType`
+- Location values use AWS's descriptive names (e.g., "US East (N. Virginia)", "EU (Ireland)")
+- Combine multiple filters in the array to narrow results effectively
+- Filters use exact matching by default (TERM_MATCH type)
 
 ## URL Requirements
 

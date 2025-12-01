@@ -8,16 +8,19 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/aws/aws-sdk-go-v2/service/pricing/types"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
+	"github.com/sammcj/mcp-devtools/internal/tools/aws_documentation/pricing"
 	"github.com/sirupsen/logrus"
 )
 
 // AWSDocumentationTool implements the unified AWS documentation functionality
 type AWSDocumentationTool struct {
-	client *Client
-	parser *Parser
+	client        *Client
+	parser        *Parser
+	pricingClient *pricing.Client
 }
 
 // init registers the AWS documentation tool with the registry
@@ -29,17 +32,17 @@ func init() {
 func (t *AWSDocumentationTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"aws_documentation",
-		mcp.WithDescription("AWS documentation search, fetch, recommendation capabilities. (For AWS Strands Agents SDK instead use resolve_library_id 'strands agents')"),
+		mcp.WithDescription("AWS documentation search, fetch, recommendation, and pricing capabilities. (For AWS Strands Agents SDK instead use resolve_library_id 'strands agents')"),
 		mcp.WithString("action",
 			mcp.Required(),
-			mcp.Description("Action to perform: 'search', 'fetch', 'recommend'"),
-			mcp.Enum("search", "fetch", "recommend"),
+			mcp.Description("Action to perform: 'search', 'fetch', 'recommend', 'list_pricing_services', 'get_service_pricing'"),
+			mcp.Enum("search", "fetch", "recommend", "list_pricing_services", "get_service_pricing"),
 		),
 		mcp.WithString("search_phrase",
 			mcp.Description("Search phrase (required for 'search' action)"),
 		),
 		mcp.WithNumber("limit",
-			mcp.Description("Max results (Optional, 1-50, default: 5)"),
+			mcp.Description("Max results (Optional, 1-50, default: 5 for search, 50 for pricing)"),
 		),
 		mcp.WithString("url",
 			mcp.Description("documentation URL (required for 'fetch', 'recommend' actions, must be from docs.aws.amazon.com and end with .html)"),
@@ -50,11 +53,20 @@ func (t *AWSDocumentationTool) Definition() mcp.Tool {
 		mcp.WithNumber("start_index",
 			mcp.Description("Starting character index for pagination in fetch (Optional, default: 0)"),
 		),
+		mcp.WithString("service_code",
+			mcp.Description("AWS service code for pricing (required for 'get_service_pricing' action, e.g., 'AmazonEC2', 'AmazonS3')"),
+		),
+		mcp.WithObject("filters",
+			mcp.Description("Pricing filters (optional for 'get_service_pricing' action). Array of filter objects with 'field' and 'value' properties"),
+		),
+		mcp.WithNumber("max_results",
+			mcp.Description("Max pricing results to return (optional, default: 50)"),
+		),
 		// Read-only annotations for AWS documentation fetching tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches AWS documentation, doesn't modify environment
+		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches AWS documentation and pricing, doesn't modify environment
 		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same queries return same documentation results
-		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external AWS documentation
+		mcp.WithIdempotentHintAnnotation(true),   // Same queries return same results
+		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external AWS APIs
 	)
 }
 
@@ -67,6 +79,8 @@ func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logge
 	if t.parser == nil {
 		t.parser = NewParser()
 	}
+	// Initialise pricing client lazily (only when pricing actions are called)
+	// This allows documentation actions to work without AWS credentials
 
 	// Parse action parameter
 	action, ok := args["action"].(string)
@@ -87,8 +101,12 @@ func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logge
 		return t.executeFetch(args)
 	case "recommend":
 		return t.executeRecommend(args)
+	case "list_pricing_services":
+		return t.executeListPricingServices(ctx, logger, args)
+	case "get_service_pricing":
+		return t.executeGetServicePricing(ctx, logger, args)
 	default:
-		return nil, fmt.Errorf("invalid action: %s. Must be one of: search, fetch, recommend", action)
+		return nil, fmt.Errorf("invalid action: %s. Must be one of: search, fetch, recommend, list_pricing_services, get_service_pricing", action)
 	}
 }
 
@@ -267,6 +285,132 @@ func validateAWSDocumentationURL(url string) error {
 	return nil
 }
 
+// executeListPricingServices lists all AWS services with available pricing
+func (t *AWSDocumentationTool) executeListPricingServices(ctx context.Context, logger *logrus.Logger, _ map[string]any) (*mcp.CallToolResult, error) {
+	// Initialise pricing client if needed
+	if t.pricingClient == nil {
+		var err error
+		t.pricingClient, err = pricing.NewClient(ctx, logger)
+		if err != nil {
+			return nil, fmt.Errorf("AWS credentials required for pricing operations: %w", err)
+		}
+	}
+
+	// Get the list of services
+	services, err := t.pricingClient.DescribeServices(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pricing services: %w", err)
+	}
+
+	// Extract service codes
+	serviceCodes := make([]string, len(services))
+	for i, svc := range services {
+		serviceCodes[i] = *svc.ServiceCode
+	}
+
+	// Format results
+	result := map[string]any{
+		"action":         "list_pricing_services",
+		"services_count": len(serviceCodes),
+		"services":       serviceCodes,
+	}
+
+	// Convert result to JSON string
+	jsonBytes, err := json.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal result: %w", err)
+	}
+
+	return mcp.NewToolResultText(string(jsonBytes)), nil
+}
+
+// executeGetServicePricing gets pricing for a specific AWS service
+func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, logger *logrus.Logger, args map[string]any) (*mcp.CallToolResult, error) {
+	// Initialise pricing client if needed
+	if t.pricingClient == nil {
+		var err error
+		t.pricingClient, err = pricing.NewClient(ctx, logger)
+		if err != nil {
+			return nil, fmt.Errorf("AWS credentials required for pricing operations: %w", err)
+		}
+	}
+
+	// Parse service_code (required)
+	serviceCode, ok := args["service_code"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing required parameter for get_service_pricing action: service_code")
+	}
+
+	serviceCode = strings.TrimSpace(serviceCode)
+	if serviceCode == "" {
+		return nil, fmt.Errorf("service_code cannot be empty")
+	}
+
+	// Parse max_results (optional)
+	maxResults := int32(10)
+	if maxResultsRaw, ok := args["max_results"].(float64); ok {
+		maxResults = int32(maxResultsRaw)
+		if maxResults < 1 {
+			return nil, fmt.Errorf("max_results must be at least 1")
+		}
+	}
+
+	// Parse filters (optional) - convert to AWS SDK Filter type
+	var filters []pricing.FilterCriteria
+	if filtersRaw, ok := args["filters"].([]any); ok {
+		for _, filterRaw := range filtersRaw {
+			if filterMap, ok := filterRaw.(map[string]any); ok {
+				filter := pricing.FilterCriteria{}
+				if field, ok := filterMap["field"].(string); ok {
+					filter.Field = field
+				}
+				if value, ok := filterMap["value"].(string); ok {
+					filter.Value = value
+				}
+				if filterType, ok := filterMap["type"].(string); ok {
+					filter.Type = filterType
+				} else {
+					filter.Type = "TERM_MATCH"
+				}
+				filters = append(filters, filter)
+			}
+		}
+	}
+
+	// Convert FilterCriteria to AWS SDK types.Filter
+	awsFilters := make([]types.Filter, len(filters))
+	for i, f := range filters {
+		filterType := types.FilterType(f.Type)
+		awsFilters[i] = types.Filter{
+			Field: &f.Field,
+			Value: &f.Value,
+			Type:  filterType,
+		}
+	}
+
+	// Get pricing products
+	priceList, err := t.pricingClient.GetProducts(ctx, serviceCode, awsFilters, maxResults)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get service pricing: %w", err)
+	}
+
+	// Format results
+	result := map[string]any{
+		"action":        "get_service_pricing",
+		"service_code":  serviceCode,
+		"product_count": len(priceList),
+		"price_list":    priceList,
+	}
+
+	// Convert result to JSON string
+	jsonBytes, err := json.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal result: %w", err)
+	}
+
+	return mcp.NewToolResultText(string(jsonBytes)), nil
+}
+
 // ProvideExtendedInfo implements the ExtendedHelpProvider interface for the AWS documentation tool
 func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	return &tools.ExtendedHelp{
@@ -296,13 +440,44 @@ func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				},
 				ExpectedResult: "Related S3 documentation, highly rated pages, and similar content",
 			},
+			{
+				Description: "List all AWS services with available pricing",
+				Arguments: map[string]any{
+					"action": "list_pricing_services",
+				},
+				ExpectedResult: "List of all AWS service codes with pricing data (e.g., AmazonEC2, AmazonS3, AmazonRDS)",
+			},
+			{
+				Description: "Get EC2 pricing for us-east-1 region",
+				Arguments: map[string]any{
+					"action":       "get_service_pricing",
+					"service_code": "AmazonEC2",
+					"region":       "us-east-1",
+					"max_results":  10,
+				},
+				ExpectedResult: "Pricing information for EC2 instances in us-east-1 with product details and pricing",
+			},
+			{
+				Description: "Get S3 pricing with storage class filter",
+				Arguments: map[string]any{
+					"action":       "get_service_pricing",
+					"service_code": "AmazonS3",
+					"filters": map[string]any{
+						"storage_class": "Standard",
+					},
+					"max_results": 5,
+				},
+				ExpectedResult: "Pricing for S3 Standard storage class",
+			},
 		},
 		CommonPatterns: []string{
-			"Start with 'search' action to find relevant documentation URLs",
-			"Use 'fetch' action to get full content from discovered URLs",
-			"Use 'recommend' action after reading to discover related content",
-			"For large documents, use pagination with start_index and max_length",
-			"Check has_more_content field to determine if pagination is needed",
+			"Documentation: Start with 'search' action to find relevant documentation URLs",
+			"Documentation: Use 'fetch' action to get full content from discovered URLs",
+			"Documentation: Use 'recommend' action after reading to discover related content",
+			"Documentation: For large documents, use pagination with start_index and max_length",
+			"Pricing: Use 'list_pricing_services' to discover available AWS services",
+			"Pricing: Use 'get_service_pricing' with filters to find specific pricing (instance types, storage classes, etc.)",
+			"Pricing: Results are cached daily to improve performance - first request may be slower",
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
 			{
@@ -313,16 +488,28 @@ func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				Problem:  "Search returns no results for known topics",
 				Solution: "Try broader search terms, include service names, or use synonyms",
 			},
+			{
+				Problem:  "Pricing request is slow on first use",
+				Solution: "First pricing request downloads and caches data. Subsequent requests use cache and are much faster",
+			},
+			{
+				Problem:  "Too many pricing results returned",
+				Solution: "Use filters (instance_type, storage_class, location) or reduce max_results to get more specific results",
+			},
 		},
 		ParameterDetails: map[string]string{
-			"action":        "Required parameter that determines the operation: 'search' finds documentation, 'fetch' retrieves content, 'recommend' suggests related pages",
-			"search_phrase": "Required for search action - use specific technical terms and service names for best results",
-			"url":           "Required for fetch and recommend actions - must be valid AWS documentation URL ending with .html",
-			"limit":         "Optional for search action - controls number of search results returned (1-50)",
-			"max_length":    "Optional for fetch action - controls content truncation, use smaller values for summaries",
-			"start_index":   "Optional for fetch action - used for pagination to continue reading from specific position",
+			"action":        "Required parameter: 'search', 'fetch', 'recommend', 'list_pricing_services', or 'get_service_pricing'",
+			"search_phrase": "Required for search action - use specific technical terms and service names",
+			"url":           "Required for fetch and recommend actions - must be valid AWS documentation URL",
+			"limit":         "Optional for search action - controls number of results (1-50)",
+			"max_length":    "Optional for fetch action - controls content truncation",
+			"start_index":   "Optional for fetch action - used for pagination",
+			"service_code":  "Required for get_service_pricing - AWS service code like 'AmazonEC2' or 'AmazonS3'",
+			"region":        "Optional for get_service_pricing - AWS region like 'us-east-1'. Omit for global services",
+			"filters":       "Optional for get_service_pricing - filter by instance_type, storage_class, location, or custom attributes",
+			"max_results":   "Optional for get_service_pricing - limit number of products returned (default: 50)",
 		},
-		WhenToUse:    "Use when you need to find, read, or explore AWS documentation content",
-		WhenNotToUse: "Don't use for non-AWS documentation or when you need to search for AWS service APIs rather than documentation",
+		WhenToUse:    "Use for AWS documentation search/fetch/recommendations and AWS pricing information without credentials",
+		WhenNotToUse: "Don't use for non-AWS documentation or when you need AWS account-specific pricing (use AWS Cost Explorer instead)",
 	}
 }
