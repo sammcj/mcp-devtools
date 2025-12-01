@@ -121,7 +121,7 @@ jobs:
 
           # Build with ldflags to inject version info
           go build -v -o "bin/mcp-devtools" \
-            -ldflags "-X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
+            -ldflags "-s -w -X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
             .
 
       - name: Upload build artifacts
@@ -194,7 +194,7 @@ jobs:
 
           # Build with ldflags to inject version info
           go build -v -o "bin/mcp-devtools" \
-            -ldflags "-X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
+            -ldflags "-s -w -X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
             .
 
       - name: Upload build artifacts
@@ -270,7 +270,7 @@ jobs:
 
           # Build with ldflags to inject version info
           go build -v -o "bin/mcp-devtools" \
-            -ldflags "-X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
+            -ldflags "-s -w -X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
             .
 
       - name: Upload build artifacts
@@ -351,7 +351,7 @@ jobs:
 
           # Build with ldflags to inject version info
           go build -v -o "bin/mcp-devtools.exe" \
-            -ldflags "-X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
+            -ldflags "-s -w -X main.Version=$VERSION -X main.Commit=$COMMIT -X main.BuildDate=$BUILD_DATE" \
             .
 
       - name: Upload build artifacts
