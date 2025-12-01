@@ -18,9 +18,11 @@ import (
 
 // AWSDocumentationTool implements the unified AWS documentation functionality
 type AWSDocumentationTool struct {
-	client        *Client
-	parser        *Parser
-	pricingClient *pricing.Client
+	client            *Client
+	parser            *Parser
+	pricingClient     *pricing.Client
+	pricingClientOnce sync.Once
+	pricingClientErr  error
 }
 
 // init registers the AWS documentation tool with the registry
@@ -285,13 +287,12 @@ func validateAWSDocumentationURL(url string) error {
 
 // executeListPricingServices lists all AWS services with available pricing
 func (t *AWSDocumentationTool) executeListPricingServices(ctx context.Context, logger *logrus.Logger, _ map[string]any) (*mcp.CallToolResult, error) {
-	// Initialise pricing client if needed
-	if t.pricingClient == nil {
-		var err error
-		t.pricingClient, err = pricing.NewClient(ctx, logger)
-		if err != nil {
-			return nil, fmt.Errorf("AWS credentials required for pricing operations: %w", err)
-		}
+	// Initialise pricing client if needed (thread-safe)
+	t.pricingClientOnce.Do(func() {
+		t.pricingClient, t.pricingClientErr = pricing.NewClient(ctx, logger)
+	})
+	if t.pricingClientErr != nil {
+		return nil, fmt.Errorf("AWS credentials required for pricing operations: %w", t.pricingClientErr)
 	}
 
 	// Get the list of services
@@ -308,7 +309,6 @@ func (t *AWSDocumentationTool) executeListPricingServices(ctx context.Context, l
 
 	// Format results
 	result := map[string]any{
-		"action":         "list_pricing_services",
 		"services_count": len(serviceCodes),
 		"services":       serviceCodes,
 	}
@@ -324,13 +324,12 @@ func (t *AWSDocumentationTool) executeListPricingServices(ctx context.Context, l
 
 // executeGetServicePricing gets pricing for a specific AWS service
 func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, logger *logrus.Logger, args map[string]any) (*mcp.CallToolResult, error) {
-	// Initialise pricing client if needed
-	if t.pricingClient == nil {
-		var err error
-		t.pricingClient, err = pricing.NewClient(ctx, logger)
-		if err != nil {
-			return nil, fmt.Errorf("AWS credentials required for pricing operations: %w", err)
-		}
+	// Initialise pricing client if needed (thread-safe)
+	t.pricingClientOnce.Do(func() {
+		t.pricingClient, t.pricingClientErr = pricing.NewClient(ctx, logger)
+	})
+	if t.pricingClientErr != nil {
+		return nil, fmt.Errorf("AWS credentials required for pricing operations: %w", t.pricingClientErr)
 	}
 
 	// Parse service_code (required)
@@ -353,36 +352,34 @@ func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, log
 		}
 	}
 
-	// Parse filters (optional) - convert to AWS SDK Filter type
-	var filters []pricing.FilterCriteria
+	// Parse filters (optional) - directly create AWS SDK Filter types
+	var awsFilters []types.Filter
 	if filtersRaw, ok := args["filters"].([]any); ok {
 		for _, filterRaw := range filtersRaw {
 			if filterMap, ok := filterRaw.(map[string]any); ok {
-				filter := pricing.FilterCriteria{}
-				if field, ok := filterMap["field"].(string); ok {
-					filter.Field = field
-				}
-				if value, ok := filterMap["value"].(string); ok {
-					filter.Value = value
-				}
-				if filterType, ok := filterMap["type"].(string); ok {
-					filter.Type = filterType
-				} else {
-					filter.Type = "TERM_MATCH"
-				}
-				filters = append(filters, filter)
-			}
-		}
-	}
+				field, hasField := filterMap["field"].(string)
+				value, hasValue := filterMap["value"].(string)
 
-	// Convert FilterCriteria to AWS SDK types.Filter
-	awsFilters := make([]types.Filter, len(filters))
-	for i, f := range filters {
-		filterType := types.FilterType(f.Type)
-		awsFilters[i] = types.Filter{
-			Field: &f.Field,
-			Value: &f.Value,
-			Type:  filterType,
+				// Validate required fields
+				if !hasField || strings.TrimSpace(field) == "" {
+					return nil, fmt.Errorf("filter missing required 'field' property")
+				}
+				if !hasValue || strings.TrimSpace(value) == "" {
+					return nil, fmt.Errorf("filter missing required 'value' property")
+				}
+
+				// Default filter type is TERM_MATCH
+				filterType := types.FilterTypeTermMatch
+				if filterTypeStr, ok := filterMap["type"].(string); ok {
+					filterType = types.FilterType(filterTypeStr)
+				}
+
+				awsFilters = append(awsFilters, types.Filter{
+					Field: &field,
+					Value: &value,
+					Type:  filterType,
+				})
+			}
 		}
 	}
 
@@ -394,8 +391,6 @@ func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, log
 
 	// Format results
 	result := map[string]any{
-		"action":        "get_service_pricing",
-		"service_code":  serviceCode,
 		"product_count": len(priceList),
 		"price_list":    priceList,
 	}
