@@ -524,7 +524,7 @@ func TestAWSDocumentationTool_Execute_GetServicePricingAction(t *testing.T) {
 					},
 				},
 			},
-			expectedError: "filter missing required 'field' property",
+			expectedError: "filter at index 0 missing required 'field' property",
 		},
 		{
 			name: "filter missing value",
@@ -537,7 +537,7 @@ func TestAWSDocumentationTool_Execute_GetServicePricingAction(t *testing.T) {
 					},
 				},
 			},
-			expectedError: "filter missing required 'value' property",
+			expectedError: "filter at index 0 missing required 'value' property",
 		},
 		{
 			name: "filter with empty field",
@@ -551,7 +551,7 @@ func TestAWSDocumentationTool_Execute_GetServicePricingAction(t *testing.T) {
 					},
 				},
 			},
-			expectedError: "filter missing required 'field' property",
+			expectedError: "filter at index 0 missing required 'field' property",
 		},
 		{
 			name: "filter with empty value",
@@ -565,7 +565,18 @@ func TestAWSDocumentationTool_Execute_GetServicePricingAction(t *testing.T) {
 					},
 				},
 			},
-			expectedError: "filter missing required 'value' property",
+			expectedError: "filter at index 0 missing required 'value' property",
+		},
+		{
+			name: "filter not an object",
+			args: map[string]any{
+				"action":       "get_service_pricing",
+				"service_code": "AmazonEC2",
+				"filters": []any{
+					"invalid_filter",
+				},
+			},
+			expectedError: "filter at index 0 is not a valid object",
 		},
 	}
 

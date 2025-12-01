@@ -58,8 +58,8 @@ func (t *AWSDocumentationTool) Definition() mcp.Tool {
 		mcp.WithString("service_code",
 			mcp.Description("AWS service code for pricing (required for 'get_service_pricing' action, e.g., 'AmazonEC2', 'AmazonS3')"),
 		),
-		mcp.WithObject("filters",
-			mcp.Description("Pricing filters (optional for 'get_service_pricing' action). Array of filter objects with 'field' and 'value' properties"),
+		mcp.WithArray("filters",
+			mcp.Description("Pricing filters (optional for 'get_service_pricing' action). Array of filter objects with 'field' and 'value' properties. Each object MUST contain 'field' (string), 'value' (string), optionally 'type' (string, default: 'TERM_MATCH')"),
 		),
 		mcp.WithNumber("max_results",
 			mcp.Description("Max pricing results to return (optional, default: 10)"),
@@ -302,13 +302,16 @@ func (t *AWSDocumentationTool) executeListPricingServices(ctx context.Context, l
 	}
 
 	// Extract service codes
-	serviceCodes := make([]string, len(services))
-	for i, svc := range services {
-		serviceCodes[i] = *svc.ServiceCode
+	serviceCodes := make([]string, 0, len(services))
+	for _, svc := range services {
+		if svc.ServiceCode != nil {
+			serviceCodes = append(serviceCodes, *svc.ServiceCode)
+		}
 	}
 
 	// Format results
 	result := map[string]any{
+		"action":         "list_pricing_services",
 		"services_count": len(serviceCodes),
 		"services":       serviceCodes,
 	}
@@ -355,31 +358,34 @@ func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, log
 	// Parse filters (optional) - directly create AWS SDK Filter types
 	var awsFilters []types.Filter
 	if filtersRaw, ok := args["filters"].([]any); ok {
-		for _, filterRaw := range filtersRaw {
-			if filterMap, ok := filterRaw.(map[string]any); ok {
-				field, hasField := filterMap["field"].(string)
-				value, hasValue := filterMap["value"].(string)
-
-				// Validate required fields
-				if !hasField || strings.TrimSpace(field) == "" {
-					return nil, fmt.Errorf("filter missing required 'field' property")
-				}
-				if !hasValue || strings.TrimSpace(value) == "" {
-					return nil, fmt.Errorf("filter missing required 'value' property")
-				}
-
-				// Default filter type is TERM_MATCH
-				filterType := types.FilterTypeTermMatch
-				if filterTypeStr, ok := filterMap["type"].(string); ok {
-					filterType = types.FilterType(filterTypeStr)
-				}
-
-				awsFilters = append(awsFilters, types.Filter{
-					Field: &field,
-					Value: &value,
-					Type:  filterType,
-				})
+		for i, filterRaw := range filtersRaw {
+			filterMap, ok := filterRaw.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("filter at index %d is not a valid object", i)
 			}
+
+			field, hasField := filterMap["field"].(string)
+			value, hasValue := filterMap["value"].(string)
+
+			// Validate required fields
+			if !hasField || strings.TrimSpace(field) == "" {
+				return nil, fmt.Errorf("filter at index %d missing required 'field' property", i)
+			}
+			if !hasValue || strings.TrimSpace(value) == "" {
+				return nil, fmt.Errorf("filter at index %d missing required 'value' property", i)
+			}
+
+			// Default filter type is TERM_MATCH
+			filterType := types.FilterTypeTermMatch
+			if filterTypeStr, ok := filterMap["type"].(string); ok {
+				filterType = types.FilterType(filterTypeStr)
+			}
+
+			awsFilters = append(awsFilters, types.Filter{
+				Field: &field,
+				Value: &value,
+				Type:  filterType,
+			})
 		}
 	}
 
@@ -391,6 +397,8 @@ func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, log
 
 	// Format results
 	result := map[string]any{
+		"action":        "get_service_pricing",
+		"service_code":  serviceCode,
 		"product_count": len(priceList),
 		"price_list":    priceList,
 	}
