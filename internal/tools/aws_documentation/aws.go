@@ -42,7 +42,7 @@ func (t *AWSDocumentationTool) Definition() mcp.Tool {
 			mcp.Description("Search phrase (required for 'search' action)"),
 		),
 		mcp.WithNumber("limit",
-			mcp.Description("Max results (Optional, 1-50, default: 5 for search, 50 for pricing)"),
+			mcp.Description("Max results (Optional, 1-50, default: 5 for search, 10 for pricing)"),
 		),
 		mcp.WithString("url",
 			mcp.Description("documentation URL (required for 'fetch', 'recommend' actions, must be from docs.aws.amazon.com and end with .html)"),
@@ -60,7 +60,7 @@ func (t *AWSDocumentationTool) Definition() mcp.Tool {
 			mcp.Description("Pricing filters (optional for 'get_service_pricing' action). Array of filter objects with 'field' and 'value' properties"),
 		),
 		mcp.WithNumber("max_results",
-			mcp.Description("Max pricing results to return (optional, default: 50)"),
+			mcp.Description("Max pricing results to return (optional, default: 10)"),
 		),
 		// Read-only annotations for AWS documentation fetching tool
 		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches AWS documentation and pricing, doesn't modify environment
@@ -446,12 +446,14 @@ func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				ExpectedResult: "List of all AWS service codes with pricing data (e.g., AmazonEC2, AmazonS3, AmazonRDS)",
 			},
 			{
-				Description: "Get EC2 pricing for us-east-1 region",
+				Description: "Get EC2 pricing with location filter",
 				Arguments: map[string]any{
 					"action":       "get_service_pricing",
 					"service_code": "AmazonEC2",
-					"region":       "us-east-1",
-					"max_results":  10,
+					"filters": []map[string]any{
+						{"field": "location", "value": "US East (N. Virginia)"},
+					},
+					"max_results": 10,
 				},
 				ExpectedResult: "Pricing information for EC2 instances in us-east-1 with product details and pricing",
 			},
@@ -460,8 +462,8 @@ func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				Arguments: map[string]any{
 					"action":       "get_service_pricing",
 					"service_code": "AmazonS3",
-					"filters": map[string]any{
-						"storage_class": "Standard",
+					"filters": []map[string]any{
+						{"field": "storageClass", "value": "General Purpose"},
 					},
 					"max_results": 5,
 				},
@@ -475,7 +477,6 @@ func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"Documentation: For large documents, use pagination with start_index and max_length",
 			"Pricing: Use 'list_pricing_services' to discover available AWS services",
 			"Pricing: Use 'get_service_pricing' with filters to find specific pricing (instance types, storage classes, etc.)",
-			"Pricing: Results are cached daily to improve performance - first request may be slower",
 		},
 		Troubleshooting: []tools.TroubleshootingTip{
 			{
@@ -487,12 +488,12 @@ func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				Solution: "Try broader search terms, include service names, or use synonyms",
 			},
 			{
-				Problem:  "Pricing request is slow on first use",
-				Solution: "First pricing request downloads and caches data. Subsequent requests use cache and are much faster",
+				Problem:  "Pricing request is slow",
+				Solution: "Pricing requests fetch data directly from AWS API. Response time depends on AWS API performance and the number of results",
 			},
 			{
 				Problem:  "Too many pricing results returned",
-				Solution: "Use filters (instance_type, storage_class, location) or reduce max_results to get more specific results",
+				Solution: "Use filters (instanceType, storageClass, location) or reduce max_results to get more specific results",
 			},
 		},
 		ParameterDetails: map[string]string{
@@ -503,11 +504,10 @@ func (t *AWSDocumentationTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"max_length":    "Optional for fetch action - controls content truncation",
 			"start_index":   "Optional for fetch action - used for pagination",
 			"service_code":  "Required for get_service_pricing - AWS service code like 'AmazonEC2' or 'AmazonS3'",
-			"region":        "Optional for get_service_pricing - AWS region like 'us-east-1'. Omit for global services",
-			"filters":       "Optional for get_service_pricing - filter by instance_type, storage_class, location, or custom attributes",
-			"max_results":   "Optional for get_service_pricing - limit number of products returned (default: 50)",
+			"filters":       "Optional for get_service_pricing - array of filter objects with 'field' and 'value' properties (e.g., location, instanceType, storageClass)",
+			"max_results":   "Optional for get_service_pricing - limit number of products returned (default: 10)",
 		},
-		WhenToUse:    "Use for AWS documentation search/fetch/recommendations and AWS pricing information without credentials",
+		WhenToUse:    "Use for AWS documentation search/fetch/recommendations (no credentials needed) and AWS pricing information (requires AWS credentials)",
 		WhenNotToUse: "Don't use for non-AWS documentation or when you need AWS account-specific pricing (use AWS Cost Explorer instead)",
 	}
 }
