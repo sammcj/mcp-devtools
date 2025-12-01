@@ -123,8 +123,9 @@ Export all data from one or more sheets in AI-agent-friendly format (CSV, TSV, o
 - `filepath` (required): Path to Excel file
 - `sheet_name` (optional): Single sheet to read
 - `options.sheet_names` (optional): Array of sheet names to read
-- `options.format` (optional): Output format - `"csv"` (default), `"tsv"`, or `"json"`
+- `options.format` (optional): Output format - `"csv"` (default, token-optimised), `"tsv"`, or `"json"`
 - `options.max_rows` (optional): Limit rows per sheet to prevent token overflow
+- `options.offset` (optional): Skip first N rows before reading (for pagination, default: 0)
 
 **Note:** If neither `sheet_name` nor `options.sheet_names` is specified, reads all sheets. All rows are padded to the same length with empty strings for consistency.
 
@@ -158,9 +159,14 @@ Export all data from one or more sheets in AI-agent-friendly format (CSV, TSV, o
   "sheets": [
     {
       "sheet_name": "Sales",
+      "format": "csv",
       "data": "Month,Revenue,Tax\nJan,5000,1000\nFeb,6500,1300",
       "dimensions": {
-        "rows": 3,
+        "total_rows": 3,
+        "returned_rows": 3,
+        "start_row": 1,
+        "end_row": 3,
+        "remaining_rows": 0,
         "columns": 3
       }
     }

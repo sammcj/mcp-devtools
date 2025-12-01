@@ -1140,7 +1140,7 @@ func handleReadAllData(logger *logrus.Logger, filePath string, sheetName string,
 				"total_rows":     totalRows,
 				"returned_rows":  returnedRows,
 				"start_row":      startRow + 1, // 1-based for user display
-				"end_row":        endRow,       // 1-based (exclusive in slice, but inclusive for display)
+				"end_row":        endRow,       // Last row included (1-based Excel row number)
 				"remaining_rows": remainingRows,
 				"columns":        maxCols,
 			},
@@ -1188,7 +1188,7 @@ func formatAsCSV(rows [][]string, maxCols int, includeEmpty bool) string {
 			}
 		}
 
-		// Add newline except after last row
+		// Add newline except after last row (token optimisation - no trailing newline)
 		if rowIdx < len(rows)-1 {
 			sb.WriteString("\n")
 		}
@@ -1216,7 +1216,7 @@ func formatAsTSV(rows [][]string, maxCols int, includeEmpty bool) string {
 			sb.WriteString(safeCell)
 		}
 
-		// Add newline except after last row
+		// Add newline except after last row (token optimisation - no trailing newline)
 		if rowIdx < len(rows)-1 {
 			sb.WriteString("\n")
 		}
@@ -1242,6 +1242,7 @@ func formatAsJSON(rows [][]string, maxCols int, includeEmpty bool) string {
 	// Marshal to JSON
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
+		logrus.WithError(err).Error("Failed to marshal data to JSON")
 		return "[]"
 	}
 

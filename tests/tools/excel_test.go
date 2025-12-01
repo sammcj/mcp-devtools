@@ -1,11 +1,14 @@
 package tools_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/tools/excel"
 	"github.com/sammcj/mcp-devtools/tests/testutils"
 	"github.com/xuri/excelize/v2"
@@ -1615,6 +1618,32 @@ func TestExcel_ReadAllData_JSON(t *testing.T) {
 
 	// Verify result has content
 	testutils.AssertTrue(t, len(result.Content) > 0)
+
+	// Validate JSON structure
+	textContent, ok := mcp.AsTextContent(result.Content[0])
+	testutils.AssertTrue(t, ok)
+
+	var jsonData map[string]any
+	err = json.Unmarshal([]byte(textContent.Text), &jsonData)
+	testutils.AssertNoError(t, err)
+
+	// Verify sheets array exists
+	sheets, ok := jsonData["sheets"].([]any)
+	testutils.AssertTrue(t, ok)
+	testutils.AssertTrue(t, len(sheets) > 0)
+
+	// Verify first sheet structure
+	sheet := sheets[0].(map[string]any)
+	testutils.AssertTrue(t, sheet["sheet_name"] != nil)
+	testutils.AssertTrue(t, sheet["format"] == "json")
+	testutils.AssertTrue(t, sheet["data"] != nil)
+
+	// Validate that the data field contains valid JSON (2D array)
+	dataStr := sheet["data"].(string)
+	var arrayData [][]string
+	err = json.Unmarshal([]byte(dataStr), &arrayData)
+	testutils.AssertNoError(t, err)
+	testutils.AssertTrue(t, len(arrayData) > 0) // Should have at least one row
 }
 
 func TestExcel_ReadAllData_InvalidFormat(t *testing.T) {
@@ -1715,7 +1744,7 @@ func TestExcel_ReadAllData_Pagination(t *testing.T) {
 	testutils.AssertNotNil(t, result2)
 	testutils.AssertTrue(t, len(result2.Content) > 0)
 
-	// Test 3: Offset beyond data range - should return empty sheets array
+	// Test 3: Offset beyond data range - should skip the sheet and return empty sheets array
 	args["options"] = map[string]any{
 		"sheet_names": []any{"Sales"},
 		"format":      "csv",
@@ -1726,7 +1755,17 @@ func TestExcel_ReadAllData_Pagination(t *testing.T) {
 	result3, err := tool.Execute(ctx, logger, cache, args)
 	testutils.AssertNoError(t, err)
 	testutils.AssertNotNil(t, result3)
-	testutils.AssertTrue(t, len(result3.Content) > 0)
+
+	// Parse result to verify empty sheets array
+	textContent3, ok3 := mcp.AsTextContent(result3.Content[0])
+	testutils.AssertTrue(t, ok3)
+
+	var result3Data map[string]any
+	err = json.Unmarshal([]byte(textContent3.Text), &result3Data)
+	testutils.AssertNoError(t, err)
+
+	sheets3 := result3Data["sheets"].([]any)
+	testutils.AssertTrue(t, len(sheets3) == 0) // Should be empty when offset beyond data
 
 	// Test 4: Negative offset should return error
 	args["options"] = map[string]any{
@@ -1738,4 +1777,165 @@ func TestExcel_ReadAllData_Pagination(t *testing.T) {
 	_, err = tool.Execute(ctx, logger, cache, args)
 	testutils.AssertError(t, err)
 	testutils.AssertErrorContains(t, err, "offset must be non-negative")
+}
+
+func TestExcel_ReadAllData_IrregularRowLengths(t *testing.T) {
+	// Enable the tool for this test
+	defer enableExcelTool(t)()
+
+	tool := &excel.ExcelTool{}
+	logger := testutils.CreateTestLogger()
+	cache := testutils.CreateTestCache()
+	ctx := testutils.CreateTestContext()
+
+	// Create temp directory and test file with irregular row lengths
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "irregular.xlsx")
+
+	f := excelize.NewFile()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Logf("Warning: Failed to close workbook: %v", err)
+		}
+	}()
+
+	sheetName := "IrregularData"
+	index, err := f.NewSheet(sheetName)
+	if err != nil {
+		t.Fatalf("Failed to create sheet: %v", err)
+	}
+	f.SetActiveSheet(index)
+	_ = f.DeleteSheet("Sheet1")
+
+	// Create rows with varying column counts
+	// Row 1: 3 columns
+	_ = f.SetCellValue(sheetName, "A1", "Col1")
+	_ = f.SetCellValue(sheetName, "B1", "Col2")
+	_ = f.SetCellValue(sheetName, "C1", "Col3")
+
+	// Row 2: 5 columns (widest)
+	_ = f.SetCellValue(sheetName, "A2", "Data1")
+	_ = f.SetCellValue(sheetName, "B2", "Data2")
+	_ = f.SetCellValue(sheetName, "C2", "Data3")
+	_ = f.SetCellValue(sheetName, "D2", "Data4")
+	_ = f.SetCellValue(sheetName, "E2", "Data5")
+
+	// Row 3: 2 columns
+	_ = f.SetCellValue(sheetName, "A3", "Short1")
+	_ = f.SetCellValue(sheetName, "B3", "Short2")
+
+	if err := f.SaveAs(testFile); err != nil {
+		t.Fatalf("Failed to create irregular test workbook: %v", err)
+	}
+
+	// Test CSV format
+	csvArgs := map[string]any{
+		"function":   "read_all_data",
+		"filepath":   testFile,
+		"sheet_name": sheetName,
+		"options": map[string]any{
+			"format": "csv",
+		},
+	}
+
+	csvResult, err := tool.Execute(ctx, logger, cache, csvArgs)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, csvResult)
+
+	// Verify CSV data has normalised row lengths
+	csvTextContent, csvOk := mcp.AsTextContent(csvResult.Content[0])
+	testutils.AssertTrue(t, csvOk)
+
+	var csvData map[string]any
+	err = json.Unmarshal([]byte(csvTextContent.Text), &csvData)
+	testutils.AssertNoError(t, err)
+
+	sheets := csvData["sheets"].([]any)
+	testutils.AssertTrue(t, len(sheets) == 1)
+	sheet := sheets[0].(map[string]any)
+
+	// Verify all rows have 5 columns (padded to maxCols)
+	dimensions := sheet["dimensions"].(map[string]any)
+	testutils.AssertTrue(t, dimensions["columns"].(float64) == 5)
+
+	csvLines := strings.Split(sheet["data"].(string), "\n")
+	testutils.AssertTrue(t, len(csvLines) == 3) // 3 rows
+
+	// Each CSV line should have 5 values (some may be empty)
+	for i, line := range csvLines {
+		parts := strings.Split(line, ",")
+		if len(parts) != 5 {
+			t.Errorf("Row %d: expected 5 columns, got %d. Line: %s", i+1, len(parts), line)
+		}
+	}
+
+	// Test TSV format
+	tsvArgs := map[string]any{
+		"function":   "read_all_data",
+		"filepath":   testFile,
+		"sheet_name": sheetName,
+		"options": map[string]any{
+			"format": "tsv",
+		},
+	}
+
+	tsvResult, err := tool.Execute(ctx, logger, cache, tsvArgs)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, tsvResult)
+
+	tsvTextContent, tsvOk := mcp.AsTextContent(tsvResult.Content[0])
+	testutils.AssertTrue(t, tsvOk)
+
+	var tsvData map[string]any
+	err = json.Unmarshal([]byte(tsvTextContent.Text), &tsvData)
+	testutils.AssertNoError(t, err)
+
+	tsvSheets := tsvData["sheets"].([]any)
+	tsvSheet := tsvSheets[0].(map[string]any)
+	tsvLines := strings.Split(tsvSheet["data"].(string), "\n")
+
+	for i, line := range tsvLines {
+		parts := strings.Split(line, "\t")
+		if len(parts) != 5 {
+			t.Errorf("TSV Row %d: expected 5 columns, got %d. Line: %s", i+1, len(parts), line)
+		}
+	}
+
+	// Test JSON format
+	jsonArgs := map[string]any{
+		"function":   "read_all_data",
+		"filepath":   testFile,
+		"sheet_name": sheetName,
+		"options": map[string]any{
+			"format": "json",
+		},
+	}
+
+	jsonResult, err := tool.Execute(ctx, logger, cache, jsonArgs)
+	testutils.AssertNoError(t, err)
+	testutils.AssertNotNil(t, jsonResult)
+
+	jsonTextContent, jsonOk := mcp.AsTextContent(jsonResult.Content[0])
+	testutils.AssertTrue(t, jsonOk)
+
+	var jsonData map[string]any
+	err = json.Unmarshal([]byte(jsonTextContent.Text), &jsonData)
+	testutils.AssertNoError(t, err)
+
+	jsonSheets := jsonData["sheets"].([]any)
+	jsonSheet := jsonSheets[0].(map[string]any)
+
+	// Parse the JSON array data
+	var jsonArrayData [][]string
+	dataStr := jsonSheet["data"].(string)
+	err = json.Unmarshal([]byte(dataStr), &jsonArrayData)
+	testutils.AssertNoError(t, err)
+
+	// Verify all rows have 5 elements
+	testutils.AssertTrue(t, len(jsonArrayData) == 3)
+	for i, row := range jsonArrayData {
+		if len(row) != 5 {
+			t.Errorf("JSON Row %d: expected 5 columns, got %d. Row: %v", i+1, len(row), row)
+		}
+	}
 }
