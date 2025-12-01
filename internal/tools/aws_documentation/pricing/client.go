@@ -21,7 +21,7 @@ type Client struct {
 // Returns error if AWS credentials are not available
 func NewClient(ctx context.Context, logger *logrus.Logger) (*Client, error) {
 	// Load AWS configuration from environment/credentials
-	// Force use of us-east-1 as Pricing API is only available in specific regions
+	// Use us-east-1 as Pricing API is only available in limited regions
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion("us-east-1"),
 	)

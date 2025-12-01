@@ -79,8 +79,6 @@ func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logge
 	if t.parser == nil {
 		t.parser = NewParser()
 	}
-	// Initialise pricing client lazily (only when pricing actions are called)
-	// This allows documentation actions to work without AWS credentials
 
 	// Parse action parameter
 	action, ok := args["action"].(string)
