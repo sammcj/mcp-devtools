@@ -44,7 +44,7 @@ func (t *AWSDocumentationTool) Definition() mcp.Tool {
 			mcp.Description("Search phrase (required for 'search' action)"),
 		),
 		mcp.WithNumber("limit",
-			mcp.Description("Max results (Optional, 1-50, default: 5 for search, 10 for pricing)"),
+			mcp.Description("Max results (Optional, 1-50, default: 5, only used for 'search' action)"),
 		),
 		mcp.WithString("url",
 			mcp.Description("documentation URL (required for 'fetch', 'recommend' actions, must be from docs.aws.amazon.com and end with .html)"),
@@ -366,6 +366,10 @@ func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, log
 			if !hasValue || strings.TrimSpace(value) == "" {
 				return nil, fmt.Errorf("filter at index %d missing required 'value' property", i)
 			}
+
+			// Trim whitespace after validation to ensure clean values are used in AWS Filter
+			field = strings.TrimSpace(field)
+			value = strings.TrimSpace(value)
 
 			// Default filter type is TERM_MATCH
 			filterType := types.FilterTypeTermMatch
