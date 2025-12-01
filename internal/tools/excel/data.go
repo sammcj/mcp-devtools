@@ -1096,6 +1096,7 @@ func handleReadAllData(logger *logrus.Logger, filePath string, sheetName string,
 
 		sheetResult := map[string]any{
 			"sheet_name": sheet,
+			"format":     format,
 			"data":       dataOutput,
 			"dimensions": map[string]any{
 				"rows":    len(rows),
