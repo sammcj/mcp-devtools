@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sammcj/mcp-devtools/internal/security"
+	"github.com/sammcj/mcp-devtools/internal/telemetry"
 	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"github.com/sirupsen/logrus"
 )
@@ -40,14 +42,14 @@ func NewClient(logger *logrus.Logger) *Client {
 }
 
 // FetchDocumentation fetches AWS documentation content from a URL
-func (c *Client) FetchDocumentation(url string) (string, error) {
+func (c *Client) FetchDocumentation(ctx context.Context, url string) (string, error) {
 	c.logger.WithField("url", url).Debug("Fetching AWS documentation")
 
 	// Add session parameter to URL
 	urlWithSession := fmt.Sprintf("%s?session=%s", url, c.sessionUUID)
 
 	// Use security helper for HTTP request
-	resp, err := c.ops.SafeHTTPGet(urlWithSession)
+	resp, err := c.ops.SafeHTTPGet(ctx, urlWithSession)
 	if err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
 			return "", security.FormatSecurityBlockError(secErr)
@@ -64,7 +66,7 @@ func (c *Client) FetchDocumentation(url string) (string, error) {
 }
 
 // SearchDocumentation searches AWS documentation using the search API
-func (c *Client) SearchDocumentation(query string, limit int) ([]SearchResult, error) {
+func (c *Client) SearchDocumentation(ctx context.Context, query string, limit int) ([]SearchResult, error) {
 	c.logger.WithFields(logrus.Fields{
 		"query": query,
 		"limit": limit,
@@ -101,7 +103,7 @@ func (c *Client) SearchDocumentation(query string, limit int) ([]SearchResult, e
 	}
 
 	// Create HTTP request
-	req, err := http.NewRequest("POST", searchURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, "POST", searchURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -110,8 +112,9 @@ func (c *Client) SearchDocumentation(query string, limit int) ([]SearchResult, e
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("X-MCP-Session-Id", c.sessionUUID)
 
-	// Execute request
-	resp, err := c.httpClient.Do(req)
+	// Execute request with telemetry
+	client := telemetry.WrapHTTPClient(c.httpClient)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("search request failed: %w", err)
 	}
@@ -180,7 +183,7 @@ func (c *Client) SearchDocumentation(query string, limit int) ([]SearchResult, e
 }
 
 // GetRecommendations gets content recommendations for an AWS documentation URL
-func (c *Client) GetRecommendations(url string) ([]RecommendationResult, error) {
+func (c *Client) GetRecommendations(ctx context.Context, url string) ([]RecommendationResult, error) {
 	c.logger.WithField("url", url).Debug("Getting recommendations for AWS documentation")
 
 	// Build recommendation URL
@@ -192,15 +195,16 @@ func (c *Client) GetRecommendations(url string) ([]RecommendationResult, error) 
 	}
 
 	// Create HTTP request
-	req, err := http.NewRequest("GET", recommendURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", recommendURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("User-Agent", userAgent)
 
-	// Execute request
-	resp, err := c.httpClient.Do(req)
+	// Execute request with telemetry
+	client := telemetry.WrapHTTPClient(c.httpClient)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("recommendations request failed: %w", err)
 	}

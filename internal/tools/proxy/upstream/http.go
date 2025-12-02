@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/sammcj/mcp-devtools/internal/telemetry"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,9 +23,14 @@ type HTTPTransport struct {
 // NewHTTPTransport creates a new HTTP transport.
 func NewHTTPTransport(cfg *Config) *HTTPTransport {
 	logrus.WithField("url", cfg.ServerURL).Debug("creating HTTP transport")
+
+	// Create HTTP client with OTEL instrumentation
+	client := &http.Client{}
+	telemetry.WrapHTTPClient(client)
+
 	return &HTTPTransport{
 		config: cfg,
-		client: &http.Client{},
+		client: client,
 	}
 }
 

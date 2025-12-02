@@ -94,8 +94,8 @@ func (m *MockHTTPClient) WithError(err error) *MockHTTPClient {
 	return m
 }
 
-// Get simulates an HTTP GET request (implements shadcnui.HTTPClient interface)
-func (m *MockHTTPClient) Get(url string) (*http.Response, error) {
+// GetWithContext simulates an HTTP GET request with context support (implements shadcnui.HTTPClient interface)
+func (m *MockHTTPClient) GetWithContext(ctx context.Context, url string) (*http.Response, error) {
 	if m.err != nil {
 		return nil, m.err
 	}

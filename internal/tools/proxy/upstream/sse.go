@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sammcj/mcp-devtools/internal/telemetry"
 	"github.com/sirupsen/logrus"
 )
 
@@ -50,9 +51,14 @@ type SSETransport struct {
 func NewSSETransport(cfg *Config) *SSETransport {
 	// Create long-lived context for SSE connection (separate from request contexts)
 	connCtx, connCancel := context.WithCancel(context.Background())
+
+	// Create HTTP client with OTEL instrumentation
+	client := &http.Client{}
+	telemetry.WrapHTTPClient(client)
+
 	return &SSETransport{
 		config:        cfg,
-		client:        &http.Client{},
+		client:        client,
 		done:          make(chan struct{}),
 		endpointReady: make(chan struct{}),
 		pending:       make(map[any]chan *Message),

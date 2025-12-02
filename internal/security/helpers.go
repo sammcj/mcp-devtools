@@ -1,6 +1,7 @@
 package security
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/sammcj/mcp-devtools/internal/telemetry"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,7 +42,7 @@ func NewOperations(toolName string) *Operations {
 }
 
 // SafeHTTPGet performs a secure HTTP GET with content integrity preservation
-func (o *Operations) SafeHTTPGet(urlStr string) (*SafeHTTPResponse, error) {
+func (o *Operations) SafeHTTPGet(ctx context.Context, urlStr string) (*SafeHTTPResponse, error) {
 	// 1. Parse and validate URL
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
@@ -52,8 +54,18 @@ func (o *Operations) SafeHTTPGet(urlStr string) (*SafeHTTPResponse, error) {
 		return nil, err // Hard block - no content fetched
 	}
 
-	// 3. Fetch content normally (no modifications)
-	resp, err := http.Get(urlStr)
+	// 3. Create request with context for tracing
+	req, err := http.NewRequestWithContext(ctx, "GET", urlStr, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. Use instrumented HTTP client
+	client := &http.Client{}
+	client = telemetry.WrapHTTPClient(client)
+
+	// 5. Fetch content normally (no modifications)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +123,7 @@ func (o *Operations) SafeHTTPGet(urlStr string) (*SafeHTTPResponse, error) {
 }
 
 // SafeHTTPPost performs a secure HTTP POST with content integrity preservation
-func (o *Operations) SafeHTTPPost(urlStr string, body io.Reader) (*SafeHTTPResponse, error) {
+func (o *Operations) SafeHTTPPost(ctx context.Context, urlStr string, body io.Reader) (*SafeHTTPResponse, error) {
 	// 1. Parse and validate URL
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
@@ -123,8 +135,19 @@ func (o *Operations) SafeHTTPPost(urlStr string, body io.Reader) (*SafeHTTPRespo
 		return nil, err // Hard block - no content fetched
 	}
 
-	// 3. Fetch content normally (no modifications)
-	resp, err := http.Post(urlStr, "application/json", body)
+	// 3. Create POST request with context
+	req, err := http.NewRequestWithContext(ctx, "POST", urlStr, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// 4. Use instrumented HTTP client
+	client := &http.Client{}
+	client = telemetry.WrapHTTPClient(client)
+
+	// 5. Fetch content normally (no modifications)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +205,7 @@ func (o *Operations) SafeHTTPPost(urlStr string, body io.Reader) (*SafeHTTPRespo
 }
 
 // SafeHTTPGetWithHeaders performs a secure HTTP GET with custom headers
-func (o *Operations) SafeHTTPGetWithHeaders(urlStr string, headers map[string]string) (*SafeHTTPResponse, error) {
+func (o *Operations) SafeHTTPGetWithHeaders(ctx context.Context, urlStr string, headers map[string]string) (*SafeHTTPResponse, error) {
 	// 1. Parse and validate URL
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
@@ -194,8 +217,8 @@ func (o *Operations) SafeHTTPGetWithHeaders(urlStr string, headers map[string]st
 		return nil, err // Hard block - no content fetched
 	}
 
-	// 3. Create request with headers
-	req, err := http.NewRequest("GET", urlStr, nil)
+	// 3. Create request with context and headers
+	req, err := http.NewRequestWithContext(ctx, "GET", urlStr, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -205,8 +228,11 @@ func (o *Operations) SafeHTTPGetWithHeaders(urlStr string, headers map[string]st
 		req.Header.Set(key, value)
 	}
 
-	// 4. Execute request
+	// 4. Use instrumented HTTP client
 	client := &http.Client{}
+	client = telemetry.WrapHTTPClient(client)
+
+	// 5. Execute request
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -265,7 +291,7 @@ func (o *Operations) SafeHTTPGetWithHeaders(urlStr string, headers map[string]st
 }
 
 // SafeHTTPPostWithHeaders performs a secure HTTP POST with custom headers
-func (o *Operations) SafeHTTPPostWithHeaders(urlStr string, body io.Reader, headers map[string]string) (*SafeHTTPResponse, error) {
+func (o *Operations) SafeHTTPPostWithHeaders(ctx context.Context, urlStr string, body io.Reader, headers map[string]string) (*SafeHTTPResponse, error) {
 	// 1. Parse and validate URL
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
@@ -278,7 +304,7 @@ func (o *Operations) SafeHTTPPostWithHeaders(urlStr string, body io.Reader, head
 	}
 
 	// 3. Create request with headers
-	req, err := http.NewRequest("POST", urlStr, body)
+	req, err := http.NewRequestWithContext(ctx, "POST", urlStr, body)
 	if err != nil {
 		return nil, err
 	}

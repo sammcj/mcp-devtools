@@ -96,11 +96,11 @@ func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logge
 	// Dispatch to appropriate handler
 	switch action {
 	case "search":
-		return t.executeSearch(args)
+		return t.executeSearch(ctx, args)
 	case "fetch":
-		return t.executeFetch(args)
+		return t.executeFetch(ctx, args)
 	case "recommend":
-		return t.executeRecommend(args)
+		return t.executeRecommend(ctx, args)
 	case "list_pricing_services":
 		return t.executeListPricingServices(ctx, logger, args)
 	case "get_service_pricing":
@@ -111,7 +111,7 @@ func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logge
 }
 
 // executeSearch performs documentation search
-func (t *AWSDocumentationTool) executeSearch(args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeSearch(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse search phrase
 	searchPhrase, ok := args["search_phrase"].(string)
 	if !ok {
@@ -133,7 +133,7 @@ func (t *AWSDocumentationTool) executeSearch(args map[string]any) (*mcp.CallTool
 	}
 
 	// Perform search
-	results, err := t.client.SearchDocumentation(searchPhrase, limit)
+	results, err := t.client.SearchDocumentation(ctx, searchPhrase, limit)
 	if err != nil {
 		return nil, fmt.Errorf("search failed: %w", err)
 	}
@@ -156,7 +156,7 @@ func (t *AWSDocumentationTool) executeSearch(args map[string]any) (*mcp.CallTool
 }
 
 // executeFetch performs documentation fetching and conversion
-func (t *AWSDocumentationTool) executeFetch(args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeFetch(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse the URL parameter
 	urlRaw, ok := args["url"].(string)
 	if !ok {
@@ -180,7 +180,7 @@ func (t *AWSDocumentationTool) executeFetch(args map[string]any) (*mcp.CallToolR
 	}
 
 	// Fetch the documentation
-	htmlContent, err := t.client.FetchDocumentation(urlRaw)
+	htmlContent, err := t.client.FetchDocumentation(ctx, urlRaw)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch documentation: %w", err)
 	}
@@ -230,7 +230,7 @@ func (t *AWSDocumentationTool) executeFetch(args map[string]any) (*mcp.CallToolR
 }
 
 // executeRecommend performs recommendation fetching
-func (t *AWSDocumentationTool) executeRecommend(args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeRecommend(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	// Parse URL
 	url, ok := args["url"].(string)
 	if !ok {
@@ -243,7 +243,7 @@ func (t *AWSDocumentationTool) executeRecommend(args map[string]any) (*mcp.CallT
 	}
 
 	// Get recommendations
-	recommendations, err := t.client.GetRecommendations(url)
+	recommendations, err := t.client.GetRecommendations(ctx, url)
 	if err != nil {
 		return nil, fmt.Errorf("recommendations failed: %w", err)
 	}

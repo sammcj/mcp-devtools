@@ -1,6 +1,7 @@
 package security
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,15 +9,24 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sammcj/mcp-devtools/internal/telemetry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Global security manager instance
 var (
-	GlobalSecurityManager *SecurityManager
-	globalManagerMutex    sync.RWMutex
+	GlobalSecurityManager  *SecurityManager
+	globalManagerMutex     sync.RWMutex
+	securityTracingEnabled bool
 )
+
+func init() {
+	// Cache security tracing enabled check at startup
+	securityTracingEnabled = os.Getenv("MCP_TRACING_SECURITY_ENABLED") == "true"
+}
 
 // NewSecurityManager creates a new security manager instance
 // NewSecurityManagerWithRules creates a security manager with provided rules (for testing)
@@ -226,6 +236,44 @@ func (m *SecurityManager) CheckDomainAccess(domain string) error {
 	}
 
 	return nil
+}
+
+// AnalyseContentWithContext performs security analysis on content with tracing support
+func (m *SecurityManager) AnalyseContentWithContext(ctx context.Context, content string, source SourceContext) (*SecurityResult, error) {
+	// Only create span if enabled (cached at init)
+	if !securityTracingEnabled {
+		// Security tracing not enabled, use standard method
+		return m.AnalyseContent(content, source)
+	}
+
+	tracer := telemetry.GetTracer()
+	_, span := tracer.Start(ctx, telemetry.SpanNameSecurityCheck,
+		trace.WithSpanKind(trace.SpanKindInternal),
+	)
+	defer span.End()
+
+	// Add span attributes
+	span.SetAttributes(
+		attribute.Int(telemetry.AttrSecurityContentSize, len(content)),
+	)
+
+	// Perform the analysis
+	result, err := m.AnalyseContent(content, source)
+
+	// Add result attributes to span
+	if result != nil {
+		span.SetAttributes(
+			attribute.String(telemetry.AttrSecurityAction, string(result.Action)),
+		)
+		if result.Analysis != nil && len(result.Analysis.RiskFactors) > 0 {
+			// Get first risk factor as the matched rule
+			span.SetAttributes(
+				attribute.String(telemetry.AttrSecurityRuleMatched, result.Analysis.RiskFactors[0]),
+			)
+		}
+	}
+
+	return result, err
 }
 
 // AnalyseContent performs security analysis on content

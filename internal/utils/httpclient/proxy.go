@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/sammcj/mcp-devtools/internal/telemetry"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,37 +22,42 @@ var ProxyEnvironmentVariables = []string{
 // NewHTTPClientWithProxy creates an HTTP client with optional proxy support
 // Only configures proxy if environment variables are set
 // Uses standard proxy environment variables in order of preference
+// Automatically wraps the transport with OTEL instrumentation if tracing is enabled
 func NewHTTPClientWithProxy(timeout time.Duration) *http.Client {
 	client := &http.Client{
 		Timeout: timeout,
 	}
 
-	// Only configure proxy if environment variables are set
+	// Start with default transport
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+
+	// Configure proxy if environment variables are set
 	if proxyURL := getProxyURL(); proxyURL != "" {
 		if parsedProxy, err := url.Parse(proxyURL); err == nil {
-			// Use default transport as base to preserve important settings
-			transport := http.DefaultTransport.(*http.Transport).Clone()
 			transport.Proxy = http.ProxyURL(parsedProxy)
-			client.Transport = transport
 		}
 	}
+
+	// Wrap transport with OTEL instrumentation (noop if tracing disabled)
+	client.Transport = telemetry.WrapHTTPTransport(transport)
 
 	return client
 }
 
 // NewHTTPClientWithProxyAndLogger creates an HTTP client with optional proxy support and logging
+// Automatically wraps the transport with OTEL instrumentation if tracing is enabled
 func NewHTTPClientWithProxyAndLogger(timeout time.Duration, logger *logrus.Logger) *http.Client {
 	client := &http.Client{
 		Timeout: timeout,
 	}
 
-	// Only configure proxy if environment variables are set
+	// Start with default transport
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+
+	// Configure proxy if environment variables are set
 	if proxyURL := getProxyURL(); proxyURL != "" {
 		if parsedProxy, err := url.Parse(proxyURL); err == nil {
-			// Use default transport as base to preserve important settings
-			transport := http.DefaultTransport.(*http.Transport).Clone()
 			transport.Proxy = http.ProxyURL(parsedProxy)
-			client.Transport = transport
 			if logger != nil {
 				logger.WithField("proxy_url", redactProxyCredentials(proxyURL)).Debug("HTTP client configured with proxy")
 			}
@@ -61,6 +67,9 @@ func NewHTTPClientWithProxyAndLogger(timeout time.Duration, logger *logrus.Logge
 			}
 		}
 	}
+
+	// Wrap transport with OTEL instrumentation (noop if tracing disabled)
+	client.Transport = telemetry.WrapHTTPTransport(transport)
 
 	return client
 }

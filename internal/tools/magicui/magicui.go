@@ -85,10 +85,10 @@ func (t *MagicUITool) Execute(ctx context.Context, logger *logrus.Logger, cache 
 }
 
 // executeList handles the list action
-func (t *MagicUITool) executeList(_ context.Context, logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
+func (t *MagicUITool) executeList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
 	logger.Info("Listing Magic UI components")
 
-	components, err := t.fetchComponents(logger, cache)
+	components, err := t.fetchComponents(ctx, logger, cache)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch components: %w", err)
 	}
@@ -104,10 +104,10 @@ func (t *MagicUITool) executeList(_ context.Context, logger *logrus.Logger, cach
 }
 
 // executeSearch handles the search action
-func (t *MagicUITool) executeSearch(_ context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
+func (t *MagicUITool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
 	logger.Infof("Searching Magic UI components with query: %s", query)
 
-	allComponents, err := t.fetchComponents(logger, cache)
+	allComponents, err := t.fetchComponents(ctx, logger, cache)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch components for search: %w", err)
 	}
@@ -134,7 +134,7 @@ func (t *MagicUITool) executeSearch(_ context.Context, logger *logrus.Logger, ca
 }
 
 // executeDetails handles the details action
-func (t *MagicUITool) executeDetails(_ context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
+func (t *MagicUITool) executeDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
 	logger.Infof("Getting details for Magic UI component: %s", componentName)
 
 	cacheKey := componentDetailsCachePrefix + componentName
@@ -151,7 +151,7 @@ func (t *MagicUITool) executeDetails(_ context.Context, logger *logrus.Logger, c
 		}
 	}
 
-	allComponents, err := t.fetchComponents(logger, cache)
+	allComponents, err := t.fetchComponents(ctx, logger, cache)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch components: %w", err)
 	}
@@ -192,7 +192,7 @@ func (t *MagicUITool) executeDetails(_ context.Context, logger *logrus.Logger, c
 }
 
 // fetchComponents fetches and caches the component list from the registry
-func (t *MagicUITool) fetchComponents(logger *logrus.Logger, cache *sync.Map) ([]ComponentInfo, error) {
+func (t *MagicUITool) fetchComponents(ctx context.Context, logger *logrus.Logger, cache *sync.Map) ([]ComponentInfo, error) {
 	// Check cache
 	if cachedData, ok := cache.Load(registryCacheKey); ok {
 		if entry, ok := cachedData.(CacheEntry); ok && time.Since(entry.Timestamp) < registryCacheTTL {
@@ -203,7 +203,7 @@ func (t *MagicUITool) fetchComponents(logger *logrus.Logger, cache *sync.Map) ([
 
 	// Fetch from GitHub
 	ops := security.NewOperations("magicui")
-	safeResp, err := ops.SafeHTTPGet(MagicUIRegistryURL)
+	safeResp, err := ops.SafeHTTPGet(ctx, MagicUIRegistryURL)
 	if err != nil {
 		if secErr, ok := err.(*security.SecurityError); ok {
 			return nil, fmt.Errorf("security block [ID: %s]: %s", secErr.GetSecurityID(), secErr.Error())

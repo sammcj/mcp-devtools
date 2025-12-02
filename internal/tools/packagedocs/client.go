@@ -151,7 +151,7 @@ func (c *Client) SearchLibraries(ctx context.Context, query string) ([]*SearchRe
 	params := map[string]string{"query": query}
 	var response SearchLibrariesResponse
 
-	err := c.makeRequest("GET", "/v1/search", params, nil, &response)
+	err := c.makeRequest(ctx, "GET", "/v1/search", params, nil, &response)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search libraries: %w", err)
 	}
@@ -247,7 +247,7 @@ func (c *Client) GetLibraryDocs(ctx context.Context, libraryID string, params *S
 	}
 
 	var result string
-	err := c.makeRequest("GET", "/v1"+apiPath, queryParams, nil, &result)
+	err := c.makeRequest(ctx, "GET", "/v1"+apiPath, queryParams, nil, &result)
 	if err != nil {
 		return "", fmt.Errorf("failed to get library documentation: %w", err)
 	}
@@ -267,7 +267,7 @@ func (c *Client) GetLibraryDocs(ctx context.Context, libraryID string, params *S
 }
 
 // makeRequest makes an HTTP request to the Context7 API
-func (c *Client) makeRequest(method, path string, params map[string]string, body io.Reader, result any) error {
+func (c *Client) makeRequest(ctx context.Context, method, path string, params map[string]string, body io.Reader, result any) error {
 	// Build full URL
 	fullURL := context7BaseURL + path
 
@@ -313,9 +313,9 @@ func (c *Client) makeRequest(method, path string, params map[string]string, body
 
 	switch method {
 	case "GET":
-		safeResp, err = ops.SafeHTTPGetWithHeaders(fullURL, headers)
+		safeResp, err = ops.SafeHTTPGetWithHeaders(ctx, fullURL, headers)
 	case "POST":
-		safeResp, err = ops.SafeHTTPPostWithHeaders(fullURL, body, headers)
+		safeResp, err = ops.SafeHTTPPostWithHeaders(ctx, fullURL, body, headers)
 	default:
 		return fmt.Errorf("unsupported HTTP method: %s", method)
 	}

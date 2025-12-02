@@ -1,0 +1,160 @@
+# Example Observability Stack for MCP DevTools
+#
+# This compose file contains all observability components.
+# By default, only Jaeger is enabled for simple tracing.
+# Uncomment other services as needed.
+#
+# Tracing only (Jaeger):
+#   docker compose -f docs/observability/examples/docker-compose.yaml up -d
+#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 ./bin/mcp-devtools
+#   View traces: http://localhost:16686
+#
+#  Tracing + Metrics (Jaeger + Prometheus + Grafana):
+#   1. Uncomment: otel-collector, prometheus, grafana services
+#   2. docker compose -f docs/observability/examples/docker-compose.yaml up -d
+#   3. OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 MCP_METRICS_GROUPS=tool,session,cache ./bin/mcp-devtools
+
+services:
+  # ============================================================================
+  # JAEGER - Simple distributed tracing
+  # ============================================================================
+  jaeger:
+    image: jaegertracing/jaeger:latest
+    container_name: mcp-jaeger
+    ports:
+      - "4318:4318"   # OTLP HTTP receiver
+      - "4317:4317"   # OTLP gRPC receiver
+      - "16686:16686" # Jaeger UI
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=badger
+      - BADGER_EPHEMERAL=false
+      - BADGER_DIRECTORY_VALUE=/badger/data
+      - BADGER_DIRECTORY_KEY=/badger/key
+      - BADGER_SPAN_STORE_TTL=168h  # 7 days retention
+      - LOG_LEVEL=info
+    volumes:
+      - jaeger-data:/badger
+    networks:
+      - mcp-observability
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # ============================================================================
+  # OTEL COLLECTOR - Routes to multiple backends (COMMENTED OUT)
+  # Uncomment for: Prometheus metrics, or Tempo, or X-Ray integration
+  # ============================================================================
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:latest
+  #   container_name: mcp-otel-collector
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   volumes:
+  #     # Choose config based on your backend:
+  #     # - Jaeger + Prometheus + Grafana: Use otel/jaeger-prometheus.yaml
+  #     # - AWS X-Ray: Use otel/xray.yaml
+  #     - ./configs/otel/jaeger-prometheus.yaml:/etc/otel-collector-config.yaml:ro
+  #   ports:
+  #     - "4318:4318"  # OTLP HTTP receiver
+  #     - "4317:4317"  # OTLP gRPC receiver
+  #     - "8889:8889"  # Prometheus metrics exporter
+  #   networks:
+  #     - mcp-observability
+  #   restart: unless-stopped
+  #   depends_on:
+  #     jaeger:
+  #       condition: service_healthy
+
+  # ============================================================================
+  # PROMETHEUS - Metrics storage (COMMENTED OUT)
+  # Uncomment for: Metrics collection and querying
+  # ============================================================================
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: mcp-prometheus
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     - '--storage.tsdb.path=/prometheus'
+  #     - '--storage.tsdb.retention.time=30d'
+  #     - '--web.enable-lifecycle'
+  #   volumes:
+  #     - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #     - prometheus-data:/prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   networks:
+  #     - mcp-observability
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 3
+
+  # ============================================================================
+  # GRAFANA - Visualisation and dashboards (COMMENTED OUT)
+  # Uncomment for: Unified dashboard for traces and metrics
+  # ============================================================================
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: mcp-grafana
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #     - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #     - ./configs/grafana:/etc/grafana/provisioning:ro
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - mcp-observability
+  #   restart: unless-stopped
+  #   depends_on:
+  #     prometheus:
+  #       condition: service_healthy
+  #     jaeger:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 3
+
+  # ============================================================================
+  # TEMPO - Grafana's tracing backend (COMMENTED OUT)
+  # Alternative to Jaeger, uncomment if you prefer Tempo
+  # ============================================================================
+  # tempo:
+  #   image: grafana/tempo:latest
+  #   container_name: mcp-tempo
+  #   command: ["-config.file=/etc/tempo.yaml"]
+  #   volumes:
+  #     - ./configs/tempo/tempo.yaml:/etc/tempo.yaml:ro
+  #     - tempo-data:/var/tempo
+  #   ports:
+  #     - "4318:4318"  # OTLP HTTP receiver
+  #     - "4317:4317"  # OTLP gRPC receiver
+  #     - "3200:3200"  # Tempo HTTP API
+  #   networks:
+  #     - mcp-observability
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--spider", "-q", "http://localhost:3200/ready"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 3
+  #     start_period: 10s
+
+networks:
+  mcp-observability:
+    driver: bridge
+
+volumes:
+  jaeger-data:
+  # prometheus-data:
+  # grafana-data:
+  # tempo-data:
