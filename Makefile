@@ -3,6 +3,7 @@
 # Variables
 BINARY_NAME=mcp-devtools
 BINARY_PATH=bin/$(BINARY_NAME)
+BINARY_TARGET=$(HOME)/bin/$(BINARY_NAME)
 GO=go
 GOFLAGS=
 GOFMT=$(GO) fmt
@@ -23,6 +24,11 @@ build:
 		-X main.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo 'unknown') \
 		-X main.BuildDate=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")" \
 		.
+
+.PHONY: install
+install: build
+	TMPFILE=`mktemp`; echo $$TMPFILE; mv -f $(BINARY_TARGET) $$TMPFILE
+	cp $(BINARY_PATH) $(BINARY_TARGET)
 
 # Run the server with stdio transport (default)
 .PHONY: run
