@@ -36,6 +36,8 @@ With tracing enabled, you can observe:
 - **Privacy-first** - Automatic sanitisation of sensitive data
 - **Vendor-neutral** - Works with any OTLP-compatible backend
 
+![otel screenshot in Jaeger](otel.png)
+
 ## Configuration
 
 - See [./observability/examples/README.md](./observability/examples/README.md) for example setups with Jaeger and optionally Prometheus + Grafana.
