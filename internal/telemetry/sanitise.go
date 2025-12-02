@@ -84,8 +84,9 @@ func SanitiseURL(rawURL string) string {
 }
 
 // SanitiseArguments sanitises tool arguments by removing sensitive values
-// Returns a JSON string of the sanitised arguments, or an error message if sanitisation fails
-func SanitiseArguments(args map[string]any) string {
+// Returns a JSON string of the sanitised arguments, or an error message if serialisation fails
+// toolName is optional - if provided, enables tool-specific redaction rules
+func SanitiseArguments(args map[string]any, toolName string) string {
 	if len(args) == 0 {
 		return "{}"
 	}
@@ -94,6 +95,20 @@ func SanitiseArguments(args map[string]any) string {
 	sanitised := make(map[string]any)
 	for key, value := range args {
 		keyLower := strings.ToLower(key)
+
+		// Tool-specific redaction: think tool's thought content
+		// Truncate long thoughts to avoid bloating traces with large reasoning text
+		if toolName == "think" && keyLower == "thought" {
+			if str, ok := value.(string); ok && len(str) > 100 {
+				// Show first 80 characters for context
+				if len(str) > 80 {
+					sanitised[key] = str[:80] + "...[TRUNCATED (tracing)]"
+				} else {
+					sanitised[key] = str
+				}
+				continue
+			}
+		}
 
 		// Check if this key is sensitive
 		if secretEnvVars[keyLower] || strings.Contains(keyLower, "key") || strings.Contains(keyLower, "token") || strings.Contains(keyLower, "secret") || strings.Contains(keyLower, "password") {

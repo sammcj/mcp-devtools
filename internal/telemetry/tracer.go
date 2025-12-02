@@ -359,7 +359,7 @@ func StartToolSpan(ctx context.Context, toolName string, args map[string]any) (c
 	}
 
 	// Add sanitised arguments (only if not too large)
-	sanitisedArgs := SanitiseArguments(args)
+	sanitisedArgs := SanitiseArguments(args, toolName)
 	maxAttrSize := getMaxAttributeSize()
 	if len(sanitisedArgs) <= maxAttrSize {
 		span.SetAttributes(attribute.String("mcp.tool.arguments", sanitisedArgs))

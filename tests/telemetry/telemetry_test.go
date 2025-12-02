@@ -220,21 +220,25 @@ func TestSanitiseURL(t *testing.T) {
 func TestSanitiseArguments(t *testing.T) {
 	tests := []struct {
 		name     string
+		toolName string
 		input    map[string]any
 		expected string
 	}{
 		{
 			name:     "nil arguments",
+			toolName: "",
 			input:    nil,
 			expected: "{}",
 		},
 		{
 			name:     "empty arguments",
+			toolName: "",
 			input:    map[string]any{},
 			expected: "{}",
 		},
 		{
-			name: "clean arguments",
+			name:     "clean arguments",
+			toolName: "",
 			input: map[string]any{
 				"query": "test query",
 				"count": 5,
@@ -242,7 +246,8 @@ func TestSanitiseArguments(t *testing.T) {
 			expected: `{"count":5,"query":"test query"}`,
 		},
 		{
-			name: "arguments with API key",
+			name:     "arguments with API key",
+			toolName: "",
 			input: map[string]any{
 				"query":   "test",
 				"api_key": "secret123",
@@ -250,7 +255,8 @@ func TestSanitiseArguments(t *testing.T) {
 			expected: `{"api_key":"[REDACTED]","query":"test"}`,
 		},
 		{
-			name: "arguments with token",
+			name:     "arguments with token",
+			toolName: "",
 			input: map[string]any{
 				"data":  "value",
 				"token": "bearer_abc123",
@@ -258,7 +264,8 @@ func TestSanitiseArguments(t *testing.T) {
 			expected: `{"data":"value","token":"[REDACTED]"}`,
 		},
 		{
-			name: "arguments with password",
+			name:     "arguments with password",
+			toolName: "",
 			input: map[string]any{
 				"username": "user",
 				"password": "secret",
@@ -266,7 +273,8 @@ func TestSanitiseArguments(t *testing.T) {
 			expected: `{"password":"[REDACTED]","username":"user"}`,
 		},
 		{
-			name: "nested arguments",
+			name:     "nested arguments",
+			toolName: "",
 			input: map[string]any{
 				"config": map[string]any{
 					"api_key": "secret",
@@ -275,11 +283,37 @@ func TestSanitiseArguments(t *testing.T) {
 			},
 			expected: `{"config":{"api_key":"[REDACTED]","timeout":30}}`,
 		},
+		{
+			name:     "think tool with short thought",
+			toolName: "think",
+			input: map[string]any{
+				"thought":  "short",
+				"how_hard": "hard",
+			},
+			expected: `{"how_hard":"hard","thought":"short"}`,
+		},
+		{
+			name:     "think tool with long thought",
+			toolName: "think",
+			input: map[string]any{
+				"thought":  "This is a very long thought that exceeds 100 characters and should be truncated from the trace to avoid bloating the telemetry data with large reasoning content that isn't useful for debugging",
+				"how_hard": "harder",
+			},
+			expected: `{"how_hard":"harder","thought":"This is a very long thought that exceeds 100 characters and should be truncated ...[TRUNCATED (tracing)]"}`,
+		},
+		{
+			name:     "non-think tool with thought field",
+			toolName: "other_tool",
+			input: map[string]any{
+				"thought": "This is a very long thought that exceeds 100 characters but should NOT be redacted because this isn't the think tool, so the normal sanitisation rules apply instead",
+			},
+			expected: `{"thought":"This is a very long thought that exceeds 100 characters but should NOT be redacted because this isn't the think tool, so the normal sanitisation rules apply instead"}`,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := telemetry.SanitiseArguments(tt.input)
+			result := telemetry.SanitiseArguments(tt.input, tt.toolName)
 			assert.JSONEq(t, tt.expected, result)
 		})
 	}
