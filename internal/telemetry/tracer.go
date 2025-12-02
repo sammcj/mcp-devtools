@@ -247,9 +247,8 @@ func SessionIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-// StartSessionSpan creates a short-lived session span that acts as parent for all tool spans
-// The span is ended immediately so it exports to the backend before any tool spans
-// Tool spans will reference it as their parent via the stored span context
+// StartSessionSpan creates a session span that acts as parent for all tool spans
+// The span is ended immediately to ensure it exports before child tool spans
 // Returns a noop span since the real span is already ended
 func StartSessionSpan(ctx context.Context, sessionID string, transport string) (context.Context, trace.Span) {
 	if !tracingEnabled {
@@ -268,25 +267,38 @@ func StartSessionSpan(ctx context.Context, sessionID string, transport string) (
 		),
 	)
 
-	// Store the span context BEFORE ending so tool spans can reference it
+	// Store the span context BEFORE ending
 	sessionSpanContext := sessionSpan.SpanContext()
 
-	// End the span immediately so it exports to the backend
-	// This ensures the parent span is available before any child tool spans arrive
+	// End the span immediately so it exports to backend before child tool spans
+	// This ensures the parent is available when children arrive
 	sessionSpan.End()
 
-	// Store globally so tool spans can use it as parent
+	// Force flush to ensure session span is exported immediately
+	// This is critical to prevent "invalid parent span IDs" warnings
+	globalMutex.RLock()
+	tp := globalTracerProvider
+	globalMutex.RUnlock()
+
+	if tp != nil {
+		// Use a short timeout for force flush to avoid blocking
+		flushCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = tp.ForceFlush(flushCtx) // Ignore errors - tracing is best-effort
+	}
+
+	// Store globally so tool spans can reference it as parent
 	globalMutex.Lock()
 	globalSessionSpanContext = sessionSpanContext
 	globalSessionID = sessionID
 	globalMutex.Unlock()
 
-	// Return noop span since the real span is already ended
+	// Return noop span since real span is already ended
 	return ctx, trace.SpanFromContext(ctx)
 }
 
 // EndSessionSpan clears global session data
-// The actual session span was already ended in StartSessionSpan
+// The session span was already ended in StartSessionSpan
 func EndSessionSpan(span trace.Span, toolCount int, errorCount int, duration int64) {
 	// Clear global session data
 	globalMutex.Lock()
@@ -296,7 +308,7 @@ func EndSessionSpan(span trace.Span, toolCount int, errorCount int, duration int
 }
 
 // StartToolSpan creates a new span for tool execution
-// If a session span context exists, tool spans will be children via context propagation
+// If a session span context exists, tool spans will be children of the session span
 // Returns the span and a modified context. The caller MUST call span.End() when done.
 func StartToolSpan(ctx context.Context, toolName string, args map[string]any) (context.Context, trace.Span) {
 	if !tracingEnabled || IsToolTracingDisabled(toolName) {
@@ -310,18 +322,31 @@ func StartToolSpan(ctx context.Context, toolName string, args map[string]any) (c
 	sessionID := globalSessionID
 	globalMutex.RUnlock()
 
-	// If we have a session span context, inject it so tool spans become children
-	// The session span was already ended and exported to the backend
-	if sessionSpanCtx.IsValid() {
-		ctx = trace.ContextWithSpanContext(ctx, sessionSpanCtx)
-	}
-
 	tracer := GetTracer()
 
-	// Start tool span - will be child of session span if context has session span
-	ctx, span := tracer.Start(ctx, SpanNameToolExecute,
+	// Configure span options
+	spanOpts := []trace.SpanStartOption{
 		trace.WithSpanKind(trace.SpanKindInternal),
-	)
+	}
+
+	// If we have a session span context, establish parent-child relationship
+	// We need to propagate the trace context properly
+	if sessionSpanCtx.IsValid() {
+		// Extract trace context using text map propagator
+		// This creates a proper parent relationship by injecting the trace context
+		carrier := propagation.MapCarrier{}
+		prop := otel.GetTextMapPropagator()
+
+		// Inject session span context into carrier
+		sessionCtx := trace.ContextWithSpanContext(context.Background(), sessionSpanCtx)
+		prop.Inject(sessionCtx, carrier)
+
+		// Extract into our tool context - this properly sets up parent-child relationship
+		ctx = prop.Extract(ctx, carrier)
+	}
+
+	// Start tool span - will be child of session span if context has session trace
+	ctx, span := tracer.Start(ctx, SpanNameToolExecute, spanOpts...)
 
 	// Add standard attributes
 	span.SetAttributes(

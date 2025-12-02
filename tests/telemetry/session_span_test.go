@@ -289,3 +289,58 @@ func TestSessionSpan_ContextIsolation(t *testing.T) {
 
 	// Should not panic - sessions should be isolated
 }
+
+func TestSessionToToolSpanTraceInheritance(t *testing.T) {
+	// This test validates that tool spans inherit the session span's trace ID
+	// creating a proper parent-child relationship
+	os.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
+	defer os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+
+	logger := logrus.New()
+	logger.SetOutput(os.Stderr)
+
+	shutdown, err := telemetry.InitTracer(logger)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, shutdown())
+	}()
+
+	if !telemetry.IsEnabled() {
+		t.Skip("Tracing not enabled, skipping trace inheritance test")
+	}
+
+	ctx := context.Background()
+	sessionID := telemetry.GenerateSessionID()
+
+	// Start session span
+	_, sessionSpan := telemetry.StartSessionSpan(ctx, sessionID, "stdio")
+	require.NotNil(t, sessionSpan)
+
+	sessionSpanCtx := sessionSpan.SpanContext()
+	sessionTraceID := sessionSpanCtx.TraceID().String()
+
+	// Start tool span (simulating MCP framework passing fresh context)
+	freshCtx := context.Background()
+	args := map[string]any{"test": "value"}
+	_, toolSpan := telemetry.StartToolSpan(freshCtx, "test_tool", args)
+	require.NotNil(t, toolSpan)
+
+	toolSpanCtx := toolSpan.SpanContext()
+	toolTraceID := toolSpanCtx.TraceID().String()
+
+	// Validate that tool span inherits session span's trace ID
+	assert.Equal(t, sessionTraceID, toolTraceID,
+		"Tool span should inherit session span's trace ID")
+
+	// Validate that tool span has different span ID than session
+	assert.NotEqual(t, sessionSpanCtx.SpanID().String(), toolSpanCtx.SpanID().String(),
+		"Tool span should have different span ID than session span")
+
+	// End spans
+	telemetry.EndToolSpan(toolSpan, nil)
+	telemetry.EndSessionSpan(sessionSpan, 1, 0, 100)
+
+	t.Logf("✅ Trace ID inheritance validated:")
+	t.Logf("   Session Trace ID: %s", sessionTraceID)
+	t.Logf("   Tool Trace ID:    %s (matches: %v)", toolTraceID, toolTraceID == sessionTraceID)
+}

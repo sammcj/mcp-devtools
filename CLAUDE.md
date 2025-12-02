@@ -211,6 +211,22 @@ CRITICAL: Follow these rules when writing Go code to avoid outdated patterns tha
 ### Formatting
 - Use `fmt.Appendf(nil, format, args...)` instead of `[]byte(fmt.Sprintf(format, args...))`
 
+## OpenTelemetry Tracing Patterns
+
+**Session span parent-child relationships**: Session spans in `internal/telemetry/tracer.go` must be ended immediately followed by `ForceFlush()` to ensure they export to the backend before child tool spans. Without force flush, the OTEL batch processor exports asynchronously, causing child spans to arrive before their parent, resulting in "invalid parent span IDs" warnings in Jaeger.
+
+```go
+sessionSpan.End()
+// CRITICAL: Force flush ensures parent exports before children
+if tp != nil {
+    ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+    defer cancel()
+    _ = tp.ForceFlush(ctx)
+}
+```
+
+Tool spans inherit trace context via W3C Trace Context propagation (inject→extract pattern) in `StartToolSpan()`.
+
 ## IMPORTANT
 
 - YOU MUST ALWAYS run `make lint && make test && make build` etc... to build the project rather than gofmt, go build or test directly, and you MUST always do this before stating you've completed your changes!

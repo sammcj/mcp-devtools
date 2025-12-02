@@ -359,23 +359,26 @@ Each span has unique span ID
 **How it works:**
 
 1. **Initialisation**: On startup, any previous session span context is cleared to prevent cross-session contamination
-2. **Session span creation**: When stdio transport starts, a short-lived session span is created with session metadata
-3. **Immediate export**: The session span is ended immediately, causing it to export to the backend right away
-4. **Span context storage**: The session span's context is stored globally before ending
-5. **Tool execution**: When `StartToolSpan()` is called, it retrieves the global session span context
-6. **Parent-child relationship**: The session span context is injected, making tool spans children of the already-exported session
-7. **Real-time tool export**: Tool spans export immediately after ending
-8. **Session cleanup**: When the session ends, global span context is cleared
+2. **Session span creation**: When stdio transport starts, a session span is created with session metadata
+3. **Immediate span end**: The session span is ended immediately after creation
+4. **Force flush**: `ForceFlush()` is called on the tracer provider to ensure the session span exports to the backend immediately
+5. **Span context storage**: The session span's context is stored globally for tool spans to reference
+6. **Tool execution**: When `StartToolSpan()` is called, it retrieves the global session span context
+7. **Trace context propagation**: The session span context is injected into a W3C Trace Context carrier, then extracted into the tool's context using the text map propagator
+8. **Parent-child relationship**: The extracted trace context ensures tool spans inherit the session's trace ID and become proper children
+9. **Tool span export**: Tool spans export immediately after ending via the batch processor
+10. **Session cleanup**: Global span context is cleared when the session ends
 
-This approach solves the "invalid parent span IDs" problem by ensuring the parent exports first:
-- **Session span ends immediately** and exports to the backend before any tool calls
-- **Tool spans reference it as parent** via normal context propagation
-- **Parent already available** when children arrive - no warnings
+This approach creates a proper parent-child hierarchy:
+- **Session span exports first** via immediate end + force flush
+- **Tool spans inherit trace context** via W3C Trace Context propagation (inject → extract pattern)
 - **All spans grouped** under the same trace ID
 - **Proper hierarchy** shows tool spans nested under session span
-- **Real-time visibility** for both session and tool spans
+- **No clock skew warnings** because the parent span is already in the backend when children arrive
 
-The key insight: OpenTelemetry's batch processor only exports ended spans. By ending the session span immediately (but storing its context), we ensure the backend receives the parent before any children, eliminating the timing issue that causes warnings.
+The key insights:
+1. **Force flush is critical**: The OTEL batch processor only exports ended spans asynchronously. Without `ForceFlush()`, the session span might not export before tool spans, causing "invalid parent span IDs" warnings.
+2. **W3C Trace Context propagation**: Using the inject→extract pattern properly establishes parent-child relationships across context boundaries, the same mechanism used for distributed tracing.
 
 ## Privacy & Security
 
