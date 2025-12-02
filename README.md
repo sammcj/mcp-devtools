@@ -584,7 +584,9 @@ LOG_TOOL_ERRORS=true mcp-devtools
 
 ## Observability
 
-MCP DevTools includes optional OpenTelemetry integration for distributed tracing and metrics:
+MCP DevTools includes optional OpenTelemetry integration for distributed tracing and metrics.
+
+![otel screenshot in Jaeger](./docs/otel.png)
 
 **Tracing** - Track tool execution spans with HTTP client operations:
 ```bash
