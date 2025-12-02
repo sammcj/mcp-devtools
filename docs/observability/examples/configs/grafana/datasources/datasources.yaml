@@ -1,4 +1,4 @@
-# Grafana Datasource Provisioning
+# Example Grafana Datasource Provisioning
 # Auto-configures Prometheus and Jaeger datasources
 
 apiVersion: 1

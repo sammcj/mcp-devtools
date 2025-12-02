@@ -33,7 +33,7 @@ func (t *SearchShadcnComponentsTool) Definition() mcp.Tool {
 // It fetches, parses, and caches the component list.
 // This is duplicated logic but avoids direct tool-to-tool calls or complex dependencies.
 func (t *SearchShadcnComponentsTool) fetchAndCacheComponentList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) ([]ComponentInfo, error) {
-	// Use security helper for consistent security handling
+	// Use security helper for consistent security handling with trace context
 	ops := security.NewOperations("shadcnui")
 	safeResp, err := ops.SafeHTTPGet(ctx, ShadcnDocsComponents)
 	if err != nil {

@@ -1,4 +1,4 @@
-# Jaeger Configuration for MCP DevTools
+# Example Jaeger Configuration for MCP DevTools
 # Jaeger has built-in OTLP receiver - no OTEL Collector needed for basic tracing
 #
 # Direct OTLP ingestion:

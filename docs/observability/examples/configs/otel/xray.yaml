@@ -1,4 +1,4 @@
-# OpenTelemetry Collector Configuration - AWS X-Ray
+# Example OpenTelemetry Collector Configuration - AWS X-Ray
 # Export traces to AWS X-Ray service
 #
 # Prerequisites:

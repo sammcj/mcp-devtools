@@ -1,4 +1,4 @@
-# Grafana Tempo Configuration
+# Example Grafana Tempo Configuration
 # Lightweight tracing backend with native Grafana integration
 #
 # Use with: docker compose up tempo grafana

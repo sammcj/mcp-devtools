@@ -21,14 +21,10 @@ import (
 )
 
 // UnifiedShadcnTool provides a single interface for all shadcn ui operations
-type UnifiedShadcnTool struct {
-	client HTTPClient
-}
+type UnifiedShadcnTool struct{}
 
 func init() {
-	registry.Register(&UnifiedShadcnTool{
-		client: DefaultHTTPClient,
-	})
+	registry.Register(&UnifiedShadcnTool{})
 }
 
 // Definition returns the tool's definition for MCP registration

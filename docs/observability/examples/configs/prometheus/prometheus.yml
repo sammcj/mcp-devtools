@@ -1,4 +1,4 @@
-# Prometheus Configuration for MCP DevTools
+# Example Prometheus Configuration for MCP DevTools
 # Scrapes metrics from OTEL Collector
 
 global:

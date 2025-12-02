@@ -29,7 +29,7 @@ const (
 // HTTPClient defines the interface for an HTTP client.
 // This interface is maintained for compatibility but tools should migrate to security.Operations
 type HTTPClient interface {
-	Get(url string) (*http.Response, error)
+	GetWithContext(ctx context.Context, url string) (*http.Response, error)
 }
 
 // RateLimitedHTTPClient implements HTTPClient with rate limiting
@@ -62,13 +62,11 @@ func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 	}
 }
 
-// Get implements the HTTPClient interface with rate limiting
-// Note: This client is deprecated in favour of security.Operations.SafeHTTPGet
-func (c *RateLimitedHTTPClient) Get(reqURL string) (*http.Response, error) {
+// GetWithContext implements the HTTPClient interface with rate limiting and context support
+// This allows trace context propagation through the security layer
+func (c *RateLimitedHTTPClient) GetWithContext(ctx context.Context, reqURL string) (*http.Response, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
-	ctx := context.Background()
 
 	// Wait for rate limiter to allow the request
 	err := c.limiter.Wait(ctx)
@@ -77,6 +75,7 @@ func (c *RateLimitedHTTPClient) Get(reqURL string) (*http.Response, error) {
 	}
 
 	// Use security helper for consistent security handling
+	// Pass the context to enable trace propagation
 	ops := security.NewOperations("shadcnui")
 	safeResp, err := ops.SafeHTTPGet(ctx, reqURL)
 	if err != nil {

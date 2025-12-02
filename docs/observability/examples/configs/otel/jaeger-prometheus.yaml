@@ -1,4 +1,4 @@
-# OpenTelemetry Collector Configuration - Jaeger + Prometheus + Grafana
+# Example OpenTelemetry Collector Configuration - Jaeger + Prometheus + Grafana
 # Full observability stack with traces and metrics
 #
 # Use with: docker compose up (all services enabled)

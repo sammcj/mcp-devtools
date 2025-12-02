@@ -46,7 +46,7 @@ func (t *GetComponentDetailsTool) Execute(ctx context.Context, logger *logrus.Lo
 
 	componentURL := fmt.Sprintf("%s/%s", ShadcnDocsComponents, componentName)
 
-	// Use security helper for consistent security handling
+	// Use security helper for consistent security handling with trace context
 	ops := security.NewOperations("shadcnui")
 	safeResp, err := ops.SafeHTTPGet(ctx, componentURL)
 	if err != nil {

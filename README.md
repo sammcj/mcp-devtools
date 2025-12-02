@@ -589,19 +589,19 @@ MCP DevTools includes optional OpenTelemetry integration for distributed tracing
 **Tracing** - Track tool execution spans with HTTP client operations:
 ```bash
 # Export traces to OTLP endpoint
-MCP_OTEL_ENDPOINT=http://localhost:4318
+MCP_OTEL_ENDPOINT=https://your-oltp-endpoint
 ```
 
 **Metrics** - Opt-in performance and usage metrics:
 ```bash
-# Enable tool and session metrics (default groups)
-MCP_METRICS_GROUPS=tool,session
+# Default enabled traces/metrics when OTEL is enabled
+MCP_METRICS_GROUPS=tool,session,security
 
-# Include cache and security metrics
-MCP_METRICS_GROUPS=tool,session,cache,security
+# Include cache metrics
+MCP_METRICS_GROUPS=tool,session,security,cache
 ```
 
-Available metric groups: `tool` (tool execution), `session` (session lifecycle), `cache` (cache operations), `security` (security checks)
+Available metric groups: `tool` (tool execution), `session` (session lifecycle), `security` (security checks), `cache` (cache operations)
 
 - **[Complete Observability Documentation](docs/observability.md)**
 - **[Example Configurations](docs/observability/examples/)**

@@ -67,8 +67,9 @@ func InitMetrics(logger *logrus.Logger) (func() error, error) {
 	} else {
 		// Default: enable tool and session metrics if MCP_METRICS_GROUPS not set
 		enabledMetricGroups = map[string]bool{
-			"tool":    true,
-			"session": true,
+			"tool":     true,
+			"session":  true,
+			"security": true,
 		}
 		logger.Debug("OTEL Metrics: Using default groups (tool, session)")
 	}

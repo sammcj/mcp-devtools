@@ -1,4 +1,4 @@
-# Observability Stack for MCP DevTools
+# Example Observability Stack for MCP DevTools
 #
 # This compose file contains all observability components.
 # By default, only Jaeger is enabled for simple tracing.
