@@ -2,6 +2,16 @@
 
 This directory contains example configurations for setting up observability with MCP DevTools using OpenTelemetry.
 
+- [Observability Examples for MCP DevTools](#observability-examples-for-mcp-devtools)
+  - [Quick Start - Jaeger Only (Recommended for just tracing)](#quick-start---jaeger-only-recommended-for-just-tracing)
+  - [Configuration Scenarios](#configuration-scenarios)
+  - [Configuration Files](#configuration-files)
+  - [Common Operations](#common-operations)
+  - [Troubleshooting](#troubleshooting)
+  - [Production Considerations](#production-considerations)
+  - [Example Queries](#example-queries)
+  - [Further Reading](#further-reading)
+
 ## Quick Start - Jaeger Only (Recommended for just tracing)
 
 The simplest way to get started with distributed tracing, no config files needed:
