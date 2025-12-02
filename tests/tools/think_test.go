@@ -150,9 +150,9 @@ func TestThinkTool_Execute_ExcessivelyLongThought(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	// Create a thought that exceeds the default 2000 character limit
+	// Create a thought that exceeds the default 2000 + 500 buffer = 2500 character limit
 	baseText := "This is a very long thought that will be repeated many times to exceed the character limit. "
-	repetitions := 25 // 90 chars * 25 = ~2250 chars (exceeds 2000)
+	repetitions := 30 // 90 chars * 30 = ~2700 chars (exceeds 2500)
 	var excessivelyLongThought string
 	for range repetitions {
 		excessivelyLongThought += baseText
@@ -179,7 +179,7 @@ func TestThinkTool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
 		}
 	}()
 
-	// Set custom max length to 100 characters
+	// Set custom max length to 100 characters (actual limit will be 100 + 500 buffer = 600)
 	err := os.Setenv("THINK_MAX_LENGTH", "100")
 	if err != nil {
 		t.Fatalf("Failed to set environment variable: %v", err)
@@ -190,8 +190,13 @@ func TestThinkTool_Execute_CustomMaxLengthEnvironmentVariable(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	// Test with a thought that exceeds the custom limit (over 100 characters)
-	longThought := "This is a thought that is definitely longer than one hundred characters and should trigger the validation error when testing custom limits set via environment variables."
+	// Test with a thought that exceeds the custom limit + buffer (over 600 characters)
+	longThought := "This is a thought that is definitely longer than six hundred characters and should trigger the validation error when testing custom limits set via environment variables. " +
+		"We need to make this significantly longer to exceed the 600 character limit which includes the 500 character safety buffer. " +
+		"This additional text ensures we're well over the actual enforcement limit. " +
+		"Adding even more text to be absolutely certain we exceed 600 characters total. " +
+		"And some more padding text to make it longer still and ensure test reliability. " +
+		"Final padding to ensure we're definitely over the limit with safety buffer included."
 
 	args := map[string]any{
 		"thought": longThought,

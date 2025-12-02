@@ -28,6 +28,7 @@ According to Anthropic's research, the Think tool provides:
 - **`thought`** (string): The thought content to process
   - **Maximum length**: Configurable via `THINK_MAX_LENGTH` environment variable (default: 2000 characters)
   - **Description**: The actual thought or reasoning to be recorded
+  - **Note**: The tool includes a 500-character safety buffer above the configured limit to accommodate AI agents' imprecise character counting, whilst still encouraging concise thoughts
 
 ### Optional Parameters
 
@@ -296,8 +297,8 @@ The Think tool supports the following configuration options:
 
 - **`THINK_MAX_LENGTH`**: Maximum length for thought input in characters
   - **Default**: `2000`
-  - **Description**: Controls the maximum length of thoughts to prevent resource exhaustion
-  - **Example**: `THINK_MAX_LENGTH=5000` allows thoughts up to 5000 characters
+  - **Description**: Controls the advertised maximum length of thoughts to prevent resource exhaustion. The actual enforcement includes a 500-character safety buffer (e.g., 2000 advertised = 2500 actual maximum) to accommodate AI agents' imprecise character counting
+  - **Example**: `THINK_MAX_LENGTH=5000` advertises 5000 characters to agents but accepts up to 5500 characters
 
 ### Security Features
 

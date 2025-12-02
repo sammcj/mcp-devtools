@@ -17,10 +17,14 @@ import (
 type ThinkTool struct{}
 
 const (
-	// DefaultMaxThoughtLength is the default maximum length for thought input
+	// DefaultMaxThoughtLength is the default maximum length for thought input advertised to agents
 	DefaultMaxThoughtLength = 2000
 	// ThinkMaxLengthEnvVar is the environment variable for configuring max thought length
 	ThinkMaxLengthEnvVar = "THINK_MAX_LENGTH"
+	// ThinkLengthSafetyBuffer is added to the configured max length when validating
+	// AI agents are not precise at counting characters, so we allow some overage
+	// whilst still telling them the lower limit to discourage overly long thoughts
+	ThinkLengthSafetyBuffer = 500
 )
 
 // getMaxThoughtLength returns the configured maximum thought length
@@ -96,10 +100,13 @@ func (t *ThinkTool) parseRequest(args map[string]any) (*ThinkRequest, error) {
 		return nil, fmt.Errorf("missing required parameter 'thought'. Provide your reasoning or analysis as a string (e.g., {\"thought\": \"Need to analyse the API response structure before processing\"})")
 	}
 
-	// Validate thought length
-	maxLength := getMaxThoughtLength()
-	if len(thought) > maxLength {
-		return nil, fmt.Errorf("'thought' exceeds maximum length of %d characters (you provided %d). Break your reasoning into smaller chunks or use sequential_thinking tool for complex multi-step analysis", maxLength, len(thought))
+	// Validate thought length with safety buffer
+	// We advertise maxLength to agents but accept up to maxLength + buffer
+	// because AI agents are imprecise at counting characters
+	configuredMaxLength := getMaxThoughtLength()
+	actualMaxLength := configuredMaxLength + ThinkLengthSafetyBuffer
+	if len(thought) > actualMaxLength {
+		return nil, fmt.Errorf("'thought' exceeds maximum length of %d characters (you provided %d). Break your reasoning into smaller chunks or use sequential_thinking tool for complex multi-step analysis", configuredMaxLength, len(thought))
 	}
 
 	// Parse how_hard (optional, defaults to "hard")
