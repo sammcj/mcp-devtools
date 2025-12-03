@@ -87,11 +87,11 @@ references:
   - [x] 14.6. Execute in working directory with streaming output
   - [x] 14.7. Include hint about git init in error messages
 
-- [ ] 15. Implement MCP tool Definition()
-  - [ ] 15.1. Create Definition() method returning mcp.Tool
-  - [ ] 15.2. Add tool description with operation details
-  - [ ] 15.3. Define operation parameter (make targets + add/commit)
-  - [ ] 15.4. Add MCP destructive annotation
+- [x] 15. Implement MCP tool Definition()
+  - [x] 15.1. Create Definition() method returning mcp.Tool
+  - [x] 15.2. Add tool description with operation details
+  - [x] 15.3. Define operation parameter (make targets + add/commit)
+  - [x] 15.4. Add MCP destructive annotation
 
 - [ ] 16. Implement Execute() method
   - [ ] 16.1. Create Execute() method with MCP signature
