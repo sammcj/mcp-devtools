@@ -340,3 +340,21 @@
 - Agent discovers operations by reading tool description and Makefile
 - Simpler design without separate capabilities operation
 **Alternatives Considered:** Separate capabilities operation like filesystem's list_allowed_directories (rejected - not needed for this tool)
+
+
+## Decision 35: Combined Stream for Progress Notifications with TeeReader
+**Date:** 2025-01-03
+**Decision:** Use `io.TeeReader` to write to separate buffers while scanning combined stream for progress notifications
+**Rationale:**
+- Meets MCP spec requirement that progress must increase monotonically
+- Preserves stdout/stderr separation in final result (both streaming and non-streaming)
+- More accurate representation of actual execution order
+- Increased Scanner buffer (1MB) handles long lines
+- Consistent behavior regardless of progress token presence
+**Trade-offs:**
+- Slightly more complex than simple io.Copy (but still straightforward)
+**Alternatives Considered:**
+- Separate streams with dual counters (rejected - violates MCP spec, more complex)
+- MultiReader without TeeReader (rejected - loses stdout/stderr separation in result)
+- Chunked reading without line boundaries (rejected - less useful progress messages)
+**Implementation:** Use `io.TeeReader` for each pipe to write to both buffer and combined reader, single `bufio.Scanner` with 1MB buffer scans combined stream

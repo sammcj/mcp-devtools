@@ -1,6 +1,7 @@
 package projectactions
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sirupsen/logrus"
@@ -55,7 +57,7 @@ func init() {
 func (t *ProjectActionsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"project_actions",
-		mcp.WithDescription("Execute project development tasks (tests, linters, formatters) through a project's Makefile and limited git operations. Operations: make targets (from .PHONY), 'add' (git add files), 'commit' (git commit), 'generate' (create Makefile). Requires security tool enabled."),
+		mcp.WithDescription("Execute project development tasks (tests, linters, formatters) through a project's Makefile and limited git operations. Operations: make targets (from .PHONY), 'add' (git add files), 'commit' (git commit), 'generate' (create Makefile). Requires security tool enabled. Long-running operations provide real-time progress feedback."),
 		mcp.WithString("operation",
 			mcp.Required(),
 			mcp.Description("Operation to perform: any .PHONY target from Makefile, 'add', 'commit', or 'generate'"),
@@ -84,6 +86,14 @@ func (t *ProjectActionsTool) Definition() mcp.Tool {
 
 // Execute handles tool invocation
 func (t *ProjectActionsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+	// Extract progress token from _meta if present
+	var progressToken string
+	if meta, ok := args["_meta"].(map[string]any); ok {
+		if token, ok := meta["progressToken"].(string); ok {
+			progressToken = token
+		}
+	}
+
 	// Parse operation parameter
 	operation, ok := args["operation"].(string)
 	if !ok || operation == "" {
@@ -118,11 +128,11 @@ func (t *ProjectActionsTool) Execute(ctx context.Context, logger *logrus.Logger,
 				pathStrs = append(pathStrs, ps)
 			}
 		}
-		result, err = t.executeGitAdd(ctx, pathStrs, dryRun)
+		result, err = t.executeGitAdd(ctx, pathStrs, dryRun, progressToken)
 
 	case "commit":
 		message, _ := args["message"].(string)
-		result, err = t.executeGitCommit(ctx, message, dryRun)
+		result, err = t.executeGitCommit(ctx, message, dryRun, progressToken)
 
 	case "generate":
 		language, _ := args["language"].(string)
@@ -154,7 +164,7 @@ func (t *ProjectActionsTool) Execute(ctx context.Context, logger *logrus.Logger,
 				return mcp.NewToolResultError(err.Error()), nil
 			}
 		}
-		result, err = t.executeMakeTarget(ctx, operation, dryRun)
+		result, err = t.executeMakeTarget(ctx, operation, dryRun, progressToken)
 	}
 
 	if err != nil {
@@ -313,7 +323,7 @@ func (t *ProjectActionsTool) generateMakefile(language string) error {
 }
 
 // executeMakeTarget executes a make target with streaming output
-func (t *ProjectActionsTool) executeMakeTarget(ctx context.Context, target string, dryRun bool) (*CommandResult, error) {
+func (t *ProjectActionsTool) executeMakeTarget(ctx context.Context, target string, dryRun bool, progressToken string) (*CommandResult, error) {
 	// Validate target exists in makefileTargets
 	found := false
 	for _, t := range t.makefileTargets {
@@ -341,11 +351,11 @@ func (t *ProjectActionsTool) executeMakeTarget(ctx context.Context, target strin
 	}
 
 	// Execute with streaming output
-	return t.executeCommand(ctx, cmd)
+	return t.executeCommand(ctx, cmd, progressToken)
 }
 
 // executeCommand executes a command with real-time streaming output
-func (t *ProjectActionsTool) executeCommand(ctx context.Context, cmd *exec.Cmd) (*CommandResult, error) {
+func (t *ProjectActionsTool) executeCommand(ctx context.Context, cmd *exec.Cmd, progressToken string) (*CommandResult, error) {
 	// Set up separate stdout/stderr pipes
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -365,19 +375,52 @@ func (t *ProjectActionsTool) executeCommand(ctx context.Context, cmd *exec.Cmd) 
 		return nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
-	// Stream stdout in real-time
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		io.Copy(&stdoutBuf, stdoutPipe)
-	}()
+	// Get server from context for progress notifications
+	var srv *server.MCPServer
+	if progressToken != "" {
+		srv = server.ServerFromContext(ctx)
+	}
 
-	// Stream stderr in real-time
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		io.Copy(&stderrBuf, stderrPipe)
-	}()
+	if progressToken != "" && srv != nil {
+		// Use TeeReader to write to buffers AND combined stream for progress
+		stdoutTee := io.TeeReader(stdoutPipe, &stdoutBuf)
+		stderrTee := io.TeeReader(stderrPipe, &stderrBuf)
+		combinedReader := io.MultiReader(stdoutTee, stderrTee)
+
+		scanner := bufio.NewScanner(combinedReader)
+		// Increase buffer size to handle long lines (1MB)
+		buf := make([]byte, 1024*1024)
+		scanner.Buffer(buf, 1024*1024)
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			lineCount := 0
+			for scanner.Scan() {
+				line := scanner.Text()
+				lineCount++
+				// Send progress notification
+				srv.SendNotificationToClient(ctx, "notifications/progress", map[string]any{
+					"progressToken": progressToken,
+					"progress":      float64(lineCount),
+					"message":       line,
+				})
+			}
+		}()
+	} else {
+		// No progress notifications - use simple io.Copy
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			io.Copy(&stdoutBuf, stdoutPipe)
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			io.Copy(&stderrBuf, stderrPipe)
+		}()
+	}
 
 	// Wait for streaming to complete
 	wg.Wait()
@@ -434,7 +477,7 @@ func (t *ProjectActionsTool) validateAndResolvePath(relativePath string) (string
 }
 
 // executeGitAdd executes git add for multiple files in a single batch operation
-func (t *ProjectActionsTool) executeGitAdd(ctx context.Context, paths []string, dryRun bool) (*CommandResult, error) {
+func (t *ProjectActionsTool) executeGitAdd(ctx context.Context, paths []string, dryRun bool, progressToken string) (*CommandResult, error) {
 	if len(paths) == 0 {
 		return nil, fmt.Errorf("no paths provided for git add")
 	}
@@ -462,7 +505,7 @@ func (t *ProjectActionsTool) executeGitAdd(ctx context.Context, paths []string, 
 	}
 
 	// Execute with streaming output
-	result, err := t.executeCommand(ctx, cmd)
+	result, err := t.executeCommand(ctx, cmd, progressToken)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", ErrMsgGitFailed, err)
 	}
@@ -473,7 +516,7 @@ func (t *ProjectActionsTool) executeGitAdd(ctx context.Context, paths []string, 
 }
 
 // executeGitCommit executes git commit with message passed via stdin
-func (t *ProjectActionsTool) executeGitCommit(ctx context.Context, message string, dryRun bool) (*CommandResult, error) {
+func (t *ProjectActionsTool) executeGitCommit(ctx context.Context, message string, dryRun bool, progressToken string) (*CommandResult, error) {
 	// Validate message size
 	if len(message) > t.maxCommitMessageSize {
 		return nil, &ProjectActionsError{
@@ -495,7 +538,7 @@ func (t *ProjectActionsTool) executeGitCommit(ctx context.Context, message strin
 	}
 
 	// Execute with streaming output
-	result, err := t.executeCommand(ctx, cmd)
+	result, err := t.executeCommand(ctx, cmd, progressToken)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", ErrMsgGitFailed, err)
 	}
