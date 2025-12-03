@@ -19,9 +19,9 @@ references:
   - [x] 3.2. Check for make and git on PATH during initialization
   - [x] 3.3. Return error if required tools not found
 
-- [ ] 4. Create error types and constants
-  - [ ] 4.1. Define ProjectActionsError struct with ErrorType enum
-  - [ ] 4.2. Add error message constants
+- [x] 4. Create error types and constants
+  - [x] 4.1. Define ProjectActionsError struct with ErrorType enum
+  - [x] 4.2. Add error message constants
 
 - [ ] 5. Implement Makefile reading with security integration
   - [ ] 5.1. Use security.Operations.SafeFileRead() for Makefile
