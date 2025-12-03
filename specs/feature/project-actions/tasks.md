@@ -150,9 +150,9 @@ references:
   - [x] 26.2. Test SecurityError handling
   - [x] 26.3. Test security warning logging
 
-- [ ] 27. Add comprehensive error messages
-  - [ ] 27.1. Add all error message constants
-  - [ ] 27.2. Include git init hint in git error messages
+- [x] 27. Add comprehensive error messages
+  - [x] 27.1. Add all error message constants
+  - [x] 27.2. Include git init hint in git error messages
 
 - [ ] 28. Implement extended help via ProvideExtendedInfo()
   - [ ] 28.1. Create ProvideExtendedInfo() method

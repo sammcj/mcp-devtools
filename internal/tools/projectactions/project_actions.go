@@ -191,7 +191,7 @@ func (t *ProjectActionsTool) validateWorkingDirectory(dir string) error {
 	systemDirs := []string{"/", "/bin", "/lib", "/usr", "/etc", "/var", "/sys", "/proc", "/dev", "/boot", "/sbin"}
 	for _, sysDir := range systemDirs {
 		if absDir == sysDir {
-			return fmt.Errorf("working directory cannot be a system directory: %s", absDir)
+			return fmt.Errorf(ErrMsgSystemDir, absDir)
 		}
 	}
 
@@ -208,12 +208,12 @@ func (t *ProjectActionsTool) validateWorkingDirectory(dir string) error {
 
 	// Check if owner is current user
 	if stat.Uid != uint32(os.Getuid()) {
-		return fmt.Errorf("working directory not writable by current user: %s", absDir)
+		return fmt.Errorf(ErrMsgNotWritable, absDir)
 	}
 
 	// Check owner write bit
 	if info.Mode().Perm()&0200 == 0 {
-		return fmt.Errorf("working directory not writable by current user: %s", absDir)
+		return fmt.Errorf(ErrMsgNotWritable, absDir)
 	}
 
 	return nil
@@ -222,10 +222,10 @@ func (t *ProjectActionsTool) validateWorkingDirectory(dir string) error {
 // checkToolAvailability verifies required tools are on PATH
 func (t *ProjectActionsTool) checkToolAvailability() error {
 	if _, err := exec.LookPath("make"); err != nil {
-		return fmt.Errorf("make not found on PATH - install make to use this tool")
+		return fmt.Errorf(ErrMsgMakeNotFound)
 	}
 	if _, err := exec.LookPath("git"); err != nil {
-		return fmt.Errorf("git not found on PATH - install git to use git operations")
+		return fmt.Errorf(ErrMsgGitNotFound)
 	}
 	return nil
 }
