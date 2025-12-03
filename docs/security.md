@@ -28,7 +28,7 @@ The security framework provides three main layers of protection:
 2. **Content Analysis**: Scans returned content for security threats
 3. **Lightweight Event Audit Logging**: Tracks all security events for review
 
-The intent with the security framework is that the tool (software) fetches the content and checks there are not warn/block rules that match it and then it returns it to the AI model / AI agent so that the agent does not end up with potentially malicious content in it's context.
+The intent with the security framework is that the tool (software) fetches the content and checks there are not warn/block rules that match it and then it returns it to the AI model / AI agent so that the agent does not end up with potentially malicious content in its context.
 
 ### Key Features
 
