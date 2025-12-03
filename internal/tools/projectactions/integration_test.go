@@ -131,9 +131,13 @@ func TestGitOperations(t *testing.T) {
 			t.Fatalf("failed to init git repo: %v", err)
 		}
 
-		// Configure git user
-		exec.Command("git", "config", "user.name", "Test User").Run()
-		exec.Command("git", "config", "user.email", "test@example.com").Run()
+		// Configure git user in temp repo
+		cmd = exec.Command("git", "config", "user.name", "Test User")
+		cmd.Dir = tmpDir
+		_ = cmd.Run()
+		cmd = exec.Command("git", "config", "user.email", "test@example.com")
+		cmd.Dir = tmpDir
+		_ = cmd.Run()
 
 		// Verify .git directory exists
 		gitDir := filepath.Join(tmpDir, ".git")
