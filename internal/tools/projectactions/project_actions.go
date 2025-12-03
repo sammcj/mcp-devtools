@@ -85,8 +85,99 @@ func (t *ProjectActionsTool) Definition() mcp.Tool {
 
 // Execute handles tool invocation
 func (t *ProjectActionsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	logger.Info("Executing project_actions")
-	return mcp.NewToolResultText("Not yet implemented"), nil
+	// Parse operation parameter
+	operation, ok := args["operation"].(string)
+	if !ok || operation == "" {
+		return mcp.NewToolResultError("operation parameter is required"), nil
+	}
+
+	// Parse working directory
+	workingDir := "."
+	if wd, ok := args["working_directory"].(string); ok && wd != "" {
+		workingDir = wd
+	}
+
+	// Validate and set working directory
+	t.workingDir = workingDir
+	if err := t.validateWorkingDirectory(t.workingDir); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	// Parse dry_run
+	dryRun, _ := args["dry_run"].(bool)
+
+	// Route to appropriate handler
+	var result *CommandResult
+	var err error
+
+	switch operation {
+	case "add":
+		paths, _ := args["paths"].([]interface{})
+		var pathStrs []string
+		for _, p := range paths {
+			if ps, ok := p.(string); ok {
+				pathStrs = append(pathStrs, ps)
+			}
+		}
+		result, err = t.executeGitAdd(ctx, pathStrs, dryRun)
+
+	case "commit":
+		message, _ := args["message"].(string)
+		result, err = t.executeGitCommit(ctx, message, dryRun)
+
+	case "generate":
+		language, _ := args["language"].(string)
+		if err := t.generateMakefile(language); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+		// Read and parse generated Makefile
+		makefilePath := filepath.Join(t.workingDir, "Makefile")
+		content, err := t.readMakefile(makefilePath)
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+		t.makefileTargets, err = t.parsePhonyTargets(content)
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+		return mcp.NewToolResultText(fmt.Sprintf("Generated Makefile in %s with targets: %s", t.workingDir, strings.Join(t.makefileTargets, ", "))), nil
+
+	default:
+		// Try as make target - read Makefile if not already loaded
+		if len(t.makefileTargets) == 0 {
+			makefilePath := filepath.Join(t.workingDir, "Makefile")
+			content, err := t.readMakefile(makefilePath)
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			t.makefileTargets, err = t.parsePhonyTargets(content)
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+		}
+		result, err = t.executeMakeTarget(ctx, operation, dryRun)
+	}
+
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	// Display working directory in output
+	output := fmt.Sprintf("Working directory: %s\n\nCommand: %s\n", result.WorkingDir, result.Command)
+	if result.Stdout != "" {
+		output += fmt.Sprintf("\nStdout:\n%s", result.Stdout)
+	}
+	if result.Stderr != "" {
+		output += fmt.Sprintf("\nStderr:\n%s", result.Stderr)
+	}
+	if result.ExitCode != 0 {
+		output += fmt.Sprintf("\nExit code: %d", result.ExitCode)
+	}
+	if result.Duration > 0 {
+		output += fmt.Sprintf("\nDuration: %s", result.Duration)
+	}
+
+	return mcp.NewToolResultText(output), nil
 }
 
 // validateWorkingDirectory validates the working directory is safe to use

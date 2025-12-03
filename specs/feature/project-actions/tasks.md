@@ -93,11 +93,11 @@ references:
   - [x] 15.3. Define operation parameter (make targets + add/commit)
   - [x] 15.4. Add MCP destructive annotation
 
-- [ ] 16. Implement Execute() method
-  - [ ] 16.1. Create Execute() method with MCP signature
-  - [ ] 16.2. Parse operation parameter
-  - [ ] 16.3. Route to appropriate handler (make/add/commit)
-  - [ ] 16.4. Display working directory in output
+- [x] 16. Implement Execute() method
+  - [x] 16.1. Create Execute() method with MCP signature
+  - [x] 16.2. Parse operation parameter
+  - [x] 16.3. Route to appropriate handler (make/add/commit)
+  - [x] 16.4. Display working directory in output
 
 - [ ] 17. Create types.go with data models
   - [ ] 17.1. Define CommandResult struct
