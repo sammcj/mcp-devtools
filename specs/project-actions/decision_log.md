@@ -1,15 +1,15 @@
 # Decision Log - Project Actions Tool
 
 ## Decision 1: Feature Name
-**Date:** 2025-01-XX  
-**Decision:** Use `project-actions` as the feature name  
-**Rationale:** Clearly describes the tool's purpose of performing project-level actions (tests, linting, formatting, git commits) in a controlled manner  
-**Alternatives Considered:** `dev-actions`, `project-tasks`  
+**Date:** 2025-01-XX
+**Decision:** Use `project-actions` as the feature name
+**Rationale:** Clearly describes the tool's purpose of performing project-level actions (tests, linting, formatting, git commits) in a controlled manner
+**Alternatives Considered:** `dev-actions`, `project-tasks`
 
 ## Decision 2: Makefile-Only Approach
-**Date:** 2025-01-XX  
-**Decision:** Support tests, linters, and formatters only via Makefile integration  
-**Rationale:** 
+**Date:** 2025-01-XX
+**Decision:** Support tests, linters, and formatters only via Makefile integration
+**Rationale:**
 - Provides a single, consistent interface regardless of project language or tooling
 - Avoids tool-specific detection and configuration complexity
 - Leverages existing project build infrastructure
@@ -17,8 +17,8 @@
 **Alternatives Considered:** Direct tool detection (pytest, go test, npm test, etc.)
 
 ## Decision 3: Target Name Validation
-**Date:** 2025-01-XX  
-**Decision:** Restrict make target names to alphanumeric, hyphen, and underscore only  
+**Date:** 2025-01-XX
+**Decision:** Restrict make target names to alphanumeric, hyphen, and underscore only
 **Rationale:**
 - Minimizes command injection attack surface
 - Simple validation rule that covers 99% of legitimate use cases
@@ -26,8 +26,8 @@
 **Alternatives Considered:** More permissive validation with command scanning
 
 ## Decision 4: Working Directory Security
-**Date:** 2025-01-XX  
-**Decision:** Accept optional `working_directory` parameter, default to `os.Getwd()`, block system directories  
+**Date:** 2025-01-XX
+**Decision:** Accept optional `working_directory` parameter, default to `os.Getwd()`, block system directories
 **Rationale:**
 - Aligns with filesystem tool's security model
 - Prevents accidental system-wide operations
@@ -36,8 +36,8 @@
 **Alternatives Considered:** Environment variable like `FILESYSTEM_TOOL_ALLOWED_DIRS`
 
 ## Decision 5: Git Commit Message via Stdin
-**Date:** 2025-01-XX  
-**Decision:** Pass commit messages via `git commit --file=-` on stdin  
+**Date:** 2025-01-XX
+**Decision:** Pass commit messages via `git commit --file=-` on stdin
 **Rationale:**
 - Prevents shell interpretation of commit message content
 - Eliminates command injection risk from special characters in messages
@@ -45,8 +45,8 @@
 **Alternatives Considered:** Temporary file, command-line argument (rejected due to security)
 
 ## Decision 6: No Commit Message Validation
-**Date:** 2025-01-XX  
-**Decision:** Do not scan or validate commit message content  
+**Date:** 2025-01-XX
+**Decision:** Do not scan or validate commit message content
 **Rationale:**
 - Commit message validation is the role of git hooks
 - Out of scope for this tool
@@ -54,8 +54,8 @@
 **Alternatives Considered:** Conventional commits validation, sensitive data scanning
 
 ## Decision 7: Generous Commit Message Size Limit
-**Date:** 2025-01-XX  
-**Decision:** Default 16 KB commit message limit, configurable via environment variable  
+**Date:** 2025-01-XX
+**Decision:** Default 16 KB commit message limit, configurable via environment variable
 **Rationale:**
 - Accommodates detailed commit messages and multi-paragraph descriptions
 - Prevents abuse while being practical
@@ -63,8 +63,8 @@
 **Alternatives Considered:** 4 KB (too restrictive), unlimited (potential abuse)
 
 ## Decision 8: Auto-Generate Makefiles
-**Date:** 2025-01-XX  
-**Decision:** Automatically create basic Makefiles when missing, based on language detection  
+**Date:** 2025-01-XX
+**Decision:** Automatically create basic Makefiles when missing, based on language detection
 **Rationale:**
 - Reduces friction for projects without existing Makefiles
 - Provides immediate value without manual setup
@@ -72,8 +72,8 @@
 **Alternatives Considered:** Require manual Makefile creation, return error when missing
 
 ## Decision 9: Real-Time Output Streaming
-**Date:** 2025-01-XX  
-**Decision:** Stream command output in real-time from stdout and stderr  
+**Date:** 2025-01-XX
+**Decision:** Stream command output in real-time from stdout and stderr
 **Rationale:**
 - Provides immediate feedback for long-running operations
 - Matches developer expectations for command execution
@@ -81,8 +81,8 @@
 **Alternatives Considered:** Buffered output (poor UX for long operations)
 
 ## Decision 10: Minimal Error Handling
-**Date:** 2025-01-XX  
-**Decision:** Return command output and exit codes without retry or interpretation  
+**Date:** 2025-01-XX
+**Decision:** Return command output and exit codes without retry or interpretation
 **Rationale:**
 - Tool acts as a thin wrapper around make/git
 - Caller (AI agent) can interpret errors and decide on actions
@@ -90,8 +90,8 @@
 **Alternatives Considered:** Automatic retry, error interpretation
 
 ## Decision 11: Security Helper Functions
-**Date:** 2025-01-XX  
-**Decision:** Use `security.Operations` helper functions for file operations  
+**Date:** 2025-01-XX
+**Decision:** Use `security.Operations` helper functions for file operations
 **Rationale:**
 - Consistent with other tools in the codebase
 - Automatic security integration
@@ -100,8 +100,8 @@
 **Alternatives Considered:** Manual security integration
 
 ## Decision 12: Disabled by Default
-**Date:** 2025-01-XX  
-**Decision:** Tool disabled by default, enabled via `ENABLE_ADDITIONAL_TOOLS`  
+**Date:** 2025-01-XX
+**Decision:** Tool disabled by default, enabled via `ENABLE_ADDITIONAL_TOOLS`
 **Rationale:**
 - Follows secure-by-default principle
 - Potentially destructive operations (git commits, code modification via formatters)
@@ -110,8 +110,8 @@
 
 
 ## Decision 13: Multi-Language Support
-**Date:** 2025-01-XX  
-**Decision:** Support Python, Rust, Go, and Node.js with language-specific common conventions  
+**Date:** 2025-01-XX
+**Decision:** Support Python, Rust, Go, and Node.js with language-specific common conventions
 **Rationale:**
 - Covers the most common languages in modern development
 - Uses standard tooling conventions for each ecosystem
@@ -126,8 +126,8 @@
 
 
 ## Decision 14: Language Parameter Required
-**Date:** 2025-01-XX  
-**Decision:** Require explicit `language` parameter for Makefile generation instead of auto-detection  
+**Date:** 2025-01-XX
+**Decision:** Require explicit `language` parameter for Makefile generation instead of auto-detection
 **Rationale:**
 - Eliminates ambiguity in multi-language projects
 - Simpler implementation without complex detection heuristics
@@ -137,8 +137,8 @@
 
 
 ## Decision 15: Security Scanning After Command Completion
-**Date:** 2025-01-XX  
-**Decision:** Buffer command output and scan after completion, not during streaming  
+**Date:** 2025-01-XX
+**Decision:** Buffer command output and scan after completion, not during streaming
 **Rationale:**
 - `security.AnalyseContent()` requires complete content as string parameter
 - Cannot process streaming data incrementally
@@ -146,8 +146,8 @@
 **Implementation:** Stream output to user in real-time, buffer copy for post-execution scanning
 
 ## Decision 16: Makefile Target Discovery at Initialization
-**Date:** 2025-01-XX  
-**Decision:** Scan Makefile and report targets as capabilities when tool initializes  
+**Date:** 2025-01-XX
+**Decision:** Scan Makefile and report targets as capabilities when tool initializes
 **Rationale:**
 - Provides clear interface of available actions
 - Auto-generates Makefile if missing before reporting
@@ -155,8 +155,8 @@
 **Alternatives Considered:** Dynamic reloading (rejected - adds complexity)
 
 ## Decision 17: No Git Repository Validation
-**Date:** 2025-01-XX  
-**Decision:** Do not check if directory is a git repository before operations  
+**Date:** 2025-01-XX
+**Decision:** Do not check if directory is a git repository before operations
 **Rationale:**
 - Simpler implementation
 - Git commands provide clear error messages
@@ -164,8 +164,8 @@
 **Implementation:** Pass git errors directly to user with helpful hint
 
 ## Decision 18: Node.js Uses npm run for All Commands
-**Date:** 2025-01-XX  
-**Decision:** All Node.js targets use `npm run` prefix  
+**Date:** 2025-01-XX
+**Decision:** All Node.js targets use `npm run` prefix
 **Rationale:**
 - Consistent interface across all targets
 - Leverages project's package.json scripts
@@ -173,8 +173,8 @@
 **Commands:** `npm run lint:fix`, `npm run format`, `npm run lint`, `npm test`
 
 ## Decision 19: Batch Git Add Operations
-**Date:** 2025-01-XX  
-**Decision:** Execute `git add` as single batch operation for all files  
+**Date:** 2025-01-XX
+**Decision:** Execute `git add` as single batch operation for all files
 **Rationale:**
 - More efficient than individual operations
 - Standard git practice
@@ -182,8 +182,8 @@
 **Implementation:** `git add file1 file2 file3` instead of multiple `git add` calls
 
 ## Decision 20: Writability Check via Owner and Permissions
-**Date:** 2025-01-XX  
-**Decision:** Verify writability by checking directory owner matches calling user and owner write bit is set  
+**Date:** 2025-01-XX
+**Decision:** Verify writability by checking directory owner matches calling user and owner write bit is set
 **Rationale:**
 - Avoids creating temporary files for testing
 - Direct permission check is faster
@@ -192,15 +192,15 @@
 
 
 ## Decision 21: No Security Scanning of Command Output
-**Date:** 2025-01-XX  
-**Decision:** Do not scan command output for security threats  
+**Date:** 2025-01-XX
+**Decision:** Do not scan command output for security threats
 **Rationale:**
 - `security.AnalyseContent()` requires complete content as string and cannot process streaming data
 - Real-time output streaming is critical for user experience with long-running commands
 - Buffering entire output would delay feedback and defeat the purpose of streaming
 - Tool runs as the user in their own repository - no security boundary crossing
 - Command output is from trusted tools (make, git) executing user's own code
-**Alternatives Considered:** 
+**Alternatives Considered:**
 - Buffer and scan after completion (rejected - breaks real-time streaming requirement)
 - Scan incrementally (rejected - not supported by security framework)
 
@@ -208,8 +208,8 @@
 ## Design Phase Decisions
 
 ## Decision 22: Initialization at Tool Registration
-**Date:** 2025-01-XX  
-**Decision:** Perform working directory validation, tool checking, and Makefile parsing during tool registration (init)  
+**Date:** 2025-01-XX
+**Decision:** Perform working directory validation, tool checking, and Makefile parsing during tool registration (init)
 **Rationale:**
 - Capabilities known immediately when tool is available
 - Fail-fast if environment is invalid
@@ -218,8 +218,8 @@
 **Implementation:** `init()` function calls `initialize()` method before registration
 
 ## Decision 23: Single Struct for All Operations
-**Date:** 2025-01-XX  
-**Decision:** Use single `ProjectActionsTool` struct with operation parameter instead of separate tools  
+**Date:** 2025-01-XX
+**Decision:** Use single `ProjectActionsTool` struct with operation parameter instead of separate tools
 **Rationale:**
 - Shared state (working directory, targets, tool availability)
 - Simpler registration and management
@@ -228,8 +228,8 @@
 **Operations:** make, add, commit, list (capabilities)
 
 ## Decision 24: Streaming via exec.Cmd Pipes
-**Date:** 2025-01-XX  
-**Decision:** Use `exec.Cmd` stdout/stderr pipes for real-time output streaming  
+**Date:** 2025-01-XX
+**Decision:** Use `exec.Cmd` stdout/stderr pipes for real-time output streaming
 **Rationale:**
 - Standard Go pattern for command execution
 - Natural streaming without buffering
@@ -238,8 +238,8 @@
 **Implementation:** Set up pipes, start command, stream to result
 
 ## Decision 25: Makefile Templates as Constants
-**Date:** 2025-01-XX  
-**Decision:** Store Makefile templates as Go string constants in map  
+**Date:** 2025-01-XX
+**Decision:** Store Makefile templates as Go string constants in map
 **Rationale:**
 - Simple, no external files needed
 - Easy to maintain and version
@@ -248,8 +248,8 @@
 **Structure:** `map[string]string` with language keys
 
 ## Decision 26: No Makefile Reloading
-**Date:** 2025-01-XX  
-**Decision:** Parse Makefile once at initialization, never reload  
+**Date:** 2025-01-XX
+**Decision:** Parse Makefile once at initialization, never reload
 **Rationale:**
 - Simpler implementation
 - Predictable behavior
@@ -258,8 +258,8 @@
 **Trade-off:** User must restart tool after Makefile modifications
 
 ## Decision 27: Batch Git Add Implementation
-**Date:** 2025-01-XX  
-**Decision:** Execute single `git add file1 file2 file3` command for multiple files  
+**Date:** 2025-01-XX
+**Decision:** Execute single `git add file1 file2 file3` command for multiple files
 **Rationale:**
 - More efficient than multiple commands
 - Standard git practice
@@ -268,8 +268,8 @@
 **Implementation:** Build single command with all validated paths
 
 ## Decision 28: Commit Message via Stdin
-**Date:** 2025-01-XX  
-**Decision:** Pass commit message to `git commit --file=-` via stdin  
+**Date:** 2025-01-XX
+**Decision:** Pass commit message to `git commit --file=-` via stdin
 **Rationale:**
 - Prevents shell interpretation
 - No escaping needed
@@ -278,8 +278,8 @@
 **Implementation:** Use `cmd.Stdin = strings.NewReader(message)`
 
 ## Decision 29: Simple Error Types
-**Date:** 2025-01-XX  
-**Decision:** Use custom error type with enum for error categories  
+**Date:** 2025-01-XX
+**Decision:** Use custom error type with enum for error categories
 **Rationale:**
 - Clear error classification
 - Consistent error messages
@@ -288,8 +288,8 @@
 **Types:** InvalidDirectory, ToolNotFound, InvalidTarget, InvalidPath, CommandFailed, MakefileInvalid, CommitTooLarge
 
 ## Decision 30: No Command Retry Logic
-**Date:** 2025-01-XX  
-**Decision:** Execute commands once, return result immediately  
+**Date:** 2025-01-XX
+**Decision:** Execute commands once, return result immediately
 **Rationale:**
 - Thin wrapper philosophy
 - User/agent decides on retry
@@ -298,8 +298,8 @@
 **Implementation:** Single `cmd.Run()` call, return result
 
 ## Decision 31: Capabilities as Separate Operation
-**Date:** 2025-01-XX  
-**Decision:** Provide "list" operation that returns capabilities  
+**Date:** 2025-01-XX
+**Decision:** Provide "list" operation that returns capabilities
 **Rationale:**
 - Explicit discovery mechanism
 - Can be called anytime
@@ -309,8 +309,8 @@
 
 
 ## Decision 32: Fail Initialization if Tools Missing
-**Date:** 2025-01-XX  
-**Decision:** Tool initialization must fail if make or git are not on PATH  
+**Date:** 2025-01-XX
+**Decision:** Tool initialization must fail if make or git are not on PATH
 **Rationale:**
 - Tool cannot function without required commands
 - Fail-fast principle - detect issues immediately
@@ -320,8 +320,8 @@
 
 
 ## Decision 33: Separate Stdout and Stderr in Results
-**Date:** 2025-01-XX  
-**Decision:** Stream and return stdout and stderr as separate fields in CommandResult  
+**Date:** 2025-01-XX
+**Decision:** Stream and return stdout and stderr as separate fields in CommandResult
 **Rationale:**
 - Cannot combine stdout/stderr deterministically (separate streams, unpredictable interleaving)
 - Real-time streaming required for long-running commands
@@ -331,8 +331,8 @@
 
 
 ## Decision 34: No CapabilitiesResult
-**Date:** 2025-01-XX  
-**Decision:** Remove CapabilitiesResult - tool capabilities declared in Definition() only  
+**Date:** 2025-01-XX
+**Decision:** Remove CapabilitiesResult - tool capabilities declared in Definition() only
 **Rationale:**
 - Other tools (calculator, aws_documentation) don't report capabilities separately
 - Tool schema in Definition() already declares available parameters

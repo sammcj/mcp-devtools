@@ -17,33 +17,33 @@ The project-actions tool provides a security-aware interface for executing commo
 ```mermaid
 graph TB
     Agent[AI Agent] -->|MCP Call| Tool[ProjectActionsTool]
-    
+
     Tool --> Init[Initialization]
     Tool --> Exec[Execution]
-    
+
     Init --> ValidateDir[Validate Working Directory]
     Init --> CheckTools[Check make/git on PATH]
     Init --> ReadMakefile[Read/Generate Makefile]
     Init --> ParseTargets[Parse .PHONY Targets]
-    
+
     Exec --> ValidateOp[Validate Operation]
     Exec --> ValidatePaths[Validate File Paths]
     Exec --> ExecCmd[Execute Command]
     Exec --> StreamOutput[Stream Output]
-    
+
     ValidateDir --> SecOps[security.Operations]
     ReadMakefile --> SecOps
     ValidatePaths --> PathCheck[Path Resolution]
     ExecCmd --> Make[make command]
     ExecCmd --> Git[git command]
-    
+
     StreamOutput --> Result[MCP Result]
-    
+
     classDef init fill:#E6F3FF,stroke:#4A90E2
     classDef exec fill:#FFF5E6,stroke:#E67E22
     classDef security fill:#FFE6E6,stroke:#E74C3C
     classDef external fill:#E6FFE6,stroke:#27AE60
-    
+
     class Init,ValidateDir,CheckTools,ReadMakefile,ParseTargets init
     class Exec,ValidateOp,ValidatePaths,ExecCmd,StreamOutput exec
     class SecOps,PathCheck security
@@ -70,7 +70,7 @@ type ProjectActionsTool struct {
 func (t *ProjectActionsTool) Definition() mcp.Tool
 
 // Execute handles tool invocation
-func (t *ProjectActionsTool) Execute(ctx context.Context, logger *logrus.Logger, 
+func (t *ProjectActionsTool) Execute(ctx context.Context, logger *logrus.Logger,
     cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error)
 ```
 
@@ -121,7 +121,7 @@ func (t *ProjectActionsTool) parsePhonyTargets(makefileContent string) ([]string
 
 #### Command Execution
 ```go
-func (t *ProjectActionsTool) executeMakeTarget(ctx context.Context, target string, 
+func (t *ProjectActionsTool) executeMakeTarget(ctx context.Context, target string,
     dryRun bool) (*CommandResult, error) {
     // 1. Validate target in makefileTargets
     // 2. Build command: make TARGET_NAME
@@ -129,7 +129,7 @@ func (t *ProjectActionsTool) executeMakeTarget(ctx context.Context, target strin
     // 4. Return result with exit code and timing
 }
 
-func (t *ProjectActionsTool) executeGitAdd(ctx context.Context, paths []string, 
+func (t *ProjectActionsTool) executeGitAdd(ctx context.Context, paths []string,
     dryRun bool) (*CommandResult, error) {
     // 1. Validate and resolve each path
     // 2. Build command: git add path1 path2 path3
@@ -137,7 +137,7 @@ func (t *ProjectActionsTool) executeGitAdd(ctx context.Context, paths []string,
     // 4. Return result
 }
 
-func (t *ProjectActionsTool) executeGitCommit(ctx context.Context, message string, 
+func (t *ProjectActionsTool) executeGitCommit(ctx context.Context, message string,
     dryRun bool) (*CommandResult, error) {
     // 1. Validate message size
     // 2. Build command: git commit --file=-
@@ -443,7 +443,7 @@ const (
 
 1. **Makefile Location**: Should we support Makefile in subdirectories?
    - **Decision**: No, only working directory root
-   
+
 2. **Multiple Languages**: How to handle multi-language projects?
    - **Decision**: Require explicit language parameter, one Makefile per generation
 

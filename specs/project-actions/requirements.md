@@ -147,12 +147,12 @@ The project-actions tool provides security-aware execution of common project dev
 
 **Acceptance Criteria:**
 
-1. <a name="12.1"></a>The tool SHALL scan the Makefile for `.PHONY` targets when initialized  
-2. <a name="12.2"></a>The tool SHALL report available targets as the tool's capabilities  
-3. <a name="12.3"></a>The tool SHALL auto-generate a Makefile if none exists before reporting capabilities  
-4. <a name="12.4"></a>The tool SHALL return no actions if the Makefile has no `.PHONY` targets  
-5. <a name="12.5"></a>The tool SHALL return no actions if the Makefile is malformed  
-6. <a name="12.6"></a>The tool SHALL NOT dynamically reload the Makefile after initialization  
+1. <a name="12.1"></a>The tool SHALL scan the Makefile for `.PHONY` targets when initialized
+2. <a name="12.2"></a>The tool SHALL report available targets as the tool's capabilities
+3. <a name="12.3"></a>The tool SHALL auto-generate a Makefile if none exists before reporting capabilities
+4. <a name="12.4"></a>The tool SHALL return no actions if the Makefile has no `.PHONY` targets
+5. <a name="12.5"></a>The tool SHALL return no actions if the Makefile is malformed
+6. <a name="12.6"></a>The tool SHALL NOT dynamically reload the Makefile after initialization
 
 ### 13. Git Repository Validation
 
@@ -160,6 +160,6 @@ The project-actions tool provides security-aware execution of common project dev
 
 **Acceptance Criteria:**
 
-1. <a name="13.1"></a>The tool SHALL NOT check if the working directory is a git repository  
-2. <a name="13.2"></a>The tool SHALL pass git command failures directly to the user  
-3. <a name="13.3"></a>The tool SHALL include a hint to run `git init` or specify another directory when git operations fail  
+1. <a name="13.1"></a>The tool SHALL NOT check if the working directory is a git repository
+2. <a name="13.2"></a>The tool SHALL pass git command failures directly to the user
+3. <a name="13.3"></a>The tool SHALL include a hint to run `git init` or specify another directory when git operations fail
