@@ -32,13 +32,13 @@ references:
   - [x] 6.2. Extract .PHONY target names using regex
   - [x] 6.3. Validate target names (alphanumeric, hyphen, underscore only)
 
-- [ ] 7. Create Makefile templates for all languages
-  - [ ] 7.1. Define makefileTemplates map with language keys
-  - [ ] 7.2. Create Python template with ruff, black, pytest targets
-  - [ ] 7.3. Create Rust template with cargo targets
-  - [ ] 7.4. Create Go template with go fmt, golangci-lint targets
-  - [ ] 7.5. Create Node.js template with npm run targets
-  - [ ] 7.6. Ensure all templates use tabs for indentation
+- [x] 7. Create Makefile templates for all languages
+  - [x] 7.1. Define makefileTemplates map with language keys
+  - [x] 7.2. Create Python template with ruff, black, pytest targets
+  - [x] 7.3. Create Rust template with cargo targets
+  - [x] 7.4. Create Go template with go fmt, golangci-lint targets
+  - [x] 7.5. Create Node.js template with npm run targets
+  - [x] 7.6. Ensure all templates use tabs for indentation
 
 - [ ] 8. Implement Makefile generation
   - [ ] 8.1. Create generateMakefile() method
