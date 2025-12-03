@@ -282,3 +282,31 @@ func (t *ProjectActionsTool) executeCommand(ctx context.Context, cmd *exec.Cmd) 
 		WorkingDir: cmd.Dir,
 	}, nil
 }
+
+// validateAndResolvePath validates and resolves a relative path to absolute
+func (t *ProjectActionsTool) validateAndResolvePath(relativePath string) (string, error) {
+	// Clean path
+	cleanPath := filepath.Clean(relativePath)
+
+	// Resolve to absolute path
+	absPath, err := filepath.Abs(filepath.Join(t.workingDir, cleanPath))
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve path: %w", err)
+	}
+
+	// Verify path is within working directory
+	absWorkingDir, err := filepath.Abs(t.workingDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve working directory: %w", err)
+	}
+
+	relToWorkDir, err := filepath.Rel(absWorkingDir, absPath)
+	if err != nil || strings.HasPrefix(relToWorkDir, "..") {
+		return "", &ProjectActionsError{
+			Type:    ErrorInvalidPath,
+			Message: fmt.Sprintf(ErrMsgPathEscape, relativePath),
+		}
+	}
+
+	return absPath, nil
+}
