@@ -113,10 +113,10 @@ references:
   - [x] 19.2. Test invalid target name rejection
   - [x] 19.3. Test malformed Makefile handling
 
-- [ ] 20. Write unit tests for path validation
-  - [ ] 20.1. Test path resolution with filepath.Clean/Abs
-  - [ ] 20.2. Test path traversal prevention
-  - [ ] 20.3. Test working directory containment
+- [x] 20. Write unit tests for path validation
+  - [x] 20.1. Test path resolution with filepath.Clean/Abs
+  - [x] 20.2. Test path traversal prevention
+  - [x] 20.3. Test working directory containment
 
 - [ ] 21. Write unit tests for Makefile generation
   - [ ] 21.1. Test Python template generation
