@@ -166,3 +166,23 @@ func (t *ProjectActionsTool) parsePhonyTargets(makefileContent string) ([]string
 
 	return targets, nil
 }
+
+// generateMakefile generates a language-specific Makefile and writes it to the working directory
+func (t *ProjectActionsTool) generateMakefile(language string) error {
+	// Validate language parameter
+	template, ok := makefileTemplates[language]
+	if !ok {
+		return &ProjectActionsError{
+			Type:    ErrorMakefileInvalid,
+			Message: fmt.Sprintf("invalid language '%s': supported languages are python, rust, go, nodejs", language),
+		}
+	}
+
+	// Write Makefile to working directory
+	makefilePath := filepath.Join(t.workingDir, "Makefile")
+	if err := os.WriteFile(makefilePath, []byte(template), 0644); err != nil {
+		return fmt.Errorf("failed to write Makefile: %w", err)
+	}
+
+	return nil
+}

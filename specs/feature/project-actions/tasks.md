@@ -40,11 +40,11 @@ references:
   - [x] 7.5. Create Node.js template with npm run targets
   - [x] 7.6. Ensure all templates use tabs for indentation
 
-- [ ] 8. Implement Makefile generation
-  - [ ] 8.1. Create generateMakefile() method
-  - [ ] 8.2. Validate language parameter
-  - [ ] 8.3. Return diagnostic message for invalid language
-  - [ ] 8.4. Write generated Makefile to working directory
+- [x] 8. Implement Makefile generation
+  - [x] 8.1. Create generateMakefile() method
+  - [x] 8.2. Validate language parameter
+  - [x] 8.3. Return diagnostic message for invalid language
+  - [x] 8.4. Write generated Makefile to working directory
 
 - [ ] 9. Implement make target execution
   - [ ] 9.1. Create executeMakeTarget() method
