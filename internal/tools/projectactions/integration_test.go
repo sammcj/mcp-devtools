@@ -49,7 +49,7 @@ echo:
 	@echo "hello world"
 `
 		makefilePath := filepath.Join(tmpDir, "Makefile")
-		os.WriteFile(makefilePath, []byte(makefile), 0644)
+		_ = os.WriteFile(makefilePath, []byte(makefile), 0644)
 
 		// Setup tool
 		tool := &ProjectActionsTool{
@@ -84,7 +84,7 @@ slow:
 	@echo "done"
 `
 		makefilePath := filepath.Join(tmpDir, "Makefile")
-		os.WriteFile(makefilePath, []byte(makefile), 0644)
+		_ = os.WriteFile(makefilePath, []byte(makefile), 0644)
 
 		// Setup tool
 		tool := &ProjectActionsTool{
@@ -152,19 +152,19 @@ func TestGitOperations(t *testing.T) {
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 		cmd = exec.Command("git", "config", "user.name", "Test User")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 		cmd = exec.Command("git", "config", "user.email", "test@example.com")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 
 		// Create test files
 		file1 := filepath.Join(tmpDir, "file1.txt")
 		file2 := filepath.Join(tmpDir, "file2.txt")
-		os.WriteFile(file1, []byte("content1"), 0644)
-		os.WriteFile(file2, []byte("content2"), 0644)
+		_ = os.WriteFile(file1, []byte("content1"), 0644)
+		_ = os.WriteFile(file2, []byte("content2"), 0644)
 
 		// Setup tool
 		tool := &ProjectActionsTool{
@@ -199,20 +199,20 @@ func TestGitOperations(t *testing.T) {
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 		cmd = exec.Command("git", "config", "user.name", "Test User")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 		cmd = exec.Command("git", "config", "user.email", "test@example.com")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 
 		// Create and stage a file
 		file := filepath.Join(tmpDir, "test.txt")
-		os.WriteFile(file, []byte("test content"), 0644)
+		_ = os.WriteFile(file, []byte("test content"), 0644)
 		cmd = exec.Command("git", "add", "test.txt")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 
 		// Setup tool
 		tool := &ProjectActionsTool{
@@ -248,19 +248,19 @@ func TestGitOperations(t *testing.T) {
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 		cmd = exec.Command("git", "config", "user.name", "Test User")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 		cmd = exec.Command("git", "config", "user.email", "test@example.com")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 
 		// Create test files
 		file1 := filepath.Join(tmpDir, "file1.txt")
 		file2 := filepath.Join(tmpDir, "file2.txt")
-		os.WriteFile(file1, []byte("content1"), 0644)
-		os.WriteFile(file2, []byte("content2"), 0644)
+		_ = os.WriteFile(file1, []byte("content1"), 0644)
+		_ = os.WriteFile(file2, []byte("content2"), 0644)
 
 		// Setup tool
 		tool := &ProjectActionsTool{

@@ -19,7 +19,7 @@ func TestDryRunMode(t *testing.T) {
 test:
 	@echo "should not execute"
 `
-		os.WriteFile(filepath.Join(tmpDir, "Makefile"), []byte(makefile), 0644)
+		_ = os.WriteFile(filepath.Join(tmpDir, "Makefile"), []byte(makefile), 0644)
 
 		// Setup tool
 		tool := &ProjectActionsTool{
@@ -56,17 +56,17 @@ test:
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 		cmd = exec.Command("git", "config", "user.name", "Test User")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 		cmd = exec.Command("git", "config", "user.email", "test@example.com")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 
 		// Create test file
 		testFile := filepath.Join(tmpDir, "test.txt")
-		os.WriteFile(testFile, []byte("content"), 0644)
+		_ = os.WriteFile(testFile, []byte("content"), 0644)
 
 		// Setup tool
 		tool := &ProjectActionsTool{

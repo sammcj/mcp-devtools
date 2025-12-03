@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -38,9 +39,8 @@ const (
 func init() {
 	maxSize := DefaultMaxCommitMessageSize
 	if envSize := os.Getenv("PROJECT_ACTIONS_MAX_COMMIT_SIZE"); envSize != "" {
-		if size, err := fmt.Sscanf(envSize, "%d", &maxSize); err == nil && size == 1 {
-			// Successfully parsed
-		}
+		// Parse max size from environment, use default if invalid
+		_, _ = fmt.Sscanf(envSize, "%d", &maxSize)
 	}
 
 	tool := &ProjectActionsTool{
@@ -232,10 +232,10 @@ func (t *ProjectActionsTool) validateWorkingDirectory(dir string) error {
 // checkToolAvailability verifies required tools are on PATH
 func (t *ProjectActionsTool) checkToolAvailability() error {
 	if _, err := exec.LookPath("make"); err != nil {
-		return fmt.Errorf(ErrMsgMakeNotFound)
+		return errors.New(ErrMsgMakeNotFound)
 	}
 	if _, err := exec.LookPath("git"); err != nil {
-		return fmt.Errorf(ErrMsgGitNotFound)
+		return errors.New(ErrMsgGitNotFound)
 	}
 	return nil
 }
@@ -400,11 +400,13 @@ func (t *ProjectActionsTool) executeCommand(ctx context.Context, cmd *exec.Cmd, 
 				line := scanner.Text()
 				lineCount++
 				// Send progress notification
-				srv.SendNotificationToClient(ctx, "notifications/progress", map[string]any{
+				if err := srv.SendNotificationToClient(ctx, "notifications/progress", map[string]any{
 					"progressToken": progressToken,
 					"progress":      float64(lineCount),
 					"message":       line,
-				})
+				}); err != nil {
+					logrus.WithError(err).Info("failed to send progress notification")
+				}
 			}
 		}()
 	} else {
@@ -412,13 +414,17 @@ func (t *ProjectActionsTool) executeCommand(ctx context.Context, cmd *exec.Cmd, 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			io.Copy(&stdoutBuf, stdoutPipe)
+			if _, err := io.Copy(&stdoutBuf, stdoutPipe); err != nil {
+				logrus.WithError(err).Info("error copying stdout")
+			}
 		}()
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			io.Copy(&stderrBuf, stderrPipe)
+			if _, err := io.Copy(&stderrBuf, stderrPipe); err != nil {
+				logrus.WithError(err).Info("error copying stderr")
+			}
 		}()
 	}
 

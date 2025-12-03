@@ -19,7 +19,7 @@ func TestErrorHandling(t *testing.T) {
 fail:
 	@exit 42
 `
-		os.WriteFile(filepath.Join(tmpDir, "Makefile"), []byte(makefile), 0644)
+		_ = os.WriteFile(filepath.Join(tmpDir, "Makefile"), []byte(makefile), 0644)
 
 		tool := &ProjectActionsTool{
 			workingDir:      tmpDir,
@@ -43,7 +43,7 @@ fail:
 
 		// Create Makefile that increments counter on each run
 		counterFile := filepath.Join(tmpDir, "counter.txt")
-		os.WriteFile(counterFile, []byte("0"), 0644)
+		_ = os.WriteFile(counterFile, []byte("0"), 0644)
 
 		makefile := `.PHONY: count-and-fail
 
@@ -51,7 +51,7 @@ count-and-fail:
 	@echo $$(( $$(cat counter.txt) + 1 )) > counter.txt
 	@exit 1
 `
-		os.WriteFile(filepath.Join(tmpDir, "Makefile"), []byte(makefile), 0644)
+		_ = os.WriteFile(filepath.Join(tmpDir, "Makefile"), []byte(makefile), 0644)
 
 		tool := &ProjectActionsTool{
 			workingDir:      tmpDir,
@@ -79,7 +79,7 @@ count-and-fail:
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir
-		cmd.Run()
+		_ = cmd.Run()
 
 		tool := &ProjectActionsTool{
 			workingDir:           tmpDir,

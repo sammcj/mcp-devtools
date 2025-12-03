@@ -21,7 +21,7 @@ test:
 	@echo "test"
 `
 		makefilePath := filepath.Join(tmpDir, "Makefile")
-		os.WriteFile(makefilePath, []byte(makefile), 0644)
+		_ = os.WriteFile(makefilePath, []byte(makefile), 0644)
 
 		// Setup tool with security operations
 		tool := &ProjectActionsTool{
@@ -51,7 +51,7 @@ test:
 	@echo "test"
 `
 		makefilePath := filepath.Join(tmpDir, "Makefile")
-		os.WriteFile(makefilePath, []byte(makefile), 0644)
+		_ = os.WriteFile(makefilePath, []byte(makefile), 0644)
 
 		tool := &ProjectActionsTool{
 			workingDir: tmpDir,
@@ -91,7 +91,7 @@ test:
 	@echo "test"
 `
 		makefilePath := filepath.Join(tmpDir, "Makefile")
-		os.WriteFile(makefilePath, []byte(makefile), 0644)
+		_ = os.WriteFile(makefilePath, []byte(makefile), 0644)
 
 		// Capture log output
 		oldLevel := logrus.GetLevel()
