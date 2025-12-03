@@ -118,12 +118,12 @@ references:
   - [x] 20.2. Test path traversal prevention
   - [x] 20.3. Test working directory containment
 
-- [ ] 21. Write unit tests for Makefile generation
-  - [ ] 21.1. Test Python template generation
-  - [ ] 21.2. Test Rust template generation
-  - [ ] 21.3. Test Go template generation
-  - [ ] 21.4. Test Node.js template generation
-  - [ ] 21.5. Verify tab indentation in all templates
+- [x] 21. Write unit tests for Makefile generation
+  - [x] 21.1. Test Python template generation
+  - [x] 21.2. Test Rust template generation
+  - [x] 21.3. Test Go template generation
+  - [x] 21.4. Test Node.js template generation
+  - [x] 21.5. Verify tab indentation in all templates
 
 - [ ] 22. Write integration tests for make target execution
   - [ ] 22.1. Create temp directory with test Makefile
