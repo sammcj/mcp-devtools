@@ -5,7 +5,7 @@ import "github.com/sammcj/mcp-devtools/internal/tools"
 // ProvideExtendedInfo provides detailed usage information for the project_actions tool
 func (t *ProjectActionsTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 	return &tools.ExtendedHelp{
-		WhenToUse:    "Use this tool to execute project development tasks (tests, linters, formatters) and git operations through a project's Makefile. Ideal for running project-specific commands without knowing the exact tooling setup.",
+		WhenToUse:    "Use this tool to execute project development tasks (tests, linters, formatters) through a project's Makefile and limited git operations. Ideal for running project-specific commands without knowing the exact tooling setup.",
 		WhenNotToUse: "Don't use for arbitrary shell commands, file operations outside the project, or when you need to modify Makefile content. Requires security tool to be enabled.",
 		Examples: []tools.ToolExample{
 			{

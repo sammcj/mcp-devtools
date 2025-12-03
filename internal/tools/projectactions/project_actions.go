@@ -55,7 +55,7 @@ func init() {
 func (t *ProjectActionsTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		"project_actions",
-		mcp.WithDescription("Execute project development tasks (tests, linters, formatters) and git operations through a project's Makefile. Operations: make targets (from .PHONY), 'add' (git add files), 'commit' (git commit), 'generate' (create Makefile). Requires security tool enabled."),
+		mcp.WithDescription("Execute project development tasks (tests, linters, formatters) through a project's Makefile and limited git operations. Operations: make targets (from .PHONY), 'add' (git add files), 'commit' (git commit), 'generate' (create Makefile). Requires security tool enabled."),
 		mcp.WithString("operation",
 			mcp.Required(),
 			mcp.Description("Operation to perform: any .PHONY target from Makefile, 'add', 'commit', or 'generate'"),
