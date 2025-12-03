@@ -103,10 +103,10 @@ references:
   - [x] 17.1. Define CommandResult struct
   - [x] 17.2. Define ToolArgs struct for input parameters
 
-- [ ] 18. Write unit tests for working directory validation
-  - [ ] 18.1. Test valid directory acceptance
-  - [ ] 18.2. Test system directory rejection
-  - [ ] 18.3. Test writability check
+- [x] 18. Write unit tests for working directory validation
+  - [x] 18.1. Test valid directory acceptance
+  - [x] 18.2. Test system directory rejection
+  - [x] 18.3. Test writability check
 
 - [ ] 19. Write unit tests for Makefile parsing
   - [ ] 19.1. Test valid target name extraction

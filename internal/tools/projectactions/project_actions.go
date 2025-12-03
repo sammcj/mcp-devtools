@@ -65,7 +65,6 @@ func (t *ProjectActionsTool) Definition() mcp.Tool {
 		),
 		mcp.WithArray("paths",
 			mcp.Description("File paths for 'add' operation (relative to working directory)"),
-			mcp.Items(mcp.NewSchema(mcp.WithType("string"))),
 		),
 		mcp.WithString("message",
 			mcp.Description("Commit message for 'commit' operation"),
