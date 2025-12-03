@@ -310,3 +310,42 @@ func (t *ProjectActionsTool) validateAndResolvePath(relativePath string) (string
 
 	return absPath, nil
 }
+
+// executeGitAdd executes git add for multiple files in a single batch operation
+func (t *ProjectActionsTool) executeGitAdd(ctx context.Context, paths []string, dryRun bool) (*CommandResult, error) {
+	if len(paths) == 0 {
+		return nil, fmt.Errorf("no paths provided for git add")
+	}
+
+	// Validate and resolve each path
+	var validPaths []string
+	for _, path := range paths {
+		absPath, err := t.validateAndResolvePath(path)
+		if err != nil {
+			return nil, err
+		}
+		validPaths = append(validPaths, absPath)
+	}
+
+	// Build single git add command with all paths
+	args := append([]string{"add"}, validPaths...)
+	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd.Dir = t.workingDir
+
+	if dryRun {
+		return &CommandResult{
+			Command:    fmt.Sprintf("git add %s", strings.Join(validPaths, " ")),
+			WorkingDir: t.workingDir,
+		}, nil
+	}
+
+	// Execute with streaming output
+	result, err := t.executeCommand(ctx, cmd)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", ErrMsgGitFailed, err)
+	}
+	if result.ExitCode != 0 {
+		result.Stderr = fmt.Sprintf("%s\n%s", ErrMsgGitFailed, result.Stderr)
+	}
+	return result, nil
+}

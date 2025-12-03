@@ -70,13 +70,13 @@ references:
   - [x] 12.2. Use filepath.Clean() and filepath.Abs()
   - [x] 12.3. Verify resolved paths are within working directory
 
-- [ ] 13. Implement git add (batch)
-  - [ ] 13.1. Create executeGitAdd() method
-  - [ ] 13.2. Accept array of relative file paths
-  - [ ] 13.3. Validate and resolve each path
-  - [ ] 13.4. Build single git add command with all paths
-  - [ ] 13.5. Execute with streaming output
-  - [ ] 13.6. Include hint about git init in error messages
+- [x] 13. Implement git add (batch)
+  - [x] 13.1. Create executeGitAdd() method
+  - [x] 13.2. Accept array of relative file paths
+  - [x] 13.3. Validate and resolve each path
+  - [x] 13.4. Build single git add command with all paths
+  - [x] 13.5. Execute with streaming output
+  - [x] 13.6. Include hint about git init in error messages
 
 - [ ] 14. Implement git commit with stdin
   - [ ] 14.1. Create executeGitCommit() method
