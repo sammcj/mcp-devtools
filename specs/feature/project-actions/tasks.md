@@ -145,10 +145,10 @@ references:
   - [x] 25.2. Test no automatic retry on failure
   - [x] 25.3. Test immediate error return
 
-- [ ] 26. Write tests for security integration
-  - [ ] 26.1. Test SafeFileRead usage for Makefile
-  - [ ] 26.2. Test SecurityError handling
-  - [ ] 26.3. Test security warning logging
+- [x] 26. Write tests for security integration
+  - [x] 26.1. Test SafeFileRead usage for Makefile
+  - [x] 26.2. Test SecurityError handling
+  - [x] 26.3. Test security warning logging
 
 - [ ] 27. Add comprehensive error messages
   - [ ] 27.1. Add all error message constants
