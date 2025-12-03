@@ -136,9 +136,9 @@ references:
   - [x] 23.3. Test git commit with stdin message
   - [x] 23.4. Verify git state after operations
 
-- [ ] 24. Write tests for dry-run mode
-  - [ ] 24.1. Test dry-run displays commands without execution
-  - [ ] 24.2. Test dry-run validates all parameters
+- [x] 24. Write tests for dry-run mode
+  - [x] 24.1. Test dry-run displays commands without execution
+  - [x] 24.2. Test dry-run validates all parameters
 
 - [ ] 25. Write tests for error handling
   - [ ] 25.1. Test command failure propagation
