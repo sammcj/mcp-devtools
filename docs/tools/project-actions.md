@@ -1,6 +1,6 @@
 # Project Actions Tool
 
-Execute project development tasks (tests, linters, formatters) and git operations through a project's Makefile.
+Execute project development tasks (tests, linters, formatters) through a project's Makefile, along with (very) limited git operations.
 
 ## Overview
 
@@ -20,7 +20,7 @@ The tool integrates with the security framework to:
 
 ### Make Targets
 
-Execute any `.PHONY` target defined in the project's Makefile.
+Execute any `.PHONY` target defined in the project's Makefile.  Targets must conform to a very limited regex, consisting of only alphanumeric characters, hyphen, and underscore.
 
 **Parameters:**
 - `operation`: Target name from Makefile (e.g., "test", "lint", "build")
@@ -287,7 +287,6 @@ commit message exceeds 16 KB limit
 
 - Only executes `.PHONY` targets from Makefile
 - Does not validate or scan Makefile commands
-- No automatic retry on command failure
 - Requires `make` and `git` on system PATH
 - Single Makefile per project (in working directory root)
 
@@ -338,7 +337,3 @@ commit message exceeds 16 KB limit
 ```
 
 Returns command preview without execution.
-
-## Maturity
-
-🟡 Beta - Core functionality complete, extensive testing in progress
