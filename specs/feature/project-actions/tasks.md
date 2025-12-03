@@ -108,10 +108,10 @@ references:
   - [x] 18.2. Test system directory rejection
   - [x] 18.3. Test writability check
 
-- [ ] 19. Write unit tests for Makefile parsing
-  - [ ] 19.1. Test valid target name extraction
-  - [ ] 19.2. Test invalid target name rejection
-  - [ ] 19.3. Test malformed Makefile handling
+- [x] 19. Write unit tests for Makefile parsing
+  - [x] 19.1. Test valid target name extraction
+  - [x] 19.2. Test invalid target name rejection
+  - [x] 19.3. Test malformed Makefile handling
 
 - [ ] 20. Write unit tests for path validation
   - [ ] 20.1. Test path resolution with filepath.Clean/Abs
