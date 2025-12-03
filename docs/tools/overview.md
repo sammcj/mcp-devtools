@@ -2,7 +2,7 @@
 
 MCP DevTools provides a comprehensive suite of developer tools through a single binary. All tools are designed to work on both macOS and Linux environments.
 
-Each tool has it's own documentation in this directory, detailing its purpose, actions, parameters, and usage examples.
+Each tool has its own documentation in this directory, detailing its purpose, actions, parameters, and usage examples.
 
 ## Quick Reference
 
