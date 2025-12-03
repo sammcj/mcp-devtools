@@ -125,10 +125,10 @@ references:
   - [x] 21.4. Test Node.js template generation
   - [x] 21.5. Verify tab indentation in all templates
 
-- [ ] 22. Write integration tests for make target execution
-  - [ ] 22.1. Create temp directory with test Makefile
-  - [ ] 22.2. Execute make target and verify output
-  - [ ] 22.3. Verify exit code and timing capture
+- [x] 22. Write integration tests for make target execution
+  - [x] 22.1. Create temp directory with test Makefile
+  - [x] 22.2. Execute make target and verify output
+  - [x] 22.3. Verify exit code and timing capture
 
 - [ ] 23. Write integration tests for git operations
   - [ ] 23.1. Initialize test git repository
