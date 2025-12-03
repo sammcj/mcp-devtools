@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -127,4 +129,40 @@ func (t *ProjectActionsTool) readMakefile(makefilePath string) (string, error) {
 	}
 
 	return string(result.Content), nil
+}
+
+// parsePhonyTargets extracts and validates .PHONY target names from Makefile content
+func (t *ProjectActionsTool) parsePhonyTargets(makefileContent string) ([]string, error) {
+	// Regex to match .PHONY lines
+	phonyRegex := regexp.MustCompile(`(?m)^\.PHONY:\s*(.+)$`)
+	matches := phonyRegex.FindAllStringSubmatch(makefileContent, -1)
+
+	if len(matches) == 0 {
+		return []string{}, nil
+	}
+
+	// Target name validation regex (alphanumeric, hyphen, underscore only)
+	targetRegex := regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
+	var targets []string
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+
+		// Split targets by whitespace
+		parts := strings.Fields(match[1])
+		for _, target := range parts {
+			// Validate target name
+			if !targetRegex.MatchString(target) {
+				return nil, &ProjectActionsError{
+					Type:    ErrorInvalidTarget,
+					Message: fmt.Sprintf("invalid target name '%s': must contain only alphanumeric, hyphen, or underscore characters", target),
+				}
+			}
+			targets = append(targets, target)
+		}
+	}
+
+	return targets, nil
 }
