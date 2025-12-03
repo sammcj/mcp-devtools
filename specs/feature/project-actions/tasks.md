@@ -99,9 +99,9 @@ references:
   - [x] 16.3. Route to appropriate handler (make/add/commit)
   - [x] 16.4. Display working directory in output
 
-- [ ] 17. Create types.go with data models
-  - [ ] 17.1. Define CommandResult struct
-  - [ ] 17.2. Define ToolArgs struct for input parameters
+- [x] 17. Create types.go with data models
+  - [x] 17.1. Define CommandResult struct
+  - [x] 17.2. Define ToolArgs struct for input parameters
 
 - [ ] 18. Write unit tests for working directory validation
   - [ ] 18.1. Test valid directory acceptance
