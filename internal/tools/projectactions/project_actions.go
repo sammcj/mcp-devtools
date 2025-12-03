@@ -11,6 +11,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
+	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,11 +20,14 @@ type ProjectActionsTool struct {
 	workingDir           string
 	makefileTargets      []string
 	maxCommitMessageSize int
+	secOps               *security.Operations
 }
 
 // init registers the tool with the registry
 func init() {
-	tool := &ProjectActionsTool{}
+	tool := &ProjectActionsTool{
+		secOps: security.NewOperations("project_actions"),
+	}
 	if err := tool.checkToolAvailability(); err != nil {
 		logrus.Warn(err.Error())
 	}
@@ -97,4 +101,30 @@ func (t *ProjectActionsTool) checkToolAvailability() error {
 		return fmt.Errorf("git not found on PATH - install git to use git operations")
 	}
 	return nil
+}
+
+// readMakefile reads the Makefile using security-aware file operations
+func (t *ProjectActionsTool) readMakefile(makefilePath string) (string, error) {
+	result, err := t.secOps.SafeFileRead(makefilePath)
+	if err != nil {
+		// Check if it's a security error
+		if secErr, ok := err.(*security.SecurityError); ok {
+			return "", &ProjectActionsError{
+				Type:    ErrorMakefileInvalid,
+				Message: fmt.Sprintf("Makefile blocked by security: %s", secErr.Message),
+				Cause:   err,
+			}
+		}
+		return "", err
+	}
+
+	// Log security warnings if present
+	if result.SecurityResult != nil {
+		logrus.WithFields(logrus.Fields{
+			"security_id": result.SecurityResult.ID,
+			"message":     result.SecurityResult.Message,
+		}).Warn("Security warning for Makefile")
+	}
+
+	return string(result.Content), nil
 }
