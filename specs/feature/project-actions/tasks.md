@@ -154,10 +154,10 @@ references:
   - [x] 27.1. Add all error message constants
   - [x] 27.2. Include git init hint in git error messages
 
-- [ ] 28. Implement extended help via ProvideExtendedInfo()
-  - [ ] 28.1. Create ProvideExtendedInfo() method
-  - [ ] 28.2. Add usage examples for all operations
-  - [ ] 28.3. Add troubleshooting tips
+- [x] 28. Implement extended help via ProvideExtendedInfo()
+  - [x] 28.1. Create ProvideExtendedInfo() method
+  - [x] 28.2. Add usage examples for all operations
+  - [x] 28.3. Add troubleshooting tips
 
 - [ ] 29. Write tool documentation
   - [ ] 29.1. Create docs/tools/project-actions.md
