@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 	"syscall"
@@ -22,7 +23,11 @@ type ProjectActionsTool struct {
 
 // init registers the tool with the registry
 func init() {
-	registry.Register(&ProjectActionsTool{})
+	tool := &ProjectActionsTool{}
+	if err := tool.checkToolAvailability(); err != nil {
+		logrus.Warn(err.Error())
+	}
+	registry.Register(tool)
 }
 
 // Definition returns the tool's definition for MCP registration
@@ -80,5 +85,16 @@ func (t *ProjectActionsTool) validateWorkingDirectory(dir string) error {
 		return fmt.Errorf("working directory not writable by current user: %s", absDir)
 	}
 
+	return nil
+}
+
+// checkToolAvailability verifies required tools are on PATH
+func (t *ProjectActionsTool) checkToolAvailability() error {
+	if _, err := exec.LookPath("make"); err != nil {
+		return fmt.Errorf("make not found on PATH - install make to use this tool")
+	}
+	if _, err := exec.LookPath("git"); err != nil {
+		return fmt.Errorf("git not found on PATH - install git to use git operations")
+	}
 	return nil
 }

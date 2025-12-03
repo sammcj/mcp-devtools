@@ -14,10 +14,10 @@ references:
   - [x] 2.2. Add system directory blocking logic
   - [x] 2.3. Add writability check via owner and permissions
 
-- [ ] 3. Implement tool availability checking
-  - [ ] 3.1. Create checkToolAvailability() helper function
-  - [ ] 3.2. Check for make and git on PATH during initialization
-  - [ ] 3.3. Return error if required tools not found
+- [x] 3. Implement tool availability checking
+  - [x] 3.1. Create checkToolAvailability() helper function
+  - [x] 3.2. Check for make and git on PATH during initialization
+  - [x] 3.3. Return error if required tools not found
 
 - [ ] 4. Create error types and constants
   - [ ] 4.1. Define ProjectActionsError struct with ErrorType enum
