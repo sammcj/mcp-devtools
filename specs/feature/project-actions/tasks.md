@@ -130,11 +130,11 @@ references:
   - [x] 22.2. Execute make target and verify output
   - [x] 22.3. Verify exit code and timing capture
 
-- [ ] 23. Write integration tests for git operations
-  - [ ] 23.1. Initialize test git repository
-  - [ ] 23.2. Test git add with multiple files
-  - [ ] 23.3. Test git commit with stdin message
-  - [ ] 23.4. Verify git state after operations
+- [x] 23. Write integration tests for git operations
+  - [x] 23.1. Initialize test git repository
+  - [x] 23.2. Test git add with multiple files
+  - [x] 23.3. Test git commit with stdin message
+  - [x] 23.4. Verify git state after operations
 
 - [ ] 24. Write tests for dry-run mode
   - [ ] 24.1. Test dry-run displays commands without execution
