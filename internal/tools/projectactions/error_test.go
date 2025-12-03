@@ -12,7 +12,7 @@ import (
 func TestErrorHandling(t *testing.T) {
 	t.Run("command failure propagation", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Create Makefile with failing target
 		makefile := `.PHONY: fail
 
@@ -40,11 +40,11 @@ fail:
 
 	t.Run("no automatic retry on failure", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Create Makefile that increments counter on each run
 		counterFile := filepath.Join(tmpDir, "counter.txt")
 		os.WriteFile(counterFile, []byte("0"), 0644)
-		
+
 		makefile := `.PHONY: count-and-fail
 
 count-and-fail:
@@ -75,7 +75,7 @@ count-and-fail:
 
 	t.Run("immediate error return", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir

@@ -14,10 +14,10 @@ type CommandResult struct {
 
 // ToolArgs represents the input parameters for the tool
 type ToolArgs struct {
-	Operation   string   `json:"operation"`
-	WorkingDir  string   `json:"working_directory,omitempty"`
-	Paths       []string `json:"paths,omitempty"`
-	Message     string   `json:"message,omitempty"`
-	Language    string   `json:"language,omitempty"`
-	DryRun      bool     `json:"dry_run,omitempty"`
+	Operation  string   `json:"operation"`
+	WorkingDir string   `json:"working_directory,omitempty"`
+	Paths      []string `json:"paths,omitempty"`
+	Message    string   `json:"message,omitempty"`
+	Language   string   `json:"language,omitempty"`
+	DryRun     bool     `json:"dry_run,omitempty"`
 }

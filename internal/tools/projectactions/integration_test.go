@@ -17,7 +17,7 @@ func TestMakeTargetExecution(t *testing.T) {
 
 	t.Run("create temp directory with test Makefile", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Create test Makefile
 		makefile := `.PHONY: test echo
 
@@ -41,7 +41,7 @@ echo:
 
 	t.Run("execute make target and verify output", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Create test Makefile
 		makefile := `.PHONY: echo
 
@@ -75,7 +75,7 @@ echo:
 
 	t.Run("verify exit code and timing capture", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Create test Makefile with sleep
 		makefile := `.PHONY: slow
 
@@ -123,7 +123,7 @@ func TestGitOperations(t *testing.T) {
 
 	t.Run("initialize test git repository", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir
@@ -144,7 +144,7 @@ func TestGitOperations(t *testing.T) {
 
 	t.Run("git add with multiple files", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir
@@ -191,7 +191,7 @@ func TestGitOperations(t *testing.T) {
 
 	t.Run("git commit with stdin message", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir
@@ -240,7 +240,7 @@ func TestGitOperations(t *testing.T) {
 
 	t.Run("verify git state after operations", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir

@@ -35,12 +35,12 @@ func (e *ProjectActionsError) Unwrap() error {
 
 // Error message constants
 const (
-	ErrMsgSystemDir       = "working directory cannot be a system directory: %s"
-	ErrMsgNotWritable     = "working directory not writable by current user: %s"
-	ErrMsgMakeNotFound    = "make not found on PATH - install make to use this tool"
-	ErrMsgGitNotFound     = "git not found on PATH - install git to use git operations"
-	ErrMsgInvalidTarget   = "target '%s' not found in Makefile .PHONY targets"
-	ErrMsgPathEscape      = "path escapes working directory: %s"
-	ErrMsgCommitTooLarge  = "commit message exceeds %d KB limit (use PROJECT_ACTIONS_MAX_COMMIT_SIZE to adjust)"
-	ErrMsgGitFailed       = "git command failed - you may need to run 'git init' or specify another directory"
+	ErrMsgSystemDir      = "working directory cannot be a system directory: %s"
+	ErrMsgNotWritable    = "working directory not writable by current user: %s"
+	ErrMsgMakeNotFound   = "make not found on PATH - install make to use this tool"
+	ErrMsgGitNotFound    = "git not found on PATH - install git to use git operations"
+	ErrMsgInvalidTarget  = "target '%s' not found in Makefile .PHONY targets"
+	ErrMsgPathEscape     = "path escapes working directory: %s"
+	ErrMsgCommitTooLarge = "commit message exceeds %d KB limit (use PROJECT_ACTIONS_MAX_COMMIT_SIZE to adjust)"
+	ErrMsgGitFailed      = "git command failed - you may need to run 'git init' or specify another directory"
 )

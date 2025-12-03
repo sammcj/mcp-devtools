@@ -13,7 +13,7 @@ import (
 func TestSecurityIntegration(t *testing.T) {
 	t.Run("SafeFileRead usage for Makefile", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Create test Makefile
 		makefile := `.PHONY: test
 
@@ -43,7 +43,7 @@ test:
 
 	t.Run("SecurityError handling", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Create Makefile with potentially suspicious content
 		makefile := `.PHONY: test
 
@@ -60,7 +60,7 @@ test:
 
 		// Read Makefile - should handle any security errors gracefully
 		content, err := tool.readMakefile(makefilePath)
-		
+
 		// If security blocks it, error should be ProjectActionsError
 		if err != nil {
 			if paErr, ok := err.(*ProjectActionsError); ok {
@@ -83,7 +83,7 @@ test:
 
 	t.Run("security warning logging", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Create test Makefile
 		makefile := `.PHONY: test
 

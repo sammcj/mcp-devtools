@@ -12,7 +12,7 @@ import (
 func TestDryRunMode(t *testing.T) {
 	t.Run("dry-run displays commands without execution", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Create test Makefile
 		makefile := `.PHONY: test
 
@@ -52,7 +52,7 @@ test:
 
 	t.Run("dry-run validates all parameters", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		// Initialize git repo
 		cmd := exec.Command("git", "init")
 		cmd.Dir = tmpDir
