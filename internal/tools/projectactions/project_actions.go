@@ -1,8 +1,10 @@
 package projectactions
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -220,10 +222,46 @@ func (t *ProjectActionsTool) executeMakeTarget(ctx context.Context, target strin
 	return t.executeCommand(ctx, cmd)
 }
 
-// executeCommand executes a command with streaming output (placeholder for task 10)
+// executeCommand executes a command with real-time streaming output
 func (t *ProjectActionsTool) executeCommand(ctx context.Context, cmd *exec.Cmd) (*CommandResult, error) {
+	// Set up separate stdout/stderr pipes
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
+	var stdoutBuf, stderrBuf bytes.Buffer
+	var wg sync.WaitGroup
+
+	// Start command
 	start := time.Now()
-	output, err := cmd.CombinedOutput()
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start command: %w", err)
+	}
+
+	// Stream stdout in real-time
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		io.Copy(&stdoutBuf, stdoutPipe)
+	}()
+
+	// Stream stderr in real-time
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		io.Copy(&stderrBuf, stderrPipe)
+	}()
+
+	// Wait for streaming to complete
+	wg.Wait()
+
+	// Wait for command to finish and capture exit code
+	err = cmd.Wait()
 	duration := time.Since(start)
 
 	exitCode := 0
@@ -237,7 +275,8 @@ func (t *ProjectActionsTool) executeCommand(ctx context.Context, cmd *exec.Cmd) 
 
 	return &CommandResult{
 		Command:    cmd.String(),
-		Stdout:     string(output),
+		Stdout:     stdoutBuf.String(),
+		Stderr:     stderrBuf.String(),
 		ExitCode:   exitCode,
 		Duration:   duration,
 		WorkingDir: cmd.Dir,
