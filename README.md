@@ -303,6 +303,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts       | `sequential-thinking`     | Step-by-step analysis, revision, branching    | 🟢       |
 | **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                              | `api`                     | Configure any REST API via YAML               | 🔴       |
 | **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                             | `filesystem`              | Read, write, edit, search files               | 🟡       |
+| **[Project Actions](docs/tools/project-actions.md)**                 | Execute project tasks and git operations via Makefile     | `project_actions`         | Run tests, linters, formatters, git workflow  | 🟡       |
 | **[MCP Proxy](docs/tools/proxy.md)**                                 | Proxies MCP requests from upstream HTTP/SSE servers       | `proxy`                   | Provide HTTP/SSE MCP servers to STDIO clients | 🟡       |
 
 **Agents as Tools** - In addition to the above tools, MCP DevTools can provide access to AI agents as tools by integrating with external LLMs.

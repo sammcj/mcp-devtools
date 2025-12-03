@@ -165,6 +165,6 @@ references:
   - [x] 29.3. Document all operations and parameters
   - [x] 29.4. Add examples for each language template
 
-- [ ] 30. Update main README.md
-  - [ ] 30.1. Add project-actions to tools table
-  - [ ] 30.2. Document ENABLE_ADDITIONAL_TOOLS requirement
+- [x] 30. Update main README.md
+  - [x] 30.1. Add project-actions to tools table
+  - [x] 30.2. Document ENABLE_ADDITIONAL_TOOLS requirement

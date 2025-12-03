@@ -80,6 +80,15 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 6. Excel (create_table) → Convert data to structured tables
 ```
 
+#### Project Development Workflow
+```
+1. Project Actions (generate) → Create Makefile for project language
+2. Project Actions (test) → Run tests via Makefile
+3. Project Actions (lint) → Run linters
+4. Project Actions (add) → Stage modified files
+5. Project Actions (commit) → Create commit
+```
+
 ## Configuration Quick Start
 
 ### Minimal Configuration (Most Tools Available)
@@ -102,7 +111,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "ENABLE_ADDITIONAL_TOOLS": "aws_documentation,fetch_url,internet_search,think,memory,filesystem,shadcn_ui,magic_ui,aceternity_ui,security,claude-agent,codex-agent,copilot-agent,gemini-agent,kiro-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking,excel,find_long_files,code_skim,code_rename",
+        "ENABLE_ADDITIONAL_TOOLS": "aws_documentation,fetch_url,internet_search,think,memory,filesystem,project_actions,shadcn_ui,magic_ui,aceternity_ui,security,claude-agent,codex-agent,copilot-agent,gemini-agent,kiro-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking,excel,find_long_files,code_skim,code_rename",
         "GOOGLE_CLOUD_PROJECT": "gemini-code-assist-123456",
         "BRAVE_API_KEY": "abc123",
         "SEARXNG_BASE_URL": "https://searxng.your.domain",
@@ -136,6 +145,8 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 - Code research → Internet Search + Web Fetch
 - Codebase exploration → Code Skim + Think
 - Symbol renaming → Code Rename
+- Project tasks → Project Actions (tests, linters, formatters)
+- Git workflow → Project Actions (add, commit)
 - Architecture planning → Sequential Thinking + Think + Memory
 - Complex debugging → Sequential Thinking + Internet Search
 - File operations → Filesystem + Think
