@@ -140,10 +140,10 @@ references:
   - [x] 24.1. Test dry-run displays commands without execution
   - [x] 24.2. Test dry-run validates all parameters
 
-- [ ] 25. Write tests for error handling
-  - [ ] 25.1. Test command failure propagation
-  - [ ] 25.2. Test no automatic retry on failure
-  - [ ] 25.3. Test immediate error return
+- [x] 25. Write tests for error handling
+  - [x] 25.1. Test command failure propagation
+  - [x] 25.2. Test no automatic retry on failure
+  - [x] 25.3. Test immediate error return
 
 - [ ] 26. Write tests for security integration
   - [ ] 26.1. Test SafeFileRead usage for Makefile
