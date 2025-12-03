@@ -9,10 +9,10 @@ references:
   - [x] 1.1. Create internal/tools/projectactions/project_actions.go with ProjectActionsTool struct
   - [x] 1.2. Implement init() function with tool registration
 
-- [ ] 2. Implement working directory validation
-  - [ ] 2.1. Create validateWorkingDirectory() method
-  - [ ] 2.2. Add system directory blocking logic
-  - [ ] 2.3. Add writability check via owner and permissions
+- [x] 2. Implement working directory validation
+  - [x] 2.1. Create validateWorkingDirectory() method
+  - [x] 2.2. Add system directory blocking logic
+  - [x] 2.3. Add writability check via owner and permissions
 
 - [ ] 3. Implement tool availability checking
   - [ ] 3.1. Create checkToolAvailability() helper function
