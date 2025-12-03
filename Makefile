@@ -45,13 +45,13 @@ run-http: build
 .PHONY: test
 test:
 	@echo "Running tests (includes external API integration tests, ~10s)..."
-	@$(GOTEST) -count=1 $(GOFLAGS) ./tests/... ./internal/...
+	@$(GOTEST) -count=1 $(GOFLAGS) ./tests/... ./internal/... | grep -Ev '\[no test files\]$$'
 
 # Run fast tests (no external dependencies, ~7s)
 .PHONY: test-fast
 test-fast:
 	@echo "Running fast tests (skips external API integration tests)..."
-	@$(GOTEST) -short ./tests/... ./internal/...
+	@$(GOTEST) -short ./tests/... ./internal/... | grep -Ev '\[no test files\]$$'
 
 # Run tests with detailed per-test timing (shows all tests with time > 0.00s)
 .PHONY: test-verbose
