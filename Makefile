@@ -45,25 +45,25 @@ run-http: build
 .PHONY: test
 test:
 	@echo "Running tests (includes external API integration tests, ~10s)..."
-	@$(GOTEST) -count=1 $(GOFLAGS) ./tests/...
+	@$(GOTEST) -count=1 $(GOFLAGS) ./tests/... ./internal/...
 
 # Run fast tests (no external dependencies, ~7s)
 .PHONY: test-fast
 test-fast:
 	@echo "Running fast tests (skips external API integration tests)..."
-	@$(GOTEST) -short ./tests/...
+	@$(GOTEST) -short ./tests/... ./internal/...
 
 # Run tests with detailed per-test timing (shows all tests with time > 0.00s)
 .PHONY: test-verbose
 test-verbose:
 	@echo "Running tests with detailed timing for each test..."
-	@$(GOTEST) -count=1 -v $(GOFLAGS) ./tests/... | grep -E "(^=== RUN|^--- PASS|^--- FAIL)" | grep -E "(PASS|FAIL).*[0-9]+\.[0-9]+s" | sed 's/^--- PASS: /  ✓ /' | sed 's/^--- FAIL: /  ✗ /'
+	@$(GOTEST) -count=1 -v $(GOFLAGS) ./tests/... ./internal/... | grep -E "(^=== RUN|^--- PASS|^--- FAIL)" | grep -E "(PASS|FAIL).*[0-9]+\.[0-9]+s" | sed 's/^--- PASS: /  ✓ /' | sed 's/^--- FAIL: /  ✗ /'
 
 # Show slowest tests (useful for optimisation)
 .PHONY: test-slow
 test-slow:
 	@echo "Running tests and showing slowest tests..."
-	@$(GOTEST) -count=1 -v $(GOFLAGS) ./tests/... 2>&1 | grep -E "^--- PASS:" | grep -v "(0.00s)" | sed 's/^--- PASS: /  /' | sort -t'(' -k2 -rn
+	@$(GOTEST) -count=1 -v $(GOFLAGS) ./tests/... ./internal/... 2>&1 | grep -E "^--- PASS:" | grep -v "(0.00s)" | sed 's/^--- PASS: /  /' | sort -t'(' -k2 -rn
 
 # Benchmark tool token costs
 .PHONY: benchmark-tokens
