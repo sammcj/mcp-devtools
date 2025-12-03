@@ -60,10 +60,10 @@ references:
   - [x] 10.4. Capture exit code and execution duration
   - [x] 10.5. Return CommandResult with all captured data
 
-- [ ] 11. Add dry-run mode support
-  - [ ] 11.1. Check dry_run parameter in all operations
-  - [ ] 11.2. Display exact commands without execution when dry_run=true
-  - [ ] 11.3. Validate all parameters in dry-run mode
+- [x] 11. Add dry-run mode support
+  - [x] 11.1. Check dry_run parameter in all operations
+  - [x] 11.2. Display exact commands without execution when dry_run=true
+  - [x] 11.3. Validate all parameters in dry-run mode
 
 - [ ] 12. Implement path validation and resolution
   - [ ] 12.1. Create validateAndResolvePath() method
