@@ -28,10 +28,22 @@ type ProjectActionsTool struct {
 	secOps               *security.Operations
 }
 
+const (
+	DefaultMaxCommitMessageSize = 16 * 1024 // 16 KB
+)
+
 // init registers the tool with the registry
 func init() {
+	maxSize := DefaultMaxCommitMessageSize
+	if envSize := os.Getenv("PROJECT_ACTIONS_MAX_COMMIT_SIZE"); envSize != "" {
+		if size, err := fmt.Sscanf(envSize, "%d", &maxSize); err == nil && size == 1 {
+			// Successfully parsed
+		}
+	}
+
 	tool := &ProjectActionsTool{
-		secOps: security.NewOperations("project_actions"),
+		secOps:               security.NewOperations("project_actions"),
+		maxCommitMessageSize: maxSize,
 	}
 	if err := tool.checkToolAvailability(); err != nil {
 		logrus.Warn(err.Error())
@@ -335,6 +347,39 @@ func (t *ProjectActionsTool) executeGitAdd(ctx context.Context, paths []string, 
 	if dryRun {
 		return &CommandResult{
 			Command:    fmt.Sprintf("git add %s", strings.Join(validPaths, " ")),
+			WorkingDir: t.workingDir,
+		}, nil
+	}
+
+	// Execute with streaming output
+	result, err := t.executeCommand(ctx, cmd)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", ErrMsgGitFailed, err)
+	}
+	if result.ExitCode != 0 {
+		result.Stderr = fmt.Sprintf("%s\n%s", ErrMsgGitFailed, result.Stderr)
+	}
+	return result, nil
+}
+
+// executeGitCommit executes git commit with message passed via stdin
+func (t *ProjectActionsTool) executeGitCommit(ctx context.Context, message string, dryRun bool) (*CommandResult, error) {
+	// Validate message size
+	if len(message) > t.maxCommitMessageSize {
+		return nil, &ProjectActionsError{
+			Type:    ErrorCommitTooLarge,
+			Message: fmt.Sprintf(ErrMsgCommitTooLarge, t.maxCommitMessageSize/1024),
+		}
+	}
+
+	// Build command with --file=- to read from stdin
+	cmd := exec.CommandContext(ctx, "git", "commit", "--file=-")
+	cmd.Dir = t.workingDir
+	cmd.Stdin = strings.NewReader(message)
+
+	if dryRun {
+		return &CommandResult{
+			Command:    "git commit --file=-",
 			WorkingDir: t.workingDir,
 		}, nil
 	}

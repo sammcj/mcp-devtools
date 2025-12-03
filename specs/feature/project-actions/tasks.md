@@ -78,14 +78,14 @@ references:
   - [x] 13.5. Execute with streaming output
   - [x] 13.6. Include hint about git init in error messages
 
-- [ ] 14. Implement git commit with stdin
-  - [ ] 14.1. Create executeGitCommit() method
-  - [ ] 14.2. Accept single commit message parameter
-  - [ ] 14.3. Validate message size against limit
-  - [ ] 14.4. Support PROJECT_ACTIONS_MAX_COMMIT_SIZE env var
-  - [ ] 14.5. Pass message via stdin using git commit --file=-
-  - [ ] 14.6. Execute in working directory with streaming output
-  - [ ] 14.7. Include hint about git init in error messages
+- [x] 14. Implement git commit with stdin
+  - [x] 14.1. Create executeGitCommit() method
+  - [x] 14.2. Accept single commit message parameter
+  - [x] 14.3. Validate message size against limit
+  - [x] 14.4. Support PROJECT_ACTIONS_MAX_COMMIT_SIZE env var
+  - [x] 14.5. Pass message via stdin using git commit --file=-
+  - [x] 14.6. Execute in working directory with streaming output
+  - [x] 14.7. Include hint about git init in error messages
 
 - [ ] 15. Implement MCP tool Definition()
   - [ ] 15.1. Create Definition() method returning mcp.Tool
