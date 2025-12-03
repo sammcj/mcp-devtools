@@ -29,7 +29,7 @@ test:
 
 		// Execute in dry-run mode
 		ctx := context.Background()
-		result, err := tool.executeMakeTarget(ctx, "test", true)
+		result, err := tool.executeMakeTarget(ctx, "test", true, "")
 		if err != nil {
 			t.Fatalf("dry-run failed: %v", err)
 		}
@@ -77,7 +77,7 @@ test:
 		ctx := context.Background()
 
 		// Test git add dry-run with valid path
-		result, err := tool.executeGitAdd(ctx, []string{"test.txt"}, true)
+		result, err := tool.executeGitAdd(ctx, []string{"test.txt"}, true, "")
 		if err != nil {
 			t.Errorf("dry-run git add with valid path failed: %v", err)
 		}
@@ -86,13 +86,13 @@ test:
 		}
 
 		// Test git add dry-run with invalid path (should fail validation)
-		_, err = tool.executeGitAdd(ctx, []string{"../escape.txt"}, true)
+		_, err = tool.executeGitAdd(ctx, []string{"../escape.txt"}, true, "")
 		if err == nil {
 			t.Error("expected error for path escaping working directory in dry-run")
 		}
 
 		// Test git commit dry-run with valid message
-		result, err = tool.executeGitCommit(ctx, "Test commit", true)
+		result, err = tool.executeGitCommit(ctx, "Test commit", true, "")
 		if err != nil {
 			t.Errorf("dry-run git commit with valid message failed: %v", err)
 		}
@@ -102,7 +102,7 @@ test:
 
 		// Test git commit dry-run with oversized message
 		largeMsg := strings.Repeat("x", DefaultMaxCommitMessageSize+1)
-		_, err = tool.executeGitCommit(ctx, largeMsg, true)
+		_, err = tool.executeGitCommit(ctx, largeMsg, true, "")
 		if err == nil {
 			t.Error("expected error for oversized commit message in dry-run")
 		}

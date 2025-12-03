@@ -27,7 +27,7 @@ fail:
 		}
 
 		ctx := context.Background()
-		result, err := tool.executeMakeTarget(ctx, "fail", false)
+		result, err := tool.executeMakeTarget(ctx, "fail", false, "")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -59,7 +59,7 @@ count-and-fail:
 		}
 
 		ctx := context.Background()
-		result, _ := tool.executeMakeTarget(ctx, "count-and-fail", false)
+		result, _ := tool.executeMakeTarget(ctx, "count-and-fail", false, "")
 
 		// Verify command failed
 		if result.ExitCode == 0 {
@@ -89,7 +89,7 @@ count-and-fail:
 		ctx := context.Background()
 
 		// Test invalid path returns immediately
-		_, err := tool.executeGitAdd(ctx, []string{"../escape.txt"}, false)
+		_, err := tool.executeGitAdd(ctx, []string{"../escape.txt"}, false, "")
 		if err == nil {
 			t.Error("expected immediate error for invalid path")
 		}
@@ -99,7 +99,7 @@ count-and-fail:
 
 		// Test oversized commit message returns immediately
 		largeMsg := strings.Repeat("x", DefaultMaxCommitMessageSize+1)
-		_, err = tool.executeGitCommit(ctx, largeMsg, false)
+		_, err = tool.executeGitCommit(ctx, largeMsg, false, "")
 		if err == nil {
 			t.Error("expected immediate error for oversized message")
 		}
@@ -109,7 +109,7 @@ count-and-fail:
 
 		// Test invalid target returns immediately
 		tool.makefileTargets = []string{"valid"}
-		_, err = tool.executeMakeTarget(ctx, "invalid", false)
+		_, err = tool.executeMakeTarget(ctx, "invalid", false, "")
 		if err == nil {
 			t.Error("expected immediate error for invalid target")
 		}

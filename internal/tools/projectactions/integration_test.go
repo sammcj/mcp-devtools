@@ -59,7 +59,7 @@ echo:
 
 		// Execute target
 		ctx := context.Background()
-		result, err := tool.executeMakeTarget(ctx, "echo", false)
+		result, err := tool.executeMakeTarget(ctx, "echo", false, "")
 		if err != nil {
 			t.Fatalf("failed to execute make target: %v", err)
 		}
@@ -94,7 +94,7 @@ slow:
 
 		// Execute target
 		ctx := context.Background()
-		result, err := tool.executeMakeTarget(ctx, "slow", false)
+		result, err := tool.executeMakeTarget(ctx, "slow", false, "")
 		if err != nil {
 			t.Fatalf("failed to execute make target: %v", err)
 		}
@@ -169,7 +169,7 @@ func TestGitOperations(t *testing.T) {
 
 		// Execute git add
 		ctx := context.Background()
-		result, err := tool.executeGitAdd(ctx, []string{"file1.txt", "file2.txt"}, false)
+		result, err := tool.executeGitAdd(ctx, []string{"file1.txt", "file2.txt"}, false, "")
 		if err != nil {
 			t.Fatalf("failed to execute git add: %v", err)
 		}
@@ -219,7 +219,7 @@ func TestGitOperations(t *testing.T) {
 		// Execute git commit
 		ctx := context.Background()
 		commitMsg := "Test commit message\n\nWith multiple lines"
-		result, err := tool.executeGitCommit(ctx, commitMsg, false)
+		result, err := tool.executeGitCommit(ctx, commitMsg, false, "")
 		if err != nil {
 			t.Fatalf("failed to execute git commit: %v", err)
 		}
@@ -266,13 +266,13 @@ func TestGitOperations(t *testing.T) {
 
 		// Add files
 		ctx := context.Background()
-		_, err := tool.executeGitAdd(ctx, []string{"file1.txt", "file2.txt"}, false)
+		_, err := tool.executeGitAdd(ctx, []string{"file1.txt", "file2.txt"}, false, "")
 		if err != nil {
 			t.Fatalf("failed to add files: %v", err)
 		}
 
 		// Commit files
-		_, err = tool.executeGitCommit(ctx, "Initial commit", false)
+		_, err = tool.executeGitCommit(ctx, "Initial commit", false, "")
 		if err != nil {
 			t.Fatalf("failed to commit: %v", err)
 		}
