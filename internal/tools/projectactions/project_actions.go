@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
@@ -185,4 +186,60 @@ func (t *ProjectActionsTool) generateMakefile(language string) error {
 	}
 
 	return nil
+}
+
+// executeMakeTarget executes a make target with streaming output
+func (t *ProjectActionsTool) executeMakeTarget(ctx context.Context, target string, dryRun bool) (*CommandResult, error) {
+	// Validate target exists in makefileTargets
+	found := false
+	for _, t := range t.makefileTargets {
+		if t == target {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, &ProjectActionsError{
+			Type:    ErrorInvalidTarget,
+			Message: fmt.Sprintf(ErrMsgInvalidTarget, target),
+		}
+	}
+
+	// Build command
+	cmd := exec.CommandContext(ctx, "make", target)
+	cmd.Dir = t.workingDir
+
+	if dryRun {
+		return &CommandResult{
+			Command:    fmt.Sprintf("make %s", target),
+			WorkingDir: t.workingDir,
+		}, nil
+	}
+
+	// Execute with streaming output
+	return t.executeCommand(ctx, cmd)
+}
+
+// executeCommand executes a command with streaming output (placeholder for task 10)
+func (t *ProjectActionsTool) executeCommand(ctx context.Context, cmd *exec.Cmd) (*CommandResult, error) {
+	start := time.Now()
+	output, err := cmd.CombinedOutput()
+	duration := time.Since(start)
+
+	exitCode := 0
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			return nil, err
+		}
+	}
+
+	return &CommandResult{
+		Command:    cmd.String(),
+		Stdout:     string(output),
+		ExitCode:   exitCode,
+		Duration:   duration,
+		WorkingDir: cmd.Dir,
+	}, nil
 }
