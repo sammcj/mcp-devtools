@@ -3,6 +3,7 @@ package tools_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -122,13 +123,13 @@ func TestM2ETool_Execute_InlineMode_ExcessivelyLongText(t *testing.T) {
 	// Create text that exceeds the default 40000 character limit
 	baseText := "This is American text with color and organization that will be repeated many times to exceed the character limit. "
 	repetitions := 400 // 110 chars * 400 = 44000 chars (exceeds 40000)
-	var excessivelyLongText string
+	var excessivelyLongText strings.Builder
 	for range repetitions {
-		excessivelyLongText += baseText
+		excessivelyLongText.WriteString(baseText)
 	}
 
 	args := map[string]any{
-		"text": excessivelyLongText,
+		"text": excessivelyLongText.String(),
 	}
 
 	_, err := tool.Execute(ctx, logger, cache, args)
@@ -246,12 +247,12 @@ func TestM2ETool_Execute_FileMode_ExcessivelyLargeFile(t *testing.T) {
 	// Create content that exceeds the default 40000 character limit
 	baseText := "This is American text with color and organization that will be repeated many times to exceed the character limit. "
 	repetitions := 400 // 110 chars * 400 = 44000 chars (exceeds 40000)
-	var largeText string
+	var largeText strings.Builder
 	for range repetitions {
-		largeText += baseText
+		largeText.WriteString(baseText)
 	}
 
-	err := os.WriteFile(tempFile, []byte(largeText), 0600)
+	err := os.WriteFile(tempFile, []byte(largeText.String()), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}

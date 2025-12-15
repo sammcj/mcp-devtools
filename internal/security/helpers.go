@@ -471,12 +471,9 @@ func isTextContent(content []byte) bool {
 	}
 
 	// Check for null bytes (typically indicates binary)
-	sampleSize := 512
-	if len(content) < sampleSize {
-		sampleSize = len(content)
-	}
+	sampleSize := min(len(content), 512)
 
-	for i := 0; i < sampleSize; i++ {
+	for i := range sampleSize {
 		if content[i] == 0 {
 			return false
 		}
