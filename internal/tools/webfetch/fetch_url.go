@@ -258,10 +258,7 @@ func (t *FetchURLTool) applyPagination(originalResponse *FetchURLResponse, proce
 	}
 
 	// Calculate end index with smart truncation
-	endIndex := request.StartIndex + request.MaxLength
-	if endIndex > totalLength {
-		endIndex = totalLength
-	}
+	endIndex := min(request.StartIndex+request.MaxLength, totalLength)
 
 	// Try to truncate at natural boundaries (end of lines, paragraphs)
 	content := processedContent[request.StartIndex:endIndex]
@@ -350,14 +347,6 @@ func (t *FetchURLTool) calculateLineNumber(content string, charIndex int) int {
 		return len(strings.Split(content, "\n"))
 	}
 	return strings.Count(content[:charIndex], "\n") + 1
-}
-
-// max returns the maximum of two integers
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 // newToolResultJSON creates a new tool result with JSON content

@@ -16,12 +16,12 @@ import (
 
 // ThoughtData represents a single thought in the sequential thinking process
 type ThoughtData struct {
-	Thought       string `json:"thought"`
-	ThoughtNumber int    `json:"thoughtNumber"`
-	Continue      bool   `json:"continue"`
-	IsRevision    bool   `json:"isRevision,omitempty"`
-	RevisedText   string `json:"revisedText,omitempty"`
-	ExploreLabel  string `json:"exploreLabel,omitempty"`
+	Thought           string `json:"thought"`
+	ThoughtNumber     int    `json:"thoughtNumber"`
+	NextThoughtNeeded bool   `json:"nextThoughtNeeded"`
+	IsRevision        bool   `json:"isRevision,omitempty"`
+	RevisedText       string `json:"revisedText,omitempty"`
+	ExploreLabel      string `json:"exploreLabel,omitempty"`
 }
 
 // SequentialThinkingTool implements the tools.Tool interface for sequential thinking
@@ -43,7 +43,23 @@ func init() {
 func (t *SequentialThinkingTool) Definition() mcp.Tool {
 	tool := mcp.NewTool(
 		"sequential_thinking",
-		mcp.WithDescription(`Solve complex problems step-by-step with automatic thought tracking, revision detection, and branch management. Ideal for multi-step reasoning, planning, and iterative refinement. Use 'get_usage' action for detailed instructions.`),
+		mcp.WithDescription(`A tool for dynamic and reflective problem-solving through sequential thoughts.
+Analyse problems through a flexible thinking process that can adapt and evolve.
+Each thought can build on, question, or revise previous insights.
+
+When to use:
+- Breaking down complex problems into steps
+- Planning and design with room for revision
+- Analysis that might need course correction
+- Problems where full scope isn't clear initially
+
+Key features:
+- Automatic thought numbering and tracking
+- Revision detection via text snippets
+- Branch exploration for alternative approaches
+- Generate hypotheses, verify, repeat until satisfied
+
+Use 'get_usage' action for detailed instructions.`),
 		mcp.WithString("action",
 			mcp.Description("Action to perform: 'think' or 'get_usage'"),
 			mcp.Enum("think", "get_usage"),
@@ -51,8 +67,8 @@ func (t *SequentialThinkingTool) Definition() mcp.Tool {
 		mcp.WithString("thought",
 			mcp.Description("Your current thinking step (required for 'think' action)"),
 		),
-		mcp.WithBoolean("continue",
-			mcp.Description("Whether more thinking is needed after this step (required for 'think' action)"),
+		mcp.WithBoolean("nextThoughtNeeded",
+			mcp.Description("Whether another thought step is needed (required for 'think' action)"),
 		),
 		mcp.WithString("revise",
 			mcp.Description("Brief text snippet from previous thought to revise (optional)"),
@@ -117,14 +133,14 @@ func (t *SequentialThinkingTool) validateThoughtData(args map[string]any) (*Thou
 		return nil, fmt.Errorf("thought is required and must be a non-empty string")
 	}
 
-	continueThinking, ok := args["continue"].(bool)
+	nextThoughtNeeded, ok := args["nextThoughtNeeded"].(bool)
 	if !ok {
-		return nil, fmt.Errorf("continue is required and must be a boolean")
+		return nil, fmt.Errorf("nextThoughtNeeded is required and must be a boolean")
 	}
 
 	data := &ThoughtData{
-		Thought:  thought,
-		Continue: continueThinking,
+		Thought:           thought,
+		NextThoughtNeeded: nextThoughtNeeded,
 	}
 
 	// Handle optional revision parameter
@@ -189,7 +205,7 @@ func (t *SequentialThinkingTool) processThought(thoughtData *ThoughtData, logger
 	result := map[string]any{
 		"thoughtNumber":        thoughtData.ThoughtNumber,
 		"totalThoughts":        len(t.thoughtHistory), // Auto-calculated
-		"continue":             thoughtData.Continue,
+		"nextThoughtNeeded":    thoughtData.NextThoughtNeeded,
 		"branches":             branchNames,
 		"thoughtHistoryLength": len(t.thoughtHistory),
 	}
@@ -246,8 +262,9 @@ func (t *SequentialThinkingTool) getUsage() *mcp.CallToolResult {
 	usage := `# Sequential Thinking Tool - Detailed Usage Guide
 
 ## Purpose
-A tool for dynamic and reflective problem-solving through sequential thinking.
+A tool for dynamic and reflective problem-solving through sequential thoughts.
 This tool helps analyse problems through a flexible thinking process with auto-managed state.
+Each thought can build on, question, or revise previous insights as understanding deepens.
 Focus on your thinking content - the tool handles numbering, tracking, and branching automatically.
 
 ## When to Use This Tool
@@ -259,52 +276,56 @@ Focus on your thinking content - the tool handles numbering, tracking, and branc
 - Tasks that need to maintain context over multiple steps
 - Situations where irrelevant information needs to be filtered out
 
+## Key Features
+- **Smart revision detection**: Just provide snippet of what you're revising
+- **Simple branching**: Use explore labels to track alternative approaches
+- **Progress tracking**: Tool maintains complete thinking history
+- **Hypothesis workflow**: Generate hypotheses, verify them, repeat until satisfied
+
 ## Example Usage
 
 **Step 1: Initial Analysis**
 - thought: "Let me break down this API design problem..."
-- continue: true
+- nextThoughtNeeded: true
 
 **Step 2: Revision**
 - thought: "Actually, I missed security considerations..."
-- continue: true
+- nextThoughtNeeded: true
 - revise: "API design problem" (snippet from previous thought)
 
 **Step 3: Exploration**
 - thought: "What if we used GraphQL instead?"
-- continue: true
+- nextThoughtNeeded: true
 - explore: "graphql-alternative"
 
 **Step 4: Final Decision**
-- thought: "After comparing both approaches, REST is better..."
-- continue: false
+- thought: "After comparing both approaches, REST is better because..."
+- nextThoughtNeeded: false
 
 ## Parameters Explained
 - **thought**: Your current thinking step content (required)
-- **continue**: Whether more thinking is needed after this step - true/false (required)
+- **nextThoughtNeeded**: Whether another thought step is needed - true/false (required)
 - **revise**: Brief text snippet from previous thought you're revising (optional)
 - **explore**: Label for exploring alternative approach/branch (optional)
 
-## Key Features
-- **Auto-managed numbering**: No need to track thought numbers manually
-- **Automatic totals**: Tool calculates total thoughts dynamically
-- **Smart revision detection**: Just provide snippet of what you're revising
-- **Simple branching**: Use explore labels to track alternative approaches
-- **Progress tracking**: Tool maintains complete thinking history
-- **Formatted logging**: Visual output shows thinking structure
+## You Should
+1. Feel free to question or revise previous thoughts
+2. Don't hesitate to add more thoughts if needed
+3. Express uncertainty when present
+4. Mark thoughts that revise previous thinking or branch into new paths
+5. Ignore information that is irrelevant to the current step
+6. Generate a solution hypothesis when appropriate
+7. Verify the hypothesis based on your reasoning steps
+8. Repeat the process until satisfied with the solution
+9. Provide a single, ideally correct answer as the final output
+10. Only set nextThoughtNeeded to false when truly done and satisfied
 
 ## Best Practices
 1. Focus on your thinking content, not mechanics
 2. Use "revise" when reconsidering previous thoughts
 3. Use "explore" when trying alternative approaches
-4. Express uncertainty naturally in your thoughts
-5. Set continue=false only when truly done with satisfactory answer
-6. Keep thoughts focused and clear
-7. Don't worry about numbering - the tool handles it
-
-## Environment Variables
-- **DISABLE_THOUGHT_LOGGING**: Set to "true" to disable formatted console output
-- **ENABLE_ADDITIONAL_TOOLS**: Must include "sequential-thinking" to enable this tool`
+4. Keep thoughts focused and clear
+5. Don't worry about numbering - the tool handles it`
 
 	return mcp.NewToolResultText(usage)
 }

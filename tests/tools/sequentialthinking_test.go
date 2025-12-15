@@ -17,13 +17,13 @@ func TestSequentialThinkingTool_Definition(t *testing.T) {
 	testutils.AssertEqual(t, "sequential_thinking", definition.Name)
 	testutils.AssertNotNil(t, definition.Description)
 
-	// Test that description contains key phrases from new shortened description
+	// Test that description contains key phrases from updated description
 	desc := definition.Description
-	if !testutils.Contains(desc, "complex problems") {
-		t.Errorf("Expected description to contain 'complex problems', got: %s", desc)
+	if !testutils.Contains(desc, "problem-solving") {
+		t.Errorf("Expected description to contain 'problem-solving', got: %s", desc)
 	}
-	if !testutils.Contains(desc, "step-by-step") {
-		t.Errorf("Expected description to contain 'step-by-step', got: %s", desc)
+	if !testutils.Contains(desc, "sequential thoughts") {
+		t.Errorf("Expected description to contain 'sequential thoughts', got: %s", desc)
 	}
 
 	// Test input schema exists and has required fields
@@ -39,7 +39,7 @@ func TestSequentialThinkingTool_Definition(t *testing.T) {
 		t.Error("Expected schema properties to be defined")
 	} else {
 		// Test new simplified parameters
-		requiredParams := []string{"action", "thought", "continue"}
+		requiredParams := []string{"action", "thought", "nextThoughtNeeded"}
 		for _, param := range requiredParams {
 			if _, exists := schema.Properties[param]; !exists {
 				t.Errorf("Expected parameter '%s' to exist in schema", param)
@@ -67,9 +67,9 @@ func TestSequentialThinkingTool_Execute_ValidInput(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	args := map[string]any{
-		"action":   "think",
-		"thought":  "This is my first thought about the problem",
-		"continue": true,
+		"action":            "think",
+		"thought":           "This is my first thought about the problem",
+		"nextThoughtNeeded": true,
 	}
 
 	result, err := tool.Execute(ctx, logger, cache, args)
@@ -96,8 +96,8 @@ func TestSequentialThinkingTool_Execute_ValidInput(t *testing.T) {
 	if !testutils.Contains(textResult, "totalThoughts") {
 		t.Error("Expected result to contain totalThoughts")
 	}
-	if !testutils.Contains(textResult, "continue") {
-		t.Error("Expected result to contain continue")
+	if !testutils.Contains(textResult, "nextThoughtNeeded") {
+		t.Error("Expected result to contain nextThoughtNeeded")
 	}
 }
 
@@ -112,10 +112,10 @@ func TestSequentialThinkingTool_Execute_WithRevision(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	args := map[string]any{
-		"action":   "think",
-		"thought":  "I need to revise my previous thought",
-		"continue": true,
-		"revise":   "previous thought",
+		"action":            "think",
+		"thought":           "I need to revise my previous thought",
+		"nextThoughtNeeded": true,
+		"revise":            "previous thought",
 	}
 
 	result, err := tool.Execute(ctx, logger, cache, args)
@@ -135,10 +135,10 @@ func TestSequentialThinkingTool_Execute_WithBranching(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	args := map[string]any{
-		"action":   "think",
-		"thought":  "Let me explore an alternative approach",
-		"continue": true,
-		"explore":  "alternative-approach",
+		"action":            "think",
+		"thought":           "Let me explore an alternative approach",
+		"nextThoughtNeeded": true,
+		"explore":           "alternative-approach",
 	}
 
 	result, err := tool.Execute(ctx, logger, cache, args)
@@ -171,8 +171,8 @@ func TestSequentialThinkingTool_Execute_MissingRequiredField(t *testing.T) {
 
 	// Missing required field "thought"
 	args := map[string]any{
-		"action":   "think",
-		"continue": true,
+		"action":            "think",
+		"nextThoughtNeeded": true,
 	}
 
 	result, err := tool.Execute(ctx, logger, cache, args)
@@ -186,7 +186,7 @@ func TestSequentialThinkingTool_Execute_MissingRequiredField(t *testing.T) {
 	}
 }
 
-func TestSequentialThinkingTool_Execute_MissingContinueField(t *testing.T) {
+func TestSequentialThinkingTool_Execute_MissingNextThoughtNeededField(t *testing.T) {
 	// Enable tool for this test
 	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "sequential-thinking")
 	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
@@ -196,7 +196,7 @@ func TestSequentialThinkingTool_Execute_MissingContinueField(t *testing.T) {
 	cache := testutils.CreateTestCache()
 	ctx := testutils.CreateTestContext()
 
-	// Missing required field "continue"
+	// Missing required field "nextThoughtNeeded"
 	args := map[string]any{
 		"action":  "think",
 		"thought": "Test thought",
@@ -208,8 +208,8 @@ func TestSequentialThinkingTool_Execute_MissingContinueField(t *testing.T) {
 	if result != nil {
 		t.Error("Expected result to be nil when required field is missing")
 	}
-	if !testutils.Contains(err.Error(), "continue is required") {
-		t.Errorf("Expected error about missing continue field, got: %s", err.Error())
+	if !testutils.Contains(err.Error(), "nextThoughtNeeded is required") {
+		t.Errorf("Expected error about missing nextThoughtNeeded field, got: %s", err.Error())
 	}
 }
 
@@ -225,9 +225,9 @@ func TestSequentialThinkingTool_Execute_AutoNumbering(t *testing.T) {
 
 	// First thought - should be numbered 1
 	args := map[string]any{
-		"action":   "think",
-		"thought":  "First thought",
-		"continue": true,
+		"action":            "think",
+		"thought":           "First thought",
+		"nextThoughtNeeded": true,
 	}
 
 	result, err := tool.Execute(ctx, logger, cache, args)
@@ -262,9 +262,9 @@ func TestSequentialThinkingTool_Execute_DisableLogging(t *testing.T) {
 	ctx := testutils.CreateTestContext()
 
 	args := map[string]any{
-		"action":   "think",
-		"thought":  "This thought should not be logged",
-		"continue": false,
+		"action":            "think",
+		"thought":           "This thought should not be logged",
+		"nextThoughtNeeded": false,
 	}
 
 	result, err := tool.Execute(ctx, logger, cache, args)
@@ -328,8 +328,8 @@ func TestSequentialThinkingTool_Execute_DefaultAction(t *testing.T) {
 
 	// Test that omitting action parameter defaults to "think"
 	args := map[string]any{
-		"thought":  "Test thought",
-		"continue": false,
+		"thought":           "Test thought",
+		"nextThoughtNeeded": false,
 	}
 
 	result, err := tool.Execute(ctx, logger, cache, args)

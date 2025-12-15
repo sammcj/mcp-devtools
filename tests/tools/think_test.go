@@ -2,6 +2,7 @@ package tools_test
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -153,13 +154,13 @@ func TestThinkTool_Execute_ExcessivelyLongThought(t *testing.T) {
 	// Create a thought that exceeds the default 2000 + 500 buffer = 2500 character limit
 	baseText := "This is a very long thought that will be repeated many times to exceed the character limit. "
 	repetitions := 30 // 90 chars * 30 = ~2700 chars (exceeds 2500)
-	var excessivelyLongThought string
+	var excessivelyLongThought strings.Builder
 	for range repetitions {
-		excessivelyLongThought += baseText
+		excessivelyLongThought.WriteString(baseText)
 	}
 
 	args := map[string]any{
-		"thought": excessivelyLongThought,
+		"thought": excessivelyLongThought.String(),
 	}
 
 	_, err := tool.Execute(ctx, logger, cache, args)

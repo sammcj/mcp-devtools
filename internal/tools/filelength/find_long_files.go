@@ -135,7 +135,8 @@ func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, 
 	}).Info("Find long files completed successfully")
 
 	// Build output with optional skipped files section and message
-	output := response.Checklist
+	var output strings.Builder
+	output.WriteString(response.Checklist)
 
 	// Add skipped large files section if any
 	if len(response.SkippedLargeFiles) > 0 {
@@ -150,18 +151,18 @@ func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, 
 			sizeDisplay = fmt.Sprintf("%dKB", maxFileSizeKB)
 		}
 
-		output += fmt.Sprintf("\n## Skipped Files (>%s)\n\nThe following files were skipped due to being larger than %s:\n\n", sizeDisplay, sizeDisplay)
+		output.WriteString(fmt.Sprintf("\n## Skipped Files (>%s)\n\nThe following files were skipped due to being larger than %s:\n\n", sizeDisplay, sizeDisplay))
 		for _, file := range response.SkippedLargeFiles {
-			output += fmt.Sprintf("- `%s`\n", file)
+			output.WriteString(fmt.Sprintf("- `%s`\n", file))
 		}
 	}
 
 	// Add message if not empty
 	if defaultMessage != "" {
-		output += "\n\n" + response.Message
+		output.WriteString("\n\n" + response.Message)
 	}
 
-	return t.newToolResultText(output)
+	return t.newToolResultText(output.String())
 }
 
 // parseRequest parses and validates the tool arguments
@@ -473,8 +474,8 @@ func (t *FindLongFilesTool) matchesPattern(path, fileName, pattern string) bool 
 	}
 
 	// Handle directory patterns like "**/.git/**"
-	if strings.HasSuffix(pattern, "/**") {
-		dirPattern := strings.TrimSuffix(pattern, "/**")
+	if before, ok := strings.CutSuffix(pattern, "/**"); ok {
+		dirPattern := before
 		// Remove leading **/ if present
 		dirPattern = strings.TrimPrefix(dirPattern, "**/")
 		// Check if path contains this directory
