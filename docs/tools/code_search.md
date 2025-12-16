@@ -25,7 +25,7 @@ The binary size increase is minimal (~6MB) as heavy dependencies are downloaded 
 
 ### index
 
-Index a codebase for semantic search.
+Index a codebase for semantic search. Recursively walks directories to find all supported code files. May take a few minutes for large codebases.
 
 ```json
 {
@@ -82,7 +82,17 @@ Find code by natural language description.
       "line": 99
     }
   ],
-  "total_indexed": 1217
+  "last_indexed": "2025-12-17 06:30"
+}
+```
+
+**When results are truncated:**
+```json
+{
+  "results": [...],
+  "total_matches": 43,
+  "limit_applied": 10,
+  "last_indexed": "2025-12-17 06:30"
 }
 ```
 
@@ -121,13 +131,13 @@ Clear the index (optionally for specific paths).
 
 ## Parameters
 
-| Parameter   | Type   | Required   | Default | Description                                  |
-|-------------|--------|------------|---------|----------------------------------------------|
-| `action`    | string | Yes        | -       | One of: `search`, `index`, `status`, `clear` |
-| `source`    | array  | For index  | -       | Paths to index or filter                     |
-| `query`     | string | For search | -       | Natural language search query                |
-| `limit`     | number | No         | 10      | Maximum results to return                    |
-| `threshold` | number | No         | 0.3     | Minimum similarity score (0-1)               |
+| Parameter   | Type   | Required   | Default | Description                                            |
+|-------------|--------|------------|---------|--------------------------------------------------------|
+| `action`    | string | Yes        | -       | One of: `search`, `index`, `status`, `clear`           |
+| `source`    | array  | For index  | -       | Paths to index or filter (recursively walks directories) |
+| `query`     | string | For search | -       | Natural language search query                          |
+| `limit`     | number | No         | 10      | Maximum results to return                              |
+| `threshold` | number | No         | 0.3     | Minimum similarity score (0-1)                         |
 
 ## Example Queries
 

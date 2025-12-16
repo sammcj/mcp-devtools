@@ -44,11 +44,11 @@ func (t *CodeSearchTool) Definition() mcp.Tool {
 		mcp.WithDescription("Finds code by natural language description using local embeddings. Index a codebase first, then use search."),
 		mcp.WithString("action",
 			mcp.Required(),
-			mcp.Description("'index' to index paths, 'search' to query, 'status' to check, 'clear' to reset"),
+			mcp.Description("'index' to index paths (recursively, may take minutes for large codebases), 'search' to query, 'status' to check, 'clear' to reset"),
 			mcp.Enum("search", "index", "status", "clear"),
 		),
 		mcp.WithArray("source",
-			mcp.Description("Fully qualified path to index or filter results by"),
+			mcp.Description("Fully qualified path to index or filter results by (recursively walks directories)"),
 			mcp.WithStringItems(),
 		),
 		mcp.WithString("query",
@@ -185,14 +185,25 @@ func (t *CodeSearchTool) executeSearch(ctx context.Context, req *SearchRequest, 
 	}
 
 	// Search the vector store
-	results, err := t.vectorStore.Search(ctx, queryEmbedding, limit, threshold, req.Source)
+	results, totalMatches, err := t.vectorStore.Search(ctx, queryEmbedding, limit, threshold, req.Source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search: %w", err)
 	}
 
 	response := &SearchResponse{
-		Results:      results,
-		TotalIndexed: t.vectorStore.Count(),
+		Results: results,
+	}
+
+	// Only include truncation info when results were actually truncated
+	if totalMatches > len(results) {
+		response.TotalMatches = totalMatches
+		response.LimitApplied = limit
+	}
+
+	// Include last indexed timestamp if available
+	lastIndexed := t.fileTracker.GetLastIndexed()
+	if !lastIndexed.IsZero() {
+		response.LastIndexed = lastIndexed.Format("2006-01-02 15:04")
 	}
 
 	logger.WithFields(logrus.Fields{
