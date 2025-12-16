@@ -167,6 +167,15 @@ func (c *MarkdownConverter) isMarkupArtifact(line string) bool {
 	return false
 }
 
+// escapeCSSSelector escapes special characters in a string for safe use in CSS attribute selectors.
+// This prevents CSS selector injection when using user-provided fragment IDs.
+func escapeCSSSelector(s string) string {
+	// Escape backslashes first, then single quotes
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `'`, `\'`)
+	return s
+}
+
 // FilterHTMLByFragment filters HTML content to only include the section identified by the fragment ID
 // and its subsections. For heading elements, this includes all following content until the next heading
 // of the same or higher level. For container elements (like section, div, article), this includes all
@@ -184,8 +193,11 @@ func FilterHTMLByFragment(logger *logrus.Logger, htmlContent string, fragment st
 		return "", fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	// Find the element with the matching ID using attribute selector to avoid CSS injection
-	targetElement := doc.Find(fmt.Sprintf("[id='%s']", fragment))
+	// Escape special characters in fragment to prevent CSS selector injection
+	escapedFragment := escapeCSSSelector(fragment)
+
+	// Find the element with the matching ID using attribute selector
+	targetElement := doc.Find(fmt.Sprintf("[id='%s']", escapedFragment))
 	if targetElement.Length() == 0 {
 		logger.WithField("fragment", fragment).Warn("Fragment ID not found in HTML, returning full content")
 		return htmlContent, nil

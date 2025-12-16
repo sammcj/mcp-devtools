@@ -849,6 +849,42 @@ func TestFilterHTMLByFragmentEdgeCases(t *testing.T) {
 			notContains:    []string{},
 		},
 		{
+			name: "fragment with single quote (CSS injection prevention)",
+			html: `<html><body>
+				<div id="test'quote">
+					<p>Content with quote in ID</p>
+				</div>
+				<div id="other">Other content</div>
+			</body></html>`,
+			fragment:       "test'quote",
+			expectContains: []string{"Content with quote in ID"},
+			notContains:    []string{"Other content"},
+		},
+		{
+			name: "fragment with backslash",
+			html: `<html><body>
+				<div id="test\slash">
+					<p>Content with backslash in ID</p>
+				</div>
+				<div id="other">Other content</div>
+			</body></html>`,
+			fragment:       `test\slash`,
+			expectContains: []string{"Content with backslash in ID"},
+			notContains:    []string{"Other content"},
+		},
+		{
+			name: "fragment with brackets (no injection)",
+			html: `<html><body>
+				<div id="test[0]">
+					<p>Content with brackets</p>
+				</div>
+				<div id="other">Other content</div>
+			</body></html>`,
+			fragment:       "test[0]",
+			expectContains: []string{"Content with brackets"},
+			notContains:    []string{"Other content"},
+		},
+		{
 			name: "heading with sub-headings included",
 			html: `<html><body>
 				<h2 id="parent">Parent Section</h2>
