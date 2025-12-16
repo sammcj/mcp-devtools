@@ -9,6 +9,7 @@ Perfect for extracting content from documentation sites, blog posts, articles, a
 ## Features
 
 - **HTML to Markdown**: Clean conversion with preserved structure
+- **Fragment Filtering**: Extract specific sections using URL fragments (e.g., `#section-id`)
 - **Pagination Support**: Handle large content with chunked responses
 - **Content Preview**: See what comes next in paginated responses
 - **Raw HTML Option**: Get original HTML when needed
@@ -29,6 +30,18 @@ While intended to be activated via a prompt to an agent, below are some example 
   }
 }
 ```
+
+### Fetch Specific Section by Fragment
+```json
+{
+  "name": "fetch_url",
+  "arguments": {
+    "url": "https://mcp-go.dev/servers/advanced#client-capability-based-filtering"
+  }
+}
+```
+
+This will automatically filter the content to only include the section with ID `client-capability-based-filtering` and all its subsections, excluding content before and after that section.
 
 ### Fetch with Length Limit
 ```json
@@ -69,7 +82,7 @@ While intended to be activated via a prompt to an agent, below are some example 
 ### Core Parameters
 | Parameter     | Type    | Default  | Description                             |
 |---------------|---------|----------|-----------------------------------------|
-| `url`         | string  | Required | HTTP/HTTPS URL to fetch                 |
+| `url`         | string  | Required | HTTP/HTTPS URL to fetch. Can include fragment identifier (e.g., `#section-id`) to filter to specific section |
 | `max_length`  | number  | 6000     | Maximum characters to return            |
 | `raw`         | boolean | false    | Return raw HTML instead of Markdown     |
 | `start_index` | number  | 0        | Starting character index for pagination |
@@ -78,6 +91,21 @@ While intended to be activated via a prompt to an agent, below are some example 
 - Must be `http://` or `https://` protocol
 - Publicly accessible (no authentication required)
 - Returns HTML content (not binary files)
+- Can include fragment identifier (e.g., `https://example.com/page#section`) for section filtering
+
+### Fragment Filtering
+When a URL contains a fragment identifier (the `#section-id` part), the tool automatically:
+- Locates the HTML element with that ID
+- For **heading elements** (h1-h6): Includes the heading and all following content until the next heading of the same or higher level
+- For **container elements** (section, div, article, etc.): Includes the element and all its child content
+- If the fragment ID is not found, returns the full page content
+- Works seamlessly with the Markdown conversion process
+
+**Example use cases:**
+- Extract specific documentation sections from long pages
+- Get only the relevant part of API reference documentation
+- Focus on particular chapters or sections in articles
+- Reduce token usage by fetching only what's needed
 
 ### Length and Pagination
 - **Default**: 6000 characters maximum
@@ -142,6 +170,19 @@ Fetch technical documentation for analysis:
 }
 ```
 
+### Extract Specific Documentation Section
+Get only a specific section from documentation:
+```json
+{
+  "name": "fetch_url",
+  "arguments": {
+    "url": "https://go.dev/doc/effective_go#concurrency"
+  }
+}
+```
+
+This returns only the "Concurrency" section and its subsections, saving tokens and focusing on relevant content.
+
 ### Blog Post Analysis
 Extract articles for content analysis:
 ```json
@@ -155,16 +196,17 @@ Extract articles for content analysis:
 ```
 
 ### API Documentation
-Get API documentation for reference:
+Get specific API endpoint documentation:
 ```json
 {
   "name": "fetch_url",
   "arguments": {
-    "url": "https://developer.github.com/v3/repos/",
-    "max_length": 5000
+    "url": "https://developer.github.com/v3/repos/#get-a-repository"
   }
 }
 ```
+
+The fragment identifier ensures you get only the documentation for the specific endpoint, not the entire page.
 
 ### Large Content Processing
 Handle large documents with pagination:
