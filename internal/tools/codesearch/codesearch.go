@@ -48,7 +48,7 @@ func (t *CodeSearchTool) Definition() mcp.Tool {
 			mcp.Enum("search", "index", "status", "clear"),
 		),
 		mcp.WithArray("source",
-			mcp.Description("Paths to index or filter results by"),
+			mcp.Description("Fully qualified path to index or filter results by"),
 			mcp.WithStringItems(),
 		),
 		mcp.WithString("query",
