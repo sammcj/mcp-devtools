@@ -37,7 +37,7 @@ func (t *CodeRenameTool) Definition() mcp.Tool {
 	availableLangs := GetAvailableLanguages(ctx, logger)
 
 	// Build description with only available languages
-	description := "Efficiently and safely rename symbols (variables, functions, types, methods) across codebase using LSP. Handles references, imports, comments. More efficient than individually editing files when renaming across multiple files."
+	description := "Efficiently rename functions, methods, variables, and types across multiple files using LSP. Use this instead of manual grep+edit when renaming symbols that have references in other files. Handles references, imports, comments."
 	if len(availableLangs) > 0 {
 		description += " Supports: " + strings.Join(availableLangs, ", ")
 	} else {
