@@ -10,7 +10,11 @@ Semantic code search using local embeddings. Find functions, classes, and method
 3. Storing vectors in chromem-go with persistence
 4. Searching by natural language query
 
+**EXPERIMENTAL** - This tool is in early development and may have limitations or bugs.
+
 ## First-Time Setup
+
+🔒 **Disabled by default** - Enable with `ENABLE_ADDITIONAL_TOOLS=code_search`
 
 On first use, the tool downloads:
 - **Embedding model** (~90MB) from Hugging Face to `~/.mcp-devtools/models/`
