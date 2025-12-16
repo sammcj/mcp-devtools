@@ -54,11 +54,11 @@ func NewVectorStore(logger *logrus.Logger) (*VectorStore, error) {
 	return &VectorStore{Store: store}, nil
 }
 
-// Search performs similarity search and returns SearchResult slice
-func (v *VectorStore) Search(ctx context.Context, queryEmbedding []float32, limit int, threshold float64, filterPaths []string) ([]SearchResult, error) {
-	results, err := v.Store.Search(ctx, queryEmbedding, limit, threshold, filterPaths)
+// Search performs similarity search and returns SearchResult slice with total match count
+func (v *VectorStore) Search(ctx context.Context, queryEmbedding []float32, limit int, threshold float64, filterPaths []string) ([]SearchResult, int, error) {
+	results, totalMatches, err := v.Store.Search(ctx, queryEmbedding, limit, threshold, filterPaths)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Convert vectorstore.SearchResult to codesearch.SearchResult
@@ -74,7 +74,7 @@ func (v *VectorStore) Search(ctx context.Context, queryEmbedding []float32, limi
 		}
 	}
 
-	return searchResults, nil
+	return searchResults, totalMatches, nil
 }
 
 // Status returns the store status

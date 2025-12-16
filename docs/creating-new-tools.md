@@ -3,6 +3,7 @@
 The MCP DevTools server is designed to be easily extensible with new tools. This section provides detailed guidance on how to create and integrate new tools into the server.
 
 - [Creating New Tools](#creating-new-tools)
+  - [mcp-go](#mcp-go)
   - [Tool Interface](#tool-interface)
   - [Tool Structure](#tool-structure)
   - [Step-by-Step Guide](#step-by-step-guide)
@@ -12,6 +13,16 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
   - [Tool Annotations](#tool-annotations)
   - [Tool Error Logging](#tool-error-logging)
   - [Additional Considerations](#additional-considerations)
+
+## mcp-go
+
+MCP DevTools uses the [mcp-go](https://mcp-go.dev) library.
+
+You shouldn't need to read the mcp-go documentation to add a simple tool, but it may be useful if you want to understand specific features or functionality in more detail.
+
+- https://mcp-go.dev/servers/tools (MCP tools)
+- https://mcp-go.dev/servers/resources (MCP resources)
+- https://mcp-go.dev/servers/advanced (typed tools, middleware, hooks, filtering, notifications, client capability filtering)
 
 ## Tool Interface
 

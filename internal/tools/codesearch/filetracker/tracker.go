@@ -25,10 +25,17 @@ type FileInfo struct {
 
 // Tracker tracks file modification times to detect stale indexed files
 type Tracker struct {
-	files    map[string]FileInfo
-	filePath string
-	logger   *logrus.Logger
-	mu       sync.RWMutex
+	files       map[string]FileInfo
+	lastIndexed time.Time // When index was last updated
+	filePath    string
+	logger      *logrus.Logger
+	mu          sync.RWMutex
+}
+
+// trackerData is the JSON persistence format
+type trackerData struct {
+	Files       map[string]FileInfo `json:"files"`
+	LastIndexed time.Time           `json:"last_indexed"`
 }
 
 // NewTracker creates a new file tracker
@@ -86,7 +93,17 @@ func (t *Tracker) MarkIndexedBatch(paths []string) error {
 		}
 	}
 
+	// Update global last indexed timestamp
+	t.lastIndexed = now
+
 	return nil
+}
+
+// GetLastIndexed returns when the index was last updated
+func (t *Tracker) GetLastIndexed() time.Time {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.lastIndexed
 }
 
 // GetStaleFiles returns files that have been modified since indexing
@@ -179,7 +196,12 @@ func (t *Tracker) Save() error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	data, err := json.MarshalIndent(t.files, "", "  ")
+	td := trackerData{
+		Files:       t.files,
+		LastIndexed: t.lastIndexed,
+	}
+
+	data, err := json.MarshalIndent(td, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -194,5 +216,14 @@ func (t *Tracker) load() error {
 		return err
 	}
 
+	// Try new format first
+	var td trackerData
+	if err := json.Unmarshal(data, &td); err == nil && td.Files != nil {
+		t.files = td.Files
+		t.lastIndexed = td.LastIndexed
+		return nil
+	}
+
+	// Fall back to old format (just the files map) for backwards compatibility
 	return json.Unmarshal(data, &t.files)
 }

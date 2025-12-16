@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -178,13 +179,13 @@ func (s *Store) AddBatch(items []*Item) error {
 	return nil
 }
 
-// Search performs similarity search
-func (s *Store) Search(ctx context.Context, queryEmbedding []float32, limit int, threshold float64, filterPaths []string) ([]SearchResult, error) {
+// Search performs similarity search. Returns results, total matches (before limit), and error.
+func (s *Store) Search(ctx context.Context, queryEmbedding []float32, limit int, threshold float64, filterPaths []string) ([]SearchResult, int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	if s.collection == nil {
-		return nil, fmt.Errorf("collection not initialised")
+		return nil, 0, fmt.Errorf("collection not initialised")
 	}
 
 	// Build where filter for paths
@@ -196,9 +197,10 @@ func (s *Store) Search(ctx context.Context, queryEmbedding []float32, limit int,
 	}
 
 	// Query collection using pre-computed embedding
-	results, err := s.collection.QueryEmbedding(ctx, queryEmbedding, limit*2, whereFilter, nil)
+	// Request more results to account for threshold filtering
+	results, err := s.collection.QueryEmbedding(ctx, queryEmbedding, limit*3, whereFilter, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query chromem: %w", err)
+		return nil, 0, fmt.Errorf("failed to query chromem: %w", err)
 	}
 
 	// Convert results and apply threshold/path filtering
@@ -236,17 +238,20 @@ func (s *Store) Search(ctx context.Context, queryEmbedding []float32, limit int,
 			Name:       r.Metadata["name"],
 			Type:       r.Metadata["type"],
 			Signature:  r.Metadata["signature"],
-			Similarity: float64(r.Similarity),
+			Similarity: math.Round(float64(r.Similarity)*100) / 100, // Round to 2 decimal places
 			Line:       line,
 		})
 	}
+
+	// Track total matches before limiting
+	totalMatches := len(searchResults)
 
 	// Limit results
 	if len(searchResults) > limit {
 		searchResults = searchResults[:limit]
 	}
 
-	return searchResults, nil
+	return searchResults, totalMatches, nil
 }
 
 // Count returns the number of indexed items
