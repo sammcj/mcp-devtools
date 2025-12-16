@@ -195,7 +195,7 @@ func FilterHTMLByFragment(logger *logrus.Logger, htmlContent string, fragment st
 	tagName := goquery.NodeName(targetElement)
 
 	// Check if this is a heading element (h1-h6)
-	isHeading := tagName == "h1" || tagName == "h2" || tagName == "h3" || 
+	isHeading := tagName == "h1" || tagName == "h2" || tagName == "h3" ||
 		tagName == "h4" || tagName == "h5" || tagName == "h6"
 
 	var filteredHTML string
@@ -218,7 +218,7 @@ func FilterHTMLByFragment(logger *logrus.Logger, htmlContent string, fragment st
 		// Iterate through following siblings
 		targetElement.NextAll().Each(func(i int, s *goquery.Selection) {
 			siblingTag := goquery.NodeName(s)
-			
+
 			// Check if this is a heading of same or higher level
 			if siblingTag == "h1" || siblingTag == "h2" || siblingTag == "h3" ||
 				siblingTag == "h4" || siblingTag == "h5" || siblingTag == "h6" {

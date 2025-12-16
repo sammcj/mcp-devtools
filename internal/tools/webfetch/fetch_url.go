@@ -31,9 +31,7 @@ func (t *FetchURLTool) Definition() mcp.Tool {
 
 This tool enables fetching web content for analysis and processing with enhanced pagination support.
 
-**URL Fragment Filtering**: If the URL contains a fragment identifier (e.g., https://example.com/page#section), 
-the tool will automatically filter the content to only include the element with that ID and all its subsections.
-This is useful for extracting specific sections from documentation pages.
+If the URL contains a fragment identifier (e.g., https://example.com/page#section) content will be filtered to the element with that ID and its subsections.
 
 Response includes detailed pagination information:
 - total_lines: Total number of lines in the content
@@ -41,11 +39,11 @@ Response includes detailed pagination information:
 - remaining_lines: Number of lines remaining after current chunk
 - next_chunk_preview: Preview of what comes next
 
-This tool is useful for fetching web content - for example to get documentation, information from blog posts, changelogs, implementation guidelines and content from search results.
+This tool is useful for fetching web content - for example to get documentation, information from blog posts, implementation guidelines and content from search results.
 `),
 		mcp.WithString("url",
 			mcp.Required(),
-			mcp.Description("The URL to fetch (must be http or https). Can include a fragment identifier (e.g., #section-id) to filter content to a specific section."),
+			mcp.Description("The URL to fetch (must be http or https). May include fragment to filter on (e.g., #section-id)"),
 		),
 		mcp.WithNumber("max_length",
 			mcp.Description("Maximum number of characters to return (default: 6000, max: 1000000)"),
