@@ -80,7 +80,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		"max_length":  request.MaxLength,
 		"start_index": request.StartIndex,
 		"raw":         request.Raw,
-		"fragment":    request.Fragment,
+		"fragment":    request.fragment,
 	}).Debug("Fetch URL parameters")
 
 	// Use security helper for safe HTTP GET
@@ -112,7 +112,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 	}
 
 	// Process the content (convert HTML to markdown, handle different content types, filter by fragment)
-	processedContent, err := ProcessContent(logger, response, request.Raw, request.Fragment)
+	processedContent, err := ProcessContent(logger, response, request.Raw, request.fragment)
 	if err != nil {
 		logger.WithError(err).Warn("Failed to process content, returning raw content")
 		processedContent = response.Content
@@ -177,7 +177,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		"total_length": paginatedResponse.TotalLength,
 		"returned":     len(paginatedResponse.Content),
 		"truncated":    paginatedResponse.Truncated,
-		"fragment":     request.Fragment,
+		"fragment":     request.fragment,
 	}).Info("Fetch URL completed successfully")
 
 	return t.newToolResultJSON(paginatedResponse)
@@ -207,7 +207,7 @@ func (t *FetchURLTool) parseRequest(args map[string]any) (*FetchURLRequest, erro
 
 	request := &FetchURLRequest{
 		URL:        parsedURL.URLWithoutFragment,
-		Fragment:   parsedURL.Fragment,
+		fragment:   parsedURL.Fragment,
 		MaxLength:  6000,  // Default
 		StartIndex: 0,     // Default
 		Raw:        false, // Default
@@ -485,7 +485,7 @@ func (t *FetchURLTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			"url":         "Must be a complete HTTP/HTTPS URL. Can include a fragment identifier (e.g., #section-id) to filter to a specific section. Tool will attempt to add 'https://' if no protocol is specified. Does not support FTP, file://, or other protocols.",
 			"max_length":  "Controls how much content to return (1 to 1,000,000 characters). Default is 6,000. Use larger values for comprehensive content, smaller for previews.",
 			"start_index": "Character position to start reading from (0-based). Use for pagination when content is longer than max_length. Default is 0 (start of content).",
-			"raw":         "When true, returns raw HTML without markdown conversion. When false (default), converts HTML to clean markdown format for easier reading and analysis. Fragment filtering is applied before raw mode.",
+			"raw":         "When true, returns raw HTML without markdown conversion (fragment filtering is not applied). When false (default), converts HTML to clean markdown format for easier reading and analysis, with fragment filtering applied when a URL fragment is present.",
 		},
 		WhenToUse:    "Use to fetch and process web content for analysis, extract information from documentation, get full text from search results, or read blog posts and articles. Use URL fragments to extract specific sections and reduce token usage. Ideal for content that needs to be analysed or processed by AI.",
 		WhenNotToUse: "Don't use for downloading files, accessing authenticated content, scraping data that requires JavaScript execution, or fetching binary content like images or PDFs.",
