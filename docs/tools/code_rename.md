@@ -10,6 +10,8 @@ The `code_rename` tool uses LSP servers to identify and rename symbols across fi
 
 LSP-validated symbol finding ensures correct detection even when symbol names appear in block comments, string literals, or multiple locations in the same file. The tool uses LSP's `PrepareRename` to validate that each candidate position contains a renameable symbol.
 
+🔒 **Disabled by default** - Enable with `ENABLE_ADDITIONAL_TOOLS=code_rename`
+
 ## Supported Languages
 
 When the MCP-DevTools server starts, the tool detects which language servers are available. If the appropriate server for a given language cannot be found, rename functionality for that language won't be available.

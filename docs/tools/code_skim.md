@@ -71,6 +71,12 @@ When working with large codebases, you often don't need implementation details t
   - Combined: `["handle_*", "!handle_temp*"]` (include handle_* but exclude handle_temp*)
   - Exclusions take priority over inclusions
   - Returns `matched_items`, `total_items`, `filtered_items` counts in response
+- `extract_graph` (boolean): Extract relationship graph including imports, calls, and inheritance
+  - Default: `false`
+  - Adds `graph` field to file results with structured relationship data
+- `output_format` (string): Output format for the transformed code
+  - `"json"` (default): Standard JSON response
+  - `"sigil"`: Compressed notation optimised for LLM context (see Sigil Format below)
 
 ## How It Works
 
@@ -301,6 +307,80 @@ Configure the limit with the `CODE_SKIM_MAX_LINES` environment variable.
 - `failed_files`: Number of files that failed processing
 - `processing_time_ms`: Total processing time in milliseconds
 
+## Graph Extraction
+
+When `extract_graph: true`, the response includes relationship data:
+
+```json
+{
+  "files": [
+    {
+      "path": "/path/to/handler.py",
+      "graph": {
+        "imports": ["os", "json", "typing.Optional"],
+        "functions": [
+          {
+            "name": "handle_request",
+            "calls": ["validate", "process", "respond"],
+            "connectivity": 3
+          }
+        ],
+        "classes": [
+          {
+            "name": "RequestHandler",
+            "extends": "BaseHandler",
+            "implements": ["Loggable"],
+            "methods": ["__init__", "handle"]
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+**Graph Fields:**
+- `imports`: Module/package imports
+- `functions`: Function details with call relationships
+  - `calls`: Functions called by this function
+  - `connectivity`: Total number of relationships (★ rating)
+- `classes`: Class details with inheritance
+  - `extends`: Parent class
+  - `implements`: Implemented interfaces
+  - `methods`: Method names
+
+## Sigil Format
+
+The `output_format: "sigil"` option provides compressed notation optimised for LLM consumption:
+
+```
+# /path/to/handler.py [python]
+!os !json !typing.Optional
+$RequestHandler < BaseHandler & Loggable
+  #__init__() -> #_setup_logging
+  #handle() -> #validate #process ★3
+#main() -> $RequestHandler.#handle ★1
+```
+
+**Sigil Meanings:**
+- `!` - import/module
+- `$` - class/type
+- `#` - function/method
+- `<` - extends
+- `&` - implements
+- `->` - calls (outgoing)
+- `★n` - connectivity rating (n relationships)
+
+**Example with Sigil Format:**
+
+```json
+{
+  "source": ["/path/to/api.py"],
+  "extract_graph": true,
+  "output_format": "sigil"
+}
+```
+
 ## Caching
 
 Results are cached using a key based on:
@@ -428,6 +508,7 @@ Files exceeding these limits are skipped with detailed error messages in the res
 
 ## Related Tools
 
+- `code_search`: Semantic search over indexed code using natural language
 - `find_long_files`: Identify large files that may benefit from skimming
 - `get_library_documentation`: Get focused library documentation
 - `fetch_url`: Fetch web content (can be combined with skimming)

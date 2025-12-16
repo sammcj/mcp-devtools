@@ -41,10 +41,10 @@ func init() {
 func (t *CodeSkimTool) Definition() mcp.Tool {
 	return mcp.NewTool(
 		toolName,
-		mcp.WithDescription("Returns source code information in an efficient way by stripping function/method bodies whilst preserving signatures, types, structure. Useful to understand large files or codebases without implementation details to save token usage."),
+		mcp.WithDescription("Returns source code information in an efficient way by stripping function/method bodies whilst preserving signatures, types, structure. Useful to understand large files or codebases without implementation details to save token usage"),
 		mcp.WithArray("source",
 			mcp.Required(),
-			mcp.Description("Array of absolute file paths, directories (recursively processes all supported files - use sparingly!), or glob patterns (e.g., [\"/path/file.py\", \"/dir\", \"**/*.go\"])."),
+			mcp.Description("Array of absolute file paths, directories (recursively processes all supported files - use sparingly!), or glob patterns (e.g., [\"/path/file.py\", \"/dir\", \"**/*.go\"])"),
 			mcp.WithStringItems(),
 		),
 		mcp.WithBoolean("clear_cache",
@@ -55,8 +55,16 @@ func (t *CodeSkimTool) Definition() mcp.Tool {
 			mcp.Description("Line to start from (1-based) for pagination of large results. Use when previous response was truncated"),
 		),
 		mcp.WithArray("filter",
-			mcp.Description("Optional array of globs to filter by function/method/class name (e.g., [\"handle_*\", \"process_*\"]). Optionally prefix pattern with ! for exclusions. Returns matched_items, total_items, filtered_items counts."),
+			mcp.Description("Optional array of globs to filter by function/method/class name (e.g., [\"handle_*\", \"process_*\"]). Optionally prefix pattern with ! for exclusions. Returns matched_items, total_items, filtered_items counts"),
 			mcp.WithStringItems(),
+		),
+		mcp.WithBoolean("extract_graph",
+			mcp.Description("Extract relationship graph (imports, calls, inheritance)"),
+			mcp.DefaultBool(false),
+		),
+		mcp.WithString("output_format",
+			mcp.Description("Output format: 'json' (default) or 'sigil' (compressed notation for LLMs with !imports $classes #functions ->calls ★connectivity)"),
+			mcp.Enum("json", "sigil"),
 		),
 		// Read-only annotations - reads files but doesn't modify them
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -107,6 +115,12 @@ func (t *CodeSkimTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		ProcessedFiles:   processedCount,
 		FailedFiles:      failedCount,
 		ProcessingTimeMs: &processingTime,
+	}
+
+	// Return sigil format if requested
+	if req.OutputFormat == "sigil" {
+		sigilOutput := FormatSigilResponse(response)
+		return mcp.NewToolResultText(sigilOutput), nil
 	}
 
 	return t.newToolResultJSON(response)
@@ -320,7 +334,7 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 		}
 
 		var err error
-		transformResult, err = TransformWithFilter(ctx, source, lang, isTSX, filterPatterns)
+		transformResult, err = TransformWithOptions(ctx, source, lang, isTSX, filterPatterns, req.ExtractGraph)
 		if err != nil {
 			result.Error = fmt.Sprintf("transformation failed: %v", err)
 			return result
@@ -361,6 +375,11 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 		result.MatchedItems = &transformResult.MatchedItems
 		result.TotalItems = &transformResult.TotalItems
 		result.FilteredItems = &transformResult.FilteredItems
+	}
+
+	// Add graph if extracted
+	if req.ExtractGraph && transformResult.Graph != nil {
+		result.Graph = transformResult.Graph
 	}
 
 	// Apply line limiting and pagination
@@ -498,6 +517,20 @@ func (t *CodeSkimTool) parseRequest(args map[string]any) (*SkimRequest, error) {
 				// Store as []string
 				req.Filter = filters
 			}
+		}
+	}
+
+	// Parse extract_graph (optional)
+	if extractRaw, ok := args["extract_graph"]; ok {
+		if extractBool, ok := extractRaw.(bool); ok {
+			req.ExtractGraph = extractBool
+		}
+	}
+
+	// Parse output_format (optional)
+	if formatRaw, ok := args["output_format"]; ok {
+		if formatStr, ok := formatRaw.(string); ok {
+			req.OutputFormat = formatStr
 		}
 	}
 
