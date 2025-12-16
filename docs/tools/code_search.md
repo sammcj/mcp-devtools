@@ -6,7 +6,7 @@ Semantic code search using local embeddings. Find functions, classes, and method
 
 `code_search` enables semantic search over codebases by:
 1. Indexing code signatures (functions, classes, methods) using the `code_skim` AST parser
-2. Generating embeddings locally using the all-MiniLM-L6-v2 model via hugot
+2. Generating embeddings locally, currently uses the `all-MiniLM-L6-v2` model via hugot
 3. Storing vectors in chromem-go with persistence
 4. Searching by natural language query
 
