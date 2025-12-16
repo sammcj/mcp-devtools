@@ -52,7 +52,7 @@ func (t *CodeSearchTool) Definition() mcp.Tool {
 			mcp.WithStringItems(),
 		),
 		mcp.WithString("query",
-			mcp.Description("Short natural language query (e.g., 'function that handles authentication')"),
+			mcp.Description("Short natural language query. Describe what the code does if you don't know what it's called (e.g., 'function that handles authentication')"),
 		),
 		mcp.WithNumber("limit",
 			mcp.Description("Max results (10, Optional)"),
