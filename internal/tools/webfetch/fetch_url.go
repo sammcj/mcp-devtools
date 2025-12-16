@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -31,17 +32,19 @@ func (t *FetchURLTool) Definition() mcp.Tool {
 
 This tool enables fetching web content for analysis and processing with enhanced pagination support.
 
+If the URL contains a fragment identifier (e.g., https://example.com/page#section) content will be filtered to the element with that ID and its subsections.
+
 Response includes detailed pagination information:
 - total_lines: Total number of lines in the content
 - start_line/end_line: Line numbers for the returned chunk
 - remaining_lines: Number of lines remaining after current chunk
 - next_chunk_preview: Preview of what comes next
 
-This tool is useful for fetching web content - for example to get documentation, information from blog posts, changelogs, implementation guidelines and content from search results.
+This tool is useful for fetching web content - for example to get documentation, information from blog posts, implementation guidelines and content from search results.
 `),
 		mcp.WithString("url",
 			mcp.Required(),
-			mcp.Description("The URL to fetch (must be http or https)"),
+			mcp.Description("The URL to fetch (must be http or https). May include fragment to filter on (e.g., #section-id)"),
 		),
 		mcp.WithNumber("max_length",
 			mcp.Description("Maximum number of characters to return (default: 6000, max: 1000000)"),
@@ -77,6 +80,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		"max_length":  request.MaxLength,
 		"start_index": request.StartIndex,
 		"raw":         request.Raw,
+		"fragment":    request.fragment,
 	}).Debug("Fetch URL parameters")
 
 	// Use security helper for safe HTTP GET
@@ -107,8 +111,8 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		EndLine:     len(strings.Split(string(safeResp.Content), "\n")),
 	}
 
-	// Process the content (convert HTML to markdown, handle different content types)
-	processedContent, err := ProcessContent(logger, response, request.Raw)
+	// Process the content (convert HTML to markdown, handle different content types, filter by fragment)
+	processedContent, err := ProcessContent(logger, response, request.Raw, request.fragment)
 	if err != nil {
 		logger.WithError(err).Warn("Failed to process content, returning raw content")
 		processedContent = response.Content
@@ -173,6 +177,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		"total_length": paginatedResponse.TotalLength,
 		"returned":     len(paginatedResponse.Content),
 		"truncated":    paginatedResponse.Truncated,
+		"fragment":     request.fragment,
 	}).Info("Fetch URL completed successfully")
 
 	return t.newToolResultJSON(paginatedResponse)
@@ -197,8 +202,12 @@ func (t *FetchURLTool) parseRequest(args map[string]any) (*FetchURLRequest, erro
 		}
 	}
 
+	// Parse the URL to extract the fragment
+	parsedURL := parseURL(url)
+
 	request := &FetchURLRequest{
-		URL:        url,
+		URL:        parsedURL.URLWithoutFragment,
+		fragment:   parsedURL.Fragment,
 		MaxLength:  6000,  // Default
 		StartIndex: 0,     // Default
 		Raw:        false, // Default
@@ -231,6 +240,32 @@ func (t *FetchURLTool) parseRequest(args map[string]any) (*FetchURLRequest, erro
 	}
 
 	return request, nil
+}
+
+// ParsedURL contains the URL split into components.
+// Fragment is derived from the URL's fragment component (after '#') when present,
+// rather than being exposed as a separate tool parameter.
+type ParsedURL struct {
+	URLWithoutFragment string
+	Fragment           string
+}
+
+// parseURL parses a URL using net/url and extracts the fragment
+func parseURL(urlStr string) *ParsedURL {
+	parsed, err := url.Parse(urlStr)
+	if err != nil {
+		// Fallback: return URL as-is with no fragment
+		return &ParsedURL{URLWithoutFragment: urlStr}
+	}
+
+	fragment := parsed.Fragment
+	parsed.Fragment = ""
+	parsed.RawFragment = ""
+
+	return &ParsedURL{
+		URLWithoutFragment: parsed.String(),
+		Fragment:           fragment,
+	}
 }
 
 // applyPagination applies enhanced pagination logic to the content
@@ -371,6 +406,13 @@ func (t *FetchURLTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				ExpectedResult: "Returns webpage content converted to clean markdown format, useful for analysis and processing",
 			},
 			{
+				Description: "Fetch a specific section using URL fragment",
+				Arguments: map[string]any{
+					"url": "https://mcp-go.dev/servers/advanced#client-capability-based-filtering",
+				},
+				ExpectedResult: "Returns only the 'client-capability-based-filtering' section and its subsections, excluding other content from the page",
+			},
+			{
 				Description: "Fetch raw HTML without markdown conversion",
 				Arguments: map[string]any{
 					"url": "https://api.example.com/status",
@@ -396,15 +438,16 @@ func (t *FetchURLTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				ExpectedResult: "Returns content starting from character 15,000 for the next 10,000 characters, enabling sequential reading of long documents",
 			},
 			{
-				Description: "Fetch API documentation with custom length",
+				Description: "Fetch specific API endpoint documentation",
 				Arguments: map[string]any{
-					"url":        "https://api-docs.example.com/v2/reference",
+					"url":        "https://api-docs.example.com/v2/reference#authentication",
 					"max_length": 25000,
 				},
-				ExpectedResult: "Returns API documentation content up to 25,000 characters, converted to markdown for easy reading and analysis",
+				ExpectedResult: "Returns only the authentication section from the API docs, converted to markdown for easy reading and analysis",
 			},
 		},
 		CommonPatterns: []string{
+			"Use URL fragments (#section-id) to extract specific sections and save tokens",
 			"Start with default settings first to get a preview of content structure",
 			"For long documents: use pagination (start with default, then continue with start_index)",
 			"Use raw=true for HTML parsing or when markdown conversion breaks the structure",
@@ -422,6 +465,10 @@ func (t *FetchURLTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				Solution: "Try setting 'raw: true' to get unprocessed content, or the website may use complex JavaScript rendering that requires a browser to display properly.",
 			},
 			{
+				Problem:  "Fragment not filtering content as expected",
+				Solution: "The fragment ID may not exist on the page. Try viewing the page source to find the correct ID attribute, or omit the fragment to get the full page.",
+			},
+			{
 				Problem:  "Pagination returns empty content with start_index",
 				Solution: "The start_index may be beyond the content length. Check the total_length from a previous fetch and ensure start_index is less than that value.",
 			},
@@ -435,12 +482,12 @@ func (t *FetchURLTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			},
 		},
 		ParameterDetails: map[string]string{
-			"url":         "Must be a complete HTTP/HTTPS URL. Tool will attempt to add 'https://' if no protocol is specified. Does not support FTP, file://, or other protocols.",
+			"url":         "Must be a complete HTTP/HTTPS URL. Can include a fragment identifier (e.g., #section-id) to filter to a specific section. Tool will attempt to add 'https://' if no protocol is specified. Does not support FTP, file://, or other protocols.",
 			"max_length":  "Controls how much content to return (1 to 1,000,000 characters). Default is 6,000. Use larger values for comprehensive content, smaller for previews.",
 			"start_index": "Character position to start reading from (0-based). Use for pagination when content is longer than max_length. Default is 0 (start of content).",
-			"raw":         "When true, returns raw HTML without markdown conversion. When false (default), converts HTML to clean markdown format for easier reading and analysis.",
+			"raw":         "When true, returns raw HTML without markdown conversion (fragment filtering is not applied). When false (default), converts HTML to clean markdown format for easier reading and analysis, with fragment filtering applied when a URL fragment is present.",
 		},
-		WhenToUse:    "Use to fetch and process web content for analysis, extract information from documentation, get full text from search results, or read blog posts and articles. Ideal for content that needs to be analysed or processed by AI.",
+		WhenToUse:    "Use to fetch and process web content for analysis, extract information from documentation, get full text from search results, or read blog posts and articles. Use URL fragments to extract specific sections and reduce token usage. Ideal for content that needs to be analysed or processed by AI.",
 		WhenNotToUse: "Don't use for downloading files, accessing authenticated content, scraping data that requires JavaScript execution, or fetching binary content like images or PDFs.",
 	}
 }

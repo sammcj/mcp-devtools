@@ -7,6 +7,7 @@ import (
 	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/sirupsen/logrus"
 )
 
@@ -166,8 +167,111 @@ func (c *MarkdownConverter) isMarkupArtifact(line string) bool {
 	return false
 }
 
+// escapeCSSSelector escapes special characters in a string for safe use in CSS attribute selectors.
+// This prevents CSS selector injection when using user-provided fragment IDs.
+func escapeCSSSelector(s string) string {
+	// Escape backslashes first, then single quotes
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `'`, `\'`)
+	return s
+}
+
+// FilterHTMLByFragment filters HTML content to only include the section identified by the fragment ID
+// and its subsections. For heading elements, this includes all following content until the next heading
+// of the same or higher level. For container elements (like section, div, article), this includes all
+// child content. Returns the filtered HTML or the original content if the fragment is not found.
+func FilterHTMLByFragment(logger *logrus.Logger, htmlContent string, fragment string) (string, error) {
+	if fragment == "" {
+		return htmlContent, nil
+	}
+
+	logger.WithField("fragment", fragment).Debug("Filtering HTML by fragment ID")
+
+	// Parse the HTML
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse HTML: %w", err)
+	}
+
+	// Escape special characters in fragment to prevent CSS selector injection
+	escapedFragment := escapeCSSSelector(fragment)
+
+	// Find the element with the matching ID using attribute selector
+	targetElement := doc.Find(fmt.Sprintf("[id='%s']", escapedFragment))
+	if targetElement.Length() == 0 {
+		logger.WithField("fragment", fragment).Warn("Fragment ID not found in HTML, returning full content")
+		return htmlContent, nil
+	}
+
+	// Get the tag name to determine how to extract content
+	tagName := goquery.NodeName(targetElement)
+
+	// Check if this is a heading element (h1-h6)
+	isHeading := tagName == "h1" || tagName == "h2" || tagName == "h3" ||
+		tagName == "h4" || tagName == "h5" || tagName == "h6"
+
+	var filteredHTML string
+
+	if isHeading {
+		// For headings, we need to include the heading and all following siblings
+		// until we encounter another heading of the same or higher level
+		headingLevel := int(tagName[1] - '0') // Extract level from h1, h2, etc.
+
+		// Start with the heading itself
+		outerHTML, err := goquery.OuterHtml(targetElement)
+		if err != nil {
+			logger.WithError(err).Warn("Failed to extract heading HTML, returning full content")
+			return htmlContent, nil
+		}
+
+		contentParts := []string{outerHTML}
+
+		// Iterate through following siblings until we hit a heading of the same or higher level
+		for s := targetElement.Next(); s.Length() > 0; s = s.Next() {
+			siblingTag := goquery.NodeName(s)
+
+			// Check if this is a heading of same or higher level
+			if siblingTag == "h1" || siblingTag == "h2" || siblingTag == "h3" ||
+				siblingTag == "h4" || siblingTag == "h5" || siblingTag == "h6" {
+				siblingLevel := int(siblingTag[1] - '0')
+				if siblingLevel <= headingLevel {
+					break
+				}
+			}
+
+			// Include this sibling in the filtered content
+			siblingHTML, err := goquery.OuterHtml(s)
+			if err != nil {
+				logger.WithError(err).Warn("Failed to extract sibling HTML, skipping element")
+				continue
+			}
+			contentParts = append(contentParts, siblingHTML)
+		}
+
+		filteredHTML = strings.Join(contentParts, "\n")
+	} else {
+		// For container elements, just get the HTML of the element and all its children
+		filteredHTML, err = goquery.OuterHtml(targetElement)
+		if err != nil {
+			logger.WithError(err).Warn("Failed to extract filtered HTML, returning full content")
+			return htmlContent, nil
+		}
+	}
+
+	// Wrap the filtered content in a proper HTML structure to ensure it can be converted to markdown
+	wrappedHTML := fmt.Sprintf("<!DOCTYPE html><html><body>%s</body></html>", filteredHTML)
+
+	logger.WithFields(logrus.Fields{
+		"fragment":      fragment,
+		"original_size": len(htmlContent),
+		"filtered_size": len(wrappedHTML),
+	}).Debug("Successfully filtered HTML by fragment")
+
+	return wrappedHTML, nil
+}
+
 // ProcessContent determines how to process content based on its type
-func ProcessContent(logger *logrus.Logger, response *FetchURLResponse, raw bool) (string, error) {
+func ProcessContent(logger *logrus.Logger, response *FetchURLResponse, raw bool, fragment string) (string, error) {
 	if response.Content == "" {
 		return "", nil
 	}
@@ -185,6 +289,7 @@ func ProcessContent(logger *logrus.Logger, response *FetchURLResponse, raw bool)
 		"is_html":      contentInfo.IsHTML,
 		"is_text":      contentInfo.IsText,
 		"is_binary":    contentInfo.IsBinary,
+		"fragment":     fragment,
 	}).Debug("Processing content based on detected type")
 
 	// Handle different content types
@@ -194,9 +299,20 @@ func ProcessContent(logger *logrus.Logger, response *FetchURLResponse, raw bool)
 	}
 
 	if contentInfo.IsHTML {
+		// Apply fragment filtering if specified
+		contentToConvert := response.Content
+		if fragment != "" {
+			filteredContent, err := FilterHTMLByFragment(logger, response.Content, fragment)
+			if err != nil {
+				logger.WithError(err).Warn("Failed to filter HTML by fragment, using full content")
+			} else {
+				contentToConvert = filteredContent
+			}
+		}
+
 		// Convert HTML to markdown
 		converter := NewMarkdownConverter()
-		markdown, err := converter.ConvertToMarkdown(logger, response.Content)
+		markdown, err := converter.ConvertToMarkdown(logger, contentToConvert)
 		if err != nil {
 			logger.WithError(err).Warn("Failed to convert HTML to markdown, returning raw content")
 			return response.Content, nil

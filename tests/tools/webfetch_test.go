@@ -289,7 +289,7 @@ func TestProcessContent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := webfetch.ProcessContent(logger, tt.response, tt.raw)
+			result, err := webfetch.ProcessContent(logger, tt.response, tt.raw, "")
 
 			if tt.expectError {
 				testutils.AssertError(t, err)
@@ -582,5 +582,342 @@ func TestFetchURLTool_ResultFormat(t *testing.T) {
 		if _, exists := parsed[field]; !exists {
 			t.Errorf("Expected field '%s' not found in response structure", field)
 		}
+	}
+}
+
+// Test fragment filtering functionality
+func TestFilterHTMLByFragment(t *testing.T) {
+	logger := testutils.CreateTestLogger()
+
+	tests := []struct {
+		name           string
+		html           string
+		fragment       string
+		expectContains []string
+		notContains    []string
+		expectError    bool
+	}{
+		{
+			name: "Filter by section ID",
+			html: `<html><body>
+				<h1>Main Title</h1>
+				<section id="intro"><h2>Introduction</h2><p>Intro content</p></section>
+				<section id="details"><h2>Details</h2><p>Detail content</p></section>
+			</body></html>`,
+			fragment: "details",
+			expectContains: []string{
+				"Details",
+				"Detail content",
+			},
+			notContains: []string{
+				"Introduction",
+				"Intro content",
+			},
+			expectError: false,
+		},
+		{
+			name: "Filter by heading ID",
+			html: `<html><body>
+				<h1>Main Title</h1>
+				<h2 id="section-one">Section One</h2>
+				<p>Content for section one</p>
+				<h2 id="section-two">Section Two</h2>
+				<p>Content for section two</p>
+			</body></html>`,
+			fragment: "section-two",
+			expectContains: []string{
+				"Section Two",
+				"Content for section two",
+			},
+			notContains: []string{
+				"Section One",
+				"Content for section one",
+			},
+			expectError: false,
+		},
+		{
+			name: "Fragment not found returns full content",
+			html: `<html><body>
+				<h1>Main Title</h1>
+				<p>Some content</p>
+			</body></html>`,
+			fragment: "nonexistent",
+			expectContains: []string{
+				"Main Title",
+				"Some content",
+			},
+			expectError: false,
+		},
+		{
+			name: "Empty fragment returns full content",
+			html: `<html><body>
+				<h1>Main Title</h1>
+				<p>Some content</p>
+			</body></html>`,
+			fragment: "",
+			expectContains: []string{
+				"Main Title",
+				"Some content",
+			},
+			expectError: false,
+		},
+		{
+			name: "Nested elements preserved",
+			html: `<html><body>
+				<div id="parent">
+					<h2>Parent Heading</h2>
+					<div id="child">
+						<h3>Child Heading</h3>
+						<p>Child content</p>
+					</div>
+				</div>
+			</body></html>`,
+			fragment: "parent",
+			expectContains: []string{
+				"Parent Heading",
+				"Child Heading",
+				"Child content",
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := webfetch.FilterHTMLByFragment(logger, tt.html, tt.fragment)
+
+			if tt.expectError {
+				testutils.AssertError(t, err)
+			} else {
+				testutils.AssertNoError(t, err)
+			}
+
+			for _, expected := range tt.expectContains {
+				if !testutils.Contains(result, expected) {
+					t.Errorf("Expected filtered HTML to contain '%s', got: %s", expected, result)
+				}
+			}
+
+			for _, unexpected := range tt.notContains {
+				if testutils.Contains(result, unexpected) {
+					t.Errorf("Expected filtered HTML NOT to contain '%s', got: %s", unexpected, result)
+				}
+			}
+		})
+	}
+}
+
+// Test ProcessContent with fragment filtering
+func TestProcessContentWithFragment(t *testing.T) {
+	logger := testutils.CreateTestLogger()
+
+	tests := []struct {
+		name           string
+		response       *webfetch.FetchURLResponse
+		fragment       string
+		expectContains []string
+		notContains    []string
+	}{
+		{
+			name: "HTML content with fragment filtering",
+			response: &webfetch.FetchURLResponse{
+				ContentType: "text/html",
+				StatusCode:  200,
+				Content: `<html><body>
+					<h1>Main Title</h1>
+					<section id="intro"><h2>Introduction</h2><p>Intro text</p></section>
+					<section id="advanced"><h2>Advanced Topics</h2><p>Advanced content</p></section>
+				</body></html>`,
+			},
+			fragment: "advanced",
+			expectContains: []string{
+				"Advanced Topics",
+				"Advanced content",
+			},
+			notContains: []string{
+				"Main Title",
+				"Introduction",
+				"Intro text",
+			},
+		},
+		{
+			name: "HTML content without fragment filtering",
+			response: &webfetch.FetchURLResponse{
+				ContentType: "text/html",
+				StatusCode:  200,
+				Content: `<html><body>
+					<h1>Main Title</h1>
+					<p>Content</p>
+				</body></html>`,
+			},
+			fragment: "",
+			expectContains: []string{
+				"Main Title",
+				"Content",
+			},
+			notContains: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := webfetch.ProcessContent(logger, tt.response, false, tt.fragment)
+			testutils.AssertNoError(t, err)
+
+			for _, expected := range tt.expectContains {
+				if !testutils.Contains(result, expected) {
+					t.Errorf("Expected result to contain '%s', got: %s", expected, result)
+				}
+			}
+
+			for _, unexpected := range tt.notContains {
+				if testutils.Contains(result, unexpected) {
+					t.Errorf("Expected result NOT to contain '%s', got: %s", unexpected, result)
+				}
+			}
+		})
+	}
+}
+
+// Test FilterHTMLByFragment edge cases
+func TestFilterHTMLByFragmentEdgeCases(t *testing.T) {
+	logger := testutils.CreateTestLogger()
+
+	tests := []struct {
+		name           string
+		html           string
+		fragment       string
+		expectContains []string
+		notContains    []string
+	}{
+		{
+			name: "fragment with hyphen",
+			html: `<html><body>
+				<h2 id="getting-started">Getting Started</h2>
+				<p>Start here</p>
+				<h2 id="advanced">Advanced</h2>
+				<p>Advanced content</p>
+			</body></html>`,
+			fragment:       "getting-started",
+			expectContains: []string{"Getting Started", "Start here"},
+			notContains:    []string{"Advanced content"},
+		},
+		{
+			name: "fragment with underscore",
+			html: `<html><body>
+				<div id="api_reference">
+					<h3>API Reference</h3>
+					<p>API docs here</p>
+				</div>
+				<div id="other">Other content</div>
+			</body></html>`,
+			fragment:       "api_reference",
+			expectContains: []string{"API Reference", "API docs here"},
+			notContains:    []string{"Other content"},
+		},
+		{
+			name: "heading as last element (no siblings)",
+			html: `<html><body>
+				<h1>Title</h1>
+				<h2 id="final-section">Final Section</h2>
+			</body></html>`,
+			fragment:       "final-section",
+			expectContains: []string{"Final Section"},
+			notContains:    []string{},
+		},
+		{
+			name: "nested content in container",
+			html: `<html><body>
+				<section id="nested">
+					<h2>Nested Title</h2>
+					<div>
+						<p>Deeply nested</p>
+						<ul><li>Item 1</li><li>Item 2</li></ul>
+					</div>
+				</section>
+				<section id="other">Other section</section>
+			</body></html>`,
+			fragment:       "nested",
+			expectContains: []string{"Nested Title", "Deeply nested", "Item 1", "Item 2"},
+			notContains:    []string{"Other section"},
+		},
+		{
+			name:           "non-existent fragment returns full content",
+			html:           `<html><body><p>Full content here</p></body></html>`,
+			fragment:       "nonexistent",
+			expectContains: []string{"Full content here"},
+			notContains:    []string{},
+		},
+		{
+			name: "fragment with single quote (CSS injection prevention)",
+			html: `<html><body>
+				<div id="test'quote">
+					<p>Content with quote in ID</p>
+				</div>
+				<div id="other">Other content</div>
+			</body></html>`,
+			fragment:       "test'quote",
+			expectContains: []string{"Content with quote in ID"},
+			notContains:    []string{"Other content"},
+		},
+		{
+			name: "fragment with backslash",
+			html: `<html><body>
+				<div id="test\slash">
+					<p>Content with backslash in ID</p>
+				</div>
+				<div id="other">Other content</div>
+			</body></html>`,
+			fragment:       `test\slash`,
+			expectContains: []string{"Content with backslash in ID"},
+			notContains:    []string{"Other content"},
+		},
+		{
+			name: "fragment with brackets (no injection)",
+			html: `<html><body>
+				<div id="test[0]">
+					<p>Content with brackets</p>
+				</div>
+				<div id="other">Other content</div>
+			</body></html>`,
+			fragment:       "test[0]",
+			expectContains: []string{"Content with brackets"},
+			notContains:    []string{"Other content"},
+		},
+		{
+			name: "heading with sub-headings included",
+			html: `<html><body>
+				<h2 id="parent">Parent Section</h2>
+				<p>Parent content</p>
+				<h3>Child Heading</h3>
+				<p>Child content</p>
+				<h4>Grandchild</h4>
+				<p>Grandchild content</p>
+				<h2 id="sibling">Sibling Section</h2>
+				<p>Sibling content</p>
+			</body></html>`,
+			fragment:       "parent",
+			expectContains: []string{"Parent Section", "Parent content", "Child Heading", "Child content", "Grandchild"},
+			notContains:    []string{"Sibling Section", "Sibling content"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := webfetch.FilterHTMLByFragment(logger, tt.html, tt.fragment)
+			testutils.AssertNoError(t, err)
+
+			for _, expected := range tt.expectContains {
+				if !testutils.Contains(result, expected) {
+					t.Errorf("Expected result to contain %q, got: %s", expected, result)
+				}
+			}
+
+			for _, unexpected := range tt.notContains {
+				if testutils.Contains(result, unexpected) {
+					t.Errorf("Expected result NOT to contain %q, got: %s", unexpected, result)
+				}
+			}
+		})
 	}
 }
