@@ -25,7 +25,9 @@ The binary size increase is minimal (~6MB) as heavy dependencies are downloaded 
 
 ### index
 
-Index a codebase for semantic search. Recursively walks directories to find all supported code files. May take a few minutes for large codebases.
+Index a codebase for semantic search. May take a few minutes for large codebases depending on your hardware.
+
+When indexing starts, a `notifications/message` notification is sent to the client to inform the user that indexing is in progress.
 
 ```json
 {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	mcpserver "github.com/mark3labs/mcp-go/server"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/codesearch/filetracker"
@@ -44,7 +45,7 @@ func (t *CodeSearchTool) Definition() mcp.Tool {
 		mcp.WithDescription("Finds code by natural language description using local embeddings. Index a codebase first, then use search."),
 		mcp.WithString("action",
 			mcp.Required(),
-			mcp.Description("'index' to index paths (recursively, may take minutes for large codebases), 'search' to query, 'status' to check, 'clear' to reset"),
+			mcp.Description("'index' to index paths, 'search' to query, 'status' to check, 'clear' to reset"),
 			mcp.Enum("search", "index", "status", "clear"),
 		),
 		mcp.WithArray("source",
@@ -220,6 +221,9 @@ func (t *CodeSearchTool) executeIndex(ctx context.Context, req *SearchRequest, l
 		return nil, fmt.Errorf("source paths are required for index action")
 	}
 
+	// Notify client that indexing is starting (may take a while)
+	t.sendIndexingNotification(ctx, logger)
+
 	result, err := t.indexer.Index(ctx, req.Source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to index: %w", err)
@@ -269,6 +273,26 @@ func (t *CodeSearchTool) executeClear(_ context.Context, req *SearchRequest, log
 	}).Info("Index cleared")
 
 	return t.newToolResultJSON(result)
+}
+
+// sendIndexingNotification sends a notification to the client that indexing has started.
+// This is a best-effort operation - failures are logged but don't affect indexing.
+func (t *CodeSearchTool) sendIndexingNotification(ctx context.Context, logger *logrus.Logger) {
+	srv := mcpserver.ServerFromContext(ctx)
+	if srv == nil {
+		logger.Debug("No MCP server in context, skipping indexing notification")
+		return
+	}
+
+	// Send a log-style notification to inform the client
+	err := srv.SendNotificationToClient(ctx, "notifications/message", map[string]any{
+		"level":  "info",
+		"logger": toolName,
+		"data":   "Indexing started - this may take a few minutes depending on codebase size and hardware",
+	})
+	if err != nil {
+		logger.WithError(err).Debug("Failed to send indexing notification")
+	}
 }
 
 // parseRequest parses and validates the tool arguments
