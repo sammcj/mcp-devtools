@@ -34,7 +34,9 @@ type SearchResult struct {
 // SearchResponse represents the response from a search action
 type SearchResponse struct {
 	Results      []SearchResult `json:"results,omitempty"`
-	TotalIndexed int            `json:"total_indexed,omitempty"`
+	TotalMatches int            `json:"total_matches,omitempty"` // Total matches before limit applied
+	LimitApplied int            `json:"limit_applied,omitempty"` // Limit that was applied (only if truncated)
+	LastIndexed  string         `json:"last_indexed,omitempty"`  // When index was last updated, e.g. "2025-10-23 06:30"
 }
 
 // IndexResponse represents the response from an index action
