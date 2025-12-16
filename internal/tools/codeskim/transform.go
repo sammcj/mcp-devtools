@@ -26,17 +26,30 @@ type TransformResult struct {
 	MatchedItems  int
 	TotalItems    int
 	FilteredItems int
+	Graph         *FileGraph // Optional graph extraction result
 }
 
 // Transform transforms source code by removing implementation details
 func Transform(ctx context.Context, source string, lang Language, isTSX bool) (*TransformResult, error) {
-	return TransformWithFilter(ctx, source, lang, isTSX, nil)
+	return TransformWithOptions(ctx, source, lang, isTSX, nil, false)
+}
+
+// TransformWithGraph transforms source code and optionally extracts the graph
+func TransformWithGraph(ctx context.Context, source string, lang Language, isTSX bool, extractGraph bool) (*TransformResult, error) {
+	return TransformWithOptions(ctx, source, lang, isTSX, nil, extractGraph)
 }
 
 // TransformWithFilter transforms source code and optionally filters by name pattern(s)
 // filterPatterns is an array of glob patterns (e.g., ["handle_*", "!temp_*"])
 // Pass nil or empty slice for no filtering
 func TransformWithFilter(ctx context.Context, source string, lang Language, isTSX bool, filterPatterns []string) (*TransformResult, error) {
+	return TransformWithOptions(ctx, source, lang, isTSX, filterPatterns, false)
+}
+
+// TransformWithOptions transforms source code with optional filtering and graph extraction
+// filterPatterns is an array of glob patterns (e.g., ["handle_*", "!temp_*"])
+// extractGraph controls whether to extract the relationship graph
+func TransformWithOptions(ctx context.Context, source string, lang Language, isTSX bool, filterPatterns []string, extractGraph bool) (*TransformResult, error) {
 	// Get the appropriate tree-sitter language
 	var tsLang *sitter.Language
 	if lang == LanguageTypeScript && isTSX {
@@ -65,7 +78,17 @@ func TransformWithFilter(ctx context.Context, source string, lang Language, isTS
 	}
 
 	// Transform by stripping function bodies (with optional filtering)
-	return transformStructure(sourceBytes, tree, lang, filterPatterns)
+	result, err := transformStructure(sourceBytes, tree, lang, filterPatterns)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract graph if requested
+	if extractGraph {
+		result.Graph = ExtractFileGraph(tree, sourceBytes, lang)
+	}
+
+	return result, nil
 }
 
 // transformStructure strips function/method bodies while preserving structure

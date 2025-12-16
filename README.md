@@ -49,7 +49,7 @@ graph LR
 
     E --> E_Tools[🔢 Sequential Thinking<br>🕸️ Memory Graph]
 
-    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem<br>✂️ Code Skim<br>🏷️ Code Rename]
+    F --> F_Tools[🇬🇧 American→English<br>🔌 API Integrations<br>📁 Filesystem<br>✂️ Code Skim<br>🔍 Code Search<br>🏷️ Code Rename]
 
     G --> G_Tools[🤖 Claude Code<br>🎯 Codex CLI<br>🐙 Copilot CLI<br>✨ Gemini CLI<br>👻 Kiro]
 
@@ -287,7 +287,8 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | Tool                                                                 | Purpose                                                   | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                                 | Maturity |
 |----------------------------------------------------------------------|-----------------------------------------------------------|---------------------------|-----------------------------------------------|----------|
 | **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                               | `murican_to_english`      | Organise, colour, centre                      | 🟡       |
-| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details      | `code_skim`               | Reduced token consumption                     | 🟡       |
+| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details      | `code_skim`               | Reduced token consumption                     | 🟢       |
+| **[Code Search](docs/tools/code_search.md)**                         | Semantic code search with local embeddings                | `code_search`             | Find code by natural language description     | 🟡       |
 | **[Code Rename](docs/tools/code_rename.md)**                         | LSP-based symbol renaming across files (experimental)     | `code_rename`             | Rename functions, variables, types            | 🔴       |
 | **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**           | Component information                                     | `shadcn`                  | Button, Dialog, Form components               | 🟢       |
 | **[Magic UI Component Library](docs/tools/magicui.md)**              | Animated component library                                | `magic_ui`                | Frontend React components                     | 🟠       |
