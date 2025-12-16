@@ -31,6 +31,10 @@ func (t *FetchURLTool) Definition() mcp.Tool {
 
 This tool enables fetching web content for analysis and processing with enhanced pagination support.
 
+**URL Fragment Filtering**: If the URL contains a fragment identifier (e.g., https://example.com/page#section), 
+the tool will automatically filter the content to only include the element with that ID and all its subsections.
+This is useful for extracting specific sections from documentation pages.
+
 Response includes detailed pagination information:
 - total_lines: Total number of lines in the content
 - start_line/end_line: Line numbers for the returned chunk
@@ -41,7 +45,7 @@ This tool is useful for fetching web content - for example to get documentation,
 `),
 		mcp.WithString("url",
 			mcp.Required(),
-			mcp.Description("The URL to fetch (must be http or https)"),
+			mcp.Description("The URL to fetch (must be http or https). Can include a fragment identifier (e.g., #section-id) to filter content to a specific section."),
 		),
 		mcp.WithNumber("max_length",
 			mcp.Description("Maximum number of characters to return (default: 6000, max: 1000000)"),
@@ -77,6 +81,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		"max_length":  request.MaxLength,
 		"start_index": request.StartIndex,
 		"raw":         request.Raw,
+		"fragment":    request.Fragment,
 	}).Debug("Fetch URL parameters")
 
 	// Use security helper for safe HTTP GET
@@ -107,8 +112,8 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		EndLine:     len(strings.Split(string(safeResp.Content), "\n")),
 	}
 
-	// Process the content (convert HTML to markdown, handle different content types)
-	processedContent, err := ProcessContent(logger, response, request.Raw)
+	// Process the content (convert HTML to markdown, handle different content types, filter by fragment)
+	processedContent, err := ProcessContent(logger, response, request.Raw, request.Fragment)
 	if err != nil {
 		logger.WithError(err).Warn("Failed to process content, returning raw content")
 		processedContent = response.Content
@@ -173,6 +178,7 @@ func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 		"total_length": paginatedResponse.TotalLength,
 		"returned":     len(paginatedResponse.Content),
 		"truncated":    paginatedResponse.Truncated,
+		"fragment":     request.Fragment,
 	}).Info("Fetch URL completed successfully")
 
 	return t.newToolResultJSON(paginatedResponse)
@@ -197,8 +203,15 @@ func (t *FetchURLTool) parseRequest(args map[string]any) (*FetchURLRequest, erro
 		}
 	}
 
+	// Parse the URL to extract the fragment
+	parsedURL, err := parseURL(url)
+	if err != nil {
+		return nil, fmt.Errorf("invalid URL: %w", err)
+	}
+
 	request := &FetchURLRequest{
-		URL:        url,
+		URL:        parsedURL.URLWithoutFragment,
+		Fragment:   parsedURL.Fragment,
 		MaxLength:  6000,  // Default
 		StartIndex: 0,     // Default
 		Raw:        false, // Default
@@ -231,6 +244,99 @@ func (t *FetchURLTool) parseRequest(args map[string]any) (*FetchURLRequest, erro
 	}
 
 	return request, nil
+}
+
+// ParsedURL contains the URL split into components
+type ParsedURL struct {
+	URLWithoutFragment string
+	Fragment           string
+}
+
+// parseURL parses a URL and extracts the fragment
+func parseURL(urlStr string) (*ParsedURL, error) {
+	// Parse using net/url to extract fragment
+	u, err := parseNetURL(urlStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build URL without fragment
+	urlWithoutFragment := u.Scheme + "://" + u.Host + u.Path
+	if u.RawQuery != "" {
+		urlWithoutFragment += "?" + u.RawQuery
+	}
+
+	return &ParsedURL{
+		URLWithoutFragment: urlWithoutFragment,
+		Fragment:           u.Fragment,
+	}, nil
+}
+
+// parseNetURL is a helper to avoid import conflicts
+func parseNetURL(urlStr string) (*parsedURLInternal, error) {
+	// Use a simple manual parsing approach to avoid complexity
+	// Find the fragment separator
+	fragmentIdx := strings.Index(urlStr, "#")
+	if fragmentIdx == -1 {
+		// No fragment
+		return parseURLComponents(urlStr, ""), nil
+	}
+
+	// Split into URL and fragment
+	baseURL := urlStr[:fragmentIdx]
+	fragment := urlStr[fragmentIdx+1:]
+
+	return parseURLComponents(baseURL, fragment), nil
+}
+
+type parsedURLInternal struct {
+	Scheme   string
+	Host     string
+	Path     string
+	RawQuery string
+	Fragment string
+}
+
+func parseURLComponents(urlStr string, fragment string) *parsedURLInternal {
+	result := &parsedURLInternal{Fragment: fragment}
+
+	// Extract scheme
+	schemeIdx := strings.Index(urlStr, "://")
+	if schemeIdx == -1 {
+		result.Scheme = "https"
+		urlStr = "https://" + urlStr
+		schemeIdx = strings.Index(urlStr, "://")
+	}
+
+	result.Scheme = urlStr[:schemeIdx]
+	remaining := urlStr[schemeIdx+3:]
+
+	// Extract host and path
+	pathIdx := strings.Index(remaining, "/")
+	if pathIdx == -1 {
+		// No path, just host
+		queryIdx := strings.Index(remaining, "?")
+		if queryIdx == -1 {
+			result.Host = remaining
+		} else {
+			result.Host = remaining[:queryIdx]
+			result.RawQuery = remaining[queryIdx+1:]
+		}
+	} else {
+		result.Host = remaining[:pathIdx]
+		pathAndQuery := remaining[pathIdx:]
+
+		// Extract query
+		queryIdx := strings.Index(pathAndQuery, "?")
+		if queryIdx == -1 {
+			result.Path = pathAndQuery
+		} else {
+			result.Path = pathAndQuery[:queryIdx]
+			result.RawQuery = pathAndQuery[queryIdx+1:]
+		}
+	}
+
+	return result
 }
 
 // applyPagination applies enhanced pagination logic to the content

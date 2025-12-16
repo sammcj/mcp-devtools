@@ -3,6 +3,7 @@ package webfetch
 // FetchURLRequest represents the parameters for the fetch-url tool
 type FetchURLRequest struct {
 	URL        string `json:"url"`
+	Fragment   string `json:"fragment,omitempty"`
 	MaxLength  int    `json:"max_length,omitempty"`
 	StartIndex int    `json:"start_index,omitempty"`
 	Raw        bool   `json:"raw,omitempty"`
