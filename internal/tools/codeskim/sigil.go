@@ -49,8 +49,6 @@ func FormatSigil(result *FileResult) string {
 			for _, class := range result.Graph.Classes {
 				if slices.Contains(class.Methods, fn.Name) {
 					isMethod = true
-				}
-				if isMethod {
 					break
 				}
 			}

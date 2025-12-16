@@ -72,7 +72,6 @@ func (i *Indexer) Index(ctx context.Context, paths []string) (*IndexResult, erro
 	// Process each file
 	var itemsToEmbed []itemToEmbed
 	var indexedFilePaths []string
-	var embedStartTime time.Time
 
 	for _, filePath := range allFiles {
 		// Skip already indexed files (incremental indexing)
@@ -98,65 +97,15 @@ func (i *Indexer) Index(ctx context.Context, paths []string) (*IndexResult, erro
 		return result, nil
 	}
 
-	// Generate embeddings in batches
-	embedStartTime = time.Now()
-	batchSize := 32
-	var storeItems []*vectorstore.Item
-
-	for start := 0; start < len(itemsToEmbed); start += batchSize {
-		end := min(start+batchSize, len(itemsToEmbed))
-		batch := itemsToEmbed[start:end]
-
-		// Extract texts for embedding
-		texts := make([]string, len(batch))
-		for j, item := range batch {
-			texts[j] = item.signature
-		}
-
-		// Generate embeddings
-		embeddings, err := i.embedder.EmbedBatch(ctx, texts)
-		if err != nil {
-			i.logger.WithError(err).Warn("Failed to generate embeddings for batch")
-			continue
-		}
-
-		// Create store items
-		for j, item := range batch {
-			storeItem := &vectorstore.Item{
-				ID:        vectorstore.GenerateItemID(item.path, item.name, item.line),
-				Path:      item.path,
-				Name:      item.name,
-				Type:      item.itemType,
-				Signature: item.signature,
-				Line:      item.line,
-				Embedding: embeddings[j],
-			}
-			storeItems = append(storeItems, storeItem)
-		}
+	// Generate embeddings, store items, and persist
+	indexedItems, embedTimeMs, err := i.embedAndStore(ctx, itemsToEmbed, indexedFilePaths)
+	if err != nil {
+		return nil, err
 	}
 
-	result.EmbeddingTimeMs = time.Since(embedStartTime).Milliseconds()
-
-	// Add to store
-	if err := i.store.AddBatch(storeItems); err != nil {
-		return nil, fmt.Errorf("failed to add items to store: %w", err)
-	}
-
-	result.IndexedItems = len(storeItems)
+	result.IndexedItems = indexedItems
+	result.EmbeddingTimeMs = embedTimeMs
 	result.IndexTimeMs = time.Since(startTime).Milliseconds()
-
-	// Track indexed files with their mtimes
-	if err := i.tracker.MarkIndexedBatch(indexedFilePaths); err != nil {
-		i.logger.WithError(err).Warn("Failed to track indexed files")
-	}
-	if err := i.tracker.Save(); err != nil {
-		i.logger.WithError(err).Warn("Failed to persist file tracker")
-	}
-
-	// Persist store
-	if err := i.store.Save(); err != nil {
-		i.logger.WithError(err).Warn("Failed to persist store")
-	}
 
 	return result, nil
 }
@@ -179,7 +128,6 @@ func (i *Indexer) IndexFiles(ctx context.Context, files []string) (*IndexResult,
 	// Process each file (no skip check - always reindex)
 	var itemsToEmbed []itemToEmbed
 	var indexedFilePaths []string
-	var embedStartTime time.Time
 
 	for _, filePath := range files {
 		// Check file exists and is supported
@@ -205,14 +153,28 @@ func (i *Indexer) IndexFiles(ctx context.Context, files []string) (*IndexResult,
 		return result, nil
 	}
 
-	// Generate embeddings in batches
-	embedStartTime = time.Now()
+	// Generate embeddings, store items, and persist
+	indexedItems, embedTimeMs, err := i.embedAndStore(ctx, itemsToEmbed, indexedFilePaths)
+	if err != nil {
+		return nil, err
+	}
+
+	result.IndexedItems = indexedItems
+	result.EmbeddingTimeMs = embedTimeMs
+	result.IndexTimeMs = time.Since(startTime).Milliseconds()
+
+	return result, nil
+}
+
+// embedAndStore generates embeddings for items, stores them, and persists tracking info
+func (i *Indexer) embedAndStore(ctx context.Context, items []itemToEmbed, filePaths []string) (int, int64, error) {
+	embedStartTime := time.Now()
 	batchSize := 32
 	var storeItems []*vectorstore.Item
 
-	for start := 0; start < len(itemsToEmbed); start += batchSize {
-		end := min(start+batchSize, len(itemsToEmbed))
-		batch := itemsToEmbed[start:end]
+	for start := 0; start < len(items); start += batchSize {
+		end := min(start+batchSize, len(items))
+		batch := items[start:end]
 
 		// Extract texts for embedding
 		texts := make([]string, len(batch))
@@ -242,18 +204,15 @@ func (i *Indexer) IndexFiles(ctx context.Context, files []string) (*IndexResult,
 		}
 	}
 
-	result.EmbeddingTimeMs = time.Since(embedStartTime).Milliseconds()
+	embedTimeMs := time.Since(embedStartTime).Milliseconds()
 
 	// Add to store
 	if err := i.store.AddBatch(storeItems); err != nil {
-		return nil, fmt.Errorf("failed to add items to store: %w", err)
+		return 0, embedTimeMs, fmt.Errorf("failed to add items to store: %w", err)
 	}
 
-	result.IndexedItems = len(storeItems)
-	result.IndexTimeMs = time.Since(startTime).Milliseconds()
-
 	// Track indexed files with their mtimes
-	if err := i.tracker.MarkIndexedBatch(indexedFilePaths); err != nil {
+	if err := i.tracker.MarkIndexedBatch(filePaths); err != nil {
 		i.logger.WithError(err).Warn("Failed to track indexed files")
 	}
 	if err := i.tracker.Save(); err != nil {
@@ -265,7 +224,7 @@ func (i *Indexer) IndexFiles(ctx context.Context, files []string) (*IndexResult,
 		i.logger.WithError(err).Warn("Failed to persist store")
 	}
 
-	return result, nil
+	return len(storeItems), embedTimeMs, nil
 }
 
 // itemToEmbed represents an item to be embedded

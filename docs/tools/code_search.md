@@ -45,8 +45,7 @@ Find code by natural language description.
 ```json
 {
   "action": "search",
-  "query": "function that handles HTTP requests",
-  "limit": 5
+  "query": "function that handles HTTP requests"
 }
 ```
 
