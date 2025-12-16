@@ -184,8 +184,8 @@ func FilterHTMLByFragment(logger *logrus.Logger, htmlContent string, fragment st
 		return "", fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	// Find the element with the matching ID
-	targetElement := doc.Find("#" + fragment)
+	// Find the element with the matching ID using attribute selector to avoid CSS injection
+	targetElement := doc.Find(fmt.Sprintf("[id='%s']", fragment))
 	if targetElement.Length() == 0 {
 		logger.WithField("fragment", fragment).Warn("Fragment ID not found in HTML, returning full content")
 		return htmlContent, nil
@@ -212,11 +212,10 @@ func FilterHTMLByFragment(logger *logrus.Logger, htmlContent string, fragment st
 			return htmlContent, nil
 		}
 
-		var contentParts []string
-		contentParts = append(contentParts, outerHTML)
+		contentParts := []string{outerHTML}
 
-		// Iterate through following siblings
-		targetElement.NextAll().Each(func(i int, s *goquery.Selection) {
+		// Iterate through following siblings until we hit a heading of the same or higher level
+		for s := targetElement.Next(); s.Length() > 0; s = s.Next() {
 			siblingTag := goquery.NodeName(s)
 
 			// Check if this is a heading of same or higher level
@@ -224,15 +223,18 @@ func FilterHTMLByFragment(logger *logrus.Logger, htmlContent string, fragment st
 				siblingTag == "h4" || siblingTag == "h5" || siblingTag == "h6" {
 				siblingLevel := int(siblingTag[1] - '0')
 				if siblingLevel <= headingLevel {
-					// Stop here - we've reached the next section
-					return
+					break
 				}
 			}
 
 			// Include this sibling in the filtered content
-			siblingHTML, _ := goquery.OuterHtml(s)
+			siblingHTML, err := goquery.OuterHtml(s)
+			if err != nil {
+				logger.WithError(err).Warn("Failed to extract sibling HTML, skipping element")
+				continue
+			}
 			contentParts = append(contentParts, siblingHTML)
-		})
+		}
 
 		filteredHTML = strings.Join(contentParts, "\n")
 	} else {

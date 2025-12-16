@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -202,10 +203,7 @@ func (t *FetchURLTool) parseRequest(args map[string]any) (*FetchURLRequest, erro
 	}
 
 	// Parse the URL to extract the fragment
-	parsedURL, err := parseURL(url)
-	if err != nil {
-		return nil, fmt.Errorf("invalid URL: %w", err)
-	}
+	parsedURL := parseURL(url)
 
 	request := &FetchURLRequest{
 		URL:        parsedURL.URLWithoutFragment,
@@ -244,97 +242,30 @@ func (t *FetchURLTool) parseRequest(args map[string]any) (*FetchURLRequest, erro
 	return request, nil
 }
 
-// ParsedURL contains the URL split into components
+// ParsedURL contains the URL split into components.
+// Fragment is derived from the URL's fragment component (after '#') when present,
+// rather than being exposed as a separate tool parameter.
 type ParsedURL struct {
 	URLWithoutFragment string
 	Fragment           string
 }
 
-// parseURL parses a URL and extracts the fragment
-func parseURL(urlStr string) (*ParsedURL, error) {
-	// Parse using net/url to extract fragment
-	u, err := parseNetURL(urlStr)
+// parseURL parses a URL using net/url and extracts the fragment
+func parseURL(urlStr string) *ParsedURL {
+	parsed, err := url.Parse(urlStr)
 	if err != nil {
-		return nil, err
+		// Fallback: return URL as-is with no fragment
+		return &ParsedURL{URLWithoutFragment: urlStr}
 	}
 
-	// Build URL without fragment
-	urlWithoutFragment := u.Scheme + "://" + u.Host + u.Path
-	if u.RawQuery != "" {
-		urlWithoutFragment += "?" + u.RawQuery
-	}
+	fragment := parsed.Fragment
+	parsed.Fragment = ""
+	parsed.RawFragment = ""
 
 	return &ParsedURL{
-		URLWithoutFragment: urlWithoutFragment,
-		Fragment:           u.Fragment,
-	}, nil
-}
-
-// parseNetURL is a helper to avoid import conflicts
-func parseNetURL(urlStr string) (*parsedURLInternal, error) {
-	// Use a simple manual parsing approach to avoid complexity
-	// Find the fragment separator
-	fragmentIdx := strings.Index(urlStr, "#")
-	if fragmentIdx == -1 {
-		// No fragment
-		return parseURLComponents(urlStr, ""), nil
+		URLWithoutFragment: parsed.String(),
+		Fragment:           fragment,
 	}
-
-	// Split into URL and fragment
-	baseURL := urlStr[:fragmentIdx]
-	fragment := urlStr[fragmentIdx+1:]
-
-	return parseURLComponents(baseURL, fragment), nil
-}
-
-type parsedURLInternal struct {
-	Scheme   string
-	Host     string
-	Path     string
-	RawQuery string
-	Fragment string
-}
-
-func parseURLComponents(urlStr string, fragment string) *parsedURLInternal {
-	result := &parsedURLInternal{Fragment: fragment}
-
-	// Extract scheme
-	schemeIdx := strings.Index(urlStr, "://")
-	if schemeIdx == -1 {
-		result.Scheme = "https"
-		urlStr = "https://" + urlStr
-		schemeIdx = strings.Index(urlStr, "://")
-	}
-
-	result.Scheme = urlStr[:schemeIdx]
-	remaining := urlStr[schemeIdx+3:]
-
-	// Extract host and path
-	pathIdx := strings.Index(remaining, "/")
-	if pathIdx == -1 {
-		// No path, just host
-		queryIdx := strings.Index(remaining, "?")
-		if queryIdx == -1 {
-			result.Host = remaining
-		} else {
-			result.Host = remaining[:queryIdx]
-			result.RawQuery = remaining[queryIdx+1:]
-		}
-	} else {
-		result.Host = remaining[:pathIdx]
-		pathAndQuery := remaining[pathIdx:]
-
-		// Extract query
-		queryIdx := strings.Index(pathAndQuery, "?")
-		if queryIdx == -1 {
-			result.Path = pathAndQuery
-		} else {
-			result.Path = pathAndQuery[:queryIdx]
-			result.RawQuery = pathAndQuery[queryIdx+1:]
-		}
-	}
-
-	return result
 }
 
 // applyPagination applies enhanced pagination logic to the content
