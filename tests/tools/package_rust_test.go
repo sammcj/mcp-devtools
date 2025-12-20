@@ -109,6 +109,26 @@ func TestRustTool_Execute(t *testing.T) {
 			args:    map[string]any{},
 			wantErr: true,
 		},
+		{
+			name: "array format",
+			args: map[string]any{
+				"dependencies": []any{"serde", "tokio"},
+			},
+			wantErr: false,
+			validate: func(t *testing.T, result any) {
+				versions := testutils.ExtractPackageVersions(t, result)
+				require.Len(t, versions, 2)
+
+				// Results should be sorted by name
+				assert.Equal(t, "serde", versions[0].Name)
+				assert.Equal(t, "tokio", versions[1].Name)
+
+				for _, v := range versions {
+					assert.Equal(t, "crates.io", v.Registry)
+					assert.NotEmpty(t, v.LatestVersion)
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {

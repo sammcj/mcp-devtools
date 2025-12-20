@@ -57,9 +57,10 @@ func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 		return nil, fmt.Errorf("missing required parameter: dependencies")
 	}
 
-	// Convert to map[string]string
+	// Convert to map[string]string - supports both object and array formats
 	depsMap := make(map[string]string)
-	if deps, ok := depsRaw.(map[string]any); ok {
+	switch deps := depsRaw.(type) {
+	case map[string]any:
 		for name, version := range deps {
 			if vStr, ok := version.(string); ok {
 				depsMap[name] = vStr
@@ -74,8 +75,15 @@ func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 				depsMap[name] = fmt.Sprintf("%v", version)
 			}
 		}
-	} else {
-		return nil, fmt.Errorf("invalid dependencies format: expected object")
+	case []any:
+		// Handle array format: ["serde", "tokio"] -> {"serde": "latest", "tokio": "latest"}
+		for _, item := range deps {
+			if name, ok := item.(string); ok && strings.TrimSpace(name) != "" {
+				depsMap[strings.TrimSpace(name)] = "latest"
+			}
+		}
+	default:
+		return nil, fmt.Errorf("invalid dependencies format: expected object like {\"serde\": \"1.0\", \"tokio\": \"latest\"} or array like [\"serde\", \"tokio\"]")
 	}
 
 	// Check if detailed information is requested

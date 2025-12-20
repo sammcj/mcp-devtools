@@ -52,6 +52,14 @@ func (t *SearchPackagesTool) Definition() mcp.Tool {
 		),
 		mcp.WithObject("data",
 			mcp.Description("Ecosystem-specific data object for checking multiple packages / libraries, structure depends on the ecosystem (e.g., for python: `[\"requests\", \"numpy\"]`, for npm: `{\"react\": \"latest\", \"lodash\": \"^4.0.0\"}`) (Optional)"),
+			mcp.Properties(map[string]any{
+				"_examples": map[string]any{
+					"npm":    map[string]any{"react": "latest", "lodash": "^4.0.0"},
+					"python": []string{"requests", "numpy"},
+					"rust":   map[string]any{"serde": "1.0", "tokio": "latest"},
+					"go":     map[string]any{"github.com/gin-gonic/gin": "v1.9.0"},
+				},
+			}),
 		),
 		mcp.WithObject("constraints",
 			mcp.Description("Constraints for specific packages / libraries (version constraints, exclusions, etc.) (Optional)"),
@@ -344,7 +352,38 @@ func (t *SearchPackagesTool) handleBedrock(ctx context.Context, logger *logrus.L
 func (t *SearchPackagesTool) handleRust(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
-		args["dependencies"] = data
+		// Handle array format by converting to object: ["serde", "tokio"] -> {"serde": "latest", "tokio": "latest"}
+		switch v := data.(type) {
+		case []any:
+			deps := make(map[string]any)
+			for _, item := range v {
+				if name, isStr := item.(string); isStr && name != "" {
+					deps[strings.TrimSpace(name)] = "latest"
+				}
+			}
+			args["dependencies"] = deps
+		case string:
+			// Handle JSON string that represents an array: "[\"serde\", \"tokio\"]"
+			trimmed := strings.TrimSpace(v)
+			if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+				var arr []string
+				if err := json.Unmarshal([]byte(trimmed), &arr); err == nil {
+					deps := make(map[string]any)
+					for _, name := range arr {
+						if strings.TrimSpace(name) != "" {
+							deps[strings.TrimSpace(name)] = "latest"
+						}
+					}
+					args["dependencies"] = deps
+				} else {
+					args["dependencies"] = data
+				}
+			} else {
+				args["dependencies"] = data
+			}
+		default:
+			args["dependencies"] = data
+		}
 	} else if query, ok := args["query"].(string); ok {
 		// Check if query contains comma-separated crates
 		if strings.Contains(query, ",") {
@@ -506,7 +545,7 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 				ExpectedResult: "Returns Go module information and version details from the Go module proxy",
 			},
 			{
-				Description: "Check Rust crate versions",
+				Description: "Check Rust crate versions with object format",
 				Arguments: map[string]any{
 					"ecosystem": "rust",
 					"query":     "serde",
@@ -517,6 +556,15 @@ func (t *SearchPackagesTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 					},
 				},
 				ExpectedResult: "Returns Rust crate information and latest versions from crates.io",
+			},
+			{
+				Description: "Check Rust crate versions with array format (simpler)",
+				Arguments: map[string]any{
+					"ecosystem": "rust",
+					"query":     "serde",
+					"data":      []string{"serde", "tokio", "tower-lsp", "serde_json"},
+				},
+				ExpectedResult: "Returns latest versions for multiple Rust crates from crates.io",
 			},
 		},
 		CommonPatterns: []string{
