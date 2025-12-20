@@ -455,13 +455,20 @@ func (t *InternetSearchTool) executeSingleSearch(ctx context.Context, logger *lo
 func (t *InternetSearchTool) aggregateResults(results []internetsearch.QueryResult) (*mcp.CallToolResult, error) {
 	successful := 0
 	failed := 0
+	var errors []string
 
 	for _, r := range results {
 		if r.Error == "" {
 			successful++
 		} else {
 			failed++
+			errors = append(errors, fmt.Sprintf("%s: %s", r.Query, r.Error))
 		}
+	}
+
+	// Return error if all queries failed
+	if successful == 0 && failed > 0 {
+		return nil, fmt.Errorf("all queries failed: %s", strings.Join(errors, "; "))
 	}
 
 	response := internetsearch.MultiSearchResponse{
