@@ -1,10 +1,12 @@
 # Internet Search Tool
 
-The Internet Search tool provides a unified interface for searching across multiple search providers, supporting web, image, news, video, and local search capabilities.
+The Internet Search tool provides a unified interface for searching across multiple search providers, supporting web, image, news, video, and local search capabilities. It supports multiple queries executed in parallel.
 
 ## Overview
 
 Instead of managing separate tools for different search providers, the Internet Search tool gives you access to multiple search engines through a single interface. It automatically handles provider-specific requirements and normalises results.
+
+**Parallel Query Execution**: Pass multiple queries in a single call to execute them concurrently. The tool manages a worker pool to process queries efficiently while respecting rate limits.
 
 **Automatic Fallback**: The tool includes automatic fallback functionality. If a provider fails (e.g., rate limited, network error), it automatically retries with other available providers that support the requested search type. This ensures reliable search results even when primary providers are temporarily unavailable.
 
@@ -148,14 +150,20 @@ GOOGLE_SEARCH_ID="abcdefg1234"  # Your search engine ID
 - Free tier: 100 queries/day
 - Paid tier: $5 per 1000 queries (up to 10,000/day)
 
-### Rate Limiting Configuration
+### Rate Limiting and Parallel Execution Configuration
 
-The Internet Search tool supports configurable rate limiting to protect external search providers:
+The Internet Search tool supports configurable rate limiting and parallel execution:
 
 - **`INTERNET_SEARCH_RATE_LIMIT`**: Maximum HTTP requests per second to search providers
   - **Default**: `1`
   - **Description**: Controls the rate of HTTP requests to prevent overwhelming search provider APIs
   - **Example**: `INTERNET_SEARCH_RATE_LIMIT=2` allows up to 2 requests per second
+
+- **`INTERNET_SEARCH_MAX_PARALLEL`**: Maximum concurrent search queries
+  - **Default**: `3`
+  - **Description**: Controls how many queries execute in parallel when multiple queries are provided
+  - **Example**: `INTERNET_SEARCH_MAX_PARALLEL=5` allows up to 5 concurrent searches
+  - **Note**: All parallel queries share the rate limiter, so requests are naturally queued to respect API quotas
 
 ### Security Features
 
@@ -168,16 +176,28 @@ The Internet Search tool supports configurable rate limiting to protect external
 
 While intended to be activated via a prompt to an agent, below are some example JSON tool calls.
 
-### Internet Search
+### Single Query Internet Search
 ```json
 {
   "name": "internet_search",
   "arguments": {
     "type": "web",
-    "query": "golang best practices",
+    "query": ["golang best practices"],
     "count": 10,
     "provider": "brave",
     "freshness": "pw"
+  }
+}
+```
+
+### Multiple Queries in Parallel
+```json
+{
+  "name": "internet_search",
+  "arguments": {
+    "type": "web",
+    "query": ["golang best practices", "rust vs go performance", "python async patterns"],
+    "count": 5
   }
 }
 ```
@@ -188,7 +208,7 @@ While intended to be activated via a prompt to an agent, below are some example 
   "name": "internet_search",
   "arguments": {
     "type": "image",
-    "query": "golang gopher mascot",
+    "query": ["golang gopher mascot"],
     "count": 3,
     "provider": "searxng"
   }
@@ -201,7 +221,7 @@ While intended to be activated via a prompt to an agent, below are some example 
   "name": "internet_search",
   "arguments": {
     "type": "news",
-    "query": "artificial intelligence breakthrough",
+    "query": ["artificial intelligence breakthrough"],
     "count": 10,
     "provider": "brave",
     "freshness": "pd"
@@ -215,7 +235,7 @@ While intended to be activated via a prompt to an agent, below are some example 
   "name": "internet_search",
   "arguments": {
     "type": "video",
-    "query": "golang tutorial",
+    "query": ["golang tutorial"],
     "count": 10,
     "provider": "searxng"
   }
@@ -228,7 +248,7 @@ While intended to be activated via a prompt to an agent, below are some example 
   "name": "internet_search",
   "arguments": {
     "type": "local",
-    "query": "coffee shops near Fitzroy",
+    "query": ["coffee shops near Fitzroy"],
     "count": 5,
     "provider": "brave"
   }
@@ -241,7 +261,7 @@ While intended to be activated via a prompt to an agent, below are some example 
   "name": "internet_search",
   "arguments": {
     "type": "web",
-    "query": "golang best practices",
+    "query": ["golang best practices"],
     "count": 10,
     "provider": "kagi"
   }
@@ -254,7 +274,7 @@ While intended to be activated via a prompt to an agent, below are some example 
   "name": "internet_search",
   "arguments": {
     "type": "web",
-    "query": "golang best practices",
+    "query": ["golang best practices"],
     "count": 5,
     "provider": "duckduckgo"
   }
@@ -264,10 +284,10 @@ While intended to be activated via a prompt to an agent, below are some example 
 ## Parameters Reference
 
 ### Core Parameters
-- **`type`** (required): Search type - `web`, `image`, `news`, `video`, `local`
-- **`query`** (required): Search query string
-- **`provider`** (optional): Provider to use - `brave`, `searxng`, `duckduckgo`
-- **`count`** (optional): Number of results to return
+- **`type`** (optional): Search type - `web`, `image`, `news`, `video`, `local` (default: `web`)
+- **`query`** (required): Array of search query strings - multiple queries execute in parallel
+- **`provider`** (optional): Provider to use - `brave`, `google`, `kagi`, `searxng`, `duckduckgo`
+- **`count`** (optional): Number of results per query to return
 
 ### Brave-Specific Parameters
 - **`freshness`**: Time filter for results
@@ -283,6 +303,64 @@ While intended to be activated via a prompt to an agent, below are some example 
 
 ### SearXNG-Specific Parameters
 - **`time_range`**: Time filter - `day`, `week`, `month`, `year`
+
+## Response Structure
+
+The tool returns results in a structured format with per-query results and summary statistics:
+
+```json
+{
+  "searches": [
+    {
+      "query": "golang best practices",
+      "provider": "brave",
+      "results": [
+        {
+          "title": "Effective Go",
+          "url": "https://go.dev/doc/effective_go",
+          "description": "Tips for writing clear, idiomatic Go code..."
+        }
+      ]
+    },
+    {
+      "query": "rust vs go performance",
+      "provider": "duckduckgo",
+      "results": [...]
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "successful": 2,
+    "failed": 0
+  }
+}
+```
+
+### Partial Success Handling
+
+When some queries succeed and others fail, the response includes both:
+
+```json
+{
+  "searches": [
+    {
+      "query": "successful query",
+      "provider": "brave",
+      "results": [...]
+    },
+    {
+      "query": "failed query",
+      "error": "all providers failed: brave: rate limited; duckduckgo: timeout",
+      "results": []
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "successful": 1,
+    "failed": 1
+  }
+}
+```
 
 ## Search Types
 

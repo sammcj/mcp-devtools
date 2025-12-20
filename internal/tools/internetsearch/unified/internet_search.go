@@ -3,7 +3,10 @@ package unified
 import (
 	"context"
 	"fmt"
+	"maps"
+	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -37,12 +40,30 @@ type SearchProvider interface {
 const (
 	// fallbackBaseDelay is the base delay between fallback attempts (multiplied by attempt number)
 	fallbackBaseDelay = 1 * time.Second
+	// defaultMaxParallelSearches is the default number of concurrent search queries
+	defaultMaxParallelSearches = 3
 )
 
 // providerPriorityOrder defines the order providers are tried during fallback
 var providerPriorityOrder = []string{"brave", "google", "kagi", "searxng", "duckduckgo"}
 
+// maxParallelSearches controls how many queries can execute concurrently
+var maxParallelSearches = defaultMaxParallelSearches
+
+// queryWork represents a single query to be processed by a worker
+type queryWork struct {
+	index int
+	query string
+}
+
 func init() {
+	// Configure max parallel searches from environment
+	if v := os.Getenv("INTERNET_SEARCH_MAX_PARALLEL"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			maxParallelSearches = n
+		}
+	}
+
 	tool := &InternetSearchTool{
 		providers: make(map[string]SearchProvider),
 	}
@@ -134,20 +155,16 @@ func (t *InternetSearchTool) Definition() mcp.Tool {
 		providerSpecificParams = append(providerSpecificParams, "- SearXNG: pageno, time_range (day/month/year), language, safesearch")
 	}
 
-	description := fmt.Sprintf(`Search the internet for information and links.
+	description := fmt.Sprintf(`Search the internet for information and links. Supports multiple queries executed in parallel.
 
 Available Providers: [%s]
 Default Provider: %s
 
 Search Types: %v
 
-Automatic Fallback: If a provider fails (e.g., rate limited), the tool automatically retries with other available providers that support the requested search type. This ensures reliable search results even when primary providers are temporarily unavailable. To disable fallback and use only one provider, specify it explicitly with the 'provider' parameter.
-
 Examples:
-- Internet search: {"query": "golang best practices", "count": 10}
-- Image search: {"type": "image", "query": "golang gopher mascot", "count": 3}
-- News search: {"type": "news", "query": "AI breakthrough", "time_range": "day"}
-- Video search: {"type": "video", "query": "golang tutorial"}
+- Single query: {"query": ["golang best practices"]}
+- Multiple queries: {"query": ["golang best practices", "rust vs go performance"], "count": 3}
 
 Provider-specific optional parameters:
 %s
@@ -170,9 +187,10 @@ After you have received the results you can fetch the url if you want to read th
 			mcp.DefaultString("web"),
 			mcp.Enum(enumValues...),
 		),
-		mcp.WithString("query",
+		mcp.WithArray("query",
 			mcp.Required(),
-			mcp.Description("Search query term"),
+			mcp.Description("One or more search queries to execute. Multiple queries run in parallel."),
+			mcp.Items(map[string]any{"type": "string"}),
 		),
 		mcp.WithString("provider",
 			mcp.Description(fmt.Sprintf("Search provider to use (default: %s)", defaultProvider)),
@@ -180,7 +198,7 @@ After you have received the results you can fetch the url if you want to read th
 			mcp.Enum(providerEnumValues...),
 		),
 		mcp.WithNumber("count",
-			mcp.Description("Number of results (limits vary by provider & type)"),
+			mcp.Description("Number of results per query (limits vary by provider & type)"),
 			mcp.DefaultNumber(5),
 		),
 	}
@@ -240,17 +258,18 @@ After you have received the results you can fetch the url if you want to read th
 	return mcp.NewTool("internet_search", toolOptions...)
 }
 
-// Execute executes the unified search tool
+// Execute executes the unified search tool with parallel query support
 func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	// Parse parameters (with default for type)
+	// Parse search type (with default)
 	searchType, ok := args["type"].(string)
 	if !ok || searchType == "" {
-		searchType = "web" // Default to internet search
+		searchType = "web"
 	}
 
-	query, ok := args["query"].(string)
-	if !ok || query == "" {
-		return nil, fmt.Errorf("missing required parameter 'query'. Provide search terms (e.g., {\"query\": \"golang best practices\"} or {\"query\": \"how to optimise React performance\"})")
+	// Parse queries array
+	queries, err := t.parseQueries(args)
+	if err != nil {
+		return nil, err
 	}
 
 	// Determine if user explicitly requested a specific provider
@@ -265,128 +284,203 @@ func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger,
 		return nil, fmt.Errorf("no available providers support search type: %s", searchType)
 	}
 
-	// Track errors from each provider attempt
+	// Execute queries in parallel using worker pool
+	numWorkers := min(maxParallelSearches, len(queries))
+	queryChan := make(chan queryWork, len(queries))
+	results := make([]internetsearch.QueryResult, len(queries))
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	// Start workers
+	for range numWorkers {
+		wg.Go(func() {
+			for work := range queryChan {
+				result := t.executeSingleSearch(ctx, logger, work.query, searchType, providersToTry, userRequestedProvider, args)
+				mu.Lock()
+				results[work.index] = result
+				mu.Unlock()
+			}
+		})
+	}
+
+	// Queue all queries
+	for i, q := range queries {
+		queryChan <- queryWork{index: i, query: q}
+	}
+	close(queryChan)
+
+	// Wait for all queries to complete
+	wg.Wait()
+
+	// Aggregate results
+	return t.aggregateResults(results)
+}
+
+// parseQueries extracts the queries array from args
+func (t *InternetSearchTool) parseQueries(args map[string]any) ([]string, error) {
+	queryRaw, ok := args["query"]
+	if !ok {
+		return nil, fmt.Errorf("missing required parameter 'query'. Provide search terms as an array (e.g., {\"query\": [\"golang best practices\"]})")
+	}
+
+	// Handle array of queries
+	switch v := queryRaw.(type) {
+	case []any:
+		if len(v) == 0 {
+			return nil, fmt.Errorf("'query' array cannot be empty")
+		}
+		queries := make([]string, 0, len(v))
+		for i, item := range v {
+			if s, ok := item.(string); ok && s != "" {
+				queries = append(queries, s)
+			} else {
+				return nil, fmt.Errorf("query at index %d must be a non-empty string", i)
+			}
+		}
+		return queries, nil
+	case []string:
+		if len(v) == 0 {
+			return nil, fmt.Errorf("'query' array cannot be empty")
+		}
+		queries := make([]string, 0, len(v))
+		for _, s := range v {
+			if s != "" {
+				queries = append(queries, s)
+			}
+		}
+		if len(queries) == 0 {
+			return nil, fmt.Errorf("'query' array cannot contain only empty strings")
+		}
+		return queries, nil
+	default:
+		return nil, fmt.Errorf("'query' must be an array of strings (e.g., {\"query\": [\"search term\"]})")
+	}
+}
+
+// executeSingleSearch performs a search for a single query with provider fallback
+func (t *InternetSearchTool) executeSingleSearch(ctx context.Context, logger *logrus.Logger, query, searchType string, providersToTry []string, userRequestedProvider string, args map[string]any) internetsearch.QueryResult {
+	result := internetsearch.QueryResult{
+		Query:   query,
+		Results: []internetsearch.SearchResult{},
+	}
+
+	// Create args copy with this specific query for the provider
+	searchArgs := make(map[string]any)
+	maps.Copy(searchArgs, args)
+	searchArgs["query"] = query
+
 	var allErrors []string
 
-	// Try each provider in order
 	for i, providerName := range providersToTry {
-		// Check if context has been cancelled
+		// Check context cancellation
 		if err := ctx.Err(); err != nil {
-			return nil, fmt.Errorf("search cancelled: %w", err)
+			result.Error = fmt.Sprintf("search cancelled: %v", err)
+			return result
 		}
 
-		// Add delay between fallback attempts to avoid rapid-fire rate limiting
+		// Add delay between fallback attempts
 		if i > 0 {
-			delay := time.Duration(i) * fallbackBaseDelay // 1s, 2s, 3s, etc.
-			logger.WithField("delay", delay).Debug("Delaying before fallback attempt")
-
-			// Use context-aware sleep to allow cancellation
+			delay := time.Duration(i) * fallbackBaseDelay
 			select {
 			case <-time.After(delay):
-				// Delay elapsed, continue to next provider
 			case <-ctx.Done():
-				return nil, fmt.Errorf("search cancelled during fallback delay: %w", ctx.Err())
+				result.Error = fmt.Sprintf("search cancelled during fallback: %v", ctx.Err())
+				return result
 			}
 		}
 
 		provider, exists := t.providers[providerName]
-		if !exists {
+		if !exists || !t.providerSupportsType(provider, searchType) {
 			continue
 		}
 
-		// Check if provider supports the search type
-		if !t.providerSupportsType(provider, searchType) {
-			continue
-		}
-
-		// Log whether this is the primary attempt or a fallback
-		logFields := logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"provider": providerName,
 			"type":     searchType,
 			"query":    query,
-		}
-		if i > 0 {
-			logFields["fallback_attempt"] = i + 1
-			logFields["previous_errors"] = allErrors
-			logger.WithFields(logFields).Info("Attempting fallback provider")
-		} else {
-			logger.WithFields(logFields).Info("Executing internet search")
-		}
+		}).Debug("Executing search query")
 
-		// Execute search with the selected provider
-		response, err := provider.Search(ctx, logger, searchType, args)
+		response, err := provider.Search(ctx, logger, searchType, searchArgs)
 		if err != nil {
 			errorMsg := fmt.Sprintf("%s: %v", providerName, err)
 			allErrors = append(allErrors, errorMsg)
 
-			// If this was user-requested provider or last provider, return error
 			if userRequestedProvider != "" || i == len(providersToTry)-1 {
 				if len(allErrors) > 1 {
-					return nil, fmt.Errorf("all providers failed: %s", strings.Join(allErrors, "; "))
+					result.Error = fmt.Sprintf("all providers failed: %s", strings.Join(allErrors, "; "))
+				} else {
+					result.Error = fmt.Sprintf("search failed: %s", errorMsg)
 				}
-				return nil, fmt.Errorf("search failed with provider %s: %w", providerName, err)
+				return result
 			}
-
-			// Log the error and continue to next provider
-			logger.WithFields(logrus.Fields{
-				"provider": providerName,
-				"error":    err,
-			}).Warn("Provider failed, trying fallback")
 			continue
 		}
 
-		// Analyse search results for security threats
+		// Apply security analysis
 		if security.IsEnabled() && response != nil {
-			for resultIdx, result := range response.Results {
+			for resultIdx, searchResult := range response.Results {
 				source := security.SourceContext{
 					Tool:        "internet_search",
 					Domain:      providerName,
 					ContentType: "search_results",
 				}
-				// Analyse the search result content
-				content := result.Title + " " + result.Description
-				if secResult, err := security.AnalyseContent(content, source); err == nil {
+				content := searchResult.Title + " " + searchResult.Description
+				if secResult, secErr := security.AnalyseContent(content, source); secErr == nil {
 					switch secResult.Action {
 					case security.ActionBlock:
-						return nil, fmt.Errorf("search result blocked by security policy: %s", secResult.Message)
+						result.Error = fmt.Sprintf("search result blocked by security policy: %s", secResult.Message)
+						return result
 					case security.ActionWarn:
-						// Add security notice to result metadata
-						if result.Metadata == nil {
-							result.Metadata = make(map[string]any)
+						if searchResult.Metadata == nil {
+							searchResult.Metadata = make(map[string]any)
 						}
-						result.Metadata["security_warning"] = secResult.Message
-						result.Metadata["security_id"] = secResult.ID
-						logger.WithField("security_id", secResult.ID).Warn(secResult.Message)
+						searchResult.Metadata["security_warning"] = secResult.Message
+						response.Results[resultIdx] = searchResult
 					}
-					// Update the result in the response
-					response.Results[resultIdx] = result
 				}
 			}
 		}
 
-		// Success! Add metadata if this was a fallback
-		if i > 0 && response != nil {
-			// Add fallback information to response metadata
-			for j := range response.Results {
-				if response.Results[j].Metadata == nil {
-					response.Results[j].Metadata = make(map[string]any)
-				}
-				response.Results[j].Metadata["fallback_used"] = true
-				response.Results[j].Metadata["original_provider_errors"] = allErrors
-			}
-
-			logger.WithFields(logrus.Fields{
-				"provider":         providerName,
-				"fallback_number":  i + 1,
-				"failed_providers": allErrors,
-			}).Info("Search succeeded with fallback provider")
-		}
-
-		return internetsearch.NewToolResultJSON(response)
+		// Success - populate result
+		result.Results = response.Results
+		result.Provider = providerName
+		return result
 	}
 
-	// Should not reach here, but handle gracefully
-	return nil, fmt.Errorf("no providers could complete the search")
+	result.Error = "no providers could complete the search"
+	return result
+}
+
+// aggregateResults combines individual query results into a MultiSearchResponse
+func (t *InternetSearchTool) aggregateResults(results []internetsearch.QueryResult) (*mcp.CallToolResult, error) {
+	successful := 0
+	failed := 0
+	var errors []string
+
+	for _, r := range results {
+		if r.Error == "" {
+			successful++
+		} else {
+			failed++
+			errors = append(errors, fmt.Sprintf("%s: %s", r.Query, r.Error))
+		}
+	}
+
+	// Return error if all queries failed
+	if successful == 0 && failed > 0 {
+		return nil, fmt.Errorf("all queries failed: %s", strings.Join(errors, "; "))
+	}
+
+	response := internetsearch.MultiSearchResponse{
+		Searches: results,
+		Summary: internetsearch.SearchSummary{
+			Total:      len(results),
+			Successful: successful,
+			Failed:     failed,
+		},
+	}
+
+	return internetsearch.NewToolResultJSON(response)
 }
 
 // Helper methods
@@ -434,16 +528,24 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		{
 			Description: "Basic internet search with default provider",
 			Arguments: map[string]any{
-				"query": "golang best practices",
+				"query": []string{"golang best practices"},
 				"count": 5,
 			},
 			ExpectedResult: "Returns 5 internet search results about Go programming best practices",
 		},
 		{
+			Description: "Multiple queries in parallel",
+			Arguments: map[string]any{
+				"query": []string{"golang best practices", "rust vs go performance", "python async patterns"},
+				"count": 3,
+			},
+			ExpectedResult: "Returns results for all 3 queries, executed in parallel",
+		},
+		{
 			Description: "News search with time filtering",
 			Arguments: map[string]any{
 				"type":  "news",
-				"query": "artificial intelligence breakthrough",
+				"query": []string{"artificial intelligence breakthrough"},
 				"count": 3,
 			},
 			ExpectedResult: "Returns 3 recent news articles about AI breakthroughs",
@@ -452,7 +554,7 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 			Description: "Image search with specific provider",
 			Arguments: map[string]any{
 				"type":     "image",
-				"query":    "golang gopher mascot",
+				"query":    []string{"golang gopher mascot"},
 				"provider": "brave",
 				"count":    10,
 			},
@@ -465,7 +567,7 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		examples = append(examples, tools.ToolExample{
 			Description: "Brave search with time filtering and pagination",
 			Arguments: map[string]any{
-				"query":     "machine learning tutorials",
+				"query":     []string{"machine learning tutorials"},
 				"provider":  "brave",
 				"freshness": "pw", // Past week
 				"offset":    10,   // Skip first 10 results
@@ -479,7 +581,7 @@ func (t *InternetSearchTool) ProvideExtendedInfo() *tools.ExtendedHelp {
 		examples = append(examples, tools.ToolExample{
 			Description: "SearXNG search with language and safe search settings",
 			Arguments: map[string]any{
-				"query":      "programming tutorials",
+				"query":      []string{"programming tutorials"},
 				"provider":   "searxng",
 				"language":   "en",
 				"safesearch": "1",
