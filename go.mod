@@ -18,9 +18,11 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
+	github.com/knights-analytics/hugot v0.5.10
 	github.com/mark3labs/mcp-go v0.43.2
-	github.com/openai/openai-go/v3 v3.12.0
+	github.com/openai/openai-go/v3 v3.15.0
 	github.com/pdfcpu/pdfcpu v0.11.1
+	github.com/philippgille/chromem-go v0.7.0
 	github.com/pkoukk/tiktoken-go v0.1.8
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/sammcj/m2e v0.0.27
@@ -92,7 +94,6 @@ require (
 	github.com/hhrutter/pkcs7 v0.2.0 // indirect
 	github.com/hhrutter/tiff v1.0.2 // indirect
 	github.com/invopop/jsonschema v0.13.0 // indirect
-	github.com/knights-analytics/hugot v0.5.10 // indirect
 	github.com/mailru/easyjson v0.9.1 // indirect
 	github.com/martinlindhe/unit v0.0.0-20230420213220-4adfd7d0a0d6 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -101,7 +102,6 @@ require (
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/neurosnap/sentences v1.1.2 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/philippgille/chromem-go v0.7.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/richardlehane/mscfb v1.0.4 // indirect
