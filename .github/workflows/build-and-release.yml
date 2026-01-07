@@ -64,7 +64,7 @@ jobs:
           check-latest: true
 
       - name: Set up Go cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5
         with:
           path: |
             ~/.cache/go-build
@@ -151,7 +151,7 @@ jobs:
           check-latest: true
 
       - name: Set up Go cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5
         with:
           path: |
             ~/.cache/go-build
@@ -224,7 +224,7 @@ jobs:
           check-latest: true
 
       - name: Set up Go cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5
         with:
           path: |
             ~/.cache/go-build
@@ -308,7 +308,7 @@ jobs:
           done
 
       - name: Set up Go cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5
         with:
           path: |
             ~/.cache/go-build
