@@ -16,11 +16,11 @@ concurrency:
   cancel-in-progress: false # this causes issues if enabled
 jobs:
   claude:
-    if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    # if: |
+    #   (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+    #   (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+    #   (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+    #   (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
       contents: write      # Required for creating branches/commits
@@ -31,13 +31,13 @@ jobs:
       actions: read # Required for Claude to read CI results on PRs
     steps:
       - name: Checkout repository
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 1
 
       - name: Extract Go version from go.mod
         id: go-version
-        run: echo "version=$(grep '^go ' go.mod | awk '{print $2}')" >> $GITHUB_OUTPUT
+        run: echo "version=$(grep '^go ' go.mod | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
         uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
@@ -49,7 +49,7 @@ jobs:
 
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@a7e4c51380c42dd89b127f5e5f9be7b54020bc6b # v1
+        uses: anthropics/claude-code-action@c9ec2b02b40ac0444c6716e51d5e19ef2e0b8d00 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
