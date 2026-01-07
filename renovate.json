@@ -8,6 +8,16 @@
       "matchManagers": ["github-actions"],
       "groupName": "GitHub Actions",
       "groupSlug": "github-actions"
+    },
+    {
+      "matchManagers": ["gomod"],
+      "groupName": "Go Dependencies",
+      "groupSlug": "go-dependencies"
+    },
+    {
+      "matchDatasources": ["golang-version"],
+      "groupName": "Go Dependencies",
+      "groupSlug": "go-dependencies"
     }
   ]
 }
