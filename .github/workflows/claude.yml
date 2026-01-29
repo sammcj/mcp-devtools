@@ -40,7 +40,7 @@ jobs:
         run: echo "version=$(grep '^go ' go.mod | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
-        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: ${{ steps.go-version.outputs.version }}
           check-latest: true
@@ -49,7 +49,7 @@ jobs:
 
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@c9ec2b02b40ac0444c6716e51d5e19ef2e0b8d00 # v1
+        uses: anthropics/claude-code-action@ff34ce0ff04a470bd3fa56c1ef391c8f1c19f8e9 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
