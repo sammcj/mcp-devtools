@@ -97,7 +97,9 @@ graph LR
 
 ### Quick Install / Update
 
-The easiest way to install MCP DevTools is using the automatic installer:
+If you have Golang installed, simply run `go install github.com/sammcj/mcp-devtools@HEAD` and it will be installed to your $GOPATH/bin.
+
+There is also an experimental installer script:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
