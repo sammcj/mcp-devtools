@@ -43,13 +43,11 @@ type SourceTrust struct {
 
 // YAMLRuleEngine manages YAML-based security rules
 type YAMLRuleEngine struct {
-	rules *SecurityRules
-	// patterns     *PatternLibrary // TODO: Implement pattern library
+	rules        *SecurityRules
 	compiled     map[string]PatternMatcher
 	rulesPath    string
 	lastModified time.Time
-	// watcher      *FileWatcher // TODO: Implement file watching
-	mutex sync.RWMutex
+	mutex        sync.RWMutex
 }
 
 // DenyListChecker enforces file and domain access controls
@@ -206,14 +204,4 @@ const (
 // ShellParser handles shell command parsing
 type ShellParser struct {
 	// Implementation will use google/shlex
-}
-
-// FileWatcher monitors rule file changes
-type FileWatcher struct {
-	// Implementation will use fsnotify
-}
-
-// PatternLibrary holds reusable patterns
-type PatternLibrary struct {
-	Patterns map[string]string `yaml:"patterns"`
 }
