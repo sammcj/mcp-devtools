@@ -51,10 +51,7 @@ func collectImports(node *sitter.Node, source []byte, lang Language, depth int) 
 
 	// Check if this is an import node
 	if slices.Contains(importTypes, nodeType) {
-		importStr := extractImportName(node, source, lang)
-		if importStr != "" {
-			imports = append(imports, importStr)
-		}
+		imports = append(imports, extractImportNames(node, source, lang)...)
 		// Don't recurse into import nodes
 		return imports
 	}
@@ -72,22 +69,30 @@ func collectImports(node *sitter.Node, source []byte, lang Language, depth int) 
 	return imports
 }
 
-// extractImportName extracts the imported module/package name from an import node
-func extractImportName(node *sitter.Node, source []byte, lang Language) string {
+// extractImportNames extracts imported module/package names from an import node.
+// Returns multiple results for languages with grouped imports (e.g. Go's import (...) blocks).
+func extractImportNames(node *sitter.Node, source []byte, lang Language) []string {
 	switch lang {
 	case LanguagePython:
-		return extractPythonImport(node, source)
+		if s := extractPythonImport(node, source); s != "" {
+			return []string{s}
+		}
 	case LanguageGo:
-		return extractGoImport(node, source)
+		return extractGoImports(node, source)
 	case LanguageJavaScript, LanguageTypeScript:
-		return extractJSImport(node, source)
+		if s := extractJSImport(node, source); s != "" {
+			return []string{s}
+		}
 	case LanguageRust:
-		return extractRustImport(node, source)
+		if s := extractRustImport(node, source); s != "" {
+			return []string{s}
+		}
 	case LanguageJava:
-		return extractJavaImport(node, source)
-	default:
-		return ""
+		if s := extractJavaImport(node, source); s != "" {
+			return []string{s}
+		}
 	}
+	return nil
 }
 
 func extractPythonImport(node *sitter.Node, source []byte) string {
@@ -107,29 +112,46 @@ func extractPythonImport(node *sitter.Node, source []byte) string {
 	return ""
 }
 
-func extractGoImport(node *sitter.Node, source []byte) string {
-	// Go: import_declaration contains import_spec(s)
-	// Look for interpreted_string_literal
+// extractGoImports extracts all imports from a Go import declaration,
+// including grouped imports in import (...) blocks.
+func extractGoImports(node *sitter.Node, source []byte) []string {
+	var imports []string
 	childCount := int(node.ChildCount())
 	for i := range childCount {
 		child := node.Child(i)
 		if child == nil {
 			continue
 		}
-		childType := child.Type()
-		if childType == "import_spec" {
-			// Recurse into import_spec
-			return extractGoImport(child, source)
+		switch child.Type() {
+		case "import_spec":
+			if s := extractGoImportSpec(child, source); s != "" {
+				imports = append(imports, s)
+			}
+		case "interpreted_string_literal":
+			// Single import without parens: import "fmt"
+			raw := string(source[child.StartByte():child.EndByte()])
+			if s := strings.Trim(raw, "\""); s != "" {
+				imports = append(imports, s)
+			}
+		case "import_spec_list":
+			// Grouped imports: import ( ... )
+			imports = append(imports, extractGoImports(child, source)...)
 		}
-		if childType == "interpreted_string_literal" {
-			// Remove quotes
+	}
+	return imports
+}
+
+// extractGoImportSpec extracts the import path from a single Go import_spec node.
+func extractGoImportSpec(node *sitter.Node, source []byte) string {
+	childCount := int(node.ChildCount())
+	for i := range childCount {
+		child := node.Child(i)
+		if child == nil {
+			continue
+		}
+		if child.Type() == "interpreted_string_literal" {
 			raw := string(source[child.StartByte():child.EndByte()])
 			return strings.Trim(raw, "\"")
-		}
-		if childType == "import_spec_list" {
-			// Handle multiple imports - we'll just get the first for now
-			// The caller will need to handle multiple
-			return extractGoImport(child, source)
 		}
 	}
 	return ""
@@ -198,7 +220,7 @@ func collectFunctions(node *sitter.Node, source []byte, lang Language, depth int
 	// Check if this is a function/method
 	if nodeType == nodeTypes.Function || nodeType == nodeTypes.Method ||
 		nodeType == "arrow_function" || nodeType == "function_expression" {
-		name := extractNodeNameFromNode(node, source)
+		name := extractNodeName(node, source)
 		if name != "" {
 			calls := collectCallsInNode(node, source, lang, 0)
 			signature := extractFunctionSignature(node, source, lang)
@@ -228,7 +250,7 @@ func collectFunctions(node *sitter.Node, source []byte, lang Language, depth int
 // extractFunctionSignature extracts the full function signature (before the body)
 func extractFunctionSignature(node *sitter.Node, source []byte, lang Language) string {
 	// Find the body node - we want everything before it
-	bodyTypes := getBodyNodeTypes(lang)
+	bodyTypes := GetBodyNodeTypes(lang)
 	var bodyStart uint32
 
 	childCount := int(node.ChildCount())
@@ -272,44 +294,6 @@ func extractFunctionSignature(node *sitter.Node, source []byte, lang Language) s
 	sig = strings.Join(strings.Fields(sig), " ")
 
 	return sig
-}
-
-// getBodyNodeTypes returns the node types for function bodies
-func getBodyNodeTypes(lang Language) []string {
-	switch lang {
-	case LanguagePython:
-		return []string{"block"}
-	case LanguageGo:
-		return []string{"block"}
-	case LanguageJavaScript, LanguageTypeScript:
-		return []string{"statement_block", "expression"}
-	case LanguageRust:
-		return []string{"block"}
-	case LanguageJava:
-		return []string{"block"}
-	case LanguageC, LanguageCPP:
-		return []string{"compound_statement"}
-	case LanguageSwift:
-		return []string{"code_block"}
-	default:
-		return []string{"block", "statement_block", "compound_statement"}
-	}
-}
-
-// extractNodeNameFromNode extracts the name from a function/method/class node
-func extractNodeNameFromNode(node *sitter.Node, source []byte) string {
-	childCount := int(node.ChildCount())
-	for i := range childCount {
-		child := node.Child(i)
-		if child == nil {
-			continue
-		}
-		childType := child.Type()
-		if childType == "identifier" || childType == "name" || childType == "property_identifier" {
-			return string(source[child.StartByte():child.EndByte()])
-		}
-	}
-	return ""
 }
 
 // collectCallsInNode finds all function calls within a node
@@ -409,7 +393,7 @@ func collectClasses(node *sitter.Node, source []byte, lang Language, depth int) 
 
 	// Check if this is a class
 	if nodeType == nodeTypes.Class && nodeTypes.Class != "" {
-		name := extractNodeNameFromNode(node, source)
+		name := extractNodeName(node, source)
 		if name != "" {
 			extends, implements := extractInheritance(node, source, lang)
 			methods := extractClassMethods(node, source, lang)
@@ -584,7 +568,7 @@ func extractClassMethods(node *sitter.Node, source []byte, lang Language) []stri
 
 		nodeType := n.Type()
 		if nodeType == nodeTypes.Method || nodeType == nodeTypes.Function {
-			name := extractNodeNameFromNode(n, source)
+			name := extractNodeName(n, source)
 			if name != "" {
 				methods = append(methods, name)
 			}
@@ -617,25 +601,19 @@ func extractClassMethods(node *sitter.Node, source []byte, lang Language) []stri
 	return methods
 }
 
-// calculateConnectivity sets the connectivity rating for each function
+// calculateConnectivity sets the connectivity rating for each function.
+// Connectivity = calls made + times called by other functions in the same file.
 func calculateConnectivity(graph *FileGraph) {
+	// Build reverse lookup: function name -> count of callers
+	calledBy := make(map[string]int)
 	for i := range graph.Functions {
-		// Connectivity = number of calls made + times called by others
-		callsMade := len(graph.Functions[i].Calls)
-		calledByCount := 0
-
-		// Count how many other functions call this one
-		for j := range graph.Functions {
-			if i != j {
-				for _, call := range graph.Functions[j].Calls {
-					if call == graph.Functions[i].Name {
-						calledByCount++
-					}
-				}
-			}
+		for _, call := range graph.Functions[i].Calls {
+			calledBy[call]++
 		}
+	}
 
-		graph.Functions[i].Connectivity = callsMade + calledByCount
+	for i := range graph.Functions {
+		graph.Functions[i].Connectivity = len(graph.Functions[i].Calls) + calledBy[graph.Functions[i].Name]
 	}
 }
 

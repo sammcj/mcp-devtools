@@ -203,7 +203,7 @@ func GetBodyNodeTypes(lang Language) []string {
 	case LanguageGo:
 		return []string{"block"}
 	case LanguageJavaScript, LanguageTypeScript:
-		return []string{"statement_block"}
+		return []string{"statement_block", "expression"}
 	case LanguageRust:
 		return []string{"block"}
 	case LanguageC, LanguageCPP:

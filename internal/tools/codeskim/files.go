@@ -41,43 +41,26 @@ var supportedExts = map[string]bool{
 	".tf":    true,
 }
 
-// ResolveFiles resolves the source parameter to a list of files to process
-// Handles:
-// - Single file path
-// - Directory path (recursively finds all supported files)
-// - Glob pattern
-// - Array of any combination of the above
-func ResolveFiles(source any) ([]string, error) {
-	// Handle array of sources
-	if sources, ok := source.([]any); ok {
-		var allFiles []string
-		seen := make(map[string]bool)
-		for _, src := range sources {
-			srcStr, ok := src.(string)
-			if !ok {
-				return nil, fmt.Errorf("source array item must be a string")
-			}
-			files, err := resolveSingleSource(srcStr)
-			if err != nil {
-				return nil, err
-			}
-			// Deduplicate files
-			for _, file := range files {
-				if !seen[file] {
-					seen[file] = true
-					allFiles = append(allFiles, file)
-				}
+// ResolveFiles resolves the source parameter to a list of files to process.
+// Each source entry can be a file path, directory path (recursively finds supported files),
+// or glob pattern. Results are deduplicated across all source entries.
+func ResolveFiles(sources []string) ([]string, error) {
+	var allFiles []string
+	seen := make(map[string]bool)
+	for _, src := range sources {
+		files, err := resolveSingleSource(src)
+		if err != nil {
+			return nil, err
+		}
+		// Deduplicate files
+		for _, file := range files {
+			if !seen[file] {
+				seen[file] = true
+				allFiles = append(allFiles, file)
 			}
 		}
-		return allFiles, nil
 	}
-
-	// Handle string source
-	if srcStr, ok := source.(string); ok {
-		return resolveSingleSource(srcStr)
-	}
-
-	return nil, fmt.Errorf("source must be a string or array of strings")
+	return allFiles, nil
 }
 
 // resolveSingleSource resolves a single source path

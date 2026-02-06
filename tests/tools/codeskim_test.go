@@ -143,10 +143,10 @@ func TestCodeSkimTool(t *testing.T) {
 		err = json.Unmarshal([]byte(textContent.Text), &response)
 		require.NoError(t, err)
 
-		assert.Equal(t, 5, response.TotalFiles)
-		assert.Equal(t, 5, response.ProcessedFiles)
+		assert.Equal(t, 7, response.TotalFiles)
+		assert.Equal(t, 7, response.ProcessedFiles)
 		assert.Equal(t, 0, response.FailedFiles)
-		assert.Equal(t, 5, len(response.Files))
+		assert.Equal(t, 7, len(response.Files))
 	})
 
 	t.Run("Glob pattern processing", func(t *testing.T) {
@@ -289,5 +289,275 @@ func TestCodeSkimTool(t *testing.T) {
 		require.Equal(t, 1, len(response2.Files))
 		// This result should also be from cache
 		assert.True(t, response2.Files[0].FromCache)
+	})
+
+	t.Run("Filter inclusion pattern", func(t *testing.T) {
+		testCache := &sync.Map{}
+		args := map[string]any{
+			"source": []any{filepath.Join(fixturesDir, "graph_test.js")},
+			"filter": []any{"handle*"},
+		}
+
+		result, err := tool.Execute(ctx, logger, testCache, args)
+		require.NoError(t, err)
+
+		textContent, ok := mcp.AsTextContent(result.Content[0])
+		require.True(t, ok)
+
+		var response codeskim.SkimResponse
+		err = json.Unmarshal([]byte(textContent.Text), &response)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, len(response.Files))
+		file := response.Files[0]
+
+		// Should include handleRequest
+		assert.Contains(t, file.Transformed, "handleRequest")
+		// Should not include other named functions
+		assert.NotContains(t, file.Transformed, "function parseBody")
+		assert.NotContains(t, file.Transformed, "function validate")
+
+		// Check filter counts
+		require.NotNil(t, file.MatchedItems)
+		assert.Equal(t, 1, *file.MatchedItems) // only handleRequest
+		require.NotNil(t, file.TotalItems)
+		assert.Greater(t, *file.TotalItems, 1)
+	})
+
+	t.Run("Filter exclusion pattern", func(t *testing.T) {
+		testCache := &sync.Map{}
+		args := map[string]any{
+			"source": []any{filepath.Join(fixturesDir, "test.py")},
+			"filter": []any{"!goodbye"},
+		}
+
+		result, err := tool.Execute(ctx, logger, testCache, args)
+		require.NoError(t, err)
+
+		textContent, ok := mcp.AsTextContent(result.Content[0])
+		require.True(t, ok)
+
+		var response codeskim.SkimResponse
+		err = json.Unmarshal([]byte(textContent.Text), &response)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, len(response.Files))
+		file := response.Files[0]
+
+		// Should include hello but not goodbye
+		assert.Contains(t, file.Transformed, "hello")
+		assert.NotContains(t, file.Transformed, "goodbye")
+	})
+
+	t.Run("Graph extraction", func(t *testing.T) {
+		testCache := &sync.Map{}
+		args := map[string]any{
+			"source":        []any{filepath.Join(fixturesDir, "graph_test.js")},
+			"extract_graph": true,
+		}
+
+		result, err := tool.Execute(ctx, logger, testCache, args)
+		require.NoError(t, err)
+
+		textContent, ok := mcp.AsTextContent(result.Content[0])
+		require.True(t, ok)
+
+		var response codeskim.SkimResponse
+		err = json.Unmarshal([]byte(textContent.Text), &response)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, len(response.Files))
+		file := response.Files[0]
+
+		require.NotNil(t, file.Graph, "graph should be present")
+		assert.NotEmpty(t, file.Graph.Imports, "should have imports")
+		assert.NotEmpty(t, file.Graph.Functions, "should have functions")
+		assert.NotEmpty(t, file.Graph.Classes, "should have classes")
+
+		// Check that handleRequest has calls
+		var handleReq *codeskim.FunctionInfo
+		for i := range file.Graph.Functions {
+			if file.Graph.Functions[i].Name == "handleRequest" {
+				handleReq = &file.Graph.Functions[i]
+				break
+			}
+		}
+		require.NotNil(t, handleReq, "handleRequest should be in function list")
+		assert.NotEmpty(t, handleReq.Calls, "handleRequest should have calls")
+		assert.Contains(t, handleReq.Calls, "parseBody")
+
+		// Check Router class
+		var router *codeskim.ClassInfo
+		for i := range file.Graph.Classes {
+			if file.Graph.Classes[i].Name == "Router" {
+				router = &file.Graph.Classes[i]
+				break
+			}
+		}
+		require.NotNil(t, router, "Router class should be found")
+		assert.NotEmpty(t, router.Methods, "Router should have methods")
+	})
+
+	t.Run("Cache key includes extract_graph", func(t *testing.T) {
+		testCache := &sync.Map{}
+		filePath := filepath.Join(fixturesDir, "test.py")
+
+		// First call without graph
+		args1 := map[string]any{
+			"source":        []any{filePath},
+			"extract_graph": false,
+		}
+		result1, err := tool.Execute(ctx, logger, testCache, args1)
+		require.NoError(t, err)
+
+		textContent1, ok := mcp.AsTextContent(result1.Content[0])
+		require.True(t, ok)
+		var response1 codeskim.SkimResponse
+		err = json.Unmarshal([]byte(textContent1.Text), &response1)
+		require.NoError(t, err)
+		assert.Nil(t, response1.Files[0].Graph, "no graph without extract_graph")
+
+		// Second call with graph - should NOT use cache from first call
+		args2 := map[string]any{
+			"source":        []any{filePath},
+			"extract_graph": true,
+		}
+		result2, err := tool.Execute(ctx, logger, testCache, args2)
+		require.NoError(t, err)
+
+		textContent2, ok := mcp.AsTextContent(result2.Content[0])
+		require.True(t, ok)
+		var response2 codeskim.SkimResponse
+		err = json.Unmarshal([]byte(textContent2.Text), &response2)
+		require.NoError(t, err)
+		assert.False(t, response2.Files[0].FromCache, "should not use cache from non-graph call")
+		assert.NotNil(t, response2.Files[0].Graph, "graph should be present")
+	})
+
+	t.Run("Sigil output format", func(t *testing.T) {
+		testCache := &sync.Map{}
+		args := map[string]any{
+			"source":        []any{filepath.Join(fixturesDir, "graph_test.js")},
+			"output_format": "sigil",
+		}
+
+		result, err := tool.Execute(ctx, logger, testCache, args)
+		require.NoError(t, err)
+
+		textContent, ok := mcp.AsTextContent(result.Content[0])
+		require.True(t, ok)
+
+		sigilOutput := textContent.Text
+		// Sigil format should contain sigil markers
+		assert.Contains(t, sigilOutput, "#")       // function markers
+		assert.Contains(t, sigilOutput, "!")       // import markers
+		assert.Contains(t, sigilOutput, "$Router") // class marker
+	})
+
+	t.Run("Multiple sources with deduplication", func(t *testing.T) {
+		testCache := &sync.Map{}
+		pyFile := filepath.Join(fixturesDir, "test.py")
+		args := map[string]any{
+			"source": []any{pyFile, pyFile}, // same file twice
+		}
+
+		result, err := tool.Execute(ctx, logger, testCache, args)
+		require.NoError(t, err)
+
+		textContent, ok := mcp.AsTextContent(result.Content[0])
+		require.True(t, ok)
+
+		var response codeskim.SkimResponse
+		err = json.Unmarshal([]byte(textContent.Text), &response)
+		require.NoError(t, err)
+
+		// Should deduplicate to 1 file
+		assert.Equal(t, 1, response.TotalFiles)
+	})
+
+	t.Run("Go grouped imports extraction", func(t *testing.T) {
+		testCache := &sync.Map{}
+		args := map[string]any{
+			"source":        []any{filepath.Join(fixturesDir, "imports_test.go")},
+			"extract_graph": true,
+		}
+
+		result, err := tool.Execute(ctx, logger, testCache, args)
+		require.NoError(t, err)
+
+		textContent, ok := mcp.AsTextContent(result.Content[0])
+		require.True(t, ok)
+
+		var response codeskim.SkimResponse
+		err = json.Unmarshal([]byte(textContent.Text), &response)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, len(response.Files))
+		file := response.Files[0]
+		require.NotNil(t, file.Graph)
+
+		// Should have all 3 imports, not just the first
+		assert.GreaterOrEqual(t, len(file.Graph.Imports), 3, "should extract all grouped imports")
+		assert.Contains(t, file.Graph.Imports, "fmt")
+		assert.Contains(t, file.Graph.Imports, "os")
+		assert.Contains(t, file.Graph.Imports, "strings")
+	})
+
+	t.Run("Large file rejection", func(t *testing.T) {
+		// Create a temporary file larger than 500KB
+		tmpDir := t.TempDir()
+		largePath := filepath.Join(tmpDir, "huge.py")
+		content := make([]byte, 600*1024) // 600KB
+		for i := range content {
+			content[i] = 'x'
+		}
+		err := os.WriteFile(largePath, content, 0o600)
+		require.NoError(t, err)
+
+		args := map[string]any{
+			"source": []any{largePath},
+		}
+
+		result, err := tool.Execute(ctx, logger, cache, args)
+		require.NoError(t, err) // Returns result with error in file, not tool error
+
+		textContent, ok := mcp.AsTextContent(result.Content[0])
+		require.True(t, ok)
+
+		var response codeskim.SkimResponse
+		err = json.Unmarshal([]byte(textContent.Text), &response)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, len(response.Files))
+		assert.Contains(t, response.Files[0].Error, "file too large")
+		assert.Equal(t, 0, response.ProcessedFiles)
+		assert.Equal(t, 1, response.FailedFiles)
+	})
+
+	t.Run("Context cancellation", func(t *testing.T) {
+		cancelCtx, cancel := context.WithCancel(t.Context())
+		cancel() // Cancel immediately
+
+		args := map[string]any{
+			"source": []any{filepath.Join(fixturesDir, "test.py")},
+		}
+
+		testCache := &sync.Map{}
+		result, err := tool.Execute(cancelCtx, logger, testCache, args)
+
+		// Should either return an error or a result with an error in the file
+		if err != nil {
+			assert.Contains(t, err.Error(), "context")
+		} else {
+			textContent, ok := mcp.AsTextContent(result.Content[0])
+			require.True(t, ok)
+			var response codeskim.SkimResponse
+			err = json.Unmarshal([]byte(textContent.Text), &response)
+			require.NoError(t, err)
+			// File result should show an error from cancelled context
+			if len(response.Files) > 0 && response.Files[0].Error != "" {
+				assert.Contains(t, response.Files[0].Error, "context")
+			}
+		}
 	})
 }

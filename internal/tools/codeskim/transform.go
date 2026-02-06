@@ -3,10 +3,10 @@
 package codeskim
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -99,8 +99,8 @@ func transformStructure(source []byte, tree *sitter.Tree, lang Language, filterP
 	// Map to store byte ranges to replace: (start, end) -> replacement
 	replacements := make(map[[2]uint32]string)
 
-	// Count total items (functions/methods/classes)
-	totalItems := countItems(tree.RootNode(), nodeTypes, 0)
+	// Count total named items (functions/methods/classes)
+	totalItems := countItems(tree.RootNode(), nodeTypes, source, 0)
 
 	// If filters are provided, collect matching nodes to keep
 	var matchingNodes map[*sitter.Node]bool
@@ -113,7 +113,7 @@ func transformStructure(source []byte, tree *sitter.Tree, lang Language, filterP
 	}
 
 	// Recursively collect body nodes to replace
-	if err := collectBodyReplacements(tree.RootNode(), nodeTypes, bodyTypes, replacements, matchingNodes, 0); err != nil {
+	if err := collectBodyReplacements(tree.RootNode(), nodeTypes, bodyTypes, source, replacements, matchingNodes, 0); err != nil {
 		return nil, err
 	}
 
@@ -136,8 +136,10 @@ func transformStructure(source []byte, tree *sitter.Tree, lang Language, filterP
 	}, nil
 }
 
-// countItems counts total functions/methods/classes in the AST
-func countItems(node *sitter.Node, nodeTypes NodeTypes, depth int) int {
+// countItems counts total named functions/methods/classes in the AST.
+// Anonymous functions (arrow functions, function expressions without names) are excluded
+// from the count since they cannot be matched by name-based filters.
+func countItems(node *sitter.Node, nodeTypes NodeTypes, source []byte, depth int) int {
 	// Prevent stack overflow
 	if depth >= MaxASTDepth {
 		return 0
@@ -146,10 +148,14 @@ func countItems(node *sitter.Node, nodeTypes NodeTypes, depth int) int {
 	count := 0
 	nodeType := node.Type()
 
-	// Check if this is a function/method/class
+	// Check if this is a named function/method/class
 	if nodeType == nodeTypes.Function || nodeType == nodeTypes.Method || nodeType == nodeTypes.Class ||
 		nodeType == "arrow_function" || nodeType == "function_expression" {
-		count++
+		// Only count items that have a name (can be matched by filters)
+		name := extractNodeName(node, source)
+		if name != "" {
+			count++
+		}
 	}
 
 	// Recursively count children
@@ -157,7 +163,7 @@ func countItems(node *sitter.Node, nodeTypes NodeTypes, depth int) int {
 	for i := range childCount {
 		child := node.Child(i)
 		if child != nil {
-			count += countItems(child, nodeTypes, depth+1)
+			count += countItems(child, nodeTypes, source, depth+1)
 		}
 	}
 
@@ -252,7 +258,7 @@ func extractNodeName(node *sitter.Node, source []byte) string {
 }
 
 // collectBodyReplacements recursively finds function/method bodies to replace
-func collectBodyReplacements(node *sitter.Node, nodeTypes NodeTypes, bodyTypes []string, replacements map[[2]uint32]string, matchingNodes map[*sitter.Node]bool, depth int) error {
+func collectBodyReplacements(node *sitter.Node, nodeTypes NodeTypes, bodyTypes []string, source []byte, replacements map[[2]uint32]string, matchingNodes map[*sitter.Node]bool, depth int) error {
 	// Prevent stack overflow
 	if depth >= MaxASTDepth {
 		return fmt.Errorf("maximum AST depth exceeded: %d (possible deeply nested code)", MaxASTDepth)
@@ -260,19 +266,23 @@ func collectBodyReplacements(node *sitter.Node, nodeTypes NodeTypes, bodyTypes [
 
 	nodeType := node.Type()
 
-	// Check if this is a function/method/class with a body
+	// Check if this is a function/method with a body
 	if nodeType == nodeTypes.Function || nodeType == nodeTypes.Method || nodeType == "arrow_function" || nodeType == "function_expression" {
-		// If filter is active, skip nodes that don't match
+		// If filter is active, check whether this node should be kept
 		if matchingNodes != nil && !matchingNodes[node] {
-			// Skip this node - don't include it in output
-			// Mark entire node for removal
-			start := node.StartByte()
-			end := node.EndByte()
-			replacements[[2]uint32{start, end}] = ""
-			return nil // Don't traverse children
+			// Anonymous functions (no name) are always preserved when filtering,
+			// since they can't be matched by name and silently removing them is surprising.
+			name := extractNodeName(node, source)
+			if name != "" {
+				// Named node doesn't match filter - remove it from output
+				start := node.StartByte()
+				end := node.EndByte()
+				replacements[[2]uint32{start, end}] = ""
+				return nil // Don't traverse children
+			}
 		}
 
-		// Node matches filter (or no filter) - strip body only
+		// Node matches filter (or no filter, or is anonymous) - strip body only
 		bodyNode := findBodyNode(node, bodyTypes)
 		if bodyNode != nil {
 			start := bodyNode.StartByte()
@@ -286,7 +296,7 @@ func collectBodyReplacements(node *sitter.Node, nodeTypes NodeTypes, bodyTypes [
 	for i := range childCount {
 		child := node.Child(i)
 		if child != nil {
-			if err := collectBodyReplacements(child, nodeTypes, bodyTypes, replacements, matchingNodes, depth+1); err != nil {
+			if err := collectBodyReplacements(child, nodeTypes, bodyTypes, source, replacements, matchingNodes, depth+1); err != nil {
 				return err
 			}
 		}
@@ -334,8 +344,8 @@ func buildOutput(source []byte, replacements map[[2]uint32]string) (string, erro
 		})
 	}
 
-	sort.Slice(sortedReplacements, func(i, j int) bool {
-		return sortedReplacements[i].start < sortedReplacements[j].start
+	slices.SortFunc(sortedReplacements, func(a, b replacement) int {
+		return cmp.Compare(a.start, b.start)
 	})
 
 	// Build result

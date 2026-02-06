@@ -24,12 +24,12 @@ const (
 
 // SkimRequest represents a request to transform code
 type SkimRequest struct {
-	Source       any    `json:"source"` // String or array of strings: file path(s), directory path(s), or glob pattern(s)
-	ClearCache   bool   `json:"clear_cache,omitempty"`
-	StartingLine int    `json:"starting_line,omitempty"` // Line number to start from (1-based)
-	Filter       any    `json:"filter,omitempty"`        // String or array of strings: glob pattern(s) to filter function/method/class names (prefix with ! for inverse)
-	ExtractGraph bool   `json:"extract_graph,omitempty"` // Extract relationship graph (imports, calls, inheritance)
-	OutputFormat string `json:"output_format,omitempty"` // Output format: "json" (default) or "sigil" (compressed for LLMs)
+	Source       []string `json:"source"` // File path(s), directory path(s), or glob pattern(s)
+	ClearCache   bool     `json:"clear_cache,omitempty"`
+	StartingLine int      `json:"starting_line,omitempty"` // Line number to start from (1-based)
+	Filter       []string `json:"filter,omitempty"`        // Glob pattern(s) to filter function/method/class names (prefix with ! for inverse)
+	ExtractGraph bool     `json:"extract_graph,omitempty"` // Extract relationship graph (imports, calls, inheritance)
+	OutputFormat string   `json:"output_format,omitempty"` // Output format: "json" (default) or "sigil" (compressed for LLMs)
 }
 
 // FileResult represents the result for a single file
