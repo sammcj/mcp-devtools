@@ -161,7 +161,7 @@ func (t *CodeSkimTool) processFilesParallel(ctx context.Context, files []string,
 	workerCount := min(len(files), maxWorkers)
 
 	// Memory tracking with mutex for atomic check-and-allocate
-	var memoryUsed sync.Map // map[int]int64 - track memory per file
+	var memoryUsed int64
 	var memoryMutex sync.Mutex
 
 	// Channels for work distribution
@@ -218,38 +218,29 @@ func (t *CodeSkimTool) processFilesParallel(ctx context.Context, files []string,
 
 				// Atomic check-and-allocate with mutex
 				memoryMutex.Lock()
-				var currentTotal int64
-				memoryUsed.Range(func(key, value any) bool {
-					if mem, ok := value.(int64); ok {
-						currentTotal += mem
-					}
-					return true
-				})
-
-				// Check if adding this file would exceed limit
-				if currentTotal+estimatedMemory > maxMemoryBytes {
+				if memoryUsed+estimatedMemory > maxMemoryBytes {
 					memoryMutex.Unlock()
 					results[j.index] = FileResult{
 						Path:  j.path,
-						Error: fmt.Sprintf("memory limit exceeded: would use ~%d bytes (limit: %d bytes / 4GB)", currentTotal+estimatedMemory, maxMemoryBytes),
+						Error: fmt.Sprintf("memory limit exceeded: would use ~%d bytes (limit: %d bytes / 4GB)", memoryUsed+estimatedMemory, maxMemoryBytes),
 					}
 					logger.WithFields(logrus.Fields{
 						"file":          j.path,
-						"current_total": currentTotal,
+						"current_total": memoryUsed,
 						"estimated":     estimatedMemory,
 					}).Warn("Skipping file - would exceed memory limit")
 					continue
 				}
-
-				// Store memory allocation
-				memoryUsed.Store(j.index, estimatedMemory)
+				memoryUsed += estimatedMemory
 				memoryMutex.Unlock()
 
 				// Process file
 				results[j.index] = t.processFile(ctx, j.path, req, cache, logger)
 
-				// Clean up memory tracking
-				memoryUsed.Delete(j.index)
+				// Release memory tracking
+				memoryMutex.Lock()
+				memoryUsed -= estimatedMemory
+				memoryMutex.Unlock()
 			}
 		})
 	}
@@ -291,8 +282,8 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 	}
 	mtime := fileInfo.ModTime().Unix()
 
-	// Generate preliminary cache key (file path + mtime + language + filter)
-	preliminaryCacheKey := t.generatePreliminaryCacheKey(filePath, mtime, lang, req.Filter)
+	// Generate cache key (file path + mtime + language + filter + extract_graph)
+	preliminaryCacheKey := t.generateCacheKey(filePath, mtime, lang, req.Filter, req.ExtractGraph)
 
 	// Clear cache if requested
 	if req.ClearCache && preliminaryCacheKey != "" {
@@ -325,16 +316,8 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 
 	// Transform if not from cache
 	if !result.FromCache {
-		// req.Filter is []string or nil
-		var filterPatterns []string
-		if req.Filter != nil {
-			if patterns, ok := req.Filter.([]string); ok {
-				filterPatterns = patterns
-			}
-		}
-
 		var err error
-		transformResult, err = TransformWithOptions(ctx, source, lang, isTSX, filterPatterns, req.ExtractGraph)
+		transformResult, err = TransformWithOptions(ctx, source, lang, isTSX, req.Filter, req.ExtractGraph)
 		if err != nil {
 			result.Error = fmt.Sprintf("transformation failed: %v", err)
 			return result
@@ -371,7 +354,7 @@ func (t *CodeSkimTool) processFile(ctx context.Context, filePath string, req *Sk
 	}
 
 	// Add filter counts if filtering was applied
-	if req.Filter != nil {
+	if len(req.Filter) > 0 {
 		result.MatchedItems = &transformResult.MatchedItems
 		result.TotalItems = &transformResult.TotalItems
 		result.FilteredItems = &transformResult.FilteredItems
@@ -471,12 +454,7 @@ func (t *CodeSkimTool) parseRequest(args map[string]any) (*SkimRequest, error) {
 		}
 	}
 
-	// Always store as array (converted to []any for interface{})
-	sourceInterfaces := make([]any, len(sources))
-	for i, s := range sources {
-		sourceInterfaces[i] = s
-	}
-	req.Source = sourceInterfaces
+	req.Source = sources
 
 	// Parse clear_cache (optional)
 	if clearRaw, ok := args["clear_cache"]; ok {
@@ -503,7 +481,7 @@ func (t *CodeSkimTool) parseRequest(args map[string]any) (*SkimRequest, error) {
 		}
 
 		if len(filterArray) > 0 {
-			var filters []string
+			filters := make([]string, 0, len(filterArray))
 			for i, item := range filterArray {
 				str, ok := item.(string)
 				if !ok {
@@ -513,10 +491,7 @@ func (t *CodeSkimTool) parseRequest(args map[string]any) (*SkimRequest, error) {
 					filters = append(filters, str)
 				}
 			}
-			if len(filters) > 0 {
-				// Store as []string
-				req.Filter = filters
-			}
+			req.Filter = filters
 		}
 	}
 
@@ -534,6 +509,12 @@ func (t *CodeSkimTool) parseRequest(args map[string]any) (*SkimRequest, error) {
 		}
 	}
 
+	// Auto-enable graph extraction when sigil format is requested,
+	// since sigil without graph data just dumps raw transformed code
+	if req.OutputFormat == "sigil" {
+		req.ExtractGraph = true
+	}
+
 	return req, nil
 }
 
@@ -547,24 +528,19 @@ func (t *CodeSkimTool) getMaxLines() int {
 	return defaultMaxLines
 }
 
-// generatePreliminaryCacheKey generates a lightweight cache key using mtime instead of hashing
-// This avoids reading and hashing the entire file content on cache hits
-func (t *CodeSkimTool) generatePreliminaryCacheKey(filePath string, mtime int64, lang Language, filter any) string {
-	// Use file path + mtime + language + filter
-	// mtime changes when file is modified, invalidating the cache
-
-	// Generate filter string for cache key (filter is []string or nil)
-	var filterStr string
-	if filter != nil {
-		if filterSlice, ok := filter.([]string); ok && len(filterSlice) > 0 {
-			filterStr = strings.Join(filterSlice, ",")
-		}
+// generateCacheKey generates a lightweight cache key using mtime instead of hashing.
+// This avoids reading and hashing the entire file content on cache hits.
+// Includes extract_graph to prevent returning cached results without graph data when graph is requested.
+func (t *CodeSkimTool) generateCacheKey(filePath string, mtime int64, lang Language, filter []string, extractGraph bool) string {
+	var graphFlag string
+	if extractGraph {
+		graphFlag = ":g"
 	}
 
-	if filterStr != "" {
-		return fmt.Sprintf("codeskim:%s:%d:%s:%s", filePath, mtime, lang, filterStr)
+	if len(filter) > 0 {
+		return fmt.Sprintf("codeskim:%s:%d:%s:%s%s", filePath, mtime, lang, strings.Join(filter, ","), graphFlag)
 	}
-	return fmt.Sprintf("codeskim:%s:%d:%s", filePath, mtime, lang)
+	return fmt.Sprintf("codeskim:%s:%d:%s%s", filePath, mtime, lang, graphFlag)
 }
 
 // newToolResultJSON creates a new tool result with JSON content
