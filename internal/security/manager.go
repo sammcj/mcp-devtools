@@ -73,8 +73,7 @@ func NewSecurityManagerWithRules(rules *SecurityRules) (*SecurityManager, error)
 
 	// Create threat analyser
 	threatAnalyser := &ThreatAnalyser{
-		patterns:    make(map[string]PatternMatcher),
-		shellParser: &ShellParser{},
+		patterns: make(map[string]PatternMatcher),
 	}
 
 	// Create deny list checker
@@ -153,8 +152,7 @@ func NewSecurityManager() (*SecurityManager, error) {
 	// Create threat analyser
 	logrus.Debug("Creating threat analyser")
 	threatAnalyser := &ThreatAnalyser{
-		patterns:    make(map[string]PatternMatcher),
-		shellParser: &ShellParser{},
+		patterns: make(map[string]PatternMatcher),
 	}
 
 	// Create security advisor
