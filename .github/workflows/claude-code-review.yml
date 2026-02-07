@@ -20,11 +20,11 @@ jobs:
       id-token: write
     # if: github.event.pull_request.user.login == 'sammcj' || github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 1
 
-      - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 # v1
+      - uses: anthropics/claude-code-action@b113f49a56229d8276e2bf05743ad6900121239c # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           track_progress: true # ✨ Enables tracking comments
