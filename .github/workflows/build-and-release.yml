@@ -29,7 +29,7 @@ jobs:
       contents: write
     steps:
       - name: Check out code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +51,7 @@ jobs:
     if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') && !contains(github.event.head_commit.message, '[skip-ci]')
     steps:
       - name: Check out code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Extract Go version from go.mod
         id: go-version
@@ -138,7 +138,7 @@ jobs:
     if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') && github.event_name != 'pull_request' && !contains(github.event.head_commit.message, '[skip-ci]')
     steps:
       - name: Check out code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Extract Go version from go.mod
         id: go-version
@@ -211,7 +211,7 @@ jobs:
     if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') && github.event_name != 'pull_request' && !contains(github.event.head_commit.message, '[skip-ci]')
     steps:
       - name: Check out code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Extract Go version from go.mod
         id: go-version
@@ -287,7 +287,7 @@ jobs:
     if: always() && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') && github.event_name != 'pull_request' && !contains(github.event.head_commit.message, '[skip-ci]')
     steps:
       - name: Check out code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Extract Go version from go.mod
         id: go-version
@@ -370,7 +370,7 @@ jobs:
       contents: write
     steps:
       - name: Check out code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
 
@@ -537,7 +537,7 @@ jobs:
       packages: write
     steps:
       - name: Check out code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
