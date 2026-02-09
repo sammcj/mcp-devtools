@@ -20,8 +20,8 @@ func TestThinkTool_Definition(t *testing.T) {
 
 	// Test that description contains key phrases
 	desc := definition.Description
-	if !testutils.Contains(desc, "think about something") {
-		t.Errorf("Expected description to contain 'think about something', got: %s", desc)
+	if !testutils.Contains(desc, "concise scratchpad") {
+		t.Errorf("Expected description to contain 'concise scratchpad', got: %s", desc)
 	}
 
 	// Test input schema exists

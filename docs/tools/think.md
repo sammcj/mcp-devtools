@@ -1,34 +1,29 @@
 # Think Tool
 
-The Think tool provides a structured thinking space for AI agents during complex workflows, enabling better reasoning and decision-making through explicit thought processes.
+A concise scratchpad for reasoning through a single question or decision. Does not retrieve information or modify anything -- just records the thought.
 
 ## Overview
 
-Based on Anthropic's research, the Think tool allows AI agents to pause and reason through complex problems before taking action. This leads to more accurate solutions and better handling of edge cases, particularly in complex scenarios.
+Based on Anthropic's research, the Think tool allows AI agents to pause and reason through a problem before taking action. Keep thoughts brief and focused: 2-4 sentences (~50-150 words). For multi-step reasoning, revision, or branching analysis, use `sequential_thinking` instead.
 
-## Features
+## When to Use Think vs Sequential Thinking
 
-- **Structured Reasoning**: Dedicated space for analysis and planning
-- **Complex Problem Solving**: Break down multi-step problems systematically
-- **Decision Support**: Evaluate options before choosing actions
-- **Edge Case Handling**: Consider unusual scenarios and potential issues
-- **Workflow Integration**: Seamlessly fits into existing tool chains
-
-## Research Background
-
-According to Anthropic's research, the Think tool provides:
-- **54% relative improvement** in complex domain scenarios
-- **Better consistency** across multiple trials
-- **Enhanced handling** of edge cases and unusual scenarios
+| Scenario                                          | Tool                  |
+|---------------------------------------------------|-----------------------|
+| Quick reasoning about a single decision           | `think`               |
+| Evaluating one option or reflecting on a result   | `think`               |
+| Multi-step analysis across several aspects        | `sequential_thinking` |
+| Revising or branching previous reasoning          | `sequential_thinking` |
+| Problem scope unclear, may need course correction | `sequential_thinking` |
 
 ## Parameters
 
 ### Required Parameters
 
-- **`thought`** (string): The thought content to process
-  - **Maximum length**: Configurable via `THINK_MAX_LENGTH` environment variable (default: 2000 characters)
-  - **Description**: The actual thought or reasoning to be recorded
+- **`thought`** (string): A brief reasoning note -- 2-4 sentences covering what you're considering and your conclusion
+  - **Maximum length**: Configurable via `THINK_MAX_LENGTH` environment variable (default: 2000 characters, ~300 words)
   - **Note**: The tool includes a 500-character safety buffer above the configured limit to accommodate AI agents' imprecise character counting, whilst still encouraging concise thoughts
+  - **Guidance**: State what you need to reason about, your conclusion or next step, and why. Do NOT include multi-step analyses, inline code blocks, or exhaustive breakdowns
 
 ### Optional Parameters
 
@@ -37,97 +32,71 @@ According to Anthropic's research, the Think tool provides:
   - **Description**: Indicates the complexity level of the thinking required
   - **Default**: `"hard"` if not specified
 
-## When to Use the Think Tool
+## Examples
 
-### Analysing Tool Outputs
-Before acting on complex tool results:
+### Analysing a Tool Output
 ```json
 {
   "name": "think",
   "arguments": {
-    "thought": "I need to analyse this API response before deciding which action to take next. The response contains multiple error codes and I should determine which is the primary issue to address first.",
+    "thought": "The API response contains both a 429 and a 503. The 429 is endpoint-specific rate limiting, not a global outage. I should retry with backoff on just the /users endpoint.",
     "how_hard": "hard"
   }
 }
 ```
 
-### Breaking Down Complex Problems
-For multi-step challenges:
+### Making a Quick Decision
 ```json
 {
   "name": "think",
   "arguments": {
-    "thought": "This deployment issue involves network configuration, database migrations, and service dependencies. Let me work through each component systematically to identify the root cause."
+    "thought": "The user wants to modify production config. This needs approval and a rollback plan first -- I should ask before proceeding."
   }
 }
 ```
 
-### Reasoning Through Policy Decisions
-When rules or constraints apply:
+### Reflecting on Gathered Data
 ```json
 {
   "name": "think",
   "arguments": {
-    "thought": "The user is asking me to modify production configuration, but I should consider the security implications and whether this requires additional approvals or safeguards first."
+    "thought": "CPU spikes at 14:30 correlate with the slow query log. This points to connection pool exhaustion under peak load, not a query optimisation issue."
   }
 }
 ```
 
-### Planning Sequential Actions
-When mistakes could be costly:
+> **Note:** For multi-step breakdowns (numbered checklists, systematic analysis across several aspects), use `sequential_thinking` instead. The think tool is for a single focused observation or decision.
+
+### Thinking Intensities
+
+#### Standard (`how_hard: "hard"`)
 ```json
 {
   "name": "think",
   "arguments": {
-    "thought": "Before running this database migration, I should verify: 1) backup exists, 2) migration is reversible, 3) application can handle the schema changes, 4) timing won't impact users."
-  }
-}
-```
-
-### Processing Information from Previous Tools
-After gathering data:
-```json
-{
-  "name": "think",
-  "arguments": {
-    "thought": "I've collected performance metrics from three different monitoring tools. Now I need to correlate the data to identify patterns: the CPU spikes at 14:30 correspond with the database slow queries, suggesting a connection pool issue."
-  }
-}
-```
-
-### Using Different Thinking Intensities
-
-#### Standard Problems (`how_hard: "hard"`)
-For routine analysis and straightforward problem-solving:
-```json
-{
-  "name": "think",
-  "arguments": {
-    "thought": "The user wants to add a new API endpoint. I need to consider the request/response format, validation rules, and database queries required.",
+    "thought": "The user wants a new API endpoint. REST with JSON is the right fit here given the existing patterns in the codebase.",
     "how_hard": "hard"
   }
 }
 ```
 
-#### Complex Problems (`how_hard: "harder"`)
-For multi-faceted issues requiring deeper analysis:
+#### Deeper (`how_hard: "harder"`)
 ```json
 {
   "name": "think",
   "arguments": {
-    "thought": "This microservices architecture change affects authentication, data consistency, service discovery, and deployment pipelines. I need to map out all the interdependencies and potential failure points before recommending an approach.",
+    "thought": "This auth change affects both the gateway and downstream services. The token format change is backward-incompatible, so I need a migration path before proceeding.",
     "how_hard": "harder"
   }
 }
 ```
 
-#### Extremely Complex Problems (`how_hard: "ultra"`)
-For the most challenging scenarios requiring maximum cognitive effort:
+#### Maximum (`how_hard: "ultra"`)
 ```json
 {
   "name": "think",
   "arguments": {
-    "thought": "The system is experiencing cascading failures across multiple regions, with database replication lag, CDN cache invalidation issues, and third-party service degradation all occurring simultaneously. I need to prioritise which issues to address first while maintaining system stability and user experience.",
+    "thought": "Cascading failures across regions -- replication lag plus CDN invalidation plus third-party degradation. The replication lag is the root cause; fixing that unblocks the CDN, and the third-party issue is independent.",
     "how_hard": "ultra"
   }
 }
@@ -135,159 +104,90 @@ For the most challenging scenarios requiring maximum cognitive effort:
 
 ## Usage Patterns
 
-### Problem Analysis Pattern
+### Single Decision After Research
 ```json
 // 1. Gather information
 {"name": "internet_search", "arguments": {"query": "kubernetes pod restart loop causes"}}
 
-// 2. Think through the findings
+// 2. Quick conclusion
 {"name": "think", "arguments": {
-  "thought": "The search results show several potential causes: resource limits, liveness probe failures, and image pull issues. I should check the pod logs and resource usage to narrow down the specific cause in this case."
+  "thought": "The search results point to resource limits as the most likely cause given the OOMKilled status. I should check pod resource usage next."
 }}
 
 // 3. Take targeted action
 {"name": "fetch_url", "arguments": {"url": "kubernetes.io/docs/troubleshooting"}}
 ```
 
-### Decision Making Pattern
-```json
-// 1. Consider options
-{"name": "think", "arguments": {
-  "thought": "The user wants to implement authentication. I can see three approaches: JWT tokens, session-based auth, or OAuth integration. I need to consider their requirements: scalability, security level, and integration complexity."
-}}
-
-// 2. Evaluate trade-offs
-{"name": "think", "arguments": {
-  "thought": "Given they mentioned microservices and need stateless authentication, JWT tokens seem most appropriate. However, I should confirm they have secure token storage and refresh mechanisms in place."
-}}
-
-// 3. Implement solution
-{"name": "package_search", "arguments": {"ecosystem": "npm", "query": "jsonwebtoken"}}
-```
-
-### Validation Pattern
-```json
-// 1. Implement solution
-{"name": "document_processing", "arguments": {"source": "/path/to/requirements.pdf"}}
-
-// 2. Validate approach
-{"name": "think", "arguments": {
-  "thought": "The document processing extracted the requirements, but I notice some technical details are in diagrams that might not have been captured fully. I should check if the extracted content covers all the functional requirements mentioned in the original request."
-}}
-
-// 3. Fill gaps if needed
-{"name": "document_processing", "arguments": {"source": "/path/to/requirements.pdf", "profile": "llm-external"}}
-```
+> **Note:** If you need multiple think calls in sequence (e.g., consider options, then evaluate trade-offs, then decide), use `sequential_thinking` instead -- that's exactly what it's designed for.
 
 ## Best Practices
 
-### Effective Thinking
+### Keep It Brief
+Each thought should be 2-4 sentences. State the problem, your conclusion, and why.
 
-**Be Specific**: Include concrete details and constraints
+**Good** -- specific and concise:
 ```json
-{"thought": "The API returns 429 rate limit errors specifically for the /users endpoint after 100 requests per hour, but other endpoints work fine. This suggests endpoint-specific rate limiting rather than global limits."}
+{"thought": "The 429 errors are only on /users after 100 req/hr. Other endpoints are fine. This is endpoint-specific rate limiting, not a global issue."}
 ```
 
-**Consider Multiple Angles**: Explore different perspectives
+**Bad** -- multi-step breakdown (use `sequential_thinking` for this):
 ```json
 {"thought": "From a security perspective, this approach exposes user data. From a performance perspective, it reduces database queries. From a maintenance perspective, it adds complexity. I need to weigh these trade-offs based on the project priorities."}
 ```
 
-**Plan Ahead**: Think through consequences
-```json
-{"thought": "If I update this configuration, it will affect all microservices. I should: 1) test in staging first, 2) plan a rollback strategy, 3) coordinate with the team for the deployment window."}
-```
-
 ### Integration with Other Tools
 
-**Before Complex Operations**:
 ```json
-{"name": "think", "arguments": {"thought": "Before running this package search across multiple ecosystems, I should consider which package managers are most relevant for this project and prioritise those results."}}
-```
-
-**After Information Gathering**:
-```json
-{"name": "think", "arguments": {"thought": "I've gathered documentation from three different sources. Let me identify the common patterns and any conflicting information that needs clarification."}}
-```
-
-**During Problem Solving**:
-```json
-{"name": "think", "arguments": {"thought": "The error message suggests a permission issue, but the logs show successful authentication. This contradiction indicates the problem might be at the resource level rather than authentication level."}}
+{"name": "think", "arguments": {"thought": "The error says permission denied but auth succeeded. The problem is at the resource ACL level, not authentication. I should check the IAM policy next."}}
 ```
 
 ## Common Use Cases
 
-### Code Review and Analysis
+### Quick Code Review Observation
 ```json
 {
   "name": "think",
   "arguments": {
-    "thought": "This code change modifies the authentication middleware. I should consider: 1) backward compatibility with existing tokens, 2) performance impact of additional validation, 3) security implications of the new claims structure."
+    "thought": "This middleware change alters the token claims structure. Existing tokens will fail validation, so this needs a migration or dual-parsing approach."
   }
 }
 ```
 
-### Architecture Decisions
+### Architecture Decision
 ```json
 {
   "name": "think",
   "arguments": {
-    "thought": "The user wants to add real-time features. I need to evaluate: WebSockets vs Server-Sent Events vs polling. Factors: browser support, scaling requirements, infrastructure constraints, and development complexity."
+    "thought": "For real-time features, SSE is the simplest fit here -- the data flow is server-to-client only and the existing infrastructure already supports HTTP streaming."
   }
 }
 ```
 
-### Debugging Complex Issues
+### Debugging Observation
 ```json
 {
   "name": "think",
   "arguments": {
-    "thought": "The application works locally but fails in production. Key differences: environment variables, database connections, network configuration, and load balancing. I should systematically check each difference."
-  }
-}
-```
-
-### Risk Assessment
-```json
-{
-  "name": "think",
-  "arguments": {
-    "thought": "This deployment involves database schema changes during business hours. Risks: downtime, data corruption, rollback complexity. Mitigations: feature flags, blue-green deployment, comprehensive testing."
+    "thought": "Works locally but fails in prod. The error traces to a missing env var for the database connection string -- the deployment config is missing DATABASE_URL."
   }
 }
 ```
 
 ## Integration Examples
 
-### Research and Analysis Workflow
+### Research Workflow
 ```bash
 # 1. Gather information
 internet_search "kubernetes ingress nginx configuration"
 
-# 2. Think through findings
-think "The search results show multiple configuration approaches. I need to consider which matches their cloud provider and security requirements."
+# 2. Quick conclusion before next step
+think "The nginx ingress controller with cert-manager is the standard approach for their AWS setup. I should pull the official docs next."
 
 # 3. Get detailed documentation
 package_documentation "nginx-ingress" --topic "configuration"
-
-# 4. Plan implementation
-think "Based on the documentation, I'll need to: 1) configure TLS certificates, 2) set up rate limiting, 3) configure health checks. Let me verify their current setup first."
 ```
 
-### Problem Solving Workflow
-```bash
-# 1. Analyse the problem
-think "The user reports intermittent 500 errors. This could be: resource exhaustion, database connection issues, external service failures, or application bugs. I need to gather more specific information."
-
-# 2. Gather diagnostic information
-fetch_url "https://their-monitoring-dashboard.com/metrics"
-
-# 3. Correlate findings
-think "The metrics show memory usage spikes correlating with the errors. This suggests a memory leak or inefficient memory usage during peak load periods."
-
-# 4. Research solutions
-internet_search "node.js memory leak detection production"
-```
+> For workflows requiring multiple think steps (analyse, then correlate, then decide), use `sequential_thinking` to keep reasoning structured across steps.
 
 ## Configuration
 

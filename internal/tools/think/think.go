@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -47,21 +48,17 @@ func (t *ThinkTool) Definition() mcp.Tool {
 	maxLen := getMaxThoughtLength()
 	return mcp.NewTool(
 		"think",
-		mcp.WithDescription(fmt.Sprintf(`Use the tool to think about something. It will not obtain new information or change the database, but just append the thought to the log. Use it when complex reasoning or some cache memory is needed.
+		mcp.WithDescription(fmt.Sprintf(`A concise scratchpad for reasoning when you have a single complex question or decision. Does not retrieve information or modify anything - just records the thought.
 
-This tool is particularly valuable for:
-- Breaking down complex multi-step problems
-- Reasoning through policy decisions or constraints
-- Planning sequential actions where mistakes are costly
-- Processing and reflecting on information gathered from previous tool calls
+Keep thoughts brief and focused: aim for 2-4 sentences (~50-150 words). State what you need to reason about, your conclusion or next step, and why. Do NOT include multi-step analyses, inline code blocks, or exhaustive breakdowns.
 
-Maximum thought length is %d characters.
+For multi-step reasoning, revision, or branching analysis, use sequential_thinking instead.
 
-Use this tool as a structured thinking space during complex workflows, especially when you need to pause and reason about what you've learned before proceeding.`, maxLen)),
+Maximum length: %d characters (~300 words). Exceeding this will be rejected.`, maxLen)),
 		mcp.WithString("thought",
 			mcp.Required(),
 			mcp.MaxLength(maxLen),
-			mcp.Description("A thought to think about."),
+			mcp.Description("A brief reasoning note: 2-4 sentences covering what you're considering and your conclusion. Not for lengthy analysis - use sequential_thinking for that."),
 		),
 		mcp.WithString("how_hard",
 			mcp.Description("How hard to think about the problem. Options: 'hard' (default), 'harder', 'ultra'."),
@@ -106,7 +103,7 @@ func (t *ThinkTool) parseRequest(args map[string]any) (*ThinkRequest, error) {
 	configuredMaxLength := getMaxThoughtLength()
 	actualMaxLength := configuredMaxLength + ThinkLengthSafetyBuffer
 	if len(thought) > actualMaxLength {
-		return nil, fmt.Errorf("'thought' exceeds maximum length of %d characters (you provided %d). Break your reasoning into smaller chunks or use sequential_thinking tool for complex multi-step analysis", configuredMaxLength, len(thought))
+		return nil, fmt.Errorf("'thought' exceeds maximum length of %d characters (you sent %d chars, ~%d words). The think tool is for brief 2-4 sentence notes. For multi-step reasoning, use sequential_thinking instead", configuredMaxLength, len(thought), len(strings.Fields(thought)))
 	}
 
 	// Parse how_hard (optional, defaults to "hard")
