@@ -1,34 +1,29 @@
 # Think Tool
 
-The Think tool provides a structured thinking space for AI agents during complex workflows, enabling better reasoning and decision-making through explicit thought processes.
+A concise scratchpad for reasoning through a single question or decision. Does not retrieve information or modify anything -- just records the thought.
 
 ## Overview
 
-Based on Anthropic's research, the Think tool allows AI agents to pause and reason through complex problems before taking action. This leads to more accurate solutions and better handling of edge cases, particularly in complex scenarios.
+Based on Anthropic's research, the Think tool allows AI agents to pause and reason through a problem before taking action. Keep thoughts brief and focused: 2-4 sentences (~50-150 words). For multi-step reasoning, revision, or branching analysis, use `sequential_thinking` instead.
 
-## Features
+## When to Use Think vs Sequential Thinking
 
-- **Structured Reasoning**: Dedicated space for analysis and planning
-- **Complex Problem Solving**: Break down multi-step problems systematically
-- **Decision Support**: Evaluate options before choosing actions
-- **Edge Case Handling**: Consider unusual scenarios and potential issues
-- **Workflow Integration**: Seamlessly fits into existing tool chains
-
-## Research Background
-
-According to Anthropic's research, the Think tool provides:
-- **54% relative improvement** in complex domain scenarios
-- **Better consistency** across multiple trials
-- **Enhanced handling** of edge cases and unusual scenarios
+| Scenario                                          | Tool                  |
+|---------------------------------------------------|-----------------------|
+| Quick reasoning about a single decision           | `think`               |
+| Evaluating one option or reflecting on a result   | `think`               |
+| Multi-step analysis across several aspects        | `sequential_thinking` |
+| Revising or branching previous reasoning          | `sequential_thinking` |
+| Problem scope unclear, may need course correction | `sequential_thinking` |
 
 ## Parameters
 
 ### Required Parameters
 
-- **`thought`** (string): The thought content to process
-  - **Maximum length**: Configurable via `THINK_MAX_LENGTH` environment variable (default: 2000 characters)
-  - **Description**: The actual thought or reasoning to be recorded
+- **`thought`** (string): A brief reasoning note -- 2-4 sentences covering what you're considering and your conclusion
+  - **Maximum length**: Configurable via `THINK_MAX_LENGTH` environment variable (default: 2000 characters, ~300 words)
   - **Note**: The tool includes a 500-character safety buffer above the configured limit to accommodate AI agents' imprecise character counting, whilst still encouraging concise thoughts
+  - **Guidance**: State what you need to reason about, your conclusion or next step, and why. Do NOT include multi-step analyses, inline code blocks, or exhaustive breakdowns
 
 ### Optional Parameters
 

@@ -1,10 +1,15 @@
 # Sequential Thinking Tool
 
-The Sequential Thinking tool provides a structured approach to dynamic problem-solving through auto-managed thought processes that adapt and evolve as understanding deepens.
+Multi-step reasoning tool for problems that need more than a quick thought. Each step should be a focused, concise observation or decision. Spread analysis across multiple steps rather than writing one long step.
 
 ## Overview
 
-The Sequential Thinking tool allows AI agents to work through complex problems with automatically managed state. Focus on your thinking content while the tool handles numbering, tracking, and branching mechanics.
+Use `sequential_thinking` instead of `think` when:
+- The problem needs more than 2-4 sentences of reasoning
+- You need to revise or branch your analysis
+- The full scope is unclear and you may need course correction
+
+The tool handles numbering, tracking, and branching automatically -- focus on your thinking content.
 
 ## Features
 
@@ -23,8 +28,8 @@ The Sequential Thinking tool allows AI agents to work through complex problems w
 - **`action`** (string): Action to perform
   - **Options**: `"think"` (default) or `"get_usage"`
   - **Description**: Specifies whether to process a thought or get detailed usage instructions
-- **`thought`** (string): Your current thinking step content
-  - **Description**: The actual content of your thinking - analysis, insights, questions, conclusions
+- **`thought`** (string): A single focused reasoning step
+  - **Description**: 1-3 sentences covering one observation, decision, or question. Use multiple steps for longer analysis rather than one long step
   - **Examples**: "Let me break down this API design problem into authentication, rate limiting, and error handling"
 - **`continue`** (boolean): Whether more thinking is needed after this step
   - **Description**: `true` if you need more thoughts, `false` when done
@@ -99,12 +104,12 @@ When reaching conclusion:
 
 ## Best Practices
 
-1. **Focus on Content**: Concentrate on what you're thinking, not mechanics
-2. **Natural Revision**: Use `revise` when reconsidering previous thoughts  
-3. **Explore Alternatives**: Use `explore` for different approaches
-4. **Express Uncertainty**: Natural uncertainty is valuable in thinking process
-5. **Clear Conclusions**: Set `continue: false` only with satisfactory answer
-6. **Concise Thoughts**: Keep individual thoughts focused and clear
+1. **Keep Steps Short**: Aim for 1-3 sentences (~50-100 words) per step. Split longer reasoning into multiple steps
+2. **Focus on Content**: Concentrate on what you're thinking, not mechanics
+3. **Natural Revision**: Use `revise` when reconsidering previous thoughts
+4. **Explore Alternatives**: Use `explore` for different approaches
+5. **Express Uncertainty**: Natural uncertainty is valuable in thinking process
+6. **Clear Conclusions**: Set `continue: false` only with satisfactory answer
 
 ## Advanced Usage
 
