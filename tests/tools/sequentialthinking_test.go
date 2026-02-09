@@ -17,6 +17,15 @@ func TestSequentialThinkingTool_Definition(t *testing.T) {
 	testutils.AssertEqual(t, "sequential_thinking", definition.Name)
 	testutils.AssertNotNil(t, definition.Description)
 
+	// Test that description contains key phrases from updated description
+	desc := definition.Description
+	if !testutils.Contains(desc, "multi-step reasoning") {
+		t.Errorf("Expected description to contain 'multi-step reasoning', got: %s", desc)
+	}
+	if !testutils.Contains(desc, "instead of think") {
+		t.Errorf("Expected description to contain 'instead of think', got: %s", desc)
+	}
+
 	// Test input schema exists and has required fields
 	testutils.AssertNotNil(t, definition.InputSchema)
 
