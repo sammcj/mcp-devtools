@@ -48,13 +48,11 @@ func (t *ThinkTool) Definition() mcp.Tool {
 	maxLen := getMaxThoughtLength()
 	return mcp.NewTool(
 		"think",
-		mcp.WithDescription(fmt.Sprintf(`A concise scratchpad for reasoning when you have a single complex question or decision. Does not retrieve information or modify anything - just records the thought.
+		mcp.WithDescription(`A scratchpad for reasoning when you're stuck on a question or decision, or getting unexpected results. Does not retrieve information or modify anything - just records the thought.
 
-Keep thoughts brief and focused: aim for 2-4 sentences (~50-150 words). State what you need to reason about, your conclusion or next step, and why. Do NOT include multi-step analyses, inline code blocks, or exhaustive breakdowns.
+State what you need to reason about and why. Keep it to 2-4 concise sentences.
 
-For multi-step reasoning, revision, or branching analysis, use sequential_thinking instead.
-
-Maximum length: %d characters (~300 words). Exceeding this will be rejected.`, maxLen)),
+For multi-step reasoning, revision, or branching analysis, use sequential_thinking instead.`),
 		mcp.WithString("thought",
 			mcp.Required(),
 			mcp.MaxLength(maxLen),
