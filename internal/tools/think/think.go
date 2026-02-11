@@ -50,7 +50,7 @@ func (t *ThinkTool) Definition() mcp.Tool {
 		"think",
 		mcp.WithDescription(`A scratchpad for reasoning when you're stuck on a question or decision, or getting unexpected results. Does not retrieve information or modify anything - just records the thought.
 
-State what you need to reason about and why. Keep it to 2-4 concise sentences.
+State what you need to reason about and why. Keep it to 2-4 concise sentences. Do not add code or lengthy analysis to the thought.
 
 For multi-step reasoning, revision, or branching analysis, use sequential_thinking instead.`),
 		mcp.WithString("thought",
