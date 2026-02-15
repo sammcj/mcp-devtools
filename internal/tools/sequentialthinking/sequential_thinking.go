@@ -43,7 +43,7 @@ func init() {
 func (t *SequentialThinkingTool) Definition() mcp.Tool {
 	tool := mcp.NewTool(
 		"sequential_thinking",
-		mcp.WithDescription(`A multi-step reasoning tool for dynamic and reflective problem-solving through sequential thoughts. Each step should be a focused, concise observation or decision (aim for 1-3 sentences per step, ~50-100 words). Spread your analysis across multiple steps rather than writing one long step.
+		mcp.WithDescription(`A multi-step reasoning tool for dynamic and reflective problem-solving through sequential thoughts. Each step should be a focused, concise observation or decision (aim for 1-3 sentences per step, ~50-100 words). Spread your analysis across multiple steps rather than writing one long step. Only use for complex problems.
 
 When to use instead of think:
 - Breaking down complex problems into steps (more than 2-4 sentences of reasoning needed)

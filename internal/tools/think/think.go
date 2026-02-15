@@ -48,7 +48,7 @@ func (t *ThinkTool) Definition() mcp.Tool {
 	maxLen := getMaxThoughtLength()
 	return mcp.NewTool(
 		"think",
-		mcp.WithDescription(`A scratchpad for reasoning when you're stuck on a question or decision, or getting unexpected results. Does not retrieve information or modify anything - just records the thought.
+		mcp.WithDescription(`A scratchpad for reasoning when you're stuck on a difficult problem or a decision you're struggling with. Does not retrieve information or modify anything - just records the thought. Only use for complex problems or persistent issues.
 
 State what you need to reason about and why. Keep it to 2-4 concise sentences. Do not add code or lengthy analysis to the thought.
 
