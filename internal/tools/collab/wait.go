@@ -120,8 +120,8 @@ func (w *CollabWaitTool) Execute(ctx context.Context, logger *logrus.Logger, _ *
 					// There are already unread messages -- return immediately
 					unread := currentCount - p.LastRead
 					logger.WithFields(logrus.Fields{
-						"session_id": sessionID,
-						"unread":     unread,
+						"session_id":  sessionID,
+						"unread":      unread,
 						"participant": participant,
 					}).Debug("collab_wait found existing unread messages")
 
