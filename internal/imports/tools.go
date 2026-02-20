@@ -7,6 +7,7 @@ import (
 	_ "github.com/sammcj/mcp-devtools/internal/tools/calculator"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/claudeagent"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/code_rename"
+	_ "github.com/sammcj/mcp-devtools/internal/tools/collab"
 
 	// codeskim is conditionally imported in tools_codeskim.go based on platform support
 	_ "github.com/sammcj/mcp-devtools/internal/tools/aceternityui"

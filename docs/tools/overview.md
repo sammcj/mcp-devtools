@@ -53,6 +53,16 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 5. Memory → Store Terraform configuration patterns
 ```
 
+#### Cross-Agent Collaboration Workflow
+```
+1. Collab (create_session) → Start a collaboration session
+2. Share session UUID with the other agent
+3. Collab (post) → Exchange messages (feature requests, feedback, etc.)
+4. Collab (check) → Poll for new messages
+5. Collab Wait → Block until new messages arrive
+6. Collab (close) → Mark session as resolved
+```
+
 #### Complex Problem Solving Workflow
 ```
 1. Sequential Thinking → Break down problem systematically
@@ -103,7 +113,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "ENABLE_ADDITIONAL_TOOLS": "aws_documentation,fetch_url,internet_search,think,memory,filesystem,shadcn_ui,magic_ui,aceternity_ui,security,claude-agent,codex-agent,copilot-agent,gemini-agent,kiro-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking,excel,find_long_files,code_skim,code_search,code_rename",
+        "ENABLE_ADDITIONAL_TOOLS": "aws_documentation,fetch_url,internet_search,think,memory,filesystem,shadcn_ui,magic_ui,aceternity_ui,security,claude-agent,codex-agent,copilot-agent,gemini-agent,kiro-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking,excel,find_long_files,code_skim,code_search,code_rename,collab",
         "GOOGLE_CLOUD_PROJECT": "gemini-code-assist-123456",
         "BRAVE_API_KEY": "abc123",
         "SEARXNG_BASE_URL": "https://searxng.your.domain",
@@ -140,6 +150,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 - Architecture planning → Sequential Thinking + Think + Memory
 - Complex debugging → Sequential Thinking + Internet Search
 - File operations → Filesystem + Think
+- Multi-agent coordination → Collab + Collab Wait
 
 **For File Management:**
 - File operations → Filesystem
