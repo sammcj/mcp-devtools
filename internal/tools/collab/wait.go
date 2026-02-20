@@ -58,6 +58,10 @@ Use when you want to wait for a response from another agent without polling manu
 			mcp.Description("How often to check for new messages in seconds (default: 60, min: 5). Can also be set via COLLAB_POLL_INTERVAL env var"),
 		),
 
+		mcp.WithString("name",
+			mcp.Description("Participant name. If provided, returns immediately when unread messages exist (based on last_read position) instead of waiting for new ones"),
+		),
+
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
@@ -99,10 +103,38 @@ func (w *CollabWaitTool) Execute(ctx context.Context, logger *logrus.Logger, _ *
 		pollSec = timeoutSec
 	}
 
-	// Validate session exists and get baseline message count
-	baseline, err := w.storage.GetMessageCount(sessionID)
+	// Validate session exists and determine baseline
+	currentCount, err := w.storage.GetMessageCount(sessionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load session: %w", err)
+	}
+
+	// If a participant name is provided, use their last_read as the baseline.
+	// This means collab_wait returns immediately if there are already unread messages.
+	baseline := currentCount
+	if name, ok := args["name"].(string); ok && name != "" {
+		if participant, valErr := validateParticipantName(name); valErr == nil {
+			session, loadErr := w.storage.LoadSession(sessionID)
+			if loadErr == nil {
+				if p, exists := session.Participants[participant]; exists && p.LastRead < currentCount {
+					// There are already unread messages -- return immediately
+					unread := currentCount - p.LastRead
+					logger.WithFields(logrus.Fields{
+						"session_id": sessionID,
+						"unread":     unread,
+						"participant": participant,
+					}).Debug("collab_wait found existing unread messages")
+
+					resp := waitResponse{
+						SessionID: sessionID,
+						Status:    "new_messages",
+						NewCount:  unread,
+						Message:   fmt.Sprintf("%d unread message(s) found. Use collab check to read them.", unread),
+					}
+					return toToolResult(resp)
+				}
+			}
+		}
 	}
 
 	logger.WithFields(logrus.Fields{

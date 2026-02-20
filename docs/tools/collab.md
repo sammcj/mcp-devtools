@@ -94,7 +94,7 @@ Send a message to a session. The sender must have joined the session first.
 | Parameter    | Required | Description                        |
 | ------------ | -------- | ---------------------------------- |
 | `session_id` | Yes      | Session UUID                       |
-| `content`    | Yes      | Message content (max 50,000 chars) |
+| `content`    | Yes      | Message content (max 100,000 chars) |
 | `type`       | No       | Message type (default: `general`)  |
 | `name`       | No       | Sender name                        |
 
@@ -191,17 +191,21 @@ Mark a session as resolved.
 
 `collab_wait` is a separate tool that blocks until new messages arrive in a session. It polls the filesystem at a configurable interval and returns when new messages are detected or the timeout is reached.
 
-| Parameter               | Required | Description                                        |
-| ----------------------- | -------- | -------------------------------------------------- |
-| `session_id`            | Yes      | Session UUID to watch                              |
-| `timeout_seconds`       | No       | Max wait time (default: 600, max: 3600)            |
-| `poll_interval_seconds` | No       | How often to check (default: 60, min: 5, max: 300) |
+| Parameter               | Required | Description                                                                                                   |
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| `session_id`            | Yes      | Session UUID to watch                                                                                         |
+| `timeout_seconds`       | No       | Max wait time (default: 600, max: 3600)                                                                       |
+| `poll_interval_seconds` | No       | How often to check (default: 60, min: 5, max: 300)                                                            |
+| `name`                  | No       | Participant name. If provided, returns immediately when unread messages exist instead of waiting for new ones  |
+
+If `name` is provided, the tool checks the participant's `last_read` position. If there are already unread messages, it returns immediately without polling. This prevents waiting for messages that have already arrived but haven't been read yet.
 
 ```json
 {
   "session_id": "f39be8d5-416c-442a-ba14-a492b1d249da",
   "timeout_seconds": 300,
-  "poll_interval_seconds": 10
+  "poll_interval_seconds": 10,
+  "name": "project-a"
 }
 ```
 

@@ -426,7 +426,7 @@ func TestCollabTool_ContentTooLong(t *testing.T) {
 
 	sessionID := env.createSession(t, "Test", "agent-a")
 
-	longContent := make([]byte, 50001)
+	longContent := make([]byte, 100001)
 	for i := range longContent {
 		longContent[i] = 'a'
 	}
@@ -550,6 +550,46 @@ func TestCollabWaitTool_DetectsNewMessages(t *testing.T) {
 	testutils.AssertEqual(t, 1, resp.NewCount)
 
 	<-done
+}
+
+func TestCollabWaitTool_ImmediateReturnOnUnread(t *testing.T) {
+	env := setupCollabTest(t)
+	defer env.cleanup()
+
+	sessionID := env.createSession(t, "Unread test", "agent-a")
+	env.joinSession(t, sessionID, "agent-b")
+
+	// Post a message that agent-b hasn't read
+	env.postMessage(t, sessionID, "agent-a", "Unread message", "general")
+
+	// collab_wait with agent-b's name should return immediately
+	// because there's already an unread message
+	waitTool := &collab.CollabWaitTool{}
+	start := time.Now()
+	result, err := waitTool.Execute(env.ctx, env.logger, env.cache, map[string]any{
+		"session_id":            sessionID,
+		"timeout_seconds":       float64(30),
+		"poll_interval_seconds": float64(5),
+		"name":                  "agent-b",
+	})
+	elapsed := time.Since(start)
+	testutils.AssertNoError(t, err)
+
+	// Should return in well under a second (no polling needed)
+	if elapsed > 2*time.Second {
+		t.Fatalf("Expected immediate return for unread messages, took %v", elapsed)
+	}
+
+	text := extractCollabText(t, result)
+	var resp struct {
+		Status   string `json:"status"`
+		NewCount int    `json:"new_count"`
+	}
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("Failed to parse wait response: %v", err)
+	}
+	testutils.AssertEqual(t, "new_messages", resp.Status)
+	testutils.AssertEqual(t, 1, resp.NewCount)
 }
 
 func TestCollabTool_CheckNoNewMessages(t *testing.T) {
