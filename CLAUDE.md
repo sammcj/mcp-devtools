@@ -231,3 +231,4 @@ Tool spans inherit trace context via W3C Trace Context propagation (inject→ext
 
 - YOU MUST ALWAYS run `make lint && make test && make build` etc... to build the project rather than gofmt, go build or test directly, and you MUST always do this before stating you've completed your changes!
 - CRITICAL: If the serena tool is available to you, you must use serena for your semantic code retrieval and editing tools
+- CHANGELOG: After making anything other than minor or documentation changes update `CHANGELOG.md` to add entries under today's ## [YYYY.MM.DD] header, use date +'%F %H:%M' e.g. ## [2026.2.71]. Do NOT add version numbers. Do NOT duplicate headings or dates - simply update the existing date if today's date already exists as a heading. If the file gets over 1000 lines long, truncate the oldest releases, keep items concise, grouped under headings (Added/Changed/Fixed/Removed). Combine or update items refined within the same session.

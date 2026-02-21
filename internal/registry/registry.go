@@ -309,9 +309,10 @@ func isToolEnabled(toolName string) bool {
 	// Normalise the tool name (lowercase, replace underscores with hyphens)
 	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
 
-	// Tool name aliases for backwards compatibility
+	// Tool name aliases for backwards compatibility and tool grouping
 	aliases := map[string][]string{
-		"shadcn": {"shadcn-ui"}, // shadcn tool can be enabled via either 'shadcn' or 'shadcn_ui' in ENABLE_ADDITIONAL_TOOLS
+		"shadcn":      {"shadcn-ui"}, // shadcn tool can be enabled via either 'shadcn' or 'shadcn_ui' in ENABLE_ADDITIONAL_TOOLS
+		"collab-wait": {"collab"},    // collab_wait is enabled when collab is enabled
 	}
 
 	// Build list of names to check (tool name + any aliases)
