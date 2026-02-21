@@ -48,16 +48,16 @@ func (t *ThinkTool) Definition() mcp.Tool {
 	maxLen := getMaxThoughtLength()
 
 	// Build description, conditionally including sequential_thinking reference
-	desc := `A scratchpad for reasoning when you're stuck on a problem or decision after attempting it normally. Does not retrieve information or modify anything - just records the thought. Only use for complex problems or persistent issues, not routine decisions or first-pass reasoning.
+	desc := `A short scratchpad for reasoning when you're stuck on a problem or decision after attempting it normally. Does not retrieve information or modify anything - just records the thought. Only use for complex problems or persistent issues, not routine decisions or first-pass reasoning.
 
-State what you need to reason about and why. 2-4 concise sentences, no code.`
+State what you need to reason about and why. 1-3 concise sentences, no code.`
 
 	if _, ok := registry.GetTool("sequential_thinking"); ok {
 		desc += "\n\nFor multi-step reasoning, revision, or branching analysis, use sequential_thinking instead."
 	}
 
 	// Build thought parameter description, conditionally referencing sequential_thinking
-	thoughtDesc := "Brief reasoning note: 2-4 sentences. What you're stuck on and your conclusion."
+	thoughtDesc := "Brief reasoning note: 1-3 sentences. What you're stuck on and your conclusion."
 	if _, ok := registry.GetTool("sequential_thinking"); ok {
 		thoughtDesc += " For lengthy analysis, use sequential_thinking."
 	}

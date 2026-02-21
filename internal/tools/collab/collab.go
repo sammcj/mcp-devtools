@@ -263,11 +263,19 @@ func (c *CollabTool) handleCheck(ctx context.Context, logger *logrus.Logger, arg
 		return nil, err
 	}
 
-	name := c.resolveParticipantName(ctx, logger, args)
-	participant, err := validateParticipantName(name)
-	if err != nil {
-		// Fall back to reading all messages
-		participant = ""
+	// If name was explicitly provided, validate it strictly.
+	// Only fall back to anonymous read-all when no name was given.
+	var participant string
+	if explicitName, hasName := args["name"].(string); hasName && explicitName != "" {
+		var err error
+		participant, err = validateParticipantName(explicitName)
+		if err != nil {
+			return nil, fmt.Errorf("invalid participant name: %w", err)
+		}
+	} else {
+		// Try auto-detection; if it fails or returns a non-participant, treat as anonymous
+		name := c.resolveParticipantName(ctx, logger, args)
+		participant, _ = validateParticipantName(name)
 	}
 
 	// Load session to get last_read for this participant

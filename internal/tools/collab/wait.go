@@ -113,7 +113,11 @@ func (w *CollabWaitTool) Execute(ctx context.Context, logger *logrus.Logger, _ *
 	// This means collab_wait returns immediately if there are already unread messages.
 	baseline := currentCount
 	if name, ok := args["name"].(string); ok && name != "" {
-		if participant, valErr := validateParticipantName(name); valErr == nil {
+		participant, valErr := validateParticipantName(name)
+		if valErr != nil {
+			return nil, fmt.Errorf("invalid participant name: %w", valErr)
+		}
+		if participant != "" {
 			session, loadErr := w.storage.LoadSession(sessionID)
 			if loadErr == nil {
 				if p, exists := session.Participants[participant]; exists && p.LastRead < currentCount {
