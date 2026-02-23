@@ -25,7 +25,7 @@ func isProxyEnabled() bool {
 //   - fastPath=true: Uses 5-second timeout, only succeeds if tokens are cached.
 //     Intended for startup path to avoid blocking MCP server initialisation.
 //
-//   - fastPath=false: Uses 30-second timeout, allows OAuth flow if needed.
+//   - fastPath=false: Uses 5-minute timeout, allows OAuth browser flow if needed.
 //     Intended for background goroutine registration after server starts.
 //
 // Returns true if tools were successfully registered, false otherwise.
@@ -188,9 +188,14 @@ func RegisterUpstreamToolsAsync(ctx context.Context, mcpSrv *mcpserver.MCPServer
 				if !ok {
 					return nil, fmt.Errorf("tool not found: %s", name)
 				}
-				args, ok := request.Params.Arguments.(map[string]any)
-				if !ok {
-					return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
+				var args map[string]any
+				if request.Params.Arguments != nil {
+					args, ok = request.Params.Arguments.(map[string]any)
+					if !ok {
+						return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
+					}
+				} else {
+					args = make(map[string]any)
 				}
 
 				startTime := time.Now()

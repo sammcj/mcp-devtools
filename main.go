@@ -421,9 +421,14 @@ func main() {
 					}
 
 					// Type assert the arguments to map[string]interface{}
-					args, ok := request.Params.Arguments.(map[string]any)
-					if !ok {
-						return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
+					var args map[string]any
+					if request.Params.Arguments != nil {
+						args, ok = request.Params.Arguments.(map[string]any)
+						if !ok {
+							return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
+						}
+					} else {
+						args = make(map[string]any)
 					}
 
 					// Start timing for metrics

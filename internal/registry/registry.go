@@ -68,6 +68,11 @@ func normaliseName(name string) string {
 	return strings.ToLower(strings.ReplaceAll(strings.TrimSpace(name), "_", "-"))
 }
 
+// isToolDisabled checks if a tool is in the disabled set, normalising the name for lookup.
+func isToolDisabled(toolName string) bool {
+	return disabledTools[normaliseName(toolName)]
+}
+
 // Init initialises the registry and shared resources.
 // Also re-parses environment variables, which allows tests to update env vars
 // between calls to Init().
@@ -101,9 +106,10 @@ func parseDisabledTools() {
 		for tool := range tools {
 			tool = strings.TrimSpace(tool)
 			if tool != "" {
-				disabledTools[tool] = true
+				normalised := normaliseName(tool)
+				disabledTools[normalised] = true
 				if logger != nil {
-					logger.WithField("tool", tool).WithField("source", source).Debug("Tool disabled")
+					logger.WithField("tool", normalised).WithField("source", source).Debug("Tool disabled")
 				}
 			}
 		}
@@ -181,7 +187,7 @@ func requiresEnablement(toolName string) bool {
 // 3. ENABLE_ADDITIONAL_TOOLS (explicit enable)
 func ShouldRegisterTool(toolName string) bool {
 	// Check DISABLED_TOOLS/DISABLED_FUNCTIONS first (explicit disable wins)
-	if disabledTools[toolName] {
+	if isToolDisabled(toolName) {
 		if logger != nil {
 			logger.WithField("tool", toolName).Debug("Tool disabled via environment variable")
 		}
@@ -248,7 +254,7 @@ func RegisterProxiedTool(tool tools.Tool) {
 	toolName := tool.Definition().Name
 
 	// Check if explicitly disabled (always respect DISABLED_TOOLS)
-	if disabledTools[toolName] {
+	if isToolDisabled(toolName) {
 		if logger != nil {
 			logger.WithField("tool", toolName).Debug("Proxied tool not registered (explicitly disabled)")
 		}
@@ -281,7 +287,7 @@ func GetTools() map[string]tools.Tool {
 	filteredTools := make(map[string]tools.Tool, len(toolRegistry))
 	for name, tool := range toolRegistry {
 		// Skip disabled functions
-		if disabledTools[name] {
+		if isToolDisabled(name) {
 			continue
 		}
 		filteredTools[name] = tool
@@ -296,7 +302,7 @@ func GetEnabledTools() map[string]tools.Tool {
 	filteredTools := make(map[string]tools.Tool, len(toolRegistry))
 	for name, tool := range toolRegistry {
 		// Skip disabled functions
-		if disabledTools[name] {
+		if isToolDisabled(name) {
 			continue
 		}
 
@@ -333,7 +339,7 @@ func GetEnabledToolNames() []string {
 	names := make([]string, 0, len(toolRegistry))
 	for name := range toolRegistry {
 		// Skip disabled functions
-		if disabledTools[name] {
+		if isToolDisabled(name) {
 			continue
 		}
 		names = append(names, name)
@@ -349,7 +355,7 @@ func GetToolNamesWithExtendedHelp() []string {
 	var names []string
 	for name, tool := range toolRegistry {
 		// Skip disabled functions
-		if disabledTools[name] {
+		if isToolDisabled(name) {
 			continue
 		}
 

@@ -112,12 +112,16 @@ func GetGlobalErrorLogger() *ToolErrorLogger {
 
 // LogToolError logs a tool execution error
 func (l *ToolErrorLogger) LogToolError(toolName string, args map[string]any, err error, transport string) {
-	if !l.enabled || l.logFile == nil {
+	if !l.enabled {
 		return
 	}
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	if l.logFile == nil {
+		return
+	}
 
 	entry := ToolErrorLogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
@@ -154,13 +158,16 @@ func (l *ToolErrorLogger) LogToolError(toolName string, args map[string]any, err
 
 // Close closes the error logger and its log file
 func (l *ToolErrorLogger) Close() error {
-	if !l.enabled || l.logFile == nil {
+	if !l.enabled {
 		return nil
 	}
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	if l.logFile == nil {
+		return nil
+	}
 	return l.logFile.Close()
 }
 
