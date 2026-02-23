@@ -107,6 +107,9 @@ func TestIsToolEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Reset cache so the new env value is picked up
+			tools.ResetEnabledToolsCache()
+
 			// Set the environment variable
 			if tt.envValue == "" {
 				_ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS")
@@ -132,6 +135,7 @@ func TestIsToolEnabled_AllSupportedTools(t *testing.T) {
 		"sbom",
 	}
 
+	tools.ResetEnabledToolsCache()
 	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "claude-agent,gemini-agent,kiro-agent,filesystem,vulnerability_scan,sbom")
 	defer func() { _ = os.Unsetenv("ENABLE_ADDITIONAL_TOOLS") }()
 

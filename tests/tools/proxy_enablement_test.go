@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/proxy"
 )
 
@@ -28,6 +29,7 @@ func TestRegisterUpstreamTools_NotEnabled(t *testing.T) {
 	// Set up test: proxy configured but NOT enabled
 	os.Setenv("PROXY_UPSTREAMS", "[{\"name\":\"test\",\"url\":\"https://example.com/mcp\"}]")
 	os.Setenv("ENABLE_ADDITIONAL_TOOLS", "github,search_packages") // Proxy not included
+	tools.ResetEnabledToolsCache()
 
 	ctx := context.Background()
 	result := proxy.RegisterUpstreamTools(ctx, true)
@@ -64,6 +66,7 @@ func TestRegisterUpstreamTools_EnabledButNotConfigured(t *testing.T) {
 	os.Unsetenv("PROXY_UPSTREAMS")
 	os.Unsetenv("PROXY_URL")
 	os.Setenv("ENABLE_ADDITIONAL_TOOLS", "proxy")
+	tools.ResetEnabledToolsCache()
 
 	ctx := context.Background()
 	result := proxy.RegisterUpstreamTools(ctx, true)
@@ -93,6 +96,7 @@ func TestRegisterUpstreamTools_EnabledViaAll(t *testing.T) {
 	// Set up test: proxy enabled via "all"
 	os.Setenv("PROXY_UPSTREAMS", "[{\"name\":\"test\",\"url\":\"https://example.com/mcp\"}]")
 	os.Setenv("ENABLE_ADDITIONAL_TOOLS", "all")
+	tools.ResetEnabledToolsCache()
 
 	ctx := context.Background()
 	// This will fail because we can't actually connect, but it should pass the enablement check
@@ -126,6 +130,7 @@ func TestRegisterUpstreamTools_EnabledExplicitly(t *testing.T) {
 	// Set up test: proxy explicitly enabled
 	os.Setenv("PROXY_UPSTREAMS", "[{\"name\":\"test\",\"url\":\"https://example.com/mcp\"}]")
 	os.Setenv("ENABLE_ADDITIONAL_TOOLS", "github,proxy,search_packages")
+	tools.ResetEnabledToolsCache()
 
 	ctx := context.Background()
 	// This will fail because we can't actually connect, but it should pass the enablement check
