@@ -130,13 +130,13 @@ func (t *GetLibraryDocsTool) formatResponse(libraryID, topic string, tokens int,
 	var builder strings.Builder
 
 	// Add header with metadata
-	builder.WriteString(fmt.Sprintf("# Documentation for %s\n\n", libraryID))
+	fmt.Fprintf(&builder, "# Documentation for %s\n\n", libraryID)
 
 	if topic != "" {
-		builder.WriteString(fmt.Sprintf("**Topic Focus:** %s\n", topic))
+		fmt.Fprintf(&builder, "**Topic Focus:** %s\n", topic)
 	}
-	builder.WriteString(fmt.Sprintf("**Token Limit:** %d\n", tokens))
-	builder.WriteString(fmt.Sprintf("**Content Length:** %d characters\n\n", len(docs)))
+	fmt.Fprintf(&builder, "**Token Limit:** %d\n", tokens)
+	fmt.Fprintf(&builder, "**Content Length:** %d characters\n\n", len(docs))
 
 	builder.WriteString("---\n\n")
 

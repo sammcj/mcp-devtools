@@ -774,8 +774,8 @@ func (t *FileSystemTool) createDiff(original, modified, filename string) string 
 	modifiedLines := strings.Split(modified, "\n")
 
 	var diff strings.Builder
-	diff.WriteString(fmt.Sprintf("--- %s (original)\n", filename))
-	diff.WriteString(fmt.Sprintf("+++ %s (modified)\n", filename))
+	fmt.Fprintf(&diff, "--- %s (original)\n", filename)
+	fmt.Fprintf(&diff, "+++ %s (modified)\n", filename)
 
 	// Simple line-by-line diff
 	maxLines := max(len(modifiedLines), len(originalLines))
@@ -791,10 +791,10 @@ func (t *FileSystemTool) createDiff(original, modified, filename string) string 
 
 		if origLine != modLine {
 			if origLine != "" {
-				diff.WriteString(fmt.Sprintf("-%s\n", origLine))
+				fmt.Fprintf(&diff, "-%s\n", origLine)
 			}
 			if modLine != "" {
-				diff.WriteString(fmt.Sprintf("+%s\n", modLine))
+				fmt.Fprintf(&diff, "+%s\n", modLine)
 			}
 		}
 	}
@@ -844,7 +844,7 @@ func (t *FileSystemTool) listDirectory(options map[string]any) (*mcp.CallToolRes
 		if entry.IsDir() {
 			prefix = "[DIR]"
 		}
-		result.WriteString(fmt.Sprintf("%s %s\n", prefix, entry.Name()))
+		fmt.Fprintf(&result, "%s %s\n", prefix, entry.Name())
 	}
 
 	return mcp.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
@@ -921,12 +921,12 @@ func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.Ca
 			totalSize += entry.size
 			sizeStr = fmt.Sprintf("%10s", t.formatSize(entry.size))
 		}
-		result.WriteString(fmt.Sprintf("%s %-30s %s\n", prefix, entry.name, sizeStr))
+		fmt.Fprintf(&result, "%s %-30s %s\n", prefix, entry.name, sizeStr)
 	}
 
 	// Add summary
-	result.WriteString(fmt.Sprintf("\nTotal: %d files, %d directories\n", totalFiles, totalDirs))
-	result.WriteString(fmt.Sprintf("Combined size: %s\n", t.formatSize(totalSize)))
+	fmt.Fprintf(&result, "\nTotal: %d files, %d directories\n", totalFiles, totalDirs)
+	fmt.Fprintf(&result, "Combined size: %s\n", t.formatSize(totalSize))
 
 	return mcp.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
 }
@@ -1021,26 +1021,26 @@ func (t *FileSystemTool) formatDirectoryTree(entries []DirectoryEntry, indent in
 		if i > 0 {
 			result.WriteString(",\n")
 		}
-		result.WriteString(fmt.Sprintf("%s{\n", indentStr))
-		result.WriteString(fmt.Sprintf("%s  \"name\": \"%s\",\n", indentStr, entry.Name))
-		result.WriteString(fmt.Sprintf("%s  \"type\": \"%s\"", indentStr, entry.Type))
+		fmt.Fprintf(&result, "%s{\n", indentStr)
+		fmt.Fprintf(&result, "%s  \"name\": \"%s\",\n", indentStr, entry.Name)
+		fmt.Fprintf(&result, "%s  \"type\": \"%s\"", indentStr, entry.Type)
 
 		if entry.Type == "file" {
-			result.WriteString(fmt.Sprintf(",\n%s  \"size\": %d", indentStr, entry.Size))
+			fmt.Fprintf(&result, ",\n%s  \"size\": %d", indentStr, entry.Size)
 		}
 
 		if entry.Type == "directory" {
-			result.WriteString(fmt.Sprintf(",\n%s  \"children\": [", indentStr))
+			fmt.Fprintf(&result, ",\n%s  \"children\": [", indentStr)
 			if len(entry.Children) > 0 {
 				result.WriteString("\n")
 				result.WriteString(t.formatDirectoryTree(entry.Children, indent+2))
-				result.WriteString(fmt.Sprintf("\n%s  ]", indentStr))
+				fmt.Fprintf(&result, "\n%s  ]", indentStr)
 			} else {
 				result.WriteString("]")
 			}
 		}
 
-		result.WriteString(fmt.Sprintf("\n%s}", indentStr))
+		fmt.Fprintf(&result, "\n%s}", indentStr)
 	}
 
 	return result.String()
@@ -1203,13 +1203,13 @@ func (t *FileSystemTool) getFileInfo(options map[string]any) (*mcp.CallToolResul
 	fileInfo.Accessed = info.ModTime()
 
 	var result strings.Builder
-	result.WriteString(fmt.Sprintf("Path: %s\n", path))
-	result.WriteString(fmt.Sprintf("Size: %s (%d bytes)\n", t.formatSize(fileInfo.Size), fileInfo.Size))
-	result.WriteString(fmt.Sprintf("Type: %s\n", map[bool]string{true: "Directory", false: "File"}[fileInfo.IsDirectory]))
-	result.WriteString(fmt.Sprintf("Permissions: %s\n", fileInfo.Permissions))
-	result.WriteString(fmt.Sprintf("Modified: %s\n", fileInfo.Modified.Format(time.RFC3339)))
-	result.WriteString(fmt.Sprintf("Created: %s\n", fileInfo.Created.Format(time.RFC3339)))
-	result.WriteString(fmt.Sprintf("Accessed: %s", fileInfo.Accessed.Format(time.RFC3339)))
+	fmt.Fprintf(&result, "Path: %s\n", path)
+	fmt.Fprintf(&result, "Size: %s (%d bytes)\n", t.formatSize(fileInfo.Size), fileInfo.Size)
+	fmt.Fprintf(&result, "Type: %s\n", map[bool]string{true: "Directory", false: "File"}[fileInfo.IsDirectory])
+	fmt.Fprintf(&result, "Permissions: %s\n", fileInfo.Permissions)
+	fmt.Fprintf(&result, "Modified: %s\n", fileInfo.Modified.Format(time.RFC3339))
+	fmt.Fprintf(&result, "Created: %s\n", fileInfo.Created.Format(time.RFC3339))
+	fmt.Fprintf(&result, "Accessed: %s", fileInfo.Accessed.Format(time.RFC3339))
 
 	return mcp.NewToolResultText(result.String()), nil
 }
@@ -1222,7 +1222,7 @@ func (t *FileSystemTool) listAllowedDirectories() (*mcp.CallToolResult, error) {
 	var result strings.Builder
 	result.WriteString("Allowed directories:\n")
 	for _, dir := range t.allowedDirectories {
-		result.WriteString(fmt.Sprintf("  %s\n", dir))
+		fmt.Fprintf(&result, "  %s\n", dir)
 	}
 
 	return mcp.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil

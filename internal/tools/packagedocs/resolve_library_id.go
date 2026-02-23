@@ -108,54 +108,54 @@ func (t *ResolveLibraryIDTool) formatResponse(libraryName string, results []*Sea
 	bestMatch := results[0]
 
 	builder.WriteString("## Selected Library ID\n\n")
-	builder.WriteString(fmt.Sprintf("**Library ID:** `%s`\n\n", bestMatch.GetResourceURI()))
-	builder.WriteString(fmt.Sprintf("**Chosen Library:** %s\n", bestMatch.Title))
+	fmt.Fprintf(&builder, "**Library ID:** `%s`\n\n", bestMatch.GetResourceURI())
+	fmt.Fprintf(&builder, "**Chosen Library:** %s\n", bestMatch.Title)
 	if bestMatch.Description != "" {
-		builder.WriteString(fmt.Sprintf("**Description:** %s\n", bestMatch.Description))
+		fmt.Fprintf(&builder, "**Description:** %s\n", bestMatch.Description)
 	}
 
 	// Add selection rationale
 	builder.WriteString("\n**Selection Rationale:**\n")
-	builder.WriteString(fmt.Sprintf("- This library was selected as the most relevant match for '%s'\n", libraryName))
+	fmt.Fprintf(&builder, "- This library was selected as the most relevant match for '%s'\n", libraryName)
 
 	if bestMatch.TrustScore > 0 {
-		builder.WriteString(fmt.Sprintf("- Trust Score: %.1f/10 (higher scores indicate more authoritative sources)\n", bestMatch.TrustScore))
+		fmt.Fprintf(&builder, "- Trust Score: %.1f/10 (higher scores indicate more authoritative sources)\n", bestMatch.TrustScore)
 	}
 	if bestMatch.Stars > 0 {
-		builder.WriteString(fmt.Sprintf("- GitHub Stars: %d (legacy metric)\n", bestMatch.Stars))
+		fmt.Fprintf(&builder, "- GitHub Stars: %d (legacy metric)\n", bestMatch.Stars)
 	}
 	if bestMatch.TotalSnippets > 0 {
-		builder.WriteString(fmt.Sprintf("- Documentation Coverage: %d code snippets, %d tokens\n", bestMatch.TotalSnippets, bestMatch.TotalTokens))
+		fmt.Fprintf(&builder, "- Documentation Coverage: %d code snippets, %d tokens\n", bestMatch.TotalSnippets, bestMatch.TotalTokens)
 	}
 	if len(bestMatch.Versions) > 0 {
-		builder.WriteString(fmt.Sprintf("- Available Versions: %s\n", strings.Join(bestMatch.Versions, ", ")))
+		fmt.Fprintf(&builder, "- Available Versions: %s\n", strings.Join(bestMatch.Versions, ", "))
 	}
 
 	// Show alternative matches if there are more results
 	if len(results) > 1 {
 		builder.WriteString("\n## Alternative Matches Found\n\n")
-		builder.WriteString(fmt.Sprintf("Found %d total matches. Other options include:\n\n", len(results)))
+		fmt.Fprintf(&builder, "Found %d total matches. Other options include:\n\n", len(results))
 
 		for i, result := range results[1:] {
 			if i >= 4 { // Limit to top 5 alternatives
-				builder.WriteString(fmt.Sprintf("... and %d more matches\n", len(results)-5))
+				fmt.Fprintf(&builder, "... and %d more matches\n", len(results)-5)
 				break
 			}
 
-			builder.WriteString(fmt.Sprintf("%d. **%s** (`%s`)\n", i+2, result.Title, result.GetResourceURI()))
+			fmt.Fprintf(&builder, "%d. **%s** (`%s`)\n", i+2, result.Title, result.GetResourceURI())
 			if result.Description != "" {
 				// Truncate long descriptions
 				desc := result.Description
 				if len(desc) > 100 {
 					desc = desc[:100] + "..."
 				}
-				builder.WriteString(fmt.Sprintf("   %s\n", desc))
+				fmt.Fprintf(&builder, "   %s\n", desc)
 			}
 			if result.TrustScore > 0 || result.Stars > 0 {
-				builder.WriteString(fmt.Sprintf("   Trust Score: %.1f, Stars: %d\n", result.TrustScore, result.Stars))
+				fmt.Fprintf(&builder, "   Trust Score: %.1f, Stars: %d\n", result.TrustScore, result.Stars)
 			}
 			if len(result.Versions) > 0 {
-				builder.WriteString(fmt.Sprintf("   Versions: %s\n", strings.Join(result.Versions, ", ")))
+				fmt.Fprintf(&builder, "   Versions: %s\n", strings.Join(result.Versions, ", "))
 			}
 			builder.WriteString("\n")
 		}

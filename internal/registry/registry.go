@@ -277,7 +277,8 @@ func GetTool(name string) (tools.Tool, bool) {
 
 // GetTools returns all registered tools, excluding disabled ones
 func GetTools() map[string]tools.Tool {
-	filteredTools := make(map[string]tools.Tool)
+	registryMu.RLock()
+	filteredTools := make(map[string]tools.Tool, len(toolRegistry))
 	for name, tool := range toolRegistry {
 		// Skip disabled functions
 		if disabledTools[name] {
@@ -285,12 +286,14 @@ func GetTools() map[string]tools.Tool {
 		}
 		filteredTools[name] = tool
 	}
+	registryMu.RUnlock()
 	return filteredTools
 }
 
 // GetEnabledTools returns all tools that are enabled for MCP server registration
 func GetEnabledTools() map[string]tools.Tool {
-	filteredTools := make(map[string]tools.Tool)
+	registryMu.RLock()
+	filteredTools := make(map[string]tools.Tool, len(toolRegistry))
 	for name, tool := range toolRegistry {
 		// Skip disabled functions
 		if disabledTools[name] {
@@ -310,6 +313,7 @@ func GetEnabledTools() map[string]tools.Tool {
 
 		filteredTools[name] = tool
 	}
+	registryMu.RUnlock()
 	return filteredTools
 }
 
@@ -325,7 +329,8 @@ func GetCache() *sync.Map {
 
 // GetEnabledToolNames returns a sorted list of enabled tool names
 func GetEnabledToolNames() []string {
-	var names []string
+	registryMu.RLock()
+	names := make([]string, 0, len(toolRegistry))
 	for name := range toolRegistry {
 		// Skip disabled functions
 		if disabledTools[name] {
@@ -333,12 +338,14 @@ func GetEnabledToolNames() []string {
 		}
 		names = append(names, name)
 	}
+	registryMu.RUnlock()
 	sort.Strings(names)
 	return names
 }
 
 // GetToolNamesWithExtendedHelp returns a sorted list of enabled tool names that provide extended help
 func GetToolNamesWithExtendedHelp() []string {
+	registryMu.RLock()
 	var names []string
 	for name, tool := range toolRegistry {
 		// Skip disabled functions
@@ -356,6 +363,7 @@ func GetToolNamesWithExtendedHelp() []string {
 			names = append(names, name)
 		}
 	}
+	registryMu.RUnlock()
 	sort.Strings(names)
 	return names
 }

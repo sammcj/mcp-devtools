@@ -108,8 +108,8 @@ func (c *Client) SearchProviders(ctx context.Context, providerName, providerName
 	}
 
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("Available Documentation (top matches) for %s in Terraform provider %s/%s version: %s\n\n",
-		providerDataType, providerNamespace, providerName, providerVersion))
+	fmt.Fprintf(&builder, "Available Documentation (top matches) for %s in Terraform provider %s/%s version: %s\n\n",
+		providerDataType, providerNamespace, providerName, providerVersion)
 	builder.WriteString("Each result includes:\n- providerDocID: tfprovider-compatible identifier\n- Title: Service or resource name\n- Category: Type of document\n- Description: Brief summary of the document\n")
 	builder.WriteString("For best results, select libraries based on the service_slug match and category of information requested.\n\n---\n\n")
 
@@ -122,8 +122,8 @@ func (c *Client) SearchProviders(ctx context.Context, providerName, providerName
 				if err != nil {
 					c.logger.Warnf("Error fetching content snippet for provider doc ID: %s: %v", doc.ID, err)
 				}
-				builder.WriteString(fmt.Sprintf("- providerDocID: %s\n- Title: %s\n- Category: %s\n- Description: %s\n---\n",
-					doc.ID, doc.Title, doc.Category, descriptionSnippet))
+				fmt.Fprintf(&builder, "- providerDocID: %s\n- Title: %s\n- Category: %s\n- Description: %s\n---\n",
+					doc.ID, doc.Title, doc.Category, descriptionSnippet)
 			}
 		}
 	}
@@ -216,7 +216,7 @@ func (c *Client) SearchModules(ctx context.Context, moduleQuery string, currentO
 	}
 
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("Terraform Modules Search Results for: \"%s\"\n\n", moduleQuery))
+	fmt.Fprintf(&builder, "Terraform Modules Search Results for: \"%s\"\n\n", moduleQuery)
 	builder.WriteString("Each result includes:\n- moduleID: Module identifier for get_module_details\n- Name: Module name\n- Description: Module description\n- Downloads: Total download count\n- Verified: Official verification status\n- PublishedAt: Publication date\n\n---\n\n")
 
 	for _, module := range moduleResponse.Modules {
@@ -225,8 +225,8 @@ func (c *Client) SearchModules(ctx context.Context, moduleQuery string, currentO
 			verified = "Yes"
 		}
 
-		builder.WriteString(fmt.Sprintf("- moduleID: %s\n- Name: %s\n- Description: %s\n- Downloads: %d\n- Verified: %s\n- PublishedAt: %s\n---\n",
-			module.ID, module.Name, module.Description, module.Downloads, verified, module.PublishedAt))
+		fmt.Fprintf(&builder, "- moduleID: %s\n- Name: %s\n- Description: %s\n- Downloads: %d\n- Verified: %s\n- PublishedAt: %s\n---\n",
+			module.ID, module.Name, module.Description, module.Downloads, verified, module.PublishedAt)
 	}
 
 	result := map[string]any{
@@ -257,17 +257,17 @@ func (c *Client) GetModuleDetails(ctx context.Context, moduleID string) (*mcp.Ca
 	}
 
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("# Terraform Module: %s\n\n", moduleDetails.Name))
-	builder.WriteString(fmt.Sprintf("**Description:** %s\n\n", moduleDetails.Description))
-	builder.WriteString(fmt.Sprintf("**Source:** %s\n", moduleDetails.Source))
-	builder.WriteString(fmt.Sprintf("**Version:** %s\n", moduleDetails.Version))
-	builder.WriteString(fmt.Sprintf("**Downloads:** %d\n", moduleDetails.Downloads))
-	builder.WriteString(fmt.Sprintf("**Verified:** %t\n\n", moduleDetails.Verified))
+	fmt.Fprintf(&builder, "# Terraform Module: %s\n\n", moduleDetails.Name)
+	fmt.Fprintf(&builder, "**Description:** %s\n\n", moduleDetails.Description)
+	fmt.Fprintf(&builder, "**Source:** %s\n", moduleDetails.Source)
+	fmt.Fprintf(&builder, "**Version:** %s\n", moduleDetails.Version)
+	fmt.Fprintf(&builder, "**Downloads:** %d\n", moduleDetails.Downloads)
+	fmt.Fprintf(&builder, "**Verified:** %t\n\n", moduleDetails.Verified)
 
 	if len(moduleDetails.Inputs) > 0 {
 		builder.WriteString("## Inputs\n\n")
 		for _, input := range moduleDetails.Inputs {
-			builder.WriteString(fmt.Sprintf("- **%s** (%s): %s\n", input.Name, input.Type, input.Description))
+			fmt.Fprintf(&builder, "- **%s** (%s): %s\n", input.Name, input.Type, input.Description)
 		}
 		builder.WriteString("\n")
 	}
@@ -275,7 +275,7 @@ func (c *Client) GetModuleDetails(ctx context.Context, moduleID string) (*mcp.Ca
 	if len(moduleDetails.Outputs) > 0 {
 		builder.WriteString("## Outputs\n\n")
 		for _, output := range moduleDetails.Outputs {
-			builder.WriteString(fmt.Sprintf("- **%s**: %s\n", output.Name, output.Description))
+			fmt.Fprintf(&builder, "- **%s**: %s\n", output.Name, output.Description)
 		}
 		builder.WriteString("\n")
 	}
@@ -338,12 +338,12 @@ func (c *Client) SearchPolicies(ctx context.Context, policyQuery string) (*mcp.C
 	}
 
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("Terraform Policy Search Results for: \"%s\"\n\n", policyQuery))
+	fmt.Fprintf(&builder, "Terraform Policy Search Results for: \"%s\"\n\n", policyQuery)
 	builder.WriteString("Each result includes:\n- policyID: Policy identifier for get_policy_details\n- Name: Policy name\n- Title: Policy title\n- Downloads: Total download count\n\n---\n\n")
 
 	for _, policy := range policyResponse.Policies {
-		builder.WriteString(fmt.Sprintf("- policyID: %s\n- Name: %s\n- Title: %s\n- Downloads: %d\n---\n",
-			policy.ID, policy.Name, policy.Title, policy.Downloads))
+		fmt.Fprintf(&builder, "- policyID: %s\n- Name: %s\n- Title: %s\n- Downloads: %d\n---\n",
+			policy.ID, policy.Name, policy.Title, policy.Downloads)
 	}
 
 	result := map[string]any{
@@ -373,10 +373,10 @@ func (c *Client) GetPolicyDetails(ctx context.Context, policyID string) (*mcp.Ca
 	}
 
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("# Terraform Policy: %s\n\n", policyDetails.Name))
-	builder.WriteString(fmt.Sprintf("**Title:** %s\n\n", policyDetails.Title))
-	builder.WriteString(fmt.Sprintf("**Downloads:** %d\n", policyDetails.Downloads))
-	builder.WriteString(fmt.Sprintf("**Description:**\n%s\n\n", policyDetails.Description))
+	fmt.Fprintf(&builder, "# Terraform Policy: %s\n\n", policyDetails.Name)
+	fmt.Fprintf(&builder, "**Title:** %s\n\n", policyDetails.Title)
+	fmt.Fprintf(&builder, "**Downloads:** %d\n", policyDetails.Downloads)
+	fmt.Fprintf(&builder, "**Description:**\n%s\n\n", policyDetails.Description)
 
 	result := map[string]any{
 		"content":   builder.String(),
@@ -438,16 +438,16 @@ func (c *Client) getProviderDetailsV2(ctx context.Context, providerNamespace, pr
 	}
 
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("Available Documentation for %s in Terraform provider %s/%s version: %s\n\n",
-		category, providerNamespace, providerName, providerVersion))
+	fmt.Fprintf(&builder, "Available Documentation for %s in Terraform provider %s/%s version: %s\n\n",
+		category, providerNamespace, providerName, providerVersion)
 
 	for _, doc := range docsResponse.Data {
 		descriptionSnippet, err := c.getContentSnippet(ctx, doc.ID)
 		if err != nil {
 			c.logger.Warnf("Error fetching content snippet for provider doc ID: %s: %v", doc.ID, err)
 		}
-		builder.WriteString(fmt.Sprintf("- providerDocID: %s\n- Title: %s\n- Category: %s\n- Description: %s\n---\n",
-			doc.ID, doc.Attributes.Title, doc.Attributes.Category, descriptionSnippet))
+		fmt.Fprintf(&builder, "- providerDocID: %s\n- Title: %s\n- Category: %s\n- Description: %s\n---\n",
+			doc.ID, doc.Attributes.Title, doc.Attributes.Category, descriptionSnippet)
 	}
 
 	return builder.String(), nil
