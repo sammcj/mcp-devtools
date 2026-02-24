@@ -271,8 +271,8 @@ func RegisterProxiedTool(tool tools.Tool) {
 // GetTool retrieves a tool by name, returns false if disabled.
 // Safe to call concurrently with RegisterProxiedTool (protected by registryMu).
 func GetTool(name string) (tools.Tool, bool) {
-	// Check if function is disabled
-	if disabledTools[name] {
+	// Check if tool is disabled
+	if isToolDisabled(name) {
 		return nil, false
 	}
 	registryMu.RLock()
@@ -286,7 +286,7 @@ func GetTools() map[string]tools.Tool {
 	registryMu.RLock()
 	filteredTools := make(map[string]tools.Tool, len(toolRegistry))
 	for name, tool := range toolRegistry {
-		// Skip disabled functions
+		// Skip disabled tools
 		if isToolDisabled(name) {
 			continue
 		}
@@ -301,7 +301,7 @@ func GetEnabledTools() map[string]tools.Tool {
 	registryMu.RLock()
 	filteredTools := make(map[string]tools.Tool, len(toolRegistry))
 	for name, tool := range toolRegistry {
-		// Skip disabled functions
+		// Skip disabled tools
 		if isToolDisabled(name) {
 			continue
 		}
@@ -338,10 +338,22 @@ func GetEnabledToolNames() []string {
 	registryMu.RLock()
 	names := make([]string, 0, len(toolRegistry))
 	for name := range toolRegistry {
-		// Skip disabled functions
+		// Skip disabled tools
 		if isToolDisabled(name) {
 			continue
 		}
+
+		// Include proxied tools (bypass enablement check)
+		if proxiedTools[name] {
+			names = append(names, name)
+			continue
+		}
+
+		// Skip tools that require enablement but aren't enabled
+		if requiresEnablement(name) && !isToolEnabled(name) {
+			continue
+		}
+
 		names = append(names, name)
 	}
 	registryMu.RUnlock()
@@ -354,7 +366,7 @@ func GetToolNamesWithExtendedHelp() []string {
 	registryMu.RLock()
 	var names []string
 	for name, tool := range toolRegistry {
-		// Skip disabled functions
+		// Skip disabled tools
 		if isToolDisabled(name) {
 			continue
 		}

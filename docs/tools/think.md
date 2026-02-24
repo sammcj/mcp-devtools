@@ -4,7 +4,7 @@ A concise scratchpad for reasoning through a single question or decision. Does n
 
 ## Overview
 
-Based on Anthropic's research, the Think tool allows AI agents to pause and reason through a problem before taking action. Keep thoughts brief and focused: 2-4 sentences (~50-150 words). For multi-step reasoning, revision, or branching analysis, use `sequential_thinking` instead.
+Based on Anthropic's research, the Think tool allows AI agents to pause and reason through a problem before taking action. Keep thoughts brief and focused: 1-2 sentences (~50-150 words). For multi-step reasoning, revision, or branching analysis, use `sequential_thinking` instead.
 
 ## When to Use Think vs Sequential Thinking
 
@@ -20,7 +20,7 @@ Based on Anthropic's research, the Think tool allows AI agents to pause and reas
 
 ### Required Parameters
 
-- **`thought`** (string): A brief reasoning note -- 2-4 sentences covering what you're considering and your conclusion
+- **`thought`** (string): A brief reasoning note -- 1-2 sentences covering what you're considering and your conclusion
   - **Maximum length**: Configurable via `THINK_MAX_LENGTH` environment variable (default: 2000 characters, ~300 words)
   - **Note**: The tool includes a 500-character safety buffer above the configured limit to accommodate AI agents' imprecise character counting, whilst still encouraging concise thoughts
   - **Guidance**: State what you need to reason about, your conclusion or next step, and why. Do NOT include multi-step analyses, inline code blocks, or exhaustive breakdowns
@@ -123,7 +123,7 @@ Based on Anthropic's research, the Think tool allows AI agents to pause and reas
 ## Best Practices
 
 ### Keep It Brief
-Each thought should be 2-4 sentences. State the problem, your conclusion, and why.
+Each thought should be 1-2 sentences. State the problem, your conclusion, and why.
 
 **Good** -- specific and concise:
 ```json

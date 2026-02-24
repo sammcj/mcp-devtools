@@ -46,7 +46,7 @@ func (t *SequentialThinkingTool) Definition() mcp.Tool {
 		mcp.WithDescription(`A multi-step reasoning tool for dynamic and reflective problem-solving through sequential thoughts. Each step should be a focused, concise observation or decision (1-3 sentences per step, ~50-100 words). Only use for complex problems.
 
 When to use instead of think:
-- Breaking down complex problems into steps (more than 2-4 sentences of reasoning needed)
+- Breaking down complex problems into steps (more than 1-2 sentences of reasoning needed)
 - You need to revise or branch your analysis
 - The full scope is unclear and you may need course correction
 

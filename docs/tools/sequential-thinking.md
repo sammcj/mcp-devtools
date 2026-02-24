@@ -5,7 +5,7 @@ Multi-step reasoning tool for problems that need more than a quick thought. Each
 ## Overview
 
 Use `sequential_thinking` instead of `think` when:
-- The problem needs more than 2-4 sentences of reasoning
+- The problem needs more than 1-2 sentences of reasoning
 - You need to revise or branch your analysis
 - The full scope is unclear and you may need course correction
 
@@ -15,7 +15,7 @@ The tool handles numbering, tracking, and branching automatically -- focus on yo
 
 - **Auto-Managed State**: Automatic thought numbering and progress tracking
 - **Smart Revision Detection**: Simply reference previous thoughts to revise
-- **Simple Branching**: Use explore labels for alternative approaches  
+- **Simple Branching**: Use explore labels for alternative approaches
 - **Dynamic Adaptation**: Tool adjusts to your thinking flow automatically
 - **Context Preservation**: Complete thought history maintained
 - **Flexible Process**: Add, revise, or explore thoughts naturally
@@ -65,7 +65,7 @@ When facing multi-faceted challenges requiring systematic analysis:
 When new information contradicts earlier thinking:
 ```json
 {
-  "name": "sequential_thinking", 
+  "name": "sequential_thinking",
   "arguments": {
     "action": "think",
     "thought": "Actually, my earlier assumption was wrong. The logs show connection pool exhaustion, not individual connection failures.",
@@ -81,7 +81,7 @@ When considering different paths:
 {
   "name": "sequential_thinking",
   "arguments": {
-    "action": "think", 
+    "action": "think",
     "thought": "What if we used GraphQL instead of REST? This could simplify the client interface significantly.",
     "continue": true,
     "explore": "graphql-alternative"
@@ -132,7 +132,7 @@ For comprehensive usage guide with examples:
 
 - **Reduced Cognitive Load**: No manual numbering or tracking
 - **Natural Flow**: Think naturally, tool handles structure
-- **Smart Automation**: Automatic state management and progress tracking  
+- **Smart Automation**: Automatic state management and progress tracking
 - **Flexible Process**: Adapt thinking process dynamically
 - **Clear Output**: Formatted display shows thinking progression
 

@@ -48,16 +48,14 @@ func (t *ThinkTool) Definition() mcp.Tool {
 	maxLen := getMaxThoughtLength()
 
 	// Build description, conditionally including sequential_thinking reference
-	desc := `A scratchpad for reasoning when you're stuck on a problem or decision after attempting it normally. Does not retrieve information or modify anything - just records the thought. Only use for complex problems or persistent issues, not routine decisions or first-pass reasoning.
-
-State what you need to reason about and why. 2-4 concise sentences, no code.`
+	desc := `A scratchpad for reasoning when you're stuck on a problem or decision after attempting it normally. Does not retrieve information or modify anything - just records a short thought. Only use for complex problems or persistent issues, not routine decisions or first-pass reasoning. State what you need to reason about and why. 1-2 concise sentences, no code.`
 
 	if _, ok := registry.GetTool("sequential_thinking"); ok {
 		desc += "\n\nFor multi-step reasoning, revision, or branching analysis, use sequential_thinking instead."
 	}
 
 	// Build thought parameter description, conditionally referencing sequential_thinking
-	thoughtDesc := "Brief reasoning note: 2-4 sentences. What you're stuck on and your conclusion."
+	thoughtDesc := "Brief reasoning note: 1-2 sentences. What you're stuck on and your conclusion."
 	if _, ok := registry.GetTool("sequential_thinking"); ok {
 		thoughtDesc += " For lengthy analysis, use sequential_thinking."
 	}
@@ -113,7 +111,7 @@ func (t *ThinkTool) parseRequest(args map[string]any) (*ThinkRequest, error) {
 	configuredMaxLength := getMaxThoughtLength()
 	actualMaxLength := configuredMaxLength + ThinkLengthSafetyBuffer
 	if len(thought) > actualMaxLength {
-		return nil, fmt.Errorf("'thought' exceeds maximum length of %d characters (you sent %d chars, ~%d words). The think tool is for brief 2-4 sentence notes. For multi-step reasoning, use sequential_thinking instead", configuredMaxLength, len(thought), len(strings.Fields(thought)))
+		return nil, fmt.Errorf("'thought' exceeds maximum length of %d characters (you sent %d chars, ~%d words). The think tool is for brief 1-2 sentence notes. For multi-step reasoning, use sequential_thinking instead", configuredMaxLength, len(thought), len(strings.Fields(thought)))
 	}
 
 	// Parse how_hard (optional, defaults to "hard")
