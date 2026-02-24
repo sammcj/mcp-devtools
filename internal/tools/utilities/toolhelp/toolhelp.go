@@ -25,17 +25,10 @@ func init() {
 func (t *ToolHelpTool) Definition() mcp.Tool {
 	// Get only tools that provide extended help
 	toolsWithExtendedHelp := registry.GetToolNamesWithExtendedHelp()
-	toolList := strings.Join(toolsWithExtendedHelp, ", ")
 
 	var description string
 	if len(toolsWithExtendedHelp) > 0 {
-		description = fmt.Sprintf(
-			"Get detailed usage information, examples, and troubleshooting for tools provided by MCP DevTools. "+
-				"Provides comprehensive guidance including parameter constraints, common patterns, and error solutions. "+
-				"Use when you are encountering unexpected errors with these specific tools:"+
-				"Extended help available for: [ %s ]. ",
-			toolList,
-		)
+		description = "Get detailed usage examples and troubleshooting for MCP DevTools tools when encountering unexpected errors."
 	} else {
 		description = "No tools currently provide extended help information."
 	}
@@ -51,7 +44,7 @@ func (t *ToolHelpTool) Definition() mcp.Tool {
 		mcp.WithDescription(description),
 		mcp.WithString("tool_name",
 			mcp.Required(),
-			mcp.Description(fmt.Sprintf("Name of the DevTools tool that provides extended help. MUST be one of: %s", toolList)),
+			mcp.Description("Name of the DevTools tool to get help for"),
 			mcp.Enum(enumValues...),
 		),
 		// Read-only annotations for help information tool

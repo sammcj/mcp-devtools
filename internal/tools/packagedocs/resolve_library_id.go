@@ -38,12 +38,6 @@ Selection Process:
 - Documentation coverage (prioritise libraries with higher Code Snippet counts)
 - Trust score (consider libraries with scores of 7-10 more authoritative)
 
-Response Format:
-- Return the selected library ID in a clearly marked section
-- Provide a brief explanation for why this library was chosen
-- If multiple good matches exist, acknowledge this but proceed with the most relevant one
-- If no good matches exist, clearly state this and suggest query refinements
-
 For ambiguous queries, request clarification before proceeding with a best-guess match.`),
 		mcp.WithString("libraryName",
 			mcp.Required(),
