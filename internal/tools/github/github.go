@@ -28,21 +28,6 @@ func (t *GitHubTool) Definition() mcp.Tool {
 		"github",
 		mcp.WithDescription(`Access GitHub repositories, issues, PRs and workflows.
 
-Functions and their required parameters:
-
-• search_repositories: options.query (r), repository (o), options.limit (o)
-• search_issues: repository (r), options.query (o), options.limit (o)
-• search_pull_requests: repository (r), options.query (o), options.limit (o)
-• get_issue: repository (r), options.number (required unless repository contains full issue URL), options.include_comments (o)
-• get_pull_request: repository (r), options.number (required unless repository contains full PR URL), options.include_comments (o)
-• get_file_contents: repository (r), options.paths (r), options.ref (o) - Returns partial results even if some files fail. Large files get truncated with guidance on retrieving remaining lines using options.line_start
-• list_directory: repository (r), options.path (optional), options.ref (o) - List directory contents to explore repository structure
-• clone_repository: repository (r), options.local_path (o)
-• get_workflow_run: repository (r), options.run_id (required unless repository contains full workflow URL), options.include_logs (o)
-
-(o) = optional
-(r) = required
-
 Repository accepts: owner/repo, GitHub URLs, or full issue/PR/workflow URLs.`),
 		mcp.WithString("function",
 			mcp.Required(),
@@ -53,11 +38,11 @@ Repository accepts: owner/repo, GitHub URLs, or full issue/PR/workflow URLs.`),
 			mcp.Description("Identifier: owner/repo, GitHub URL, or full URL for specific issue/PR/workflow"),
 		),
 		mcp.WithObject("options",
-			mcp.Description("Function-specific options - see function description parameters"),
+			mcp.Description("Function-specific options"),
 			mcp.Properties(map[string]any{
 				"query": map[string]any{
 					"type":        "string",
-					"description": "Search query string (for search_repositories, search_issues, search_pull_requests)",
+					"description": "Search query (for search functions)",
 				},
 				"limit": map[string]any{
 					"type":        "number",
@@ -66,49 +51,49 @@ Repository accepts: owner/repo, GitHub URLs, or full issue/PR/workflow URLs.`),
 				},
 				"number": map[string]any{
 					"type":        "number",
-					"description": "Issue or PR number (required for get_issue/get_pull_request unless using full URL)",
+					"description": "Issue or PR number (not needed if using full URL)",
 				},
 				"run_id": map[string]any{
 					"type":        "number",
-					"description": "Workflow run ID (required for get_workflow_run unless using full URL)",
+					"description": "Workflow run ID (not needed if using full URL)",
 				},
 				"include_comments": map[string]any{
 					"type":        "boolean",
-					"description": "Include comments for issues/PRs (false)",
+					"description": "Include comments for issues/PRs (default: false)",
 					"default":     false,
 				},
 				"include_logs": map[string]any{
 					"type":        "boolean",
-					"description": "Include workflow run logs (false)",
+					"description": "Include workflow run logs (default: false)",
 					"default":     false,
 				},
 				"include_closed": map[string]any{
 					"type":        "boolean",
-					"description": "Include closed issues/PRs in search results (false, only open)",
+					"description": "Include closed issues/PRs (default: false, only open)",
 					"default":     false,
 				},
 				"paths": map[string]any{
 					"type":        "array",
-					"description": "Array of file paths to retrieve (required for get_file_contents)",
+					"description": "File paths to retrieve (for get_file_contents). Large files get truncated with guidance on using line_start",
 					"items": map[string]any{
 						"type": "string",
 					},
 				},
 				"path": map[string]any{
 					"type":        "string",
-					"description": "Directory path to list (optional for list_directory)",
+					"description": "Directory path to list (for list_directory)",
 				},
 				"ref": map[string]any{
 					"type":        "string",
-					"description": "Git reference - branch, tag, or commit SHA (optional for get_file_contents)",
+					"description": "Git reference - branch, tag, or commit SHA",
 				},
 				"line_start": map[string]any{
 					"type":        "number",
-					"description": "Starting line number (1-based, optional). Only use this when a file is truncated to retrieve subsequent sections",
+					"description": "Starting line number (1-based) to retrieve subsequent sections of truncated files",
 				},
 				"local_path": map[string]any{
 					"type":        "string",
-					"description": "Local directory path for cloning (optional for clone_repository)",
+					"description": "Local directory path for cloning",
 				},
 			}),
 		),

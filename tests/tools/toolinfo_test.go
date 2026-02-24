@@ -83,8 +83,8 @@ func TestToolHelpTool_Definition(t *testing.T) {
 		t.Errorf("Expected description to reference MCP DevTools, got: %s", desc)
 	}
 
-	if !testutils.Contains(desc, "parameter constraints, common patterns") {
-		t.Errorf("Expected description to mention parameter constraints, got: %s", desc)
+	if !testutils.Contains(desc, "troubleshooting") {
+		t.Errorf("Expected description to mention troubleshooting, got: %s", desc)
 	}
 
 	// Test input schema exists

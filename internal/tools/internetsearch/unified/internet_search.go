@@ -137,41 +137,14 @@ func (t *InternetSearchTool) Definition() mcp.Tool {
 	// Check which providers are available
 	_, hasBrave := t.providers["brave"]
 	_, hasGoogle := t.providers["google"]
-	_, hasKagi := t.providers["kagi"]
 	_, hasSearXNG := t.providers["searxng"]
-
-	// Build provider-specific parameter description
-	var providerSpecificParams []string
-	if hasBrave {
-		providerSpecificParams = append(providerSpecificParams, "- Brave: freshness (pd/pw/pm/py), offset (internet search only)")
-	}
-	if hasGoogle {
-		providerSpecificParams = append(providerSpecificParams, "- Google: start (pagination offset)")
-	}
-	if hasKagi {
-		providerSpecificParams = append(providerSpecificParams, "- Kagi: No provider-specific parameters")
-	}
-	if hasSearXNG {
-		providerSpecificParams = append(providerSpecificParams, "- SearXNG: pageno, time_range (day/month/year), language, safesearch")
-	}
 
 	description := fmt.Sprintf(`Search the internet for information and links. Supports multiple queries executed in parallel.
 
 Available Providers: [%s]
 Default Provider: %s
-
-Search Types: %v
-
-Examples:
-- Single query: {"query": ["golang best practices"]}
-- Multiple queries: {"query": ["golang best practices", "rust vs go performance"], "count": 3}
-
-Provider-specific optional parameters:
-%s
-
-After you have received the results you can fetch the url if you want to read the full content.
-`,
-		strings.Join(availableProviders, ", "), defaultProvider, typesList, strings.Join(providerSpecificParams, "\n"))
+Search Types: %v`,
+		strings.Join(availableProviders, ", "), defaultProvider, typesList)
 
 	enumValues := make([]string, 0, len(typesList))
 	enumValues = append(enumValues, typesList...)
