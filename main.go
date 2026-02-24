@@ -128,17 +128,8 @@ func main() {
 	// Ensure cleanup runs on normal exit OR signal
 	defer performCleanup(logger)
 
-	// Register upstream proxy tools BEFORE creating MCP server
-	// This can block for OAuth authentication - that's fine, we haven't started the server yet
-	// MCP clients will wait during connection, which is normal behaviour
-	if err := registerUpstreamProxyTools(ctx); err != nil {
-		logger.WithError(err).Error("Proxy: upstream registration failed (fallback proxy tool available)")
-	} else {
-		// Check if proxy was configured
-		if os.Getenv("PROXY_UPSTREAMS") != "" || os.Getenv("PROXY_URL") != "" {
-			logger.Info("Proxy: upstream tools registered successfully")
-		}
-	}
+	// NOTE: Upstream proxy tool registration is now async -- see RegisterUpstreamToolsAsync()
+	// called after the MCP server is created. This avoids blocking startup for OAuth flows.
 
 	// Create and run the CLI app
 	app := &cli.Command{
@@ -406,7 +397,6 @@ func main() {
 			}
 
 			// Create MCP server
-			// Note: Upstream proxy tools are already registered in main() before CLI runs
 			logger.Debug("Creating MCP server")
 			mcpSrv := mcpserver.NewMCPServer("mcp-devtools", "MCP DevTools Server")
 
@@ -431,9 +421,14 @@ func main() {
 					}
 
 					// Type assert the arguments to map[string]interface{}
-					args, ok := request.Params.Arguments.(map[string]any)
-					if !ok {
-						return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
+					var args map[string]any
+					if request.Params.Arguments != nil {
+						args, ok = request.Params.Arguments.(map[string]any)
+						if !ok {
+							return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
+						}
+					} else {
+						args = make(map[string]any)
 					}
 
 					// Start timing for metrics
@@ -480,6 +475,10 @@ func main() {
 					return result, nil
 				})
 			}
+
+			// Register upstream proxy tools asynchronously (avoids blocking startup for OAuth)
+			// mcp-go will automatically notify connected clients via tools/list_changed
+			proxy.RegisterUpstreamToolsAsync(cliCtx, mcpSrv, logger, transport)
 
 			// Handle browser-based OAuth authentication if enabled
 			if cmd.Bool("oauth-browser-auth") {
@@ -544,16 +543,6 @@ func main() {
 		}
 		os.Exit(1)
 	}
-}
-
-// registerUpstreamProxyTools attempts to register upstream tools before MCP server starts.
-// This can block for OAuth authentication, which is acceptable before server creation.
-func registerUpstreamProxyTools(ctx context.Context) error {
-	// Call proxy registration with no fast-path mode (allow full OAuth)
-	if proxy.RegisterUpstreamTools(ctx, false) {
-		return nil
-	}
-	return fmt.Errorf("upstream tools not registered")
 }
 
 // performCleanup handles cleanup of resources on shutdown

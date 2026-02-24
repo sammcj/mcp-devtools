@@ -85,10 +85,12 @@ func InitGlobalErrorLogger(logger *logrus.Logger) error {
 			filePath: logFilePath,
 		}
 
-		// Perform log rotation to clean up old entries
-		if rotateErr := globalErrorLogger.rotateOldLogs(); rotateErr != nil {
-			logger.WithError(rotateErr).Warn("Failed to rotate old tool error logs")
-		}
+		// Perform log rotation in background to avoid blocking startup
+		go func() {
+			if rotateErr := globalErrorLogger.rotateOldLogs(); rotateErr != nil {
+				logger.WithError(rotateErr).Warn("Failed to rotate old tool error logs")
+			}
+		}()
 
 		// Log initialisation message
 		logger.Infof("Tool error logging enabled: %s", logFilePath)
@@ -110,12 +112,16 @@ func GetGlobalErrorLogger() *ToolErrorLogger {
 
 // LogToolError logs a tool execution error
 func (l *ToolErrorLogger) LogToolError(toolName string, args map[string]any, err error, transport string) {
-	if !l.enabled || l.logFile == nil {
+	if !l.enabled {
 		return
 	}
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	if l.logFile == nil {
+		return
+	}
 
 	entry := ToolErrorLogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
@@ -152,13 +158,16 @@ func (l *ToolErrorLogger) LogToolError(toolName string, args map[string]any, err
 
 // Close closes the error logger and its log file
 func (l *ToolErrorLogger) Close() error {
-	if !l.enabled || l.logFile == nil {
+	if !l.enabled {
 		return nil
 	}
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	if l.logFile == nil {
+		return nil
+	}
 	return l.logFile.Close()
 }
 
@@ -172,29 +181,31 @@ func (l *ToolErrorLogger) GetLogFilePath() string {
 	return l.filePath
 }
 
-// rotateOldLogs removes log entries older than the retention period
+// rotateOldLogs removes log entries older than the retention period.
+// Safe to call from a goroutine -- holds the mutex for the entire operation
+// to prevent LogToolError from writing to a closed file during rotation.
 func (l *ToolErrorLogger) rotateOldLogs() error {
 	if !l.enabled || l.filePath == "" {
 		return nil
 	}
 
-	// Close current log file temporarily
 	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	// Close current log file
 	if l.logFile != nil {
 		if err := l.logFile.Close(); err != nil {
-			l.mu.Unlock()
 			return fmt.Errorf("failed to close log file for rotation: %w", err)
 		}
+		l.logFile = nil
 	}
-	l.mu.Unlock()
 
 	// Read all log entries
 	file, err := os.Open(l.filePath)
 	if err != nil {
 		// If file doesn't exist, just reopen and return
-		return l.reopenLogFile()
+		return l.reopenLogFileLocked()
 	}
-	defer func() { _ = file.Close() }()
 
 	var validEntries []string
 	cutoffTime := time.Now().AddDate(0, 0, -DefaultLogRetentionDays)
@@ -228,35 +239,35 @@ func (l *ToolErrorLogger) rotateOldLogs() error {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		// Reopen the file and return error
-		_ = l.reopenLogFile()
-		return fmt.Errorf("error reading log file during rotation: %w", err)
+	scanErr := scanner.Err()
+	_ = file.Close()
+
+	if scanErr != nil {
+		_ = l.reopenLogFileLocked()
+		return fmt.Errorf("error reading log file during rotation: %w", scanErr)
 	}
 
 	// Write back only valid entries using atomic file replacement
 	tmpPath := l.filePath + ".tmp"
 	if err := os.WriteFile(tmpPath, []byte(strings.Join(validEntries, "\n")+"\n"), 0600); err != nil {
-		_ = l.reopenLogFile()
+		_ = l.reopenLogFileLocked()
 		return fmt.Errorf("failed to write temporary rotated log file: %w", err)
 	}
 
 	// Atomically replace the original log file with the temporary file
 	if err := os.Rename(tmpPath, l.filePath); err != nil {
 		_ = os.Remove(tmpPath) // Clean up temp file on failure
-		_ = l.reopenLogFile()
+		_ = l.reopenLogFileLocked()
 		return fmt.Errorf("failed to rename temporary log file during rotation: %w", err)
 	}
 
 	// Reopen the log file in append mode
-	return l.reopenLogFile()
+	return l.reopenLogFileLocked()
 }
 
-// reopenLogFile reopens the log file in append mode
-func (l *ToolErrorLogger) reopenLogFile() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
+// reopenLogFileLocked reopens the log file in append mode.
+// Caller must hold l.mu.
+func (l *ToolErrorLogger) reopenLogFileLocked() error {
 	logFile, err := os.OpenFile(l.filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to reopen log file: %w", err)

@@ -194,8 +194,8 @@ func (t *PDFTool) processPDF(logger *logrus.Logger, request *PDFRequest, conf *m
 	var markdownContent strings.Builder
 
 	// Add header to markdown
-	markdownContent.WriteString(fmt.Sprintf("# %s\n\n", baseName))
-	markdownContent.WriteString(fmt.Sprintf("*Extracted from: %s*\n\n", filepath.Base(request.FilePath)))
+	fmt.Fprintf(&markdownContent, "# %s\n\n", baseName)
+	fmt.Fprintf(&markdownContent, "*Extracted from: %s*\n\n", filepath.Base(request.FilePath))
 
 	// Get page count
 	pageCount, err := api.PageCountFile(request.FilePath)
@@ -246,12 +246,12 @@ func (t *PDFTool) processPDF(logger *logrus.Logger, request *PDFRequest, conf *m
 		pageContent, err := t.extractPageContent(request.FilePath, pageNum, conf, logger)
 		if err != nil {
 			logger.WithError(err).WithField("page", pageNum).Error("Failed to extract content from page")
-			markdownContent.WriteString(fmt.Sprintf("## Page %d\n\n*Content extraction failed: %v*\n\n", pageNum, err))
+			fmt.Fprintf(&markdownContent, "## Page %d\n\n*Content extraction failed: %v*\n\n", pageNum, err)
 			continue
 		}
 
 		// Add page header
-		markdownContent.WriteString(fmt.Sprintf("## Page %d\n\n", pageNum))
+		fmt.Fprintf(&markdownContent, "## Page %d\n\n", pageNum)
 
 		// Process and add content
 		processedContent := t.processPageContent(pageContent)
@@ -262,7 +262,7 @@ func (t *PDFTool) processPDF(logger *logrus.Logger, request *PDFRequest, conf *m
 		pageImages := t.getImagesForPage(extractedImages, pageNum)
 		for _, imagePath := range pageImages {
 			relativeImagePath, _ := filepath.Rel(request.OutputDir, imagePath)
-			markdownContent.WriteString(fmt.Sprintf("![Image from page %d](%s)\n\n", pageNum, relativeImagePath))
+			fmt.Fprintf(&markdownContent, "![Image from page %d](%s)\n\n", pageNum, relativeImagePath)
 		}
 	}
 

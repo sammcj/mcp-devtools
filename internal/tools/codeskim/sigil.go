@@ -25,14 +25,14 @@ func FormatSigil(result *FileResult) string {
 	var sb strings.Builder
 
 	// Header with file path and language
-	sb.WriteString(fmt.Sprintf("# %s [%s]\n", result.Path, result.Language))
+	fmt.Fprintf(&sb, "# %s [%s]\n", result.Path, result.Language)
 
 	// If we have graph data, use it
 	if result.Graph != nil {
 		// Imports
 		if len(result.Graph.Imports) > 0 {
 			for _, imp := range result.Graph.Imports {
-				sb.WriteString(fmt.Sprintf("!%s ", imp))
+				fmt.Fprintf(&sb, "!%s ", imp)
 			}
 			sb.WriteString("\n")
 		}
@@ -70,15 +70,15 @@ func formatClassSigil(class ClassInfo) string {
 	var sb strings.Builder
 
 	// Class name with inheritance
-	sb.WriteString(fmt.Sprintf("$%s", class.Name))
+	fmt.Fprintf(&sb, "$%s", class.Name)
 
 	if class.Extends != "" {
-		sb.WriteString(fmt.Sprintf(" < %s", class.Extends))
+		fmt.Fprintf(&sb, " < %s", class.Extends)
 	}
 
 	if len(class.Implements) > 0 {
 		for _, impl := range class.Implements {
-			sb.WriteString(fmt.Sprintf(" & %s", impl))
+			fmt.Fprintf(&sb, " & %s", impl)
 		}
 	}
 
@@ -86,7 +86,7 @@ func formatClassSigil(class ClassInfo) string {
 
 	// Methods (indented)
 	for _, method := range class.Methods {
-		sb.WriteString(fmt.Sprintf("  #%s()\n", method))
+		fmt.Fprintf(&sb, "  #%s()\n", method)
 	}
 
 	return sb.String()
@@ -96,19 +96,19 @@ func formatClassSigil(class ClassInfo) string {
 func formatFunctionSigil(fn FunctionInfo, indent string) string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("%s#%s()", indent, fn.Name))
+	fmt.Fprintf(&sb, "%s#%s()", indent, fn.Name)
 
 	// Calls
 	if len(fn.Calls) > 0 {
 		sb.WriteString(" ->")
 		for _, call := range fn.Calls {
-			sb.WriteString(fmt.Sprintf(" #%s", call))
+			fmt.Fprintf(&sb, " #%s", call)
 		}
 	}
 
 	// Connectivity rating (★)
 	if fn.Connectivity > 0 {
-		sb.WriteString(fmt.Sprintf(" ★%d", fn.Connectivity))
+		fmt.Fprintf(&sb, " ★%d", fn.Connectivity)
 	}
 
 	sb.WriteString("\n")
@@ -126,12 +126,12 @@ func FormatSigilResponse(response *SkimResponse) string {
 
 	// Header
 	sb.WriteString("# MCP DevTools - Compressed Codebase\n")
-	sb.WriteString(fmt.Sprintf("# %d files\n\n", len(response.Files)))
+	fmt.Fprintf(&sb, "# %d files\n\n", len(response.Files))
 
 	// Format each file
 	for _, file := range response.Files {
 		if file.Error != "" {
-			sb.WriteString(fmt.Sprintf("# %s [ERROR: %s]\n\n", file.Path, file.Error))
+			fmt.Fprintf(&sb, "# %s [ERROR: %s]\n\n", file.Path, file.Error)
 			continue
 		}
 

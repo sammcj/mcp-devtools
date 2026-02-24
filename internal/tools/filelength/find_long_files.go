@@ -151,9 +151,9 @@ func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, 
 			sizeDisplay = fmt.Sprintf("%dKB", maxFileSizeKB)
 		}
 
-		output.WriteString(fmt.Sprintf("\n## Skipped Files (>%s)\n\nThe following files were skipped due to being larger than %s:\n\n", sizeDisplay, sizeDisplay))
+		fmt.Fprintf(&output, "\n## Skipped Files (>%s)\n\nThe following files were skipped due to being larger than %s:\n\n", sizeDisplay, sizeDisplay)
 		for _, file := range response.SkippedLargeFiles {
-			output.WriteString(fmt.Sprintf("- `%s`\n", file))
+			fmt.Fprintf(&output, "- `%s`\n", file)
 		}
 	}
 
@@ -623,9 +623,9 @@ func (t *FindLongFilesTool) generateChecklist(files []FileInfo, request *FindLon
 	calculationTime := time.Since(startTime).Seconds()
 	timeFormatted := fmt.Sprintf("%.1fs", calculationTime)
 
-	builder.WriteString(fmt.Sprintf("# Checklist of files over %d lines\n\n", request.LineThreshold))
-	builder.WriteString(fmt.Sprintf("Last checked: %s\n", startTime.Format("2006-01-02 15:04:05")))
-	builder.WriteString(fmt.Sprintf("Calculated in: %s\n\n", timeFormatted))
+	fmt.Fprintf(&builder, "# Checklist of files over %d lines\n\n", request.LineThreshold)
+	fmt.Fprintf(&builder, "Last checked: %s\n", startTime.Format("2006-01-02 15:04:05"))
+	fmt.Fprintf(&builder, "Calculated in: %s\n\n", timeFormatted)
 
 	if len(files) == 0 {
 		builder.WriteString("No files found exceeding the line threshold.\n")
@@ -634,7 +634,7 @@ func (t *FindLongFilesTool) generateChecklist(files []FileInfo, request *FindLon
 
 	for _, file := range files {
 		sizeFormatted := t.formatFileSize(file.SizeBytes)
-		builder.WriteString(fmt.Sprintf("- [ ] `%s`: %d Lines, %s\n", file.Path, file.LineCount, sizeFormatted))
+		fmt.Fprintf(&builder, "- [ ] `%s`: %d Lines, %s\n", file.Path, file.LineCount, sizeFormatted)
 	}
 
 	return builder.String()

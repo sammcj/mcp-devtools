@@ -2,7 +2,6 @@ package registry
 
 import (
 	"os"
-	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -11,15 +10,51 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// defaultToolSet is the pre-computed set of tools enabled by default (normalised names).
+// Built once at package init time to avoid repeated linear scans + string normalisation.
+var defaultToolSet = func() map[string]bool {
+	defaults := []string{
+		"calculator",
+		"fetch-url",
+		"get-library-documentation",
+		"get-tool-help",
+		"github",
+		"internet-search",
+		"resolve-library-id",
+		"search-packages",
+		"sequential-thinking",
+		"think",
+	}
+	m := make(map[string]bool, len(defaults))
+	for _, name := range defaults {
+		m[name] = true
+	}
+	return m
+}()
+
+// toolNameAliases maps normalised tool names to additional accepted aliases.
+var toolNameAliases = map[string][]string{
+	"shadcn": {"shadcn-ui"},
+}
+
 var (
-	// toolRegistry is a map of tool names to tool implementations
-	toolRegistry = make(map[string]tools.Tool) // Initialise here
+	// toolRegistry is a map of tool names to tool implementations.
+	// Protected by registryMu for concurrent access (async proxy registration).
+	toolRegistry = make(map[string]tools.Tool)
+	registryMu   sync.RWMutex
 
 	// proxiedTools tracks tools proxied from upstream MCP servers
 	proxiedTools = make(map[string]bool)
 
 	// disabledTools is a set of tool names to disable
 	disabledTools = make(map[string]bool)
+
+	// enabledAdditionalTools is the cached, parsed set of tools from ENABLE_ADDITIONAL_TOOLS.
+	// Parsed lazily on first access via sync.Once to ensure it's available during init().
+	enabledAdditionalTools map[string]bool
+	// enableAllTools is true when ENABLE_ADDITIONAL_TOOLS is set to "all".
+	enableAllTools        bool
+	enabledToolsParseOnce sync.Once
 
 	// logger is the shared logger instance
 	logger *logrus.Logger
@@ -28,13 +63,29 @@ var (
 	cache *sync.Map
 )
 
-// Init initialises the registry and shared resources
+// normaliseName converts a tool name to its canonical form (lowercase, hyphens).
+func normaliseName(name string) string {
+	return strings.ToLower(strings.ReplaceAll(strings.TrimSpace(name), "_", "-"))
+}
+
+// isToolDisabled checks if a tool is in the disabled set, normalising the name for lookup.
+func isToolDisabled(toolName string) bool {
+	return disabledTools[normaliseName(toolName)]
+}
+
+// Init initialises the registry and shared resources.
+// Also re-parses environment variables, which allows tests to update env vars
+// between calls to Init().
 func Init(l *logrus.Logger) {
 	logger = l
 	cache = &sync.Map{}
 
 	// Parse DISABLED_TOOLS environment variable
 	parseDisabledTools()
+
+	// Reset and re-parse ENABLE_ADDITIONAL_TOOLS (supports test re-initialisation)
+	enabledToolsParseOnce = sync.Once{}
+	ensureEnabledToolsParsed()
 }
 
 // parseDisabledTools parses the DISABLED_TOOLS and DISABLED_FUNCTIONS (legacy) environment variables
@@ -55,9 +106,10 @@ func parseDisabledTools() {
 		for tool := range tools {
 			tool = strings.TrimSpace(tool)
 			if tool != "" {
-				disabledTools[tool] = true
+				normalised := normaliseName(tool)
+				disabledTools[normalised] = true
 				if logger != nil {
-					logger.WithField("tool", tool).WithField("source", source).Debug("Tool disabled")
+					logger.WithField("tool", normalised).WithField("source", source).Debug("Tool disabled")
 				}
 			}
 		}
@@ -79,35 +131,48 @@ func parseDisabledTools() {
 	}
 }
 
+// ensureEnabledToolsParsed lazily parses ENABLE_ADDITIONAL_TOOLS on first access.
+// This is safe to call during init() -- the sync.Once ensures it runs exactly once
+// until Init() resets the Once for test re-initialisation.
+func ensureEnabledToolsParsed() {
+	enabledToolsParseOnce.Do(parseEnabledTools)
+}
+
+// parseEnabledTools parses and caches the ENABLE_ADDITIONAL_TOOLS environment variable.
+func parseEnabledTools() {
+	enabledAdditionalTools = make(map[string]bool)
+	enableAllTools = false
+
+	envVal := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
+	if envVal == "" {
+		return
+	}
+
+	if strings.TrimSpace(strings.ToLower(envVal)) == "all" {
+		enableAllTools = true
+		if logger != nil {
+			logger.Debug("All additional tools enabled via ENABLE_ADDITIONAL_TOOLS=all")
+		}
+		return
+	}
+
+	for tool := range strings.SplitSeq(envVal, ",") {
+		normalised := normaliseName(tool)
+		if normalised != "" {
+			enabledAdditionalTools[normalised] = true
+		}
+	}
+
+	if logger != nil && len(enabledAdditionalTools) > 0 {
+		logger.WithField("count", len(enabledAdditionalTools)).Debug("Parsed enabled additional tools from environment")
+	}
+}
+
 // enabledByDefault checks if a tool is enabled by default without requiring ENABLE_ADDITIONAL_TOOLS.
 // Tools NOT in this list require explicit enablement via ENABLE_ADDITIONAL_TOOLS.
 // This follows the principle of secure-by-default: tools must be explicitly blessed to be enabled.
 func enabledByDefault(toolName string) bool {
-	// Default tools that are safe to enable by default (read-only, non-destructive operations)
-	defaultTools := []string{
-		"calculator",
-		"fetch_url",
-		"get_library_documentation",
-		"get_tool_help",
-		"github",
-		"internet_search",
-		"resolve_library_id",
-		"search_packages",
-		"sequential_thinking",
-		"think",
-	}
-
-	// Normalise the tool name (lowercase, replace underscores with hyphens)
-	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
-
-	for _, tool := range defaultTools {
-		// Normalise the core tool name (lowercase, replace underscores with hyphens)
-		normalisedCoreTool := strings.ToLower(strings.ReplaceAll(tool, "_", "-"))
-		if normalisedToolName == normalisedCoreTool {
-			return true
-		}
-	}
-	return false
+	return defaultToolSet[normaliseName(toolName)]
 }
 
 // requiresEnablement checks if a tool requires explicit enablement via ENABLE_ADDITIONAL_TOOLS.
@@ -122,7 +187,7 @@ func requiresEnablement(toolName string) bool {
 // 3. ENABLE_ADDITIONAL_TOOLS (explicit enable)
 func ShouldRegisterTool(toolName string) bool {
 	// Check DISABLED_TOOLS/DISABLED_FUNCTIONS first (explicit disable wins)
-	if disabledTools[toolName] {
+	if isToolDisabled(toolName) {
 		if logger != nil {
 			logger.WithField("tool", toolName).Debug("Tool disabled via environment variable")
 		}
@@ -177,7 +242,11 @@ func Register(tool tools.Tool) {
 // This is used for tools discovered from upstream proxy servers. The caller (RegisterUpstreamTools)
 // is responsible for checking that proxy is enabled before calling this function.
 // Proxied tools bypass the normal ENABLE_ADDITIONAL_TOOLS check but still respect DISABLED_TOOLS.
+// Safe to call concurrently with GetTool (protected by registryMu).
 func RegisterProxiedTool(tool tools.Tool) {
+	registryMu.Lock()
+	defer registryMu.Unlock()
+
 	if toolRegistry == nil {
 		toolRegistry = make(map[string]tools.Tool)
 	}
@@ -185,7 +254,7 @@ func RegisterProxiedTool(tool tools.Tool) {
 	toolName := tool.Definition().Name
 
 	// Check if explicitly disabled (always respect DISABLED_TOOLS)
-	if disabledTools[toolName] {
+	if isToolDisabled(toolName) {
 		if logger != nil {
 			logger.WithField("tool", toolName).Debug("Proxied tool not registered (explicitly disabled)")
 		}
@@ -199,35 +268,41 @@ func RegisterProxiedTool(tool tools.Tool) {
 	}
 }
 
-// GetTool retrieves a tool by name, returns false if disabled
+// GetTool retrieves a tool by name, returns false if disabled.
+// Safe to call concurrently with RegisterProxiedTool (protected by registryMu).
 func GetTool(name string) (tools.Tool, bool) {
 	// Check if function is disabled
 	if disabledTools[name] {
 		return nil, false
 	}
+	registryMu.RLock()
 	tool, ok := toolRegistry[name]
+	registryMu.RUnlock()
 	return tool, ok
 }
 
 // GetTools returns all registered tools, excluding disabled ones
 func GetTools() map[string]tools.Tool {
-	filteredTools := make(map[string]tools.Tool)
+	registryMu.RLock()
+	filteredTools := make(map[string]tools.Tool, len(toolRegistry))
 	for name, tool := range toolRegistry {
 		// Skip disabled functions
-		if disabledTools[name] {
+		if isToolDisabled(name) {
 			continue
 		}
 		filteredTools[name] = tool
 	}
+	registryMu.RUnlock()
 	return filteredTools
 }
 
 // GetEnabledTools returns all tools that are enabled for MCP server registration
 func GetEnabledTools() map[string]tools.Tool {
-	filteredTools := make(map[string]tools.Tool)
+	registryMu.RLock()
+	filteredTools := make(map[string]tools.Tool, len(toolRegistry))
 	for name, tool := range toolRegistry {
 		// Skip disabled functions
-		if disabledTools[name] {
+		if isToolDisabled(name) {
 			continue
 		}
 
@@ -244,6 +319,7 @@ func GetEnabledTools() map[string]tools.Tool {
 
 		filteredTools[name] = tool
 	}
+	registryMu.RUnlock()
 	return filteredTools
 }
 
@@ -259,24 +335,27 @@ func GetCache() *sync.Map {
 
 // GetEnabledToolNames returns a sorted list of enabled tool names
 func GetEnabledToolNames() []string {
-	var names []string
+	registryMu.RLock()
+	names := make([]string, 0, len(toolRegistry))
 	for name := range toolRegistry {
 		// Skip disabled functions
-		if disabledTools[name] {
+		if isToolDisabled(name) {
 			continue
 		}
 		names = append(names, name)
 	}
+	registryMu.RUnlock()
 	sort.Strings(names)
 	return names
 }
 
 // GetToolNamesWithExtendedHelp returns a sorted list of enabled tool names that provide extended help
 func GetToolNamesWithExtendedHelp() []string {
+	registryMu.RLock()
 	var names []string
 	for name, tool := range toolRegistry {
 		// Skip disabled functions
-		if disabledTools[name] {
+		if isToolDisabled(name) {
 			continue
 		}
 
@@ -290,45 +369,36 @@ func GetToolNamesWithExtendedHelp() []string {
 			names = append(names, name)
 		}
 	}
+	registryMu.RUnlock()
 	sort.Strings(names)
 	return names
 }
 
-// isToolEnabled checks if a tool is enabled via the ENABLE_ADDITIONAL_TOOLS environment variable
+// isToolEnabled checks if a tool is enabled via the cached ENABLE_ADDITIONAL_TOOLS set.
 func isToolEnabled(toolName string) bool {
-	enabledTools := os.Getenv("ENABLE_ADDITIONAL_TOOLS")
-	if enabledTools == "" {
-		return false
-	}
+	ensureEnabledToolsParsed()
 
-	// Check if "all" is specified to enable all tools
-	if strings.TrimSpace(strings.ToLower(enabledTools)) == "all" {
+	if enableAllTools {
 		return true
 	}
 
-	// Normalise the tool name (lowercase, replace underscores with hyphens)
-	normalisedToolName := strings.ToLower(strings.ReplaceAll(toolName, "_", "-"))
-
-	// Tool name aliases for backwards compatibility
-	aliases := map[string][]string{
-		"shadcn": {"shadcn-ui"}, // shadcn tool can be enabled via either 'shadcn' or 'shadcn_ui' in ENABLE_ADDITIONAL_TOOLS
+	if len(enabledAdditionalTools) == 0 {
+		return false
 	}
 
-	// Build list of names to check (tool name + any aliases)
-	namesToCheck := []string{normalisedToolName}
-	if toolAliases, hasAliases := aliases[normalisedToolName]; hasAliases {
-		namesToCheck = append(namesToCheck, toolAliases...)
+	normalised := normaliseName(toolName)
+
+	// Check direct match
+	if enabledAdditionalTools[normalised] {
+		return true
 	}
 
-	// Split by comma and check each tool
-	toolsList := strings.SplitSeq(enabledTools, ",")
-	for tool := range toolsList {
-		// Normalise the tool from env var (trim spaces, lowercase, replace underscores with hyphens)
-		normalisedTool := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tool), "_", "-"))
-
-		// Check if it matches the tool name or any alias
-		if slices.Contains(namesToCheck, normalisedTool) {
-			return true
+	// Check aliases for backwards compatibility
+	if aliases, ok := toolNameAliases[normalised]; ok {
+		for _, alias := range aliases {
+			if enabledAdditionalTools[alias] {
+				return true
+			}
 		}
 	}
 
