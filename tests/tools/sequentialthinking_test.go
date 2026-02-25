@@ -22,8 +22,8 @@ func TestSequentialThinkingTool_Definition(t *testing.T) {
 	if !testutils.Contains(desc, "multi-step reasoning") {
 		t.Errorf("Expected description to contain 'multi-step reasoning', got: %s", desc)
 	}
-	if !testutils.Contains(desc, "instead of think") {
-		t.Errorf("Expected description to contain 'instead of think', got: %s", desc)
+	if !testutils.Contains(desc, "breaking down complex problems") {
+		t.Errorf("Expected description to contain 'breaking down complex problems', got: %s", desc)
 	}
 
 	// Test input schema exists and has required fields

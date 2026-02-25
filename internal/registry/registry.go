@@ -18,7 +18,6 @@ var defaultToolSet = func() map[string]bool {
 		"fetch-url",
 		"get-library-documentation",
 		"get-tool-help",
-		"github",
 		"internet-search",
 		"resolve-library-id",
 		"search-packages",

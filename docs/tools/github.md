@@ -4,6 +4,8 @@ Access GitHub repositories and data with comprehensive read-only operations incl
 
 This was added as the official Github MCP server fills the context with many tools, tool parameters and returns information that's not overly useful.
 
+> **Note:** This tool is disabled by default. Enable it by adding `github` to the `ENABLE_ADDITIONAL_TOOLS` environment variable in your MCP configuration.
+
 ## Features
 
 - **Repository Search**: Find GitHub repositories by name, description, or other criteria
@@ -19,6 +21,7 @@ This was added as the official Github MCP server fills the context with many too
 The GitHub tool supports multiple authentication methods:
 
 ### 1. GitHub Personal Access Token (Recommended)
+
 Set the `GITHUB_TOKEN` environment variable with your personal access token:
 
 ```bash
@@ -26,10 +29,12 @@ GITHUB_TOKEN="ghp_your_read_only_token_here"
 ```
 
 **Token Permissions**: For read-only operations, create a token with minimal permissions:
+
 - `public_repo` (for public repositories)
 - `repo` (for private repositories you have access to)
 
 ### 2. SSH Key Authentication
+
 Set `GITHUB_AUTH_METHOD=ssh` to use SSH keys for git operations:
 
 ```bash
@@ -37,24 +42,29 @@ GITHUB_AUTH_METHOD=ssh
 ```
 
 **SSH Key Detection**: Automatically detects SSH keys in this order:
+
 1. `GITHUB_SSH_PRIVATE_KEY_PATH` environment variable
 2. `~/.ssh/id_ed25519` (preferred)
 3. `~/.ssh/id_rsa` (fallback)
 
 ### 3. No Authentication
+
 Works with public repositories without any authentication setup.
 
 ## Functions
 
 ### search_repositories
+
 Search for GitHub repositories by name, description, or other criteria.
 
 **Parameters**:
+
 - `function`: `"search_repositories"`
 - `options.query`: Search query string (required)
 - `options.limit`: Maximum results (default: 30, max: 100)
 
 **Example**:
+
 ```json
 {
   "function": "search_repositories",
@@ -66,15 +76,18 @@ Search for GitHub repositories by name, description, or other criteria.
 ```
 
 ### search_issues
+
 Search for issues within a specific repository.
 
 **Parameters**:
+
 - `function`: `"search_issues"`
 - `repository`: Repository identifier (owner/repo or GitHub URL)
 - `options.query`: Search query (optional)
 - `options.limit`: Maximum results (default: 30, max: 100)
 
 **Example**:
+
 ```json
 {
   "function": "search_issues",
@@ -87,15 +100,18 @@ Search for issues within a specific repository.
 ```
 
 ### search_pull_requests
+
 Search for pull requests within a specific repository.
 
 **Parameters**:
+
 - `function`: `"search_pull_requests"`
 - `repository`: Repository identifier (owner/repo or GitHub URL)
 - `options.query`: Search query (optional)
 - `options.limit`: Maximum results (default: 30, max: 100)
 
 **Example**:
+
 ```json
 {
   "function": "search_pull_requests",
@@ -108,15 +124,18 @@ Search for pull requests within a specific repository.
 ```
 
 ### get_issue
+
 Retrieve detailed information about a specific issue.
 
 **Parameters**:
+
 - `function`: `"get_issue"`
 - `repository`: Repository identifier OR full issue URL
 - `options.number`: Issue number (required if not in URL)
 - `options.include_comments`: Include comments (default: false)
 
 **Examples**:
+
 ```json
 {
   "function": "get_issue",
@@ -139,15 +158,18 @@ Retrieve detailed information about a specific issue.
 ```
 
 ### get_pull_request
+
 Retrieve detailed information about a specific pull request.
 
 **Parameters**:
+
 - `function`: `"get_pull_request"`
 - `repository`: Repository identifier OR full PR URL
 - `options.number`: PR number (required if not in URL)
 - `options.include_comments`: Include comments (default: false)
 
 **Examples**:
+
 ```json
 {
   "function": "get_pull_request",
@@ -159,15 +181,18 @@ Retrieve detailed information about a specific pull request.
 ```
 
 ### get_file_contents
+
 Retrieve the contents of one or more files from a repository.
 
 **Parameters**:
+
 - `function`: `"get_file_contents"`
 - `repository`: Repository identifier (owner/repo or GitHub URL)
 - `options.paths`: Array of file paths (required)
 - `options.ref`: Git reference - branch, tag, or commit (optional)
 
 **Example**:
+
 ```json
 {
   "function": "get_file_contents",
@@ -180,14 +205,17 @@ Retrieve the contents of one or more files from a repository.
 ```
 
 ### clone_repository
+
 Clone a GitHub repository to a local directory.
 
 **Parameters**:
+
 - `function`: `"clone_repository"`
 - `repository`: Repository identifier (owner/repo or GitHub URL)
 - `options.local_path`: Local directory path (optional, defaults to `~/github-repos/{repo}`)
 
 **Example**:
+
 ```json
 {
   "function": "clone_repository",
@@ -199,15 +227,18 @@ Clone a GitHub repository to a local directory.
 ```
 
 ### get_workflow_run
+
 Retrieve GitHub Actions workflow run status and optionally logs.
 
 **Parameters**:
+
 - `function`: `"get_workflow_run"`
 - `repository`: Repository identifier OR full workflow run URL
 - `options.run_id`: Workflow run ID (required if not in URL)
 - `options.include_logs`: Include workflow logs (default: false)
 
 **Examples**:
+
 ```json
 {
   "function": "get_workflow_run",
@@ -240,6 +271,7 @@ The `repository` parameter accepts multiple formats:
 ## Rate Limiting
 
 GitHub API has rate limits:
+
 - **Authenticated requests**: 5,000 requests per hour
 - **Unauthenticated requests**: 60 requests per hour
 
@@ -258,6 +290,7 @@ Common error scenarios and solutions:
 ## Examples
 
 ### Basic Repository Search
+
 ```json
 {
   "function": "search_repositories",
@@ -269,6 +302,7 @@ Common error scenarios and solutions:
 ```
 
 ### Get Issue with Comments
+
 ```json
 {
   "function": "get_issue",
@@ -280,6 +314,7 @@ Common error scenarios and solutions:
 ```
 
 ### Retrieve Multiple Files
+
 ```json
 {
   "function": "get_file_contents",
@@ -292,9 +327,11 @@ Common error scenarios and solutions:
 ```
 
 ### Clone with SSH
+
 ```bash
 GITHUB_AUTH_METHOD=ssh
 ```
+
 ```json
 {
   "function": "clone_repository",
@@ -308,11 +345,13 @@ GITHUB_AUTH_METHOD=ssh
 ## Environment Variables
 
 ### Authentication
+
 - **`GITHUB_TOKEN`**: GitHub personal access token for API authentication
 - **`GITHUB_AUTH_METHOD`**: Authentication method (`token` or `ssh`). Defaults to `token`
 - **`GITHUB_SSH_PRIVATE_KEY_PATH`**: Path to SSH private key file (when using SSH authentication)
 
 ### Rate Limiting Configuration
+
 - **`GITHUB_CORE_API_RATE_LIMIT`**: Maximum Core API requests per minute. Defaults to `80`
 - **`GITHUB_SEARCH_API_RATE_LIMIT`**: Maximum Search API requests per minute. Defaults to `25`
 
