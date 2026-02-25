@@ -9,6 +9,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ### Example Workflows
 
 #### Document Analysis Workflow
+
 ```
 1. Document Processing → Extract text and structure
 2. Think → Analyse content and identify key points
@@ -16,6 +17,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ```
 
 #### Package Management Workflow
+
 ```
 1. Package Search → Find latest versions
 2. Package Documentation → Get usage examples
@@ -23,6 +25,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ```
 
 #### Research Workflow
+
 ```
 1. Internet Search → Find relevant information
    (Supports: Brave, Google, Kagi, SearXNG, DuckDuckGo)
@@ -31,6 +34,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ```
 
 #### API Integration Workflow
+
 ```
 1. Configure APIs in ~/.mcp-devtools/apis.yaml
 2. Dynamic API tools automatically available (e.g., github_api, slack_api)
@@ -39,12 +43,14 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ```
 
 #### AWS Documentation Research Workflow
+
 ```
 1. AWS Documentation (search) → Find relevant AWS guides
 2. AWS Documentation (fetch) → Get detailed AWS content
 ```
 
 #### Terraform Documentation Research Workflow
+
 ```
 1. Terraform Documentation (search_providers) → Find provider resources
 2. Terraform Documentation (get_provider_details) → Get detailed provider documentation
@@ -54,6 +60,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ```
 
 #### Complex Problem Solving Workflow
+
 ```
 1. Sequential Thinking → Break down problem systematically
 2. Internet Search / Web Fetch → Gather relevant information
@@ -63,6 +70,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ```
 
 #### Codebase Analysis Workflow
+
 ```
 1. Code Skim → Strip implementation details from files/directories
 2. Code Search (index) → Index code for semantic search
@@ -72,6 +80,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ```
 
 #### Excel Data Analysis Workflow
+
 ```
 1. Excel (create_workbook) → Create new workbook
 2. Excel (write_data) → Populate with data
@@ -84,6 +93,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ## Configuration Quick Start
 
 ### Minimal Configuration (Most Tools Available)
+
 ```json
 {
   "mcpServers": {
@@ -96,6 +106,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ```
 
 ### Full Configuration (All Tools)
+
 ```json
 {
   "mcpServers": {
@@ -103,7 +114,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "ENABLE_ADDITIONAL_TOOLS": "aws_documentation,fetch_url,internet_search,think,memory,filesystem,shadcn_ui,magic_ui,aceternity_ui,security,claude-agent,codex-agent,copilot-agent,gemini-agent,kiro-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking,excel,find_long_files,code_skim,code_search,code_rename",
+        "ENABLE_ADDITIONAL_TOOLS": "github,aws_documentation,fetch_url,internet_search,think,memory,filesystem,shadcn_ui,magic_ui,aceternity_ui,security,claude-agent,codex-agent,copilot-agent,gemini-agent,kiro-agent,brave_local_search,brave_video_search,pdf,process_document,sequential-thinking,excel,find_long_files,code_skim,code_search,code_rename",
         "GOOGLE_CLOUD_PROJECT": "gemini-code-assist-123456",
         "BRAVE_API_KEY": "abc123",
         "SEARXNG_BASE_URL": "https://searxng.your.domain",
@@ -122,17 +133,20 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 ### Choose Based on Your Needs
 
 **For Document Work:**
+
 - Single documents → PDF Processing
 - Complex documents → Document Processing
 - Research papers → Document Processing + Memory
 
 **For Data Analysis:**
+
 - Spreadsheet creation → Excel
 - Data visualisation → Excel (charts and conditional formatting)
 - Data summarisation → Excel (pivot tables)
 - Structured data → Excel (tables with formatting)
 
 **For Development:**
+
 - Package management → Package Search + Package Documentation
 - Code research → Internet Search + Web Fetch
 - Codebase exploration → Code Skim + Think
@@ -142,11 +156,13 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 - File operations → Filesystem + Think
 
 **For File Management:**
+
 - File operations → Filesystem
 - Project setup → Filesystem + Package Search
 - Code analysis → Filesystem + Think
 
 **For Content Creation:**
+
 - Research → Internet Search + Web Fetch + Memory
 - Analysis → Think + Document Processing
 - UI work → ShadCN UI + Package Search

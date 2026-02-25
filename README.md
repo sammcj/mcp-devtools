@@ -78,6 +78,7 @@ graph LR
 ## Why I Built MCP DevTools
 
 **🚀 Single Binary Solution**
+
 - Replace multiple potentially resource-heavy Node.js/Python MCP servers, each spawned for every client tool you use
 - One binary, one configuration, consistent performance
 - Built in Go for speed and efficiency and because I'm not smart enough to write Rust
@@ -88,6 +89,7 @@ graph LR
 - OpenTelemetry support for tracing and metrics
 
 **🛠 Comprehensive Tool Suite For Agentic Coding**
+
 - 20+ essential developer agent tools in one package
 - No need to manage multiple MCP server installations
 - Consistent API across all tools
@@ -106,6 +108,7 @@ curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh
 ```
 
 This will:
+
 - Download the latest release and installs to an appropriate location (respects `$GOPATH/bin` or uses `~/.local/bin`)
 - Remove macOS quarantine attributes automatically
 - Generate example MCP client configurations in `~/.mcp-devtools/examples/`
@@ -114,23 +117,24 @@ This will:
 <details>
   <summary><b>🔗 Quick Install Customisation (Click Here)</b></summary>
 
-  **Customisation:**
-  ```bash
-  # Dry run (shows what would be done without making changes)
-  DRY_RUN=1 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+**Customisation:**
 
-  # Install to a specific directory
-  INSTALL_DIR=/custom/path curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+```bash
+# Dry run (shows what would be done without making changes)
+DRY_RUN=1 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
 
-  # Install a specific version
-  VERSION=0.50.0 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+# Install to a specific directory
+INSTALL_DIR=/custom/path curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
 
-  # Skip example config generation
-  NO_CONFIG=1 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+# Install a specific version
+VERSION=0.50.0 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
 
-  # Skip all confirmation prompts (for automation)
-  FORCE=1 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
-  ```
+# Skip example config generation
+NO_CONFIG=1 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+
+# Skip all confirmation prompts (for automation)
+FORCE=1 curl -fsSL https://raw.githubusercontent.com/sammcj/mcp-devtools/main/install.sh | bash
+```
 
 </details>
 
@@ -140,6 +144,7 @@ This will:
   <summary><b>🔗 Manual Installation (Click Here)</b></summary>
 
 You have a few other options to make MCP DevTools available to your MCP clients:
+
 1. <img src="screenshots/go-icon.png" alt="go" width="20"/> If you have Golang installed
 2. [If you do not have, and do not want to install Golang](#if-you-do-not-have-golang-installed)
 
@@ -167,10 +172,7 @@ MCP Client Configuration:
     "dev-tools": {
       "type": "stdio",
       "command": "go",
-      "args": [
-        "run",
-        "github.com/sammcj/mcp-devtools@HEAD"
-      ],
+      "args": ["run", "github.com/sammcj/mcp-devtools@HEAD"],
       "env": {
         "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,code_skim,code_rename",
         "DISABLED_TOOLS": "",
@@ -206,6 +208,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
 ```
 
 1. Update your MCP client to add the MCP DevTools server configuration, replacing `/path/to/mcp-devtools` with the actual path to the binary (e.g. `/Users/samm/go/bin/mcp-devtools`):
+
 ```json
 {
   "mcpServers": {
@@ -271,14 +274,13 @@ Configure your MCP client to use the downloaded binary (replacing `/path/to/mcp-
 These tools can be disabled by adding their function name to the `DISABLED_TOOLS` environment variable in your MCP configuration.
 
 | Tool                                                             | Purpose                               | Dependencies                  | Example Usage                   | Maturity |
-|------------------------------------------------------------------|---------------------------------------|-------------------------------|---------------------------------|----------|
+| ---------------------------------------------------------------- | ------------------------------------- | ----------------------------- | ------------------------------- | -------- |
 | **[Internet Search](docs/tools/internet_search.md)**             | Multi-provider internet search        | None (Provider keys optional) | Web, image, news, video search  | 🟢       |
 | **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve internet content as Markdown | None                          | Documentation and articles      | 🟢       |
-| **[GitHub](docs/tools/github.md)**                               | GitHub repositories and data          | None (GitHub token optional)  | Issues, PRs, repos, cloning     | 🟢       |
 | **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, mark3labs/mcp-go         | 🟢       |
 | **[Package Search](docs/tools/package-search.md)**               | Check package versions                | None                          | NPM, Python, Go, Java, Docker   | 🟢       |
 | **[Think](docs/tools/think.md)**                                 | Structured reasoning space            | None                          | Complex problem analysis        | 🟢       |
-| **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations         | None                          | 2 + 3 * 4, batch processing     | 🟢       |
+| **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations         | None                          | 2 + 3 \* 4, batch processing    | 🟢       |
 | **[DevTools Help](docs/tools/get_tool_help.md)**                 | Extended info about DevTools tools    | None                          | Usage examples, troubleshooting | 🟢       |
 | **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    |                               | Find files over 700 lines       | 🟢       |
 
@@ -286,34 +288,35 @@ These tools can be disabled by adding their function name to the `DISABLED_TOOLS
 
 These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment variable in your MCP configuration.
 
-| Tool                                                                 | Purpose                                                   | `ENABLE_ADDITIONAL_TOOLS`   | Example Usage                                 | Maturity |
-|----------------------------------------------------------------------|-----------------------------------------------------------|-----------------------------|-----------------------------------------------|----------|
-| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details      | `code_skim`                 | Reduced token consumption                     | 🟢       |
-| **[Code Search](docs/tools/code_search.md)**                         | Semantic code search with local embeddings                | `code_search`               | Find code by natural language description     | 🟠       |
-| **[Code Rename](docs/tools/code_rename.md)**                         | LSP-based symbol renaming across files (experimental)     | `code_rename`               | Rename functions, variables, types            | 🟠       |
-| **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                               | `memory`                    | Store entities and relationships              | 🟡       |
-| **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                             | `process_document`          | PDF, DOCX → Markdown with OCR                 | 🟡       |
-| **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                  | `pdf`                       | Quick PDF to Markdown                         | 🟢       |
-| **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                   | `excel`                     | Workbooks, charts, pivot tables, formulas     | 🟢       |
-| **[AWS Documentation & Pricing](docs/tools/aws_documentation.md)**   | AWS documentation & pricing search and retrieval          | `aws_documentation`         | Search and read AWS docs, recommendations     | 🟡       |
-| **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API (providers, modules, and policies) | `terraform_documentation`   | Provider docs, module search, policy lookup   | 🟡       |
-| **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts       | `sequential-thinking`       | Step-by-step analysis, revision, branching    | 🟢       |
-| **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                             | `filesystem`                | Read, write, edit, search files               | 🟡       |
-| **[MCP Proxy](docs/tools/proxy.md)**                                 | Proxies MCP requests from upstream HTTP/SSE servers       | `proxy`                     | Provide HTTP/SSE MCP servers to STDIO clients | 🟡       |
-| **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                               | `murican_to_english`        | Organise, colour, centre                      | 🟡       |
-| **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                              | `api`                       | Configure any REST API via YAML               | 🔴       |
+| Tool                                                                 | Purpose                                                   | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                                 | Maturity |
+| -------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------- | --------------------------------------------- | -------- |
+| **[GitHub](docs/tools/github.md)**                                   | GitHub repositories and data                              | `github`                  | Issues, PRs, repos, cloning                   | 🟢       |
+| **[Code Skim](docs/tools/code_skim.md)**                             | Return code structure without implementation details      | `code_skim`               | Reduced token consumption                     | 🟢       |
+| **[Code Search](docs/tools/code_search.md)**                         | Semantic code search with local embeddings                | `code_search`             | Find code by natural language description     | 🟠       |
+| **[Code Rename](docs/tools/code_rename.md)**                         | LSP-based symbol renaming across files (experimental)     | `code_rename`             | Rename functions, variables, types            | 🟠       |
+| **[Memory](docs/tools/memory.md)**                                   | Persistent knowledge graphs                               | `memory`                  | Store entities and relationships              | 🟡       |
+| **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                             | `process_document`        | PDF, DOCX → Markdown with OCR                 | 🟡       |
+| **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                  | `pdf`                     | Quick PDF to Markdown                         | 🟢       |
+| **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                   | `excel`                   | Workbooks, charts, pivot tables, formulas     | 🟢       |
+| **[AWS Documentation & Pricing](docs/tools/aws_documentation.md)**   | AWS documentation & pricing search and retrieval          | `aws_documentation`       | Search and read AWS docs, recommendations     | 🟡       |
+| **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API (providers, modules, and policies) | `terraform_documentation` | Provider docs, module search, policy lookup   | 🟡       |
+| **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts       | `sequential-thinking`     | Step-by-step analysis, revision, branching    | 🟢       |
+| **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                             | `filesystem`              | Read, write, edit, search files               | 🟡       |
+| **[MCP Proxy](docs/tools/proxy.md)**                                 | Proxies MCP requests from upstream HTTP/SSE servers       | `proxy`                   | Provide HTTP/SSE MCP servers to STDIO clients | 🟡       |
+| **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                               | `murican_to_english`      | Organise, colour, centre                      | 🟡       |
+| **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                              | `api`                     | Configure any REST API via YAML               | 🔴       |
 
 **Security Subsystem / Tools**
 
-| Tool                                                                 | Purpose                                                   | `ENABLE_ADDITIONAL_TOOLS`   | Example Usage                                 | Maturity |
-|----------------------------------------------------------------------|-----------------------------------------------------------|-----------------------------|-----------------------------------------------|----------|
-| **[Security Framework](docs/security.md)**                           | Context injection security protections                    | `security`                  | Content analysis, access control              | 🟢       |
-| **[Security Override](docs/security.md)**                            | Agent managed security warning overrides                  | `security_override`         | Bypass false positives                        | 🟡       |
+| Tool                                       | Purpose                                  | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                    | Maturity |
+| ------------------------------------------ | ---------------------------------------- | ------------------------- | -------------------------------- | -------- |
+| **[Security Framework](docs/security.md)** | Context injection security protections   | `security`                | Content analysis, access control | 🟢       |
+| **[Security Override](docs/security.md)**  | Agent managed security warning overrides | `security_override`       | Bypass false positives           | 🟡       |
 
 **Frontend UI Component Libraries**
 
 | Tool                                                              | Purpose                    | `ENABLE_ADDITIONAL_TOOLS` | Example Usage                   | Maturity |
-|-------------------------------------------------------------------|----------------------------|---------------------------|---------------------------------|----------|
+| ----------------------------------------------------------------- | -------------------------- | ------------------------- | ------------------------------- | -------- |
 | **[ShadCN UI Component Library](docs/tools/shadcn-ui.md)**        | Component information      | `shadcn`                  | Button, Dialog, Form components | 🟢       |
 | **[Magic UI Component Library](docs/tools/magicui.md)**           | Animated component library | `magic_ui`                | Frontend React components       | 🟠       |
 | **[Aceternity UI Component Library](docs/tools/aceternityui.md)** | Animated component library | `aceternity_ui`           | Frontend React components       | 🟠       |
@@ -321,7 +324,7 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 **Agents as Tools** - In addition to the above tools, MCP DevTools can provide access to AI agents as tools by integrating with external LLMs.
 
 | Agent                                            | Purpose                  | `ENABLE_ADDITIONAL_TOOLS` | Maturity |
-|--------------------------------------------------|--------------------------|---------------------------|----------|
+| ------------------------------------------------ | ------------------------ | ------------------------- | -------- |
 | **[Claude Agent](docs/tools/claude-agent.md)**   | Claude Code CLI Agent    | `claude-agent`            | 🟡       |
 | **[Codex Agent](docs/tools/codex-agent.md)**     | Codex CLI Agent          | `codex-agent`             | 🟡       |
 | **[Copilot Agent](docs/tools/copilot-agent.md)** | GitHub Copilot CLI Agent | `copilot-agent`           | 🟡       |
@@ -345,11 +348,13 @@ The following tools are currently in review for potential deprecation (unless I 
 ### Installation
 
 **Option 1: Go Install** (recommended)
+
 ```bash
 go install github.com/sammcj/mcp-devtools@HEAD
 ```
 
 **Option 2: Build from Source**
+
 ```bash
 git clone https://github.com/sammcj/mcp-devtools.git
 cd mcp-devtools
@@ -370,7 +375,7 @@ Download the latest binary from [releases](https://github.com/sammcj/mcp-devtool
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "BRAVE_API_KEY": "This is optional ",
+        "BRAVE_API_KEY": "This is optional "
       }
     }
   }
@@ -403,6 +408,7 @@ mcp-devtools --transport http --port 18080
 MCP DevTools supports three transport modes for different use cases:
 
 ### STDIO Transport (Default)
+
 **Best for**: Simple, local use with MCP clients like Claude Desktop, Cline, etc.
 
 ```json
@@ -420,6 +426,7 @@ MCP DevTools supports three transport modes for different use cases:
 ```
 
 ### Streamable HTTP Transport
+
 **Best for**: Production deployments, shared use, centralised configuration
 
 ```bash
@@ -434,12 +441,13 @@ mcp-devtools --transport http --port 18080 --oauth-enabled
 ```
 
 **Client Configuration:**
+
 ```json
 {
   "mcpServers": {
     "dev-tools": {
       "type": "streamableHttp",
-      "url": "http://localhost:18080/http",
+      "url": "http://localhost:18080/http"
     }
   }
 }
@@ -452,12 +460,14 @@ mcp-devtools --transport http --port 18080 --oauth-enabled
 All environment variables are optional, but if you want to use specific search providers or document processing features, you may need to provide the the appropriate variables.
 
 **General:**
+
 - `LOG_LEVEL` - Logging level: `debug`, `info`, `warn`, `error` (default: `warn`). Logs are written to `~/.mcp-devtools/logs/mcp-devtools.log` for all transports. Stdio transport uses minimum `warn` level and never logs to stdout/stderr to prevent MCP protocol pollution.
 - `LOG_TOOL_ERRORS` - Enable logging of failed tool calls to `~/.mcp-devtools/logs/tool-errors.log` (set to `true` to enable). Logs older than 60 days are automatically removed on server startup.
 - `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,filesystem,claude-agent,codex-agent,gemini-agent,kiro-agent,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
 - `DISABLED_TOOLS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
 **Default Tools:**
+
 - `BRAVE_API_KEY` - Enable Brave Search provider by providing a ([free Brave search API key](https://brave.com/search/api/))
 - `GOOGLE_SEARCH_API_KEY` - Enable Google search with API key from [Cloud Console](https://console.cloud.google.com/apis/credentials) (requires Custom Search API to be enabled)
 - `GOOGLE_SEARCH_ID` - Google Search Engine ID from [Programmable Search Engine](https://programmablesearchengine.google.com/) (required with `GOOGLE_SEARCH_API_KEY`, select "Search the entire web")
@@ -469,9 +479,11 @@ All environment variables are optional, but if you want to use specific search p
 - `PACKAGE_COOLDOWN_ECOSYSTEMS` - Comma-separated ecosystems for cooldown protection (default: `npm`, use `none` to disable)
 
 **Security Configuration:**
+
 - `FILESYSTEM_TOOL_ALLOWED_DIRS` - Colon-separated (Unix) list of allowed directories (only for filesystem tool)
 
 **Document Processing:**
+
 - `DOCLING_PYTHON_PATH` - Python executable path (default: auto-detected)
 - `DOCLING_CACHE_ENABLED` - Enable processed document cache (default: `true`)
 - `DOCLING_HARDWARE_ACCELERATION` - Hardware acceleration (`auto` (default), `mps`, `cuda`, `cpu`)
@@ -503,6 +515,7 @@ MCP DevTools includes a configurable security system that provides multi-layered
 Important: This feature should be considered in **BETA**, if you find bugs and have solutions please feel free to raise a PR.
 
 ### Key Features
+
 - **Access Control**: Prevents tools from accessing sensitive files and domains
 - **Content Analysis**: Scans returned content for security threats using pattern matching
 - **YAML-Based Configuration**: Easy-to-manage rules with automatic reloading
@@ -510,6 +523,7 @@ Important: This feature should be considered in **BETA**, if you find bugs and h
 - **Performance Optimised**: Minimal impact when disabled, efficient when enabled
 
 ### Built-in Protection
+
 - **Shell Injection Detection**: Command injection, eval execution, backtick commands
 - **Data Exfiltration Prevention**: DNS exfiltration, credential theft, keychain access
 - **Prompt Injection Mitigation**: "Ignore instructions" attacks, conversation extraction
@@ -517,6 +531,7 @@ Important: This feature should be considered in **BETA**, if you find bugs and h
 - **Sensitive File Protection**: SSH keys, AWS credentials, certificates
 
 ### Quick Setup
+
 ```bash
 # Enable security framework and override tool
 # You may optionally also add 'security_override' if you want a tool the agent can use to override security warnings
@@ -530,11 +545,13 @@ Configuration is managed through `~/.mcp-devtools/security.yaml` with sensible d
 ## Advanced Features
 
 ### OAuth 2.0/2.1 Authentication
+
 For production deployments requiring centralised user authentication:
 
 👉 **[Complete OAuth Setup Guide](docs/oauth/README.md)**
 
 Quick example:
+
 ```bash
 # Browser-based authentication
 mcp-devtools --transport http --oauth-browser-auth --oauth-client-id="your-client"
@@ -585,18 +602,21 @@ docker run -d --name mcp-devtools -p 18080:18080 \
 MCP DevTools maintains two log files in `~/.mcp-devtools/logs/`:
 
 **Application Logs** (`mcp-devtools.log`):
+
 - Contains all application logs at the configured level
 - Configure via `LOG_LEVEL` environment variable: `debug`, `info`, `warn`, `error` (default: `warn`)
 - **Stdio transport**: Always logs to file (never to stderr to prevent MCP protocol pollution)
 - **HTTP/SSE transports**: Logs to file at configured level
 
 **Tool Error Logs** (`tool-errors.log`):
+
 - Failed tool executions with arguments and error details
 - Enable via `LOG_TOOL_ERRORS=true` environment variable
 - Automatically rotates logs older than 60 days
 - Useful for debugging tool calling issues
 
 Example:
+
 ```bash
 # Enable debug logging for HTTP mode
 LOG_LEVEL=debug mcp-devtools --transport http
@@ -612,12 +632,14 @@ MCP DevTools includes optional OpenTelemetry integration for distributed tracing
 ![otel screenshot in Jaeger](./docs/otel.png)
 
 **Tracing** - Track tool execution spans with HTTP client operations:
+
 ```bash
 # Export traces to OTLP endpoint
 MCP_OTEL_ENDPOINT=https://your-oltp-endpoint
 ```
 
 **Metrics** - Opt-in performance and usage metrics:
+
 ```bash
 # Default enabled traces/metrics when OTEL is enabled
 MCP_METRICS_GROUPS=tool,session,security

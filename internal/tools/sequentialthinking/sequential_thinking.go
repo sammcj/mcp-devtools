@@ -43,18 +43,9 @@ func init() {
 func (t *SequentialThinkingTool) Definition() mcp.Tool {
 	tool := mcp.NewTool(
 		"sequential_thinking",
-		mcp.WithDescription(`A multi-step reasoning tool for dynamic and reflective problem-solving through sequential thoughts. Each step should be a focused, concise observation or decision (1-3 sentences per step, ~50-100 words). Only use for complex problems.
+		mcp.WithDescription(`A multi-step reasoning tool for dynamic and reflective problem-solving through sequential thoughts. Each step should be a focused, concise observation or decision (1-3 sentences per step, ~50-100 words). Use sparingly only when needed for the most complex problems.
 
-When to use instead of think:
-- Breaking down complex problems into steps (more than 1-2 sentences of reasoning needed)
-- You need to revise or branch your analysis
-- The full scope is unclear and you may need course correction
-
-Key features:
-- Automatic thought numbering and tracking
-- Revision detection via text snippets
-- Branch exploration for alternative approaches
-- Generate hypotheses, verify, repeat until satisfied`),
+Helps with complex problems where you need to expand the problem space by breaking down complex problems into steps`),
 		mcp.WithString("action",
 			mcp.Description("Action to perform: 'think' or 'get_usage'"),
 			mcp.Enum("think", "get_usage"),
@@ -262,7 +253,7 @@ This tool helps analyse problems through a flexible thinking process with auto-m
 Each thought can build on, question, or revise previous insights as understanding deepens.
 Focus on your thinking content - the tool handles numbering, tracking, and branching automatically.
 
-## When to Use This Tool
+## When to Use This Tool (Only for complex problems!)
 - Breaking down complex problems into steps
 - Planning and design with room for revision
 - Analysis that might need course correction

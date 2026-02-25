@@ -68,7 +68,7 @@ test-slow:
 .PHONY: benchmark-tokens
 benchmark-tokens:
 	@echo "Analysing token costs for all tools..."
-	$(GOTEST) -count=1 -v ./tests/benchmarks -run TestToolTokenCost \
+	ENABLE_ADDITIONAL_TOOLS=github $(GOTEST) -count=1 -v ./tests/benchmarks -run TestToolTokenCost \
 		$(if $(PER_TOOL_MAX),-per-tool-max=$(PER_TOOL_MAX)) \
 		$(if $(TOTAL_MAX),-total-max=$(TOTAL_MAX)) \
 		$(if $(WARN_THRESHOLD),-warn-threshold=$(WARN_THRESHOLD)) \
