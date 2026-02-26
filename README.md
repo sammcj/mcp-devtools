@@ -453,6 +453,26 @@ mcp-devtools --transport http --port 18080 --oauth-enabled
 }
 ```
 
+### CLI Mode
+
+Run tools directly from the command line without starting an MCP server. No network overhead, instant execution.
+
+```bash
+# List available tools
+mcp-devtools cli list
+
+# Run a tool with JSON arguments
+mcp-devtools cli run calculator '{"expression": "2 + 3 * 4"}'
+
+# Run a tool with flag-style arguments
+mcp-devtools cli run calculator --expression="2 + 3 * 4"
+
+# JSON output for scripting
+mcp-devtools cli --output=json run search-packages --ecosystem=npm --query=react
+```
+
+See [CLI Mode documentation](docs/tools/cli-mode.md) for full details.
+
 ## Configuration Options
 
 ### Environment Variables

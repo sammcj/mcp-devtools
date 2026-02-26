@@ -12,12 +12,14 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
+	devtoolscli "github.com/sammcj/mcp-devtools/internal/cli"
 	oauthclient "github.com/sammcj/mcp-devtools/internal/oauth/client"
 	oauthserver "github.com/sammcj/mcp-devtools/internal/oauth/server"
 	"github.com/sammcj/mcp-devtools/internal/oauth/types"
@@ -279,6 +281,7 @@ func main() {
 					return handleSecurityConfigValidate(cmd)
 				},
 			},
+			newCLICommand(),
 		},
 		Action: func(cliCtx context.Context, cmd *cli.Command) error {
 			// Get transport settings
@@ -543,6 +546,96 @@ func main() {
 		}
 		os.Exit(1)
 	}
+}
+
+// newCLICommand creates the "cli" subcommand for direct tool invocation.
+func newCLICommand() *cli.Command {
+	return &cli.Command{
+		Name:  "cli",
+		Usage: "Run tools directly from the command line (no MCP server needed)",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "output",
+				Value: "text",
+				Usage: "Output format: text or json",
+			},
+		},
+		Commands: []*cli.Command{
+			{
+				Name:  "list",
+				Usage: "List all available tools",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					runner := newCLIRunner(cmd)
+					return runner.ListTools()
+				},
+			},
+			{
+				Name:      "help",
+				Usage:     "Show detailed help for a tool",
+				ArgsUsage: "<tool-name>",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					if cmd.Args().Len() == 0 {
+						return fmt.Errorf("usage: mcp-devtools cli help <tool-name>")
+					}
+					runner := newCLIRunner(cmd)
+					return runner.HelpTool(cmd.Args().First())
+				},
+			},
+			{
+				Name:            "run",
+				Usage:           "Run a tool with arguments",
+				ArgsUsage:       "<tool-name> [args...]",
+				SkipFlagParsing: true,
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					if cmd.Args().Len() == 0 {
+						return fmt.Errorf("usage: mcp-devtools cli run <tool-name> [--key=value | '{\"json\": \"args\"}']")
+					}
+					runner := newCLIRunner(cmd)
+					return runner.RunTool(ctx, cmd.Args().First(), cmd.Args().Tail())
+				},
+			},
+		},
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			// Default action: if a tool name is provided, run it; otherwise list tools
+			if cmd.Args().Len() == 0 {
+				runner := newCLIRunner(cmd)
+				return runner.ListTools()
+			}
+
+			toolName := cmd.Args().First()
+
+			// Check if it looks like a tool name (not a subcommand)
+			if toolName == "list" || toolName == "help" || toolName == "run" {
+				return nil // Let urfave handle subcommand routing
+			}
+
+			runner := newCLIRunner(cmd)
+			return runner.RunTool(ctx, toolName, cmd.Args().Tail())
+		},
+	}
+}
+
+// newCLIRunner creates a Runner with the shared logger, cache, and output format from flags.
+func newCLIRunner(cmd *cli.Command) *devtoolscli.Runner {
+	output := devtoolscli.OutputText
+	if cmd.String("output") == "json" {
+		output = devtoolscli.OutputJSON
+	}
+
+	logger := registry.GetLogger()
+	if logger == nil {
+		logger = logrus.New()
+	}
+	// CLI mode: log to stderr so stdout stays clean for tool output
+	logger.SetOutput(os.Stderr)
+	logger.SetLevel(max(parseLogLevel(), logrus.WarnLevel))
+
+	cache := registry.GetCache()
+	if cache == nil {
+		cache = &sync.Map{}
+	}
+
+	return devtoolscli.NewRunner(logger, cache, output)
 }
 
 // performCleanup handles cleanup of resources on shutdown

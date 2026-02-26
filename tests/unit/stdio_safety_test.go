@@ -93,6 +93,7 @@ func TestNoStdoutStderrWrites(t *testing.T) {
 		"docs/",                       // Documentation
 		"README.md",                   // Readme
 		"internal/tools/error_logger", // Error logger writes to file, not stdout/stderr
+		"internal/cli/",               // CLI mode intentionally writes to stdout (not used in MCP stdio mode)
 	}
 
 	// Specific exceptions with comments explaining why they're safe
