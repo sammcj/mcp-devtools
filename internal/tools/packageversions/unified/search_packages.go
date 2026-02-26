@@ -52,14 +52,6 @@ func (t *SearchPackagesTool) Definition() mcp.Tool {
 		),
 		mcp.WithObject("data",
 			mcp.Description("Ecosystem-specific data object for checking multiple packages / libraries, structure depends on the ecosystem (e.g., for python: `[\"requests\", \"numpy\"]`, for npm: `{\"react\": \"latest\", \"lodash\": \"^4.0.0\"}`) (Optional)"),
-			mcp.Properties(map[string]any{
-				"_examples": map[string]any{
-					"npm":    map[string]any{"react": "latest", "lodash": "^4.0.0"},
-					"python": []string{"requests", "numpy"},
-					"rust":   map[string]any{"serde": "1.0", "tokio": "latest"},
-					"go":     map[string]any{"github.com/gin-gonic/gin": "v1.9.0"},
-				},
-			}),
 		),
 		mcp.WithObject("constraints",
 			mcp.Description("Constraints for specific packages / libraries (version constraints, exclusions, etc.) (Optional)"),
