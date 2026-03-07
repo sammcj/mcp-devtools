@@ -6,18 +6,37 @@
   "packageRules": [
     {
       "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "GitHub Actions",
       "groupSlug": "github-actions"
     },
     {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "GitHub Actions (major)",
+      "groupSlug": "github-actions-major"
+    },
+    {
       "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "Go Dependencies",
       "groupSlug": "go-dependencies"
+    },
+    {
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "Go Dependencies (major)",
+      "groupSlug": "go-dependencies-major"
     },
     {
       "matchDatasources": ["golang-version"],
       "groupName": "Go Dependencies",
       "groupSlug": "go-dependencies"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "groupName": "Docker Dependencies",
+      "groupSlug": "docker-dependencies"
     }
   ]
 }
