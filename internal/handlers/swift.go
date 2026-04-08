@@ -122,7 +122,7 @@ func (h *SwiftHandler) GetLatestVersion(ctx context.Context, args map[string]any
 			}).Error("Failed to get Swift package info")
 			results = append(results, PackageVersion{
 				Name:           dep.URL,
-				CurrentVersion: StringPtr(dep.Version),
+				CurrentVersion: new(dep.Version),
 				LatestVersion:  "unknown",
 				Registry:       "swift",
 				Skipped:        true,
@@ -153,7 +153,7 @@ func (h *SwiftHandler) GetLatestVersion(ctx context.Context, args map[string]any
 		// Add result
 		results = append(results, PackageVersion{
 			Name:           dep.URL,
-			CurrentVersion: StringPtr(dep.Version),
+			CurrentVersion: new(dep.Version),
 			LatestVersion:  latestVersion,
 			Registry:       "swift",
 		})

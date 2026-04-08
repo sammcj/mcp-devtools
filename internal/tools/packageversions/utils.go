@@ -354,8 +354,10 @@ func CleanVersion(version string) string {
 }
 
 // StringPtr returns a pointer to the given string
+//
+//go:fix inline
 func StringPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
 // StringPtrUnlessLatest returns a pointer to the given string unless it equals "latest", in which case it returns nil
@@ -368,13 +370,17 @@ func StringPtrUnlessLatest(s string) *string {
 }
 
 // IntPtr returns a pointer to the given int
+//
+//go:fix inline
 func IntPtr(i int) *int {
-	return &i
+	return new(i)
 }
 
 // Int64Ptr returns a pointer to the given int64
+//
+//go:fix inline
 func Int64Ptr(i int64) *int64 {
-	return &i
+	return new(i)
 }
 
 // ExtractMajorVersion extracts the major version from a version string

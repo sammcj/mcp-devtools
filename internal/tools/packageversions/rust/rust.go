@@ -148,33 +148,33 @@ func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 		// Add detailed information if requested
 		if includeDetails {
 			details := &packageversions.PackageDetails{
-				Description:   packageversions.StringPtr(info.Crate.Description),
-				Homepage:      packageversions.StringPtr(info.Crate.Homepage),
-				Repository:    packageversions.StringPtr(info.Crate.Repository),
-				Documentation: packageversions.StringPtr(info.Crate.Documentation),
-				Downloads:     packageversions.Int64Ptr(info.Crate.Downloads),
-				CreatedAt:     packageversions.StringPtr(info.Crate.CreatedAt),
-				UpdatedAt:     packageversions.StringPtr(info.Crate.UpdatedAt),
-				NumVersions:   packageversions.IntPtr(info.Crate.NumVersions),
+				Description:   new(info.Crate.Description),
+				Homepage:      new(info.Crate.Homepage),
+				Repository:    new(info.Crate.Repository),
+				Documentation: new(info.Crate.Documentation),
+				Downloads:     new(info.Crate.Downloads),
+				CreatedAt:     new(info.Crate.CreatedAt),
+				UpdatedAt:     new(info.Crate.UpdatedAt),
+				NumVersions:   new(info.Crate.NumVersions),
 				Keywords:      info.Crate.Keywords,
 			}
 
 			// Add Rust-specific details
 			rustDetails := &packageversions.RustDetails{
 				Categories:      info.Crate.Categories,
-				RecentDownloads: packageversions.Int64Ptr(info.Crate.RecentDownloads),
+				RecentDownloads: new(info.Crate.RecentDownloads),
 			}
 
 			// Add latest version details if available
 			if len(info.Versions) > 0 {
 				latestVersion := info.Versions[0]
-				details.License = packageversions.StringPtr(latestVersion.License)
-				details.PublishedAt = packageversions.StringPtr(latestVersion.CreatedAt)
-				rustDetails.RustVersion = packageversions.StringPtr(latestVersion.RustVersion)
-				rustDetails.Edition = packageversions.StringPtr(latestVersion.Edition)
-				rustDetails.CrateSize = packageversions.Int64Ptr(latestVersion.CrateSize)
+				details.License = new(latestVersion.License)
+				details.PublishedAt = new(latestVersion.CreatedAt)
+				rustDetails.RustVersion = new(latestVersion.RustVersion)
+				rustDetails.Edition = new(latestVersion.Edition)
+				rustDetails.CrateSize = new(latestVersion.CrateSize)
 				if latestVersion.PublishedBy.Login != "" {
-					details.Publisher = packageversions.StringPtr(fmt.Sprintf("%s (%s)", latestVersion.PublishedBy.Name, latestVersion.PublishedBy.Login))
+					details.Publisher = new(fmt.Sprintf("%s (%s)", latestVersion.PublishedBy.Name, latestVersion.PublishedBy.Login))
 				}
 			}
 

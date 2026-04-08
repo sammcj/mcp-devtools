@@ -159,8 +159,8 @@ func (t *GitHubActionsTool) getLatestVersions(logger *logrus.Logger, cache *sync
 
 		// Add details if requested
 		if includeDetails {
-			result.PublishedAt = packageversions.StringPtr(publishedAt)
-			result.URL = packageversions.StringPtr(url)
+			result.PublishedAt = new(publishedAt)
+			result.URL = new(url)
 		}
 
 		// Cache result

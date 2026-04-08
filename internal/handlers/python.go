@@ -158,7 +158,7 @@ func (h *PythonHandler) GetLatestVersionFromRequirements(ctx context.Context, ar
 			}).Error("Failed to get PyPI package info")
 			results = append(results, PackageVersion{
 				Name:           name,
-				CurrentVersion: StringPtr(currentVersion),
+				CurrentVersion: new(currentVersion),
 				LatestVersion:  "unknown",
 				Registry:       "pypi",
 				Skipped:        true,
@@ -173,7 +173,7 @@ func (h *PythonHandler) GetLatestVersionFromRequirements(ctx context.Context, ar
 		// Add result
 		results = append(results, PackageVersion{
 			Name:           name,
-			CurrentVersion: StringPtr(currentVersion),
+			CurrentVersion: new(currentVersion),
 			LatestVersion:  latestVersion,
 			Registry:       "pypi",
 		})
@@ -311,7 +311,7 @@ func (h *PythonHandler) processPackage(name, version string) (PackageVersion, er
 	if err != nil {
 		return PackageVersion{
 			Name:           name,
-			CurrentVersion: StringPtr(currentVersion),
+			CurrentVersion: new(currentVersion),
 			LatestVersion:  "unknown",
 			Registry:       "pypi",
 			Skipped:        true,
@@ -324,7 +324,7 @@ func (h *PythonHandler) processPackage(name, version string) (PackageVersion, er
 
 	return PackageVersion{
 		Name:           name,
-		CurrentVersion: StringPtr(currentVersion),
+		CurrentVersion: new(currentVersion),
 		LatestVersion:  latestVersion,
 		Registry:       "pypi",
 	}, nil

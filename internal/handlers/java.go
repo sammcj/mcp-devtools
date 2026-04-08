@@ -154,7 +154,7 @@ func (h *JavaHandler) GetLatestVersionFromMaven(ctx context.Context, args map[st
 			}).Error("Failed to get Maven artifact info")
 			results = append(results, PackageVersion{
 				Name:           fmt.Sprintf("%s:%s", dep.GroupID, dep.ArtifactID),
-				CurrentVersion: StringPtr(dep.Version),
+				CurrentVersion: new(dep.Version),
 				LatestVersion:  "unknown",
 				Registry:       "maven",
 				Skipped:        true,
@@ -170,7 +170,7 @@ func (h *JavaHandler) GetLatestVersionFromMaven(ctx context.Context, args map[st
 		}
 		results = append(results, PackageVersion{
 			Name:           name,
-			CurrentVersion: StringPtr(dep.Version),
+			CurrentVersion: new(dep.Version),
 			LatestVersion:  latestVersion,
 			Registry:       "maven",
 		})
@@ -245,7 +245,7 @@ func (h *JavaHandler) GetLatestVersionFromGradle(ctx context.Context, args map[s
 			}).Error("Failed to get Maven artifact info")
 			results = append(results, PackageVersion{
 				Name:           fmt.Sprintf("%s:%s", dep.Group, dep.Name),
-				CurrentVersion: StringPtr(dep.Version),
+				CurrentVersion: new(dep.Version),
 				LatestVersion:  "unknown",
 				Registry:       "gradle",
 				Skipped:        true,
@@ -261,7 +261,7 @@ func (h *JavaHandler) GetLatestVersionFromGradle(ctx context.Context, args map[s
 		}
 		results = append(results, PackageVersion{
 			Name:           name,
-			CurrentVersion: StringPtr(dep.Version),
+			CurrentVersion: new(dep.Version),
 			LatestVersion:  latestVersion,
 			Registry:       "gradle",
 		})

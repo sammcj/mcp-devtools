@@ -248,7 +248,7 @@ func TestAWSModels_JSONSerialization(t *testing.T) {
 		RankOrder: 1,
 		URL:       "https://docs.aws.amazon.com/s3/latest/userguide/example.html",
 		Title:     "Example S3 Documentation",
-		Context:   stringPtr("Example context"),
+		Context:   new("Example context"),
 	}
 
 	// Should be serializable to JSON
@@ -264,7 +264,7 @@ func TestAWSModels_JSONSerialization(t *testing.T) {
 	recResult := aws.RecommendationResult{
 		URL:     "https://docs.aws.amazon.com/s3/latest/userguide/example.html",
 		Title:   "Example S3 Documentation",
-		Context: stringPtr("Related content"),
+		Context: new("Related content"),
 	}
 
 	assert.NotPanics(t, func() {
@@ -281,7 +281,7 @@ func TestAWSModels_JSONSerialization(t *testing.T) {
 		StartIndex:     0,
 		EndIndex:       50,
 		HasMoreContent: true,
-		NextStartIndex: intPtr(50),
+		NextStartIndex: new(50),
 	}
 
 	assert.NotPanics(t, func() {
@@ -438,12 +438,15 @@ func TestExtendedHelp(t *testing.T) {
 }
 
 // Helper functions
+//
+//go:fix inline
 func stringPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
+//go:fix inline
 func intPtr(i int) *int {
-	return &i
+	return new(i)
 }
 
 func TestAWSDocumentationTool_Execute_ListPricingServicesAction(t *testing.T) {

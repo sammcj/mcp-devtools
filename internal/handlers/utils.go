@@ -227,13 +227,17 @@ func CleanVersion(version string) string {
 }
 
 // StringPtr returns a pointer to the given string
+//
+//go:fix inline
 func StringPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
 // IntPtr returns a pointer to the given int
+//
+//go:fix inline
 func IntPtr(i int) *int {
-	return &i
+	return new(i)
 }
 
 // ExtractMajorVersion extracts the major version from a version string

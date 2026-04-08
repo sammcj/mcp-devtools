@@ -188,7 +188,7 @@ func (h *GoHandler) GetLatestVersion(ctx context.Context, args map[string]any) (
 		if isReplaced {
 			results = append(results, PackageVersion{
 				Name:           req.Path,
-				CurrentVersion: StringPtr(req.Version),
+				CurrentVersion: new(req.Version),
 				LatestVersion:  fmt.Sprintf("replaced by %s@%s", replacedBy, replacedVersion),
 				Registry:       "go",
 				Skipped:        true,
@@ -206,7 +206,7 @@ func (h *GoHandler) GetLatestVersion(ctx context.Context, args map[string]any) (
 			}).Error("Failed to get Go module info")
 			results = append(results, PackageVersion{
 				Name:           req.Path,
-				CurrentVersion: StringPtr(req.Version),
+				CurrentVersion: new(req.Version),
 				LatestVersion:  "unknown",
 				Registry:       "go",
 				Skipped:        true,
@@ -218,7 +218,7 @@ func (h *GoHandler) GetLatestVersion(ctx context.Context, args map[string]any) (
 		// Add result
 		results = append(results, PackageVersion{
 			Name:           req.Path,
-			CurrentVersion: StringPtr(req.Version),
+			CurrentVersion: new(req.Version),
 			LatestVersion:  latestVersion,
 			Registry:       "go",
 		})

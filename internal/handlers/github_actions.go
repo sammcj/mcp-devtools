@@ -68,7 +68,7 @@ func (h *GitHubActionsHandler) GetLatestVersion(ctx context.Context, args map[st
 					continue
 				}
 				if version, ok := actionMap["currentVersion"].(string); ok {
-					action.CurrentVersion = StringPtr(version)
+					action.CurrentVersion = new(version)
 				}
 				actions = append(actions, action)
 			}
@@ -118,8 +118,8 @@ func (h *GitHubActionsHandler) GetLatestVersion(ctx context.Context, args map[st
 
 		// Add details if requested
 		if includeDetails {
-			result.PublishedAt = StringPtr(publishedAt)
-			result.URL = StringPtr(url)
+			result.PublishedAt = new(publishedAt)
+			result.URL = new(url)
 		}
 
 		results = append(results, result)

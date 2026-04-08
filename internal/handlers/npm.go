@@ -154,7 +154,7 @@ func (h *NpmHandler) GetLatestVersion(ctx context.Context, args map[string]any) 
 			}).Error("Failed to get npm package info")
 			results = append(results, PackageVersion{
 				Name:           name,
-				CurrentVersion: StringPtr(currentVersion),
+				CurrentVersion: new(currentVersion),
 				LatestVersion:  "unknown",
 				Registry:       "npm",
 				Skipped:        true,
@@ -200,7 +200,7 @@ func (h *NpmHandler) GetLatestVersion(ctx context.Context, args map[string]any) 
 		// Add result
 		results = append(results, PackageVersion{
 			Name:           name,
-			CurrentVersion: StringPtr(currentVersion),
+			CurrentVersion: new(currentVersion),
 			LatestVersion:  latestVersion,
 			Registry:       "npm",
 		})

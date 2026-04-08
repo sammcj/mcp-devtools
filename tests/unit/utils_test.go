@@ -328,7 +328,7 @@ func TestExtractMajorVersion(t *testing.T) {
 
 func TestStringPtr(t *testing.T) {
 	str := "test string"
-	ptr := packageversions.StringPtr(str)
+	ptr := new(str)
 
 	testutils.AssertNotNil(t, ptr)
 	testutils.AssertEqual(t, str, *ptr)
@@ -336,7 +336,7 @@ func TestStringPtr(t *testing.T) {
 
 func TestIntPtr(t *testing.T) {
 	num := 42
-	ptr := packageversions.IntPtr(num)
+	ptr := new(num)
 
 	testutils.AssertNotNil(t, ptr)
 	testutils.AssertEqual(t, num, *ptr)
