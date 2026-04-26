@@ -417,7 +417,7 @@ func main() {
 					// Get fresh reference from registry to ensure consistency
 					currentTool, ok := registry.GetTool(name)
 					if !ok {
-						return nil, fmt.Errorf("tool not found: %s", name)
+						return mcp.NewToolResultError(fmt.Sprintf("tool not found: %s", name)), nil
 					}
 
 					// Type assert the arguments to map[string]interface{}
@@ -425,7 +425,7 @@ func main() {
 					if request.Params.Arguments != nil {
 						args, ok = request.Params.Arguments.(map[string]any)
 						if !ok {
-							return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
+							return mcp.NewToolResultError(fmt.Sprintf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)), nil
 						}
 					} else {
 						args = make(map[string]any)
@@ -469,7 +469,7 @@ func main() {
 							errorLogger.LogToolError(name, args, err, transport)
 						}
 
-						return nil, fmt.Errorf("tool execution failed: %w", err)
+						return mcp.NewToolResultError(fmt.Sprintf("tool execution failed: %s", err)), nil
 					}
 
 					return result, nil
