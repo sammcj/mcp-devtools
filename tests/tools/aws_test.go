@@ -437,18 +437,6 @@ func TestExtendedHelp(t *testing.T) {
 	assert.True(t, hasRecommend, "Should have recommend action example")
 }
 
-// Helper functions
-//
-//go:fix inline
-func stringPtr(s string) *string {
-	return new(s)
-}
-
-//go:fix inline
-func intPtr(i int) *int {
-	return new(i)
-}
-
 func TestAWSDocumentationTool_Execute_ListPricingServicesAction(t *testing.T) {
 	// Enable AWS tools for testing
 	_ = os.Setenv("ENABLE_ADDITIONAL_TOOLS", "aws_documentation")

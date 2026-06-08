@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/sammcj/mcp-devtools/internal/security"
@@ -160,8 +161,8 @@ func (tx *RenameTransaction) Rollback() ([]string, error) {
 	var lastErr error
 
 	// Restore files in reverse order of modification
-	for i := len(tx.modified) - 1; i >= 0; i-- {
-		filePath := tx.modified[i]
+	for _, filePath := range slices.Backward(tx.modified) {
+
 		backup, exists := tx.backups[filePath]
 		if !exists {
 			lastErr = fmt.Errorf("no backup found for %s", filePath)

@@ -2,6 +2,7 @@ package security
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -71,7 +72,7 @@ type Cache struct {
 	data    sync.Map
 	maxSize int
 	maxAge  time.Duration
-	size    int64
+	size    atomic.Int64
 }
 
 // CacheEntry represents a cached security analysis result

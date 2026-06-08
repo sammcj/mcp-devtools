@@ -179,7 +179,7 @@ func (p *DuckDuckGoProvider) executeInternetSearch(ctx context.Context, logger *
 		if strings.HasPrefix(link, "//duckduckgo.com/l/?uddg=") {
 			parts := strings.Split(link, "uddg=")
 			if len(parts) > 1 {
-				urlPart := strings.Split(parts[1], "&")[0]
+				urlPart, _, _ := strings.Cut(parts[1], "&")
 				if decodedURL, err := url.QueryUnescape(urlPart); err == nil {
 					link = decodedURL
 				}
