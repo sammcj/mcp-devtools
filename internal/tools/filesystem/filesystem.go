@@ -956,7 +956,7 @@ func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.Ca
 	return mcp.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
 }
 
-func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, error) {
+// loadGitignorePatterns collects .gitignore patterns from the repository root down to dir.
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve directory for gitignore filtering: %w", err)
