@@ -105,6 +105,73 @@ func setMemoryLimit() {
 	debug.SetMemoryLimit(memLimit)
 }
 
+// newToolHandler builds the MCP handler for a registered tool. Tool execution
+// failures (missing parameters, invalid input, unsupported options, etc.) are
+// returned as tool results with isError set rather than Go errors. Returning a
+// Go error here makes mcp-go respond with a JSON-RPC -32603 internal error,
+// which clients treat as a server fault; an isError result lets the calling
+// agent read the message and self-correct.
+func newToolHandler(name, transport string, logger *logrus.Logger) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(toolCtx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		// Get fresh reference from registry to ensure consistency
+		currentTool, ok := registry.GetTool(name)
+		if !ok {
+			return mcp.NewToolResultError(fmt.Sprintf("tool not found: %s", name)), nil
+		}
+
+		// Type assert the arguments to map[string]interface{}
+		var args map[string]any
+		if request.Params.Arguments != nil {
+			args, ok = request.Params.Arguments.(map[string]any)
+			if !ok {
+				return mcp.NewToolResultError(fmt.Sprintf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)), nil
+			}
+		} else {
+			args = make(map[string]any)
+		}
+
+		// Start timing for metrics
+		startTime := time.Now()
+
+		// Start telemetry span for tool execution
+		spanCtx, span := telemetry.StartToolSpan(toolCtx, name, args)
+
+		// Execute tool with error recovery
+		result, err := currentTool.Execute(spanCtx, registry.GetLogger(), registry.GetCache(), args)
+
+		// Calculate duration for metrics
+		durationMs := float64(time.Since(startTime).Milliseconds())
+
+		// Record metrics
+		telemetry.RecordToolCall(spanCtx, name, transport, err == nil, durationMs)
+
+		if err != nil {
+			// Categorise and record error metric
+			errorType := telemetry.CategoriseToolError(err)
+			telemetry.RecordToolError(spanCtx, name, errorType)
+		}
+
+		// End the telemetry span with success or error
+		telemetry.EndToolSpan(span, err)
+
+		if err != nil {
+			// Log error to stderr for debugging (won't interfere with stdio)
+			if transport != "stdio" {
+				logger.WithError(err).Errorf("Tool execution failed: %s", name)
+			}
+
+			// Log tool error to file if enabled
+			if errorLogger := tools.GetGlobalErrorLogger(); errorLogger != nil && errorLogger.IsEnabled() {
+				errorLogger.LogToolError(name, args, err, transport)
+			}
+
+			return mcp.NewToolResultError(fmt.Sprintf("tool execution failed: %s", err)), nil
+		}
+
+		return result, nil
+	}
+}
+
 func main() {
 	// Set memory limit for the Go application
 	setMemoryLimit()
@@ -413,67 +480,7 @@ func main() {
 					logger.Infof("Registering tool: %s", name)
 				}
 
-				mcpSrv.AddTool(tool.Definition(), func(toolCtx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-					// Get fresh reference from registry to ensure consistency
-					currentTool, ok := registry.GetTool(name)
-					if !ok {
-						return mcp.NewToolResultError(fmt.Sprintf("tool not found: %s", name)), nil
-					}
-
-					// Type assert the arguments to map[string]interface{}
-					var args map[string]any
-					if request.Params.Arguments != nil {
-						args, ok = request.Params.Arguments.(map[string]any)
-						if !ok {
-							return mcp.NewToolResultError(fmt.Sprintf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)), nil
-						}
-					} else {
-						args = make(map[string]any)
-					}
-
-					// Start timing for metrics
-					startTime := time.Now()
-
-					// Start telemetry span for tool execution
-					spanCtx, span := telemetry.StartToolSpan(toolCtx, name, args)
-					defer func() {
-						// End span will be called with the error (if any) below
-					}()
-
-					// Execute tool with error recovery
-					result, err := currentTool.Execute(spanCtx, registry.GetLogger(), registry.GetCache(), args)
-
-					// Calculate duration for metrics
-					durationMs := float64(time.Since(startTime).Milliseconds())
-
-					// Record metrics
-					telemetry.RecordToolCall(spanCtx, name, transport, err == nil, durationMs)
-
-					if err != nil {
-						// Categorise and record error metric
-						errorType := telemetry.CategoriseToolError(err)
-						telemetry.RecordToolError(spanCtx, name, errorType)
-					}
-
-					// End the telemetry span with success or error
-					telemetry.EndToolSpan(span, err)
-
-					if err != nil {
-						// Log error to stderr for debugging (won't interfere with stdio)
-						if transport != "stdio" {
-							logger.WithError(err).Errorf("Tool execution failed: %s", name)
-						}
-
-						// Log tool error to file if enabled
-						if errorLogger := tools.GetGlobalErrorLogger(); errorLogger != nil && errorLogger.IsEnabled() {
-							errorLogger.LogToolError(name, args, err, transport)
-						}
-
-						return mcp.NewToolResultError(fmt.Sprintf("tool execution failed: %s", err)), nil
-					}
-
-					return result, nil
-				})
+				mcpSrv.AddTool(tool.Definition(), newToolHandler(name, transport, logger))
 			}
 
 			// Register upstream proxy tools asynchronously (avoids blocking startup for OAuth)
