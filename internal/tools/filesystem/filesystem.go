@@ -994,13 +994,9 @@ func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.Ca
 				continue
 			}
 
-			negate := strings.HasPrefix(line, "!")
-			if negate {
-				line = strings.TrimPrefix(line, "!")
-			}
+			line, negate := strings.CutPrefix(line, "!")
 
-			directoryOnly := strings.HasSuffix(line, "/")
-			line = strings.TrimSuffix(line, "/")
+			line, directoryOnly := strings.CutSuffix(line, "/")
 			line = strings.TrimPrefix(line, "/")
 			if line == "" {
 				continue
