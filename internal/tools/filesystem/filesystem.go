@@ -7,12 +7,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
@@ -34,6 +36,14 @@ type FileSystemTool struct {
 	maxFileSize        int64
 	secureFileMode     os.FileMode
 	mu                 sync.RWMutex
+}
+
+type gitignorePattern struct {
+	baseDir       string
+	pattern       string
+	negate        bool
+	directoryOnly bool
+	matchBasename bool
 }
 
 // init registers the filesystem tool
@@ -838,8 +848,16 @@ func (t *FileSystemTool) listDirectory(options map[string]any) (*mcp.CallToolRes
 		return nil, fmt.Errorf("failed to read directory: %w", err)
 	}
 
+	gitignorePatterns, err := t.loadGitignorePatterns(validPath)
+	if err != nil {
+		return nil, err
+	}
+
 	var result strings.Builder
 	for _, entry := range entries {
+		if t.isIgnoredByGitignore(validPath, entry, gitignorePatterns) {
+			continue
+		}
 		prefix := "[FILE]"
 		if entry.IsDir() {
 			prefix = "[DIR]"
@@ -874,6 +892,11 @@ func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.Ca
 		return nil, fmt.Errorf("failed to read directory: %w", err)
 	}
 
+	gitignorePatterns, err := t.loadGitignorePatterns(validPath)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get detailed information for each entry
 	type entryInfo struct {
 		name  string
@@ -883,6 +906,9 @@ func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.Ca
 
 	var detailedEntries []entryInfo
 	for _, entry := range entries {
+		if t.isIgnoredByGitignore(validPath, entry, gitignorePatterns) {
+			continue
+		}
 		info, err := entry.Info()
 		if err != nil {
 			continue
@@ -929,6 +955,204 @@ func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.Ca
 	fmt.Fprintf(&result, "Combined size: %s\n", t.formatSize(totalSize))
 
 	return mcp.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
+}
+
+// loadGitignorePatterns collects .gitignore patterns from the git repository
+// root (or the allowed-directory boundary, whichever is lower) down to dir.
+// The upward search is clamped to the allowed directory so we never stat or read
+// files outside the tool's permitted scope, preserving least privilege.
+func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, error) {
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve directory for gitignore filtering: %w", err)
+	}
+
+	// Never ascend above the allowed directory that contains absDir. If absDir
+	// is not within an allowed directory, restrict the search to absDir itself.
+	boundary := t.allowedBoundary(absDir)
+	if boundary == "" {
+		boundary = absDir
+	}
+
+	// Search up to the git repository root when it lies within the boundary,
+	// otherwise stop at the boundary itself.
+	top := boundary
+	if repoRoot := findGitRepositoryRoot(absDir, boundary); repoRoot != "" {
+		top = repoRoot
+	}
+
+	var searchDirs []string
+	for current := absDir; ; current = filepath.Dir(current) {
+		searchDirs = append(searchDirs, current)
+		if current == top {
+			break
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+	}
+	// ensure patterns are loaded in root->child order
+	slices.Reverse(searchDirs)
+
+	var patterns []gitignorePattern
+	for _, searchDir := range searchDirs {
+		patternFile := filepath.Join(searchDir, ".gitignore")
+		filePatterns, parseErr := loadGitignorePatternsFromFile(patternFile, searchDir)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		patterns = append(patterns, filePatterns...)
+	}
+
+	return patterns, nil
+}
+
+// allowedBoundary returns the allowed directory that contains absDir, resolving
+// symlinks the same way validatePath does. It returns "" when absDir is not
+// within any allowed directory. Gitignore traversal must not ascend above this
+// boundary.
+func (t *FileSystemTool) allowedBoundary(absDir string) string {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	clean := filepath.Clean(absDir)
+	for _, allowedDir := range t.allowedDirectories {
+		allowedAbs, err := filepath.Abs(allowedDir)
+		if err != nil {
+			continue
+		}
+		allowedClean := filepath.Clean(allowedAbs)
+		if clean == allowedClean || strings.HasPrefix(clean+string(filepath.Separator), allowedClean+string(filepath.Separator)) {
+			return allowedClean
+		}
+
+		// Resolve the allowed directory's symlinks to handle cases like
+		// /tmp -> /private/tmp on macOS, mirroring isPathWithinAllowedReal.
+		if allowedReal, err := filepath.EvalSymlinks(allowedClean); err == nil {
+			allowedRealClean := filepath.Clean(allowedReal)
+			if clean == allowedRealClean || strings.HasPrefix(clean+string(filepath.Separator), allowedRealClean+string(filepath.Separator)) {
+				return allowedRealClean
+			}
+		}
+	}
+	return ""
+}
+
+// loadGitignorePatternsFromFile parses a single .gitignore file, returning its
+// ordered patterns. A missing file is not an error (nil, nil is returned).
+func loadGitignorePatternsFromFile(patternFile, searchDir string) ([]gitignorePattern, error) {
+	file, openErr := os.Open(patternFile)
+	if openErr != nil {
+		if os.IsNotExist(openErr) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to read .gitignore file %s: %w", patternFile, openErr)
+	}
+	defer file.Close()
+
+	var patterns []gitignorePattern
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		line, negate := strings.CutPrefix(line, "!")
+
+		line, directoryOnly := strings.CutSuffix(line, "/")
+		line = strings.TrimPrefix(line, "/")
+		if line == "" {
+			continue
+		}
+
+		patterns = append(patterns, gitignorePattern{
+			baseDir:       searchDir,
+			pattern:       line,
+			negate:        negate,
+			directoryOnly: directoryOnly,
+			matchBasename: !strings.Contains(line, "/"),
+		})
+	}
+
+	if scanErr := scanner.Err(); scanErr != nil {
+		return nil, fmt.Errorf("failed reading .gitignore file %s: %w", patternFile, scanErr)
+	}
+
+	return patterns, nil
+}
+
+// findGitRepositoryRoot walks upward from startDir looking for a directory that
+// contains a .git entry, stopping at boundary so the search never escapes the
+// allowed directory. It returns "" when no repository root is found.
+func findGitRepositoryRoot(startDir, boundary string) string {
+	for current := startDir; ; current = filepath.Dir(current) {
+		if _, err := os.Stat(filepath.Join(current, ".git")); err == nil {
+			return current
+		}
+		if current == boundary {
+			break
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+	}
+	return ""
+}
+
+// isIgnoredByGitignore reports whether entry (located in listedDir) should be
+// hidden from a directory listing. The .git directory is always hidden; other
+// entries are matched against the ordered patterns, with later matches and
+// negation (!) rules taking precedence in gitignore order.
+func (t *FileSystemTool) isIgnoredByGitignore(listedDir string, entry os.DirEntry, patterns []gitignorePattern) bool {
+	if entry.Name() == ".git" && entry.IsDir() {
+		return true
+	}
+
+	entryPath := filepath.Join(listedDir, entry.Name())
+	ignored := false
+	for _, pattern := range patterns {
+		relativePath, err := filepath.Rel(pattern.baseDir, entryPath)
+		if err != nil {
+			continue
+		}
+
+		relativePath = filepath.ToSlash(relativePath)
+		if relativePath == "." || strings.HasPrefix(relativePath, "../") {
+			continue
+		}
+
+		if pattern.directoryOnly && !entry.IsDir() {
+			continue
+		}
+
+		matched := false
+		if pattern.matchBasename {
+			matched, err = doublestar.PathMatch(pattern.pattern, entry.Name())
+			if err != nil {
+				continue
+			}
+		} else {
+			matched, err = doublestar.PathMatch(pattern.pattern, relativePath)
+			if err != nil {
+				continue
+			}
+			if !matched {
+				matched, err = doublestar.PathMatch("**/"+pattern.pattern, relativePath)
+				if err != nil {
+					continue
+				}
+			}
+		}
+
+		if matched {
+			ignored = !pattern.negate
+		}
+	}
+
+	return ignored
 }
 
 // formatSize formats file size in human-readable format

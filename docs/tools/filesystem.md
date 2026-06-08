@@ -155,6 +155,7 @@ Create directory with parent directories as needed.
 
 #### `list_directory`
 List directory contents with file/directory indicators.
+Entries matching `.gitignore` rules (from the current repo path) are filtered out, and `.git` is always hidden.
 
 **Parameters:**
 - `path` (required): Directory path to list
@@ -171,6 +172,7 @@ List directory contents with file/directory indicators.
 
 #### `list_directory_with_sizes`
 List directory contents with file sizes and sorting options.
+Entries matching `.gitignore` rules (from the current repo path) are filtered out, and `.git` is always hidden.
 
 **Parameters:**
 - `path` (required): Directory path to list
