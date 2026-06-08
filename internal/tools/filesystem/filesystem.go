@@ -962,9 +962,8 @@ func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, 
 		return nil, fmt.Errorf("failed to resolve directory for gitignore filtering: %w", err)
 	}
 
-	searchDirs := []string{absDir}
+	var searchDirs []string
 	if repoRoot := findGitRepositoryRoot(absDir); repoRoot != "" {
-		searchDirs = nil
 		for current := absDir; ; current = filepath.Dir(current) {
 			searchDirs = append(searchDirs, current)
 			if current == repoRoot {
@@ -975,6 +974,8 @@ func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, 
 		for i, j := 0, len(searchDirs)-1; i < j; i, j = i+1, j-1 {
 			searchDirs[i], searchDirs[j] = searchDirs[j], searchDirs[i]
 		}
+	} else {
+		searchDirs = []string{absDir}
 	}
 
 	var patterns []gitignorePattern
@@ -1001,7 +1002,8 @@ func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, 
 			}
 
 			directoryOnly := strings.HasSuffix(line, "/")
-			line = strings.TrimPrefix(strings.TrimSuffix(line, "/"), "/")
+			line = strings.TrimSuffix(line, "/")
+			line = strings.TrimPrefix(line, "/")
 			if line == "" {
 				continue
 			}

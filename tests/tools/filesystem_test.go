@@ -241,6 +241,9 @@ func TestFileSystemTool_ListDirectory(t *testing.T) {
 	if !strings.Contains(content, "[DIR] subdir") {
 		t.Errorf("Expected to find '[DIR] subdir' in output: %s", content)
 	}
+	if !strings.Contains(content, "[FILE] .gitignore") {
+		t.Errorf("Expected '.gitignore' to be listed, got: %s", content)
+	}
 	if strings.Contains(content, ".venv") {
 		t.Errorf("Expected '.venv' to be filtered by .gitignore, got: %s", content)
 	}
