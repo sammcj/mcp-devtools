@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"unicode"
@@ -798,8 +799,8 @@ func applyTextEdits(content string, edits []protocol.TextEdit) string {
 	}
 
 	// Apply edits in reverse order to maintain offsets
-	for i := len(edits) - 1; i >= 0; i-- {
-		lines = applyTextEdit(lines, edits[i])
+	for _, edit := range slices.Backward(edits) {
+		lines = applyTextEdit(lines, edit)
 	}
 
 	return strings.Join(lines, lineEnding)

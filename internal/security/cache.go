@@ -3,7 +3,6 @@ package security
 import (
 	"crypto/sha1"
 	"fmt"
-	"sync/atomic"
 	"time"
 )
 
@@ -27,7 +26,7 @@ func (c *Cache) Get(key string) (*SecurityResult, bool) {
 		// Simple TTL check
 		if time.Since(entry.Created) > c.maxAge {
 			c.data.Delete(key)
-			atomic.AddInt64(&c.size, -1)
+			c.size.Add(-1)
 			return nil, false
 		}
 
@@ -39,7 +38,7 @@ func (c *Cache) Get(key string) (*SecurityResult, bool) {
 // Set stores a security result in the cache
 func (c *Cache) Set(key string, result *SecurityResult) {
 	// Simple size limit - if over limit, don't cache (fail open)
-	if atomic.LoadInt64(&c.size) >= int64(c.maxSize) {
+	if c.size.Load() >= int64(c.maxSize) {
 		return // Skip caching when full - simpler than complex eviction
 	}
 
@@ -50,7 +49,7 @@ func (c *Cache) Set(key string, result *SecurityResult) {
 
 	// Only increment if this is a new key
 	if _, loaded := c.data.LoadOrStore(key, entry); !loaded {
-		atomic.AddInt64(&c.size, 1)
+		c.size.Add(1)
 	}
 }
 
@@ -61,7 +60,7 @@ func (c *Cache) cleanup() {
 		entry := value.(*CacheEntry)
 		if now.Sub(entry.Created) > c.maxAge {
 			c.data.Delete(key)
-			atomic.AddInt64(&c.size, -1)
+			c.size.Add(-1)
 		}
 		return true
 	})
@@ -73,12 +72,12 @@ func (c *Cache) Clear() {
 		c.data.Delete(key)
 		return true
 	})
-	atomic.StoreInt64(&c.size, 0)
+	c.size.Store(0)
 }
 
 // Size returns the current number of cached entries
 func (c *Cache) Size() int {
-	return int(atomic.LoadInt64(&c.size))
+	return int(c.size.Load())
 }
 
 // GenerateCacheKey generates a cache key from content and source

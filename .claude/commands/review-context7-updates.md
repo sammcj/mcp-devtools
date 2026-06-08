@@ -4,7 +4,7 @@ Please read the @README.md and @docs/tools/package-documentation.md to understan
 My package documentation tool provides context7 functionality so you don't have to use the official context7 mcp server as well.
 
 There were some updates to the official context7 mcp server since I last looked and it and I'd like to task you with determining if any new features or improvements were added to it that
-  we should consider replicating in our package-documentation tool.
+we should consider replicating in our package-documentation tool.
 
 The official context7 server is located at: `$HOME/git/mcp/context7` (you may need to do a git pull to get the latest changes)
 Your package documentation tool is located at: `$HOME/git/sammcj/mcp-devtools/internal/tools/packagedocs/`
@@ -12,11 +12,13 @@ Your package documentation tool is located at: `$HOME/git/sammcj/mcp-devtools/in
 ## Key Files to Review
 
 **Your Implementation:**
+
 - `$HOME/git/sammcj/mcp-devtools/internal/tools/packagedocs/client.go` - API client and HTTP operations
 - `$HOME/git/sammcj/mcp-devtools/internal/tools/packagedocs/resolve_library_id.go` - Library ID resolution tool
 - `$HOME/git/sammcj/mcp-devtools/internal/tools/packagedocs/get_library_documentation.go` - Documentation fetching tool
 
 **Context7 Reference:**
+
 - `$HOME/git/mcp/context7/src/index.ts` - Main MCP server implementation
 - `$HOME/git/mcp/context7/src/lib/api.ts` - API client and HTTP operations
 - `$HOME/git/mcp/context7/src/lib/types.ts` - Type definitions
@@ -43,16 +45,19 @@ Changes since `479473a` to `784ef42` (current) in context7:
 Recommendation
 
 Implement:
+
 1. ✅ Proxy Support - Aligns with your enterprise-focused architecture
 2. ✅ Trust Score Prioritisation - Simple text changes
 3. ✅ Source Header - One line addition
 
 Skip:
+
 1. ❌ Client IP Encryption - Adds complexity without clear benefit for your use case
 2. ❌ HTTP Transport - Your tool focuses on STDIO MCP integration
 3. ❌ Complex Auth Headers - Your current auth handling is sufficient
 
 Implementation Steps (if approved):
+
 - [ ] Add proxy configuration options to <files>, ensuring we follow existing config patterns, e.g. <existing patterns to consider>
 - [ ] ....
 
@@ -66,9 +71,10 @@ As part of your report ensure you record the git sha of the context7 repo of the
 
 IMPORTANT: Update these git shas in the `.claude/commands/review-context7-updates.md` file after your review.
 
-- Previously reviewed context7 git sha range (before this review): `479473a` to `784ef42`
-- Next context7 git sha range (this review): `784ef42` to `841265b`
+- Previously reviewed context7 git sha range (before this review): `784ef42` to `841265b`
+- Next context7 git sha range (this review): `841265b` to `<update after next review>`
 
 Historical reviews:
+
 - First Review - from `479473a` to `784ef42`
-- Second Review (2025-11-12) - from `784ef42` to `841265b`
+- Second Review (2026-04-12) - from `784ef42` to `841265b` (no substantive gaps; context7 caught up on proxy/API-key features we already had)
