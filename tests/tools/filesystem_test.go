@@ -190,6 +190,10 @@ func TestFileSystemTool_ListDirectory(t *testing.T) {
 	// Create some test files and directories
 	testFile := filepath.Join(tempDir, "test.txt")
 	testSubDir := filepath.Join(tempDir, "subdir")
+	testIgnoredDir := filepath.Join(tempDir, ".venv")
+	testIgnoredFile := filepath.Join(tempDir, "debug.log")
+	testGitDir := filepath.Join(tempDir, ".git")
+	testGitignoreFile := filepath.Join(tempDir, ".gitignore")
 
 	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
@@ -197,6 +201,18 @@ func TestFileSystemTool_ListDirectory(t *testing.T) {
 
 	if err := os.Mkdir(testSubDir, 0700); err != nil {
 		t.Fatalf("Failed to create test directory: %v", err)
+	}
+	if err := os.Mkdir(testIgnoredDir, 0700); err != nil {
+		t.Fatalf("Failed to create ignored test directory: %v", err)
+	}
+	if err := os.Mkdir(testGitDir, 0700); err != nil {
+		t.Fatalf("Failed to create .git directory: %v", err)
+	}
+	if err := os.WriteFile(testIgnoredFile, []byte("ignored"), 0600); err != nil {
+		t.Fatalf("Failed to create ignored test file: %v", err)
+	}
+	if err := os.WriteFile(testGitignoreFile, []byte(".venv/\n*.log\n"), 0600); err != nil {
+		t.Fatalf("Failed to create .gitignore file: %v", err)
 	}
 
 	tool := setupFilesystemTool(tempDir)
@@ -224,6 +240,58 @@ func TestFileSystemTool_ListDirectory(t *testing.T) {
 
 	if !strings.Contains(content, "[DIR] subdir") {
 		t.Errorf("Expected to find '[DIR] subdir' in output: %s", content)
+	}
+	if strings.Contains(content, ".venv") {
+		t.Errorf("Expected '.venv' to be filtered by .gitignore, got: %s", content)
+	}
+	if strings.Contains(content, "debug.log") {
+		t.Errorf("Expected 'debug.log' to be filtered by .gitignore, got: %s", content)
+	}
+	if strings.Contains(content, "[DIR] .git") {
+		t.Errorf("Expected '.git' directory to be filtered, got: %s", content)
+	}
+}
+
+func TestFileSystemTool_ListDirectoryWithSizes_RespectsGitignore(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "filesystem_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	if err := os.WriteFile(filepath.Join(tempDir, "visible.txt"), []byte("visible"), 0600); err != nil {
+		t.Fatalf("Failed to create visible file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tempDir, "ignore.log"), []byte("ignored"), 0600); err != nil {
+		t.Fatalf("Failed to create ignored file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("*.log\n"), 0600); err != nil {
+		t.Fatalf("Failed to create .gitignore file: %v", err)
+	}
+
+	tool := setupFilesystemTool(tempDir)
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	cache := &sync.Map{}
+
+	args := map[string]any{
+		"function": "list_directory_with_sizes",
+		"options": map[string]any{
+			"path": tempDir,
+		},
+	}
+
+	result, err := tool.Execute(context.Background(), logger, cache, args)
+	if err != nil {
+		t.Fatalf("List directory with sizes failed: %v", err)
+	}
+
+	content := getTextContent(result)
+	if !strings.Contains(content, "visible.txt") {
+		t.Errorf("Expected to find 'visible.txt' in output: %s", content)
+	}
+	if strings.Contains(content, "ignore.log") {
+		t.Errorf("Expected 'ignore.log' to be filtered by .gitignore, got: %s", content)
 	}
 }
 
