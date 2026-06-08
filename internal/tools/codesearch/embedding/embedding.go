@@ -83,7 +83,7 @@ func (e *Engine) EnsureReady(ctx context.Context) error {
 
 	// Create hugot session - uses Go backend (no external ONNX runtime required)
 	e.logger.Info("Initialising embedding engine...")
-	session, err := hugot.NewGoSession()
+	session, err := hugot.NewGoSession(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create hugot session: %w", err)
 	}
@@ -105,7 +105,7 @@ func (e *Engine) EnsureReady(ctx context.Context) error {
 }
 
 // ensureModel downloads the embedding model if not present
-func (e *Engine) ensureModel(_ context.Context) error {
+func (e *Engine) ensureModel(ctx context.Context) error {
 	modelDir := filepath.Join(e.config.ModelPath, "sentence-transformers_all-MiniLM-L6-v2")
 	modelFile := filepath.Join(modelDir, "onnx", "model.onnx")
 
@@ -128,7 +128,7 @@ func (e *Engine) ensureModel(_ context.Context) error {
 	downloadOptions := hugot.NewDownloadOptions()
 	downloadOptions.OnnxFilePath = "onnx/model.onnx"
 
-	downloadedPath, err := hugot.DownloadModel(ModelRepo, e.config.ModelPath, downloadOptions)
+	downloadedPath, err := hugot.DownloadModel(ctx, ModelRepo, e.config.ModelPath, downloadOptions)
 	if err != nil {
 		return fmt.Errorf("failed to download model: %w", err)
 	}
@@ -181,7 +181,7 @@ func (e *Engine) Embed(ctx context.Context, text string) ([]float32, error) {
 	}
 
 	// Run feature extraction on single text
-	result, err := e.pipeline.RunPipeline([]string{text})
+	result, err := e.pipeline.RunPipeline(ctx, []string{text})
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate embedding: %w", err)
 	}
@@ -225,7 +225,7 @@ func (e *Engine) EmbedBatch(ctx context.Context, texts []string) ([][]float32, e
 		end := min(start+batchSize, len(texts))
 		batch := texts[start:end]
 
-		result, err := e.pipeline.RunPipeline(batch)
+		result, err := e.pipeline.RunPipeline(ctx, batch)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate embeddings for batch: %w", err)
 		}
