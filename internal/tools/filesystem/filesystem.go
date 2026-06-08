@@ -971,9 +971,7 @@ func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, 
 			}
 		}
 		// ensure patterns are loaded in root->child order
-		for i, j := 0, len(searchDirs)-1; i < j; i, j = i+1, j-1 {
-			searchDirs[i], searchDirs[j] = searchDirs[j], searchDirs[i]
-		}
+		slices.Reverse(searchDirs)
 	} else {
 		searchDirs = []string{absDir}
 	}
