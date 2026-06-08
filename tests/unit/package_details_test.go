@@ -22,15 +22,15 @@ func TestPackageDetailsStructure(t *testing.T) {
 			Repository:    new("https://github.com/serde-rs/serde"),
 			Documentation: new("https://docs.rs/serde"),
 			License:       new("MIT OR Apache-2.0"),
-			Downloads:     packageversions.Int64Ptr(1000000000),
+			Downloads:     new(int64(1000000000)),
 			Keywords:      []string{"serde", "serialisation", "no_std"},
 			Publisher:     new("dtolnay"),
 			Rust: &packageversions.RustDetails{
 				Edition:         new("2018"),
 				RustVersion:     new("1.60"),
-				CrateSize:       packageversions.Int64Ptr(45000),
+				CrateSize:       new(int64(45000)),
 				Categories:      []string{"encoding", "no-std"},
-				RecentDownloads: packageversions.Int64Ptr(50000000),
+				RecentDownloads: new(int64(50000000)),
 			},
 		},
 	}

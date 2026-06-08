@@ -75,7 +75,7 @@ func AssertNil(t *testing.T, value any) {
 	}
 	// Handle the case where value is a nil pointer wrapped in an interface
 	rv := reflect.ValueOf(value)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+	if rv.Kind() == reflect.Pointer && rv.IsNil() {
 		return // Test passes
 	}
 	t.Fatalf("Expected nil value, got %v (type: %T)", value, value)

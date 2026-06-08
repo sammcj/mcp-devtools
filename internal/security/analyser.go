@@ -441,7 +441,7 @@ func (t *ThreatAnalyser) analyseDestination(urlStr string) *Destination {
 	// Extract host portion
 	urlStr = strings.TrimPrefix(urlStr, "http://")
 	urlStr = strings.TrimPrefix(urlStr, "https://")
-	host := strings.Split(urlStr, "/")[0]
+	host, _, _ := strings.Cut(urlStr, "/")
 	host = strings.Split(host, ":")[0] // Remove port
 
 	destination := &Destination{
