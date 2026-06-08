@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -956,6 +957,7 @@ func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.Ca
 	return mcp.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
 }
 
+// loadGitignorePatterns collects .gitignore patterns from the repository root down to dir.
 func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, error) {
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
@@ -971,9 +973,7 @@ func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, 
 			}
 		}
 		// ensure patterns are loaded in root->child order
-		for i, j := 0, len(searchDirs)-1; i < j; i, j = i+1, j-1 {
-			searchDirs[i], searchDirs[j] = searchDirs[j], searchDirs[i]
-		}
+		slices.Reverse(searchDirs)
 	} else {
 		searchDirs = []string{absDir}
 	}
@@ -981,47 +981,53 @@ func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, 
 	var patterns []gitignorePattern
 	for _, searchDir := range searchDirs {
 		patternFile := filepath.Join(searchDir, ".gitignore")
-		file, openErr := os.Open(patternFile)
-		if openErr != nil {
-			if os.IsNotExist(openErr) {
-				continue
-			}
-			return nil, fmt.Errorf("failed to read .gitignore file %s: %w", patternFile, openErr)
+		filePatterns, parseErr := loadGitignorePatternsFromFile(patternFile, searchDir)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		patterns = append(patterns, filePatterns...)
+	}
+
+	return patterns, nil
+}
+
+func loadGitignorePatternsFromFile(patternFile, searchDir string) ([]gitignorePattern, error) {
+	file, openErr := os.Open(patternFile)
+	if openErr != nil {
+		if os.IsNotExist(openErr) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to read .gitignore file %s: %w", patternFile, openErr)
+	}
+	defer file.Close()
+
+	var patterns []gitignorePattern
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
 		}
 
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := strings.TrimSpace(scanner.Text())
-			if line == "" || strings.HasPrefix(line, "#") {
-				continue
-			}
+		line, negate := strings.CutPrefix(line, "!")
 
-			negate := strings.HasPrefix(line, "!")
-			if negate {
-				line = strings.TrimPrefix(line, "!")
-			}
-
-			directoryOnly := strings.HasSuffix(line, "/")
-			line = strings.TrimSuffix(line, "/")
-			line = strings.TrimPrefix(line, "/")
-			if line == "" {
-				continue
-			}
-
-			patterns = append(patterns, gitignorePattern{
-				baseDir:       searchDir,
-				pattern:       line,
-				negate:        negate,
-				directoryOnly: directoryOnly,
-				matchBasename: !strings.Contains(line, "/"),
-			})
+		line, directoryOnly := strings.CutSuffix(line, "/")
+		line = strings.TrimPrefix(line, "/")
+		if line == "" {
+			continue
 		}
 
-		if scanErr := scanner.Err(); scanErr != nil {
-			_ = file.Close()
-			return nil, fmt.Errorf("failed reading .gitignore file %s: %w", patternFile, scanErr)
-		}
-		_ = file.Close()
+		patterns = append(patterns, gitignorePattern{
+			baseDir:       searchDir,
+			pattern:       line,
+			negate:        negate,
+			directoryOnly: directoryOnly,
+			matchBasename: !strings.Contains(line, "/"),
+		})
+	}
+
+	if scanErr := scanner.Err(); scanErr != nil {
+		return nil, fmt.Errorf("failed reading .gitignore file %s: %w", patternFile, scanErr)
 	}
 
 	return patterns, nil
