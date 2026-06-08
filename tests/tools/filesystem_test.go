@@ -298,6 +298,56 @@ func TestFileSystemTool_ListDirectoryWithSizes_RespectsGitignore(t *testing.T) {
 	}
 }
 
+// TestFileSystemTool_ListDirectory_InheritsParentGitignore verifies that a
+// .gitignore in a parent directory (within the allowed boundary) is applied
+// when listing a nested subdirectory.
+func TestFileSystemTool_ListDirectory_InheritsParentGitignore(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "filesystem_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	subDir := filepath.Join(tempDir, "sub")
+	if err := os.Mkdir(subDir, 0700); err != nil {
+		t.Fatalf("Failed to create sub directory: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("*.log\n"), 0600); err != nil {
+		t.Fatalf("Failed to create parent .gitignore file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(subDir, "app.log"), []byte("log"), 0600); err != nil {
+		t.Fatalf("Failed to create ignored file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(subDir, "main.go"), []byte("package main"), 0600); err != nil {
+		t.Fatalf("Failed to create visible file: %v", err)
+	}
+
+	tool := setupFilesystemTool(tempDir)
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	cache := &sync.Map{}
+
+	args := map[string]any{
+		"function": "list_directory",
+		"options": map[string]any{
+			"path": subDir,
+		},
+	}
+
+	result, err := tool.Execute(context.Background(), logger, cache, args)
+	if err != nil {
+		t.Fatalf("List directory failed: %v", err)
+	}
+
+	content := getTextContent(result)
+	if !strings.Contains(content, "main.go") {
+		t.Errorf("Expected to find 'main.go' in output: %s", content)
+	}
+	if strings.Contains(content, "app.log") {
+		t.Errorf("Expected 'app.log' to be filtered by parent .gitignore, got: %s", content)
+	}
+}
+
 func TestFileSystemTool_GetFileInfo(t *testing.T) {
 	// Create a temporary directory for testing
 	tempDir, err := os.MkdirTemp("", "filesystem_test")

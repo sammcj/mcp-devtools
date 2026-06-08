@@ -957,26 +957,43 @@ func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.Ca
 	return mcp.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
 }
 
-// loadGitignorePatterns collects .gitignore patterns from the repository root down to dir.
+// loadGitignorePatterns collects .gitignore patterns from the git repository
+// root (or the allowed-directory boundary, whichever is lower) down to dir.
+// The upward search is clamped to the allowed directory so we never stat or read
+// files outside the tool's permitted scope, preserving least privilege.
 func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, error) {
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve directory for gitignore filtering: %w", err)
 	}
 
-	var searchDirs []string
-	if repoRoot := findGitRepositoryRoot(absDir); repoRoot != "" {
-		for current := absDir; ; current = filepath.Dir(current) {
-			searchDirs = append(searchDirs, current)
-			if current == repoRoot {
-				break
-			}
-		}
-		// ensure patterns are loaded in root->child order
-		slices.Reverse(searchDirs)
-	} else {
-		searchDirs = []string{absDir}
+	// Never ascend above the allowed directory that contains absDir. If absDir
+	// is not within an allowed directory, restrict the search to absDir itself.
+	boundary := t.allowedBoundary(absDir)
+	if boundary == "" {
+		boundary = absDir
 	}
+
+	// Search up to the git repository root when it lies within the boundary,
+	// otherwise stop at the boundary itself.
+	top := boundary
+	if repoRoot := findGitRepositoryRoot(absDir, boundary); repoRoot != "" {
+		top = repoRoot
+	}
+
+	var searchDirs []string
+	for current := absDir; ; current = filepath.Dir(current) {
+		searchDirs = append(searchDirs, current)
+		if current == top {
+			break
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+	}
+	// ensure patterns are loaded in root->child order
+	slices.Reverse(searchDirs)
 
 	var patterns []gitignorePattern
 	for _, searchDir := range searchDirs {
@@ -991,6 +1008,39 @@ func (t *FileSystemTool) loadGitignorePatterns(dir string) ([]gitignorePattern, 
 	return patterns, nil
 }
 
+// allowedBoundary returns the allowed directory that contains absDir, resolving
+// symlinks the same way validatePath does. It returns "" when absDir is not
+// within any allowed directory. Gitignore traversal must not ascend above this
+// boundary.
+func (t *FileSystemTool) allowedBoundary(absDir string) string {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	clean := filepath.Clean(absDir)
+	for _, allowedDir := range t.allowedDirectories {
+		allowedAbs, err := filepath.Abs(allowedDir)
+		if err != nil {
+			continue
+		}
+		allowedClean := filepath.Clean(allowedAbs)
+		if clean == allowedClean || strings.HasPrefix(clean+string(filepath.Separator), allowedClean+string(filepath.Separator)) {
+			return allowedClean
+		}
+
+		// Resolve the allowed directory's symlinks to handle cases like
+		// /tmp -> /private/tmp on macOS, mirroring isPathWithinAllowedReal.
+		if allowedReal, err := filepath.EvalSymlinks(allowedClean); err == nil {
+			allowedRealClean := filepath.Clean(allowedReal)
+			if clean == allowedRealClean || strings.HasPrefix(clean+string(filepath.Separator), allowedRealClean+string(filepath.Separator)) {
+				return allowedRealClean
+			}
+		}
+	}
+	return ""
+}
+
+// loadGitignorePatternsFromFile parses a single .gitignore file, returning its
+// ordered patterns. A missing file is not an error (nil, nil is returned).
 func loadGitignorePatternsFromFile(patternFile, searchDir string) ([]gitignorePattern, error) {
 	file, openErr := os.Open(patternFile)
 	if openErr != nil {
@@ -1033,10 +1083,16 @@ func loadGitignorePatternsFromFile(patternFile, searchDir string) ([]gitignorePa
 	return patterns, nil
 }
 
-func findGitRepositoryRoot(startDir string) string {
+// findGitRepositoryRoot walks upward from startDir looking for a directory that
+// contains a .git entry, stopping at boundary so the search never escapes the
+// allowed directory. It returns "" when no repository root is found.
+func findGitRepositoryRoot(startDir, boundary string) string {
 	for current := startDir; ; current = filepath.Dir(current) {
 		if _, err := os.Stat(filepath.Join(current, ".git")); err == nil {
 			return current
+		}
+		if current == boundary {
+			break
 		}
 		parent := filepath.Dir(current)
 		if parent == current {
@@ -1046,6 +1102,10 @@ func findGitRepositoryRoot(startDir string) string {
 	return ""
 }
 
+// isIgnoredByGitignore reports whether entry (located in listedDir) should be
+// hidden from a directory listing. The .git directory is always hidden; other
+// entries are matched against the ordered patterns, with later matches and
+// negation (!) rules taking precedence in gitignore order.
 func (t *FileSystemTool) isIgnoredByGitignore(listedDir string, entry os.DirEntry, patterns []gitignorePattern) bool {
 	if entry.Name() == ".git" && entry.IsDir() {
 		return true
