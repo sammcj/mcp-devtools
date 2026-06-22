@@ -457,7 +457,7 @@ mcp-devtools --transport http --port 18080 --oauth-enabled
 
 ### Environment Variables
 
-All environment variables are optional, but if you want to use specific search providers or document processing features, you may need to provide the the appropriate variables.
+All environment variables are optional, but if you want to use specific search providers or document processing features, you may need to provide the appropriate variables.
 
 **General:**
 
