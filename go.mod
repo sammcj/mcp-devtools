@@ -18,9 +18,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/knights-analytics/hugot v0.7.5
-	github.com/mark3labs/mcp-go v0.54.1
-	github.com/openai/openai-go/v3 v3.39.0
-	github.com/pdfcpu/pdfcpu v0.12.1
+	github.com/mark3labs/mcp-go v0.55.1
+	github.com/openai/openai-go/v3 v3.41.0
+	github.com/pdfcpu/pdfcpu v0.13.0
 	github.com/philippgille/chromem-go v0.7.0
 	github.com/pkoukk/tiktoken-go v0.1.8
 	github.com/sahilm/fuzzy v0.1.3
@@ -28,7 +28,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/smacker/go-tree-sitter v0.0.0-20240827094217-dd81d9e9be82
 	github.com/stretchr/testify v1.11.1
-	github.com/urfave/cli/v3 v3.9.1
+	github.com/urfave/cli/v3 v3.10.1
 	github.com/xuri/excelize/v2 v2.10.1
 	go.lsp.dev/jsonrpc2 v0.10.0
 	go.lsp.dev/protocol v0.12.0
@@ -45,7 +45,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	golang.org/x/oauth2 v0.36.0
-	golang.org/x/text v0.37.0
+	golang.org/x/text v0.38.0
 	golang.org/x/time v0.15.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -123,7 +123,7 @@ require (
 	golang.org/x/exp v0.0.0-20260603202125-055de637280b // indirect
 	golang.org/x/image v0.41.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
