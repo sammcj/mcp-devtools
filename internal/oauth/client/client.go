@@ -33,9 +33,32 @@ func NewOAuth2Client(config *OAuth2ClientConfig, logger *logrus.Logger) (OAuth2C
 		logger:          logger,
 		browserLauncher: NewBrowserLauncher(),
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:       30 * time.Second,
+			CheckRedirect: refuseOffOriginRedirect,
 		},
 	}, nil
+}
+
+// maxMetadataBytes bounds a discovery response. A metadata document is a few
+// kilobytes; anything larger is a server trying to exhaust this process.
+const maxMetadataBytes = 256 << 10
+
+// refuseOffOriginRedirect keeps discovery on the host the configured issuer
+// named. The URL is built from configuration, so a redirect elsewhere means the
+// authorisation and token endpoints would be sourced from a party the operator
+// never nominated. Same-origin redirects are ordinary path normalisation.
+func refuseOffOriginRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) == 0 {
+		return nil
+	}
+	from, to := via[0].URL, req.URL
+	if from.Scheme != to.Scheme || from.Host != to.Host {
+		return fmt.Errorf("discovery request redirected off %s://%s to %s://%s", from.Scheme, from.Host, to.Scheme, to.Host)
+	}
+	if len(via) >= 10 {
+		return fmt.Errorf("too many redirects during discovery")
+	}
+	return nil
 }
 
 // ValidateConfiguration validates the OAuth client configuration
@@ -92,7 +115,7 @@ func (c *DefaultOAuth2Client) tryDiscoverFromURL(ctx context.Context, discoveryU
 	}
 
 	// Read response body
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxMetadataBytes))
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -127,21 +150,24 @@ func (c *DefaultOAuth2Client) tryDiscoverFromURL(ctx context.Context, discoveryU
 	// where a stray slash is a typo rather than a different party. The verbatim
 	// declared value is what gets stored and later compared against `iss`, so
 	// that check stays exact.
-	issuerIdentifier, _ := metadata["issuer"].(string)
-	if issuerIdentifier != "" {
-		if configured := strings.TrimSuffix(c.config.IssuerURL, "/"); configured != "" &&
-			strings.TrimSuffix(issuerIdentifier, "/") != configured {
-			return fmt.Errorf("metadata issuer %q does not match the configured issuer %q", issuerIdentifier, c.config.IssuerURL)
-		}
+	// RFC 8414 section 3.2 and OpenID Connect Discovery both require the issuer,
+	// so a document without one is malformed. Treating it as "nothing to check"
+	// would apply its endpoints with no binding at all, which is the one case
+	// the binding exists to catch.
+	issuerIdentifier, ok := metadata["issuer"].(string)
+	if !ok || issuerIdentifier == "" {
+		return fmt.Errorf("metadata document has no issuer")
+	}
+	if configured := strings.TrimSuffix(c.config.IssuerURL, "/"); configured != "" &&
+		strings.TrimSuffix(issuerIdentifier, "/") != configured {
+		return fmt.Errorf("metadata issuer %q does not match the configured issuer %q", issuerIdentifier, c.config.IssuerURL)
 	}
 
 	issuerParameterSupported, _ := metadata["authorization_response_iss_parameter_supported"].(bool)
 
 	c.config.AuthorizationEndpoint = authEndpoint
 	c.config.TokenEndpoint = tokenEndpoint
-	if issuerIdentifier != "" {
-		c.config.IssuerIdentifier = issuerIdentifier
-	}
+	c.config.IssuerIdentifier = issuerIdentifier
 	c.config.IssuerParameterSupported = issuerParameterSupported
 	c.logger.Debugf("Discovered authorization endpoint: %s", authEndpoint)
 	c.logger.Debugf("Discovered token endpoint: %s", tokenEndpoint)
