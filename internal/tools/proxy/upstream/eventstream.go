@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Streamable HTTP lets a server answer a POST with either a JSON body or an
@@ -25,11 +28,16 @@ const maxEventStreamBytes = 64 << 20
 // cap at 64KB and fail on a large tool result delivered as one data field.
 const maxEventStreamLine = 8 << 20
 
-// decodeEventStream returns the first JSON-RPC message carried by an event
-// stream. Events that are not message events, and message events whose payload
-// is not a JSON-RPC message, are skipped: servers interleave comments, retry
-// directives and keep-alive events with the response.
-func decodeEventStream(body io.Reader) (*Message, error) {
+// decodeEventStream returns the response to wantID from an event stream.
+//
+// A stream carries more than the response: comments, retry directives,
+// keep-alive events, and any notification the upstream emits while the call
+// runs, such as progress. Only the message answering wantID ends the read, so a
+// notification arriving first is not mistaken for the response.
+//
+// Intervening notifications are dropped rather than forwarded. Relaying them to
+// the downstream client would need a notification path the proxy does not have.
+func decodeEventStream(body io.Reader, wantID any) (*Message, error) {
 	scanner := bufio.NewScanner(io.LimitReader(body, maxEventStreamBytes))
 	scanner.Buffer(make([]byte, 0, 64<<10), maxEventStreamLine)
 
@@ -59,6 +67,15 @@ func decodeEventStream(body io.Reader) (*Message, error) {
 		// JSON-RPC 2.0 requires the version on every message, so it separates a
 		// real response from anything else the stream carries.
 		if msg.JSONRPC == "" {
+			return nil
+		}
+		// A notification carries no id and answers nothing; a response to some
+		// other request is not ours to consume either.
+		if !sameID(msg.ID, wantID) {
+			logrus.WithFields(logrus.Fields{
+				"method": msg.Method,
+				"id":     msg.ID,
+			}).Debug("HTTP: skipping event stream message that is not the response")
 			return nil
 		}
 		return &msg
@@ -107,7 +124,32 @@ func decodeEventStream(body io.Reader) (*Message, error) {
 		return msg, nil
 	}
 
-	return nil, fmt.Errorf("event stream carried no JSON-RPC message")
+	return nil, fmt.Errorf("event stream ended without a response to request %v", wantID)
+}
+
+// sameID reports whether a response answers the request that was sent.
+//
+// Message.ID is `any` because JSON-RPC allows a string or a number, and a
+// number always decodes back as float64 however it was sent. Comparing the
+// canonical text of each keeps an id echoed as 1 matching the 1 that went out.
+func sameID(got, want any) bool {
+	if got == nil || want == nil {
+		return false
+	}
+	return idString(got) == idString(want)
+}
+
+func idString(id any) string {
+	switch v := id.(type) {
+	case string:
+		return v
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case json.Number:
+		return v.String()
+	default:
+		return fmt.Sprint(v)
+	}
 }
 
 // isEventStream reports whether a Content-Type names an SSE body. The header

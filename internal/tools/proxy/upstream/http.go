@@ -254,7 +254,7 @@ func (t *HTTPTransport) send(ctx context.Context, msg *Message, stateless bool) 
 	// picks per response, so the body is decoded according to what came back.
 	if isEventStream(resp.Header.Get("Content-Type")) {
 		logrus.Debug("HTTP: decoding event stream response")
-		response, err := decodeEventStream(resp.Body)
+		response, err := decodeEventStream(resp.Body, msg.ID)
 		if err != nil {
 			logrus.WithError(err).Debug("HTTP: event stream decode failed")
 			return nil, err

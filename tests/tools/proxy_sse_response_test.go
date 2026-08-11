@@ -106,3 +106,68 @@ func TestSendReceiveReportsEmptySSEStream(t *testing.T) {
 		t.Fatal("SendReceive accepted an event stream carrying no message")
 	}
 }
+
+// A stream carries whatever the upstream emits while the call runs. A progress
+// notification arriving before the response must not be mistaken for it: the
+// notification has no id and no result, so returning it strands the caller with
+// an empty response instead of the tool's output.
+func TestSendReceiveSkipsNotificationsBeforeTheResponse(t *testing.T) {
+	srv := sseServer(t, "event: message\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{\"progress\":1}}\n\n"+
+		"event: message\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/message\",\"params\":{\"level\":\"info\"}}\n\n"+
+		"event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"tools\":[]}}\n\n")
+
+	response, err := sendToolsList(t, srv.URL)
+	if err != nil {
+		t.Fatalf("SendReceive failed with notifications ahead of the response: %v", err)
+	}
+	if len(response.Result) == 0 {
+		t.Fatalf("a notification was returned instead of the response: %+v", response)
+	}
+}
+
+// A response to some other request is not ours to consume either.
+func TestSendReceiveSkipsAResponseToAnotherRequest(t *testing.T) {
+	srv := sseServer(t, "event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":\"other\",\"result\":{\"wrong\":true}}\n\n"+
+		"event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"tools\":[]}}\n\n")
+
+	response, err := sendToolsList(t, srv.URL)
+	if err != nil {
+		t.Fatalf("SendReceive failed: %v", err)
+	}
+
+	var result struct {
+		Wrong bool `json:"wrong"`
+	}
+	if err := json.Unmarshal(response.Result, &result); err != nil {
+		t.Fatalf("failed to decode result: %v", err)
+	}
+	if result.Wrong {
+		t.Fatal("the response to a different request was returned")
+	}
+}
+
+// A JSON-RPC error for this request ends the read like any other response.
+func TestSendReceiveReturnsAnErrorResponseFromSSE(t *testing.T) {
+	srv := sseServer(t, "event: message\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{}}\n\n"+
+		"event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"no such tool\"}}\n\n")
+
+	response, err := sendToolsList(t, srv.URL)
+	if err != nil {
+		t.Fatalf("SendReceive failed: %v", err)
+	}
+	if response.Error == nil {
+		t.Fatalf("the error response was not returned: %+v", response)
+	}
+	if response.Error.Code != -32601 {
+		t.Errorf("unexpected error code: %d", response.Error.Code)
+	}
+}
+
+// Notifications with no response behind them must not look like success.
+func TestSendReceiveReportsAStreamOfOnlyNotifications(t *testing.T) {
+	srv := sseServer(t, "event: message\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{}}\n\n")
+
+	if _, err := sendToolsList(t, srv.URL); err == nil {
+		t.Fatal("SendReceive accepted a stream that never answered the request")
+	}
+}

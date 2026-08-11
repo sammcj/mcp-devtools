@@ -31,7 +31,7 @@ Migration to the official [modelcontextprotocol/go-sdk](https://github.com/model
 
 ### Fixed
 
-- The proxy could not read a response from any server built on the official SDK, including mcp-devtools itself. Streamable HTTP lets a server answer a POST with an event stream and the SDK does, but the proxy fed every response body straight to a JSON decoder. It now decodes according to the response's content type.
+- The proxy could not read a response from any server built on the official SDK, including mcp-devtools itself. Streamable HTTP lets a server answer a POST with an event stream and the SDK does, but the proxy fed every response body straight to a JSON decoder. It now decodes according to the response's content type, and reads on past any notification the upstream emits mid-call until the response to the request it sent arrives.
 - Calling a proxied tool failed with `upstream not found` whenever more than one upstream was configured. Both call sites resolved the upstream and then discarded it, leaving the manager to re-derive it from a tool name that carries no prefix. They now route to the upstream they already identified.
 
 ### Added
