@@ -200,32 +200,30 @@ func (t *GoTool) getModuleInfo(ctx context.Context, logger *logrus.Logger, packa
 	return moduleInfo{latestVersion: version}, nil
 }
 
+// moduleVersion is one entry of a pkg.go.dev version listing. Each entry carries
+// the latest version of its own module path, which differs from the entry's own
+// version.
+type moduleVersion struct {
+	ModulePath        string `json:"modulePath"`
+	Version           string `json:"version"`
+	LatestVersion     string `json:"latestVersion"`
+	Deprecated        bool   `json:"deprecated"`
+	DeprecationReason string `json:"deprecationReason"`
+}
+
 // queryPkgGoDev fetches the newest published version of a module across all of
 // its major versions in a single request, then resolves the same-major latest
 // separately only when a newer major exists.
 func (t *GoTool) queryPkgGoDev(ctx context.Context, logger *logrus.Logger, packagePath string) (moduleInfo, error) {
-	body, err := t.fetchJSON(ctx, logger, pkgGoDevURL("versions", packagePath, url.Values{"limit": {"1"}}))
+	items, err := t.listVersions(ctx, logger, packagePath, "1")
 	if err != nil {
 		return moduleInfo{}, err
 	}
-
-	var response struct {
-		Items []struct {
-			ModulePath        string `json:"modulePath"`
-			Version           string `json:"version"`
-			LatestVersion     string `json:"latestVersion"`
-			Deprecated        bool   `json:"deprecated"`
-			DeprecationReason string `json:"deprecationReason"`
-		} `json:"items"`
-	}
-	if err := json.Unmarshal(body, &response); err != nil {
-		return moduleInfo{}, fmt.Errorf("failed to parse pkg.go.dev response: %w", err)
-	}
-	if len(response.Items) == 0 {
+	if len(items) == 0 {
 		return moduleInfo{}, fmt.Errorf("no versions returned for %s", packagePath)
 	}
 
-	item := response.Items[0]
+	item := items[0]
 	// latestVersion excludes retracted releases, version is only the newest published one.
 	latest := item.LatestVersion
 	if latest == "" {
@@ -242,14 +240,76 @@ func (t *GoTool) queryPkgGoDev(ctx context.Context, logger *logrus.Logger, packa
 
 	// A newer major version lives at a different import path, so upgrading to it
 	// needs a code change. Report it separately from the same-major latest.
-	sameMajor, err := t.queryPkgGoDevModule(ctx, logger, packagePath)
-	if err != nil {
-		return moduleInfo{}, err
+	sameMajor, deprecated := t.resolveSameMajor(ctx, logger, packagePath)
+	if sameMajor == "" {
+		return moduleInfo{}, fmt.Errorf("could not resolve the latest %s release", packagePath)
 	}
 	return moduleInfo{
 		latestVersion: sameMajor,
+		deprecated:    deprecated,
 		newerMajor:    fmt.Sprintf("%s %s", item.ModulePath, latest),
 	}, nil
+}
+
+// resolveSameMajor returns the latest version of packagePath itself, plus its
+// deprecation reason, for when a newer major exists at a different import path.
+// Deprecation is only reported on version listings, so the listing is searched
+// rather than asking for the module directly. An empty version means both
+// lookups failed.
+func (t *GoTool) resolveSameMajor(ctx context.Context, logger *logrus.Logger, packagePath string) (version, deprecated string) {
+	// A listing covers every major version of a module, newest major first, so
+	// this reads past the newer major's releases to reach the requested one.
+	items, err := t.listVersions(ctx, logger, packagePath, "100")
+	if err == nil {
+		var latest string
+		for _, item := range items {
+			if item.ModulePath != packagePath {
+				continue
+			}
+			if latest == "" {
+				latest = item.LatestVersion
+			}
+			// Deprecation is declared per version, so only the latest release
+			// of this major says whether it is deprecated today.
+			if item.Version == latest {
+				if item.Deprecated {
+					return latest, item.DeprecationReason
+				}
+				return latest, ""
+			}
+		}
+		if latest != "" {
+			return latest, ""
+		}
+	}
+
+	// Listings are paginated, so a module with a long release history in its
+	// newest major may not reach the requested one on the first page.
+	fallback, err := t.queryPkgGoDevModule(ctx, logger, packagePath)
+	if err != nil {
+		logger.WithFields(logrus.Fields{
+			"package": packagePath,
+			"error":   err.Error(),
+		}).Debug("Could not resolve the same-major latest version")
+		return "", ""
+	}
+	return fallback, ""
+}
+
+// listVersions fetches a page of a module's version listing.
+func (t *GoTool) listVersions(ctx context.Context, logger *logrus.Logger, packagePath, limit string) ([]moduleVersion, error) {
+	body, err := t.fetchJSON(ctx, logger, pkgGoDevURL("versions", packagePath, url.Values{"limit": {limit}}))
+	if err != nil {
+		return nil, err
+	}
+
+	var response struct {
+		Items []moduleVersion `json:"items"`
+	}
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse pkg.go.dev response: %w", err)
+	}
+	return response.Items, nil
 }
 
 // queryPkgGoDevModule returns the latest version of the given module path only,

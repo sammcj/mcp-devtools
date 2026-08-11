@@ -24,17 +24,23 @@ const defaultHTTPTimeout = 60 * time.Second
 // safeHTTPClient is shared so connections are pooled across tools. It is built
 // lazily because the proxy configuration is read from the environment.
 var safeHTTPClient = sync.OnceValue(func() *http.Client {
-	timeout := defaultHTTPTimeout
-	if raw := os.Getenv("SECURITY_HTTP_TIMEOUT"); raw != "" {
-		if seconds, err := strconv.Atoi(raw); err == nil && seconds > 0 {
-			timeout = time.Duration(seconds) * time.Second
-		} else {
-			logrus.WithField("value", raw).Warn("Invalid SECURITY_HTTP_TIMEOUT, using default")
-		}
-	}
 	// Provides proxy support and OTEL instrumentation.
-	return httpclient.NewHTTPClientWithProxy(timeout)
+	return httpclient.NewHTTPClientWithProxy(resolveHTTPTimeout(os.Getenv("SECURITY_HTTP_TIMEOUT")))
 })
+
+// resolveHTTPTimeout reads a timeout in seconds, falling back to the default for
+// anything that is not a positive whole number.
+func resolveHTTPTimeout(raw string) time.Duration {
+	if raw == "" {
+		return defaultHTTPTimeout
+	}
+	seconds, err := strconv.Atoi(raw)
+	if err != nil || seconds <= 0 {
+		logrus.WithField("value", raw).Warn("Invalid SECURITY_HTTP_TIMEOUT, using default")
+		return defaultHTTPTimeout
+	}
+	return time.Duration(seconds) * time.Second
+}
 
 // Operations provides simplified security-aware operations for tools
 type Operations struct {
