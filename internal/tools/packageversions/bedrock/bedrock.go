@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/anthropic"
 	"github.com/sirupsen/logrus"
@@ -23,32 +23,32 @@ type BedrockTool struct {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *BedrockTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *BedrockTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_bedrock_models",
-		mcp.WithDescription("Search, list, and get information about Amazon Bedrock models"),
-		mcp.WithString("action",
-			mcp.Description("Action to perform: list all models, search for models, or get a specific model"),
-			mcp.Enum("list", "search", "get"),
-			mcp.DefaultString("list"),
+		mcpapi.WithDescription("Search, list, and get information about Amazon Bedrock models"),
+		mcpapi.WithString("action",
+			mcpapi.Description("Action to perform: list all models, search for models, or get a specific model"),
+			mcpapi.Enum("list", "search", "get"),
+			mcpapi.DefaultString("list"),
 		),
-		mcp.WithString("modelId",
-			mcp.Description("Model ID to retrieve (used with action: \"get\")"),
+		mcpapi.WithString("modelId",
+			mcpapi.Description("Model ID to retrieve (used with action: \"get\")"),
 		),
-		mcp.WithString("provider",
-			mcp.Description("Filter by provider name (used with action: \"search\")"),
+		mcpapi.WithString("provider",
+			mcpapi.Description("Filter by provider name (used with action: \"search\")"),
 		),
-		mcp.WithString("query",
-			mcp.Description("Search query for model name or ID (used with action: \"search\")"),
+		mcpapi.WithString("query",
+			mcpapi.Description("Search query for model name or ID (used with action: \"search\")"),
 		),
-		mcp.WithString("region",
-			mcp.Description("Filter by AWS region (used with action: \"search\")"),
+		mcpapi.WithString("region",
+			mcpapi.Description("Filter by AWS region (used with action: \"search\")"),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *BedrockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *BedrockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Getting AWS Bedrock model information")
 
 	// Initialise Anthropic tool thread-safely using sync.Once
@@ -288,7 +288,7 @@ func (t *BedrockTool) getModels(ctx context.Context) ([]packageversions.BedrockM
 }
 
 // listModels lists all available AWS Bedrock models
-func (t *BedrockTool) listModels(ctx context.Context) (*mcp.CallToolResult, error) {
+func (t *BedrockTool) listModels(ctx context.Context) (*mcpapi.CallToolResult, error) {
 	models, err := t.getModels(ctx)
 	if err != nil {
 		return nil, err
@@ -303,7 +303,7 @@ func (t *BedrockTool) listModels(ctx context.Context) (*mcp.CallToolResult, erro
 }
 
 // searchModels searches for AWS Bedrock models
-func (t *BedrockTool) searchModels(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *BedrockTool) searchModels(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Get all models directly
 	models, err := t.getModels(ctx)
 	if err != nil {
@@ -388,7 +388,7 @@ func (t *BedrockTool) searchModels(ctx context.Context, args map[string]any) (*m
 }
 
 // getModel gets a specific AWS Bedrock model
-func (t *BedrockTool) getModel(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *BedrockTool) getModel(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse model ID
 	modelID, ok := args["modelId"].(string)
 	if !ok || modelID == "" {
@@ -412,7 +412,7 @@ func (t *BedrockTool) getModel(ctx context.Context, args map[string]any) (*mcp.C
 }
 
 // getLatestClaudeSonnet gets the latest Claude Sonnet model
-func (t *BedrockTool) getLatestClaudeSonnet(ctx context.Context) (*mcp.CallToolResult, error) {
+func (t *BedrockTool) getLatestClaudeSonnet(ctx context.Context) (*mcpapi.CallToolResult, error) {
 	// Get all models directly
 	models, err := t.getModels(ctx)
 	if err != nil {
@@ -461,14 +461,14 @@ func matchesClaudeAlias(query, modelName string) bool {
 }
 
 // extractAnthropicModelsFromResult extracts Anthropic models from an MCP result
-func extractAnthropicModelsFromResult(result *mcp.CallToolResult) []anthropic.AnthropicModel {
+func extractAnthropicModelsFromResult(result *mcpapi.CallToolResult) []anthropic.AnthropicModel {
 	if result == nil || len(result.Content) == 0 {
 		return []anthropic.AnthropicModel{}
 	}
 
 	// The result is a JSON string in the first content item (text type)
 	var searchResult anthropic.AnthropicModelSearchResult
-	if textContent, ok := result.Content[0].(mcp.TextContent); ok {
+	if textContent, ok := result.Content[0].(*mcpapi.TextContent); ok {
 		if err := json.Unmarshal([]byte(textContent.Text), &searchResult); err == nil {
 			return searchResult.Models
 		}

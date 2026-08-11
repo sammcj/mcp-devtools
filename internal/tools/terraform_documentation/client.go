@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"github.com/sirupsen/logrus"
@@ -61,7 +61,7 @@ func (c *Client) makeRequest(ctx context.Context, url string) ([]byte, error) {
 }
 
 // SearchProviders searches for provider documentation
-func (c *Client) SearchProviders(ctx context.Context, providerName, providerNamespace, serviceSlug, providerDataType, providerVersion string) (*mcp.CallToolResult, error) {
+func (c *Client) SearchProviders(ctx context.Context, providerName, providerNamespace, serviceSlug, providerDataType, providerVersion string) (*mcpapi.CallToolResult, error) {
 	c.logger.Infof("Searching providers: %s/%s, service: %s, type: %s, version: %s",
 		providerNamespace, providerName, serviceSlug, providerDataType, providerVersion)
 
@@ -92,7 +92,7 @@ func (c *Client) SearchProviders(ctx context.Context, providerName, providerName
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal result: %w", err)
 		}
-		return mcp.NewToolResultText(string(jsonBytes)), nil
+		return mcpapi.NewToolResultText(string(jsonBytes)), nil
 	}
 
 	// For resources/data-sources, use the v1 API
@@ -139,11 +139,11 @@ func (c *Client) SearchProviders(ctx context.Context, providerName, providerName
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // GetProviderDetails gets detailed provider documentation
-func (c *Client) GetProviderDetails(ctx context.Context, providerDocID string) (*mcp.CallToolResult, error) {
+func (c *Client) GetProviderDetails(ctx context.Context, providerDocID string) (*mcpapi.CallToolResult, error) {
 	c.logger.Infof("Getting provider details for doc ID: %s", providerDocID)
 
 	if _, err := strconv.Atoi(providerDocID); err != nil {
@@ -172,11 +172,11 @@ func (c *Client) GetProviderDetails(ctx context.Context, providerDocID string) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // GetLatestProviderVersion gets the latest version of a provider
-func (c *Client) GetLatestProviderVersion(ctx context.Context, providerNamespace, providerName string) (*mcp.CallToolResult, error) {
+func (c *Client) GetLatestProviderVersion(ctx context.Context, providerNamespace, providerName string) (*mcpapi.CallToolResult, error) {
 	c.logger.Infof("Getting latest version for provider: %s/%s", providerNamespace, providerName)
 
 	version, err := c.getLatestProviderVersionInternal(ctx, providerNamespace, providerName)
@@ -192,11 +192,11 @@ func (c *Client) GetLatestProviderVersion(ctx context.Context, providerNamespace
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // SearchModules searches for Terraform modules
-func (c *Client) SearchModules(ctx context.Context, moduleQuery string, currentOffset int) (*mcp.CallToolResult, error) {
+func (c *Client) SearchModules(ctx context.Context, moduleQuery string, currentOffset int) (*mcpapi.CallToolResult, error) {
 	c.logger.Infof("Searching modules: query=%s, offset=%d", moduleQuery, currentOffset)
 
 	params := url.Values{}
@@ -238,11 +238,11 @@ func (c *Client) SearchModules(ctx context.Context, moduleQuery string, currentO
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // GetModuleDetails gets detailed information about a module
-func (c *Client) GetModuleDetails(ctx context.Context, moduleID string) (*mcp.CallToolResult, error) {
+func (c *Client) GetModuleDetails(ctx context.Context, moduleID string) (*mcpapi.CallToolResult, error) {
 	c.logger.Infof("Getting module details for: %s", moduleID)
 
 	apiURL := fmt.Sprintf("%s/modules/%s", terraformRegistryAPIv1, moduleID)
@@ -289,11 +289,11 @@ func (c *Client) GetModuleDetails(ctx context.Context, moduleID string) (*mcp.Ca
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // GetLatestModuleVersion gets the latest version of a module
-func (c *Client) GetLatestModuleVersion(ctx context.Context, moduleID string) (*mcp.CallToolResult, error) {
+func (c *Client) GetLatestModuleVersion(ctx context.Context, moduleID string) (*mcpapi.CallToolResult, error) {
 	c.logger.Infof("Getting latest version for module: %s", moduleID)
 
 	apiURL := fmt.Sprintf("%s/modules/%s", terraformRegistryAPIv1, moduleID)
@@ -315,11 +315,11 @@ func (c *Client) GetLatestModuleVersion(ctx context.Context, moduleID string) (*
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // SearchPolicies searches for Terraform policies
-func (c *Client) SearchPolicies(ctx context.Context, policyQuery string) (*mcp.CallToolResult, error) {
+func (c *Client) SearchPolicies(ctx context.Context, policyQuery string) (*mcpapi.CallToolResult, error) {
 	c.logger.Infof("Searching policies: %s", policyQuery)
 
 	params := url.Values{}
@@ -354,11 +354,11 @@ func (c *Client) SearchPolicies(ctx context.Context, policyQuery string) (*mcp.C
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // GetPolicyDetails gets detailed information about a policy
-func (c *Client) GetPolicyDetails(ctx context.Context, policyID string) (*mcp.CallToolResult, error) {
+func (c *Client) GetPolicyDetails(ctx context.Context, policyID string) (*mcpapi.CallToolResult, error) {
 	c.logger.Infof("Getting policy details for: %s", policyID)
 
 	apiURL := fmt.Sprintf("%s/policies/%s", terraformRegistryAPIv1, policyID)
@@ -386,7 +386,7 @@ func (c *Client) GetPolicyDetails(ctx context.Context, policyID string) (*mcp.Ca
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // Helper functions

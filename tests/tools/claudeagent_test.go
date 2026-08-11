@@ -12,5 +12,5 @@ func TestClaudeAgentTool_Definition(t *testing.T) {
 	def := tool.Definition()
 
 	assert.NotNil(t, def)
-	assert.Equal(t, "claude-agent", def.GetName())
+	assert.Equal(t, "claude-agent", def.Name)
 }

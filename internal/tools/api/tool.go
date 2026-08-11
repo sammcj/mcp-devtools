@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -42,7 +42,7 @@ func NewDynamicAPITool(apiName string, apiDef APIDefinition) *DynamicAPITool {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *DynamicAPITool) Definition() mcp.Tool {
+func (t *DynamicAPITool) Definition() mcpapi.Tool {
 	// Build endpoint enum values
 	endpointNames := make([]string, len(t.apiDef.Endpoints))
 	for i, endpoint := range t.apiDef.Endpoints {
@@ -55,12 +55,12 @@ func (t *DynamicAPITool) Definition() mcp.Tool {
 	}
 
 	// Create tool with basic parameters
-	toolOptions := []mcp.ToolOption{
-		mcp.WithDescription(description),
-		mcp.WithString("endpoint",
-			mcp.Required(),
-			mcp.Enum(endpointNames...),
-			mcp.Description("API endpoint to call"),
+	toolOptions := []mcpapi.ToolOption{
+		mcpapi.WithDescription(description),
+		mcpapi.WithString("endpoint",
+			mcpapi.Required(),
+			mcpapi.Enum(endpointNames...),
+			mcpapi.Description("API endpoint to call"),
 		),
 	}
 
@@ -69,74 +69,74 @@ func (t *DynamicAPITool) Definition() mcp.Tool {
 	for _, param := range allParams {
 		switch param.Type {
 		case "string":
-			stringOptions := []mcp.PropertyOption{mcp.Description(param.Description)}
+			stringOptions := []mcpapi.PropertyOption{mcpapi.Description(param.Description)}
 			if param.Required {
-				stringOptions = append(stringOptions, mcp.Required())
+				stringOptions = append(stringOptions, mcpapi.Required())
 			}
 			if param.Default != nil {
 				if defaultStr, ok := param.Default.(string); ok {
-					stringOptions = append(stringOptions, mcp.DefaultString(defaultStr))
+					stringOptions = append(stringOptions, mcpapi.DefaultString(defaultStr))
 				}
 			}
 			if len(param.Enum) > 0 {
-				stringOptions = append(stringOptions, mcp.Enum(param.Enum...))
+				stringOptions = append(stringOptions, mcpapi.Enum(param.Enum...))
 			}
-			toolOptions = append(toolOptions, mcp.WithString(param.Name, stringOptions...))
+			toolOptions = append(toolOptions, mcpapi.WithString(param.Name, stringOptions...))
 
 		case "number":
-			numberOptions := []mcp.PropertyOption{mcp.Description(param.Description)}
+			numberOptions := []mcpapi.PropertyOption{mcpapi.Description(param.Description)}
 			if param.Required {
-				numberOptions = append(numberOptions, mcp.Required())
+				numberOptions = append(numberOptions, mcpapi.Required())
 			}
 			if param.Default != nil {
 				if defaultNum, ok := param.Default.(float64); ok {
-					numberOptions = append(numberOptions, mcp.DefaultNumber(defaultNum))
+					numberOptions = append(numberOptions, mcpapi.DefaultNumber(defaultNum))
 				} else if defaultInt, ok := param.Default.(int); ok {
-					numberOptions = append(numberOptions, mcp.DefaultNumber(float64(defaultInt)))
+					numberOptions = append(numberOptions, mcpapi.DefaultNumber(float64(defaultInt)))
 				}
 			}
-			toolOptions = append(toolOptions, mcp.WithNumber(param.Name, numberOptions...))
+			toolOptions = append(toolOptions, mcpapi.WithNumber(param.Name, numberOptions...))
 
 		case "boolean":
-			boolOptions := []mcp.PropertyOption{mcp.Description(param.Description)}
+			boolOptions := []mcpapi.PropertyOption{mcpapi.Description(param.Description)}
 			if param.Required {
-				boolOptions = append(boolOptions, mcp.Required())
+				boolOptions = append(boolOptions, mcpapi.Required())
 			}
 			if param.Default != nil {
 				if defaultBool, ok := param.Default.(bool); ok {
-					boolOptions = append(boolOptions, mcp.DefaultBool(defaultBool))
+					boolOptions = append(boolOptions, mcpapi.DefaultBool(defaultBool))
 				}
 			}
-			toolOptions = append(toolOptions, mcp.WithBoolean(param.Name, boolOptions...))
+			toolOptions = append(toolOptions, mcpapi.WithBoolean(param.Name, boolOptions...))
 
 		case "array":
-			arrayOptions := []mcp.PropertyOption{
-				mcp.Description(param.Description),
-				mcp.WithStringItems(), // Default to string items for arrays
+			arrayOptions := []mcpapi.PropertyOption{
+				mcpapi.Description(param.Description),
+				mcpapi.WithStringItems(), // Default to string items for arrays
 			}
 			if param.Required {
-				arrayOptions = append(arrayOptions, mcp.Required())
+				arrayOptions = append(arrayOptions, mcpapi.Required())
 			}
-			toolOptions = append(toolOptions, mcp.WithArray(param.Name, arrayOptions...))
+			toolOptions = append(toolOptions, mcpapi.WithArray(param.Name, arrayOptions...))
 
 		case "object":
-			objectOptions := []mcp.PropertyOption{mcp.Description(param.Description)}
+			objectOptions := []mcpapi.PropertyOption{mcpapi.Description(param.Description)}
 			if param.Required {
-				objectOptions = append(objectOptions, mcp.Required())
+				objectOptions = append(objectOptions, mcpapi.Required())
 			}
-			toolOptions = append(toolOptions, mcp.WithObject(param.Name, objectOptions...))
+			toolOptions = append(toolOptions, mcpapi.WithObject(param.Name, objectOptions...))
 		}
 	}
 
 	// Add destructive tool annotations
 	toolOptions = append(toolOptions,
-		mcp.WithReadOnlyHintAnnotation(false),   // Can make any HTTP request including destructive ones
-		mcp.WithDestructiveHintAnnotation(true), // Can perform destructive operations via HTTP requests
-		mcp.WithIdempotentHintAnnotation(false), // HTTP requests are generally not idempotent
-		mcp.WithOpenWorldHintAnnotation(true),   // Makes external HTTP requests
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Can make any HTTP request including destructive ones
+		mcpapi.WithDestructiveHintAnnotation(true), // Can perform destructive operations via HTTP requests
+		mcpapi.WithIdempotentHintAnnotation(false), // HTTP requests are generally not idempotent
+		mcpapi.WithOpenWorldHintAnnotation(true),   // Makes external HTTP requests
 	)
 
-	return mcp.NewTool(t.toolName, toolOptions...)
+	return mcpapi.NewTool(t.toolName, toolOptions...)
 }
 
 // collectAllParameters collects all unique parameters across all endpoints
@@ -178,7 +178,7 @@ func (t *DynamicAPITool) collectAllParameters() []ParameterConfig {
 }
 
 // Execute executes the tool's logic
-func (t *DynamicAPITool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *DynamicAPITool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.WithField("api", t.apiName).Info("Executing API tool")
 
 	// Parse endpoint parameter
@@ -223,7 +223,7 @@ func (t *DynamicAPITool) Execute(ctx context.Context, logger *logrus.Logger, cac
 				if err != nil {
 					return nil, fmt.Errorf("failed to marshal cached result: %w", err)
 				}
-				return mcp.NewToolResultText(string(jsonBytes)), nil
+				return mcpapi.NewToolResultText(string(jsonBytes)), nil
 			}
 			// Remove expired entry
 			cache.Delete(cacheKey)
@@ -264,7 +264,7 @@ func (t *DynamicAPITool) Execute(ctx context.Context, logger *logrus.Logger, cac
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // ProvideExtendedInfo provides extended help information for the API tool

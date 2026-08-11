@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sirupsen/logrus"
 )
@@ -26,26 +26,26 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration.
-func (t *ProxyTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *ProxyTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"proxy",
-		mcp.WithDescription("Proxy tools from upstream MCP servers with OAuth support"),
-		mcp.WithString("action",
-			mcp.Required(),
-			mcp.Description("Action to perform: 'list' (list upstream tools), 'call' (call upstream tool)"),
-			mcp.Enum("list", "call"),
+		mcpapi.WithDescription("Proxy tools from upstream MCP servers with OAuth support"),
+		mcpapi.WithString("action",
+			mcpapi.Required(),
+			mcpapi.Description("Action to perform: 'list' (list upstream tools), 'call' (call upstream tool)"),
+			mcpapi.Enum("list", "call"),
 		),
-		mcp.WithString("tool_name",
-			mcp.Description("Name of the tool to call (required for 'call' action)"),
+		mcpapi.WithString("tool_name",
+			mcpapi.Description("Name of the tool to call (required for 'call' action)"),
 		),
-		mcp.WithObject("arguments",
-			mcp.Description("Arguments to pass to the tool (required for 'call' action)"),
+		mcpapi.WithObject("arguments",
+			mcpapi.Description("Arguments to pass to the tool (required for 'call' action)"),
 		),
 	)
 }
 
 // Execute executes the tool's logic.
-func (t *ProxyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *ProxyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Lazy initialisation using shared manager
 	if err := t.ensureInitialised(ctx, logger); err != nil {
 		return nil, fmt.Errorf("failed to initialise proxy tool: %w", err)
@@ -91,7 +91,7 @@ func (t *ProxyTool) ensureInitialised(ctx context.Context, logger *logrus.Logger
 }
 
 // handleList returns the list of all upstream tools.
-func (t *ProxyTool) handleList(logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func (t *ProxyTool) handleList(logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	logger.Debug("listing upstream tools")
 
 	aggregator := t.manager.GetAggregator()
@@ -107,11 +107,11 @@ func (t *ProxyTool) handleList(logger *logrus.Logger) (*mcp.CallToolResult, erro
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // handleCall calls a tool on an upstream server.
-func (t *ProxyTool) handleCall(ctx context.Context, logger *logrus.Logger, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *ProxyTool) handleCall(ctx context.Context, logger *logrus.Logger, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse tool name
 	toolName, ok := args["tool_name"].(string)
 	if !ok {
@@ -169,5 +169,5 @@ func (t *ProxyTool) handleCall(ctx context.Context, logger *logrus.Logger, args 
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }

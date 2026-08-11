@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -80,7 +80,7 @@ func (h *NpmHandler) getPackageInfo(packageName string) (*NpmPackageInfo, error)
 }
 
 // GetLatestVersion gets the latest version of npm packages
-func (h *NpmHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (h *NpmHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	h.logger.Info("Getting latest npm package versions")
 
 	// Parse dependencies

@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -36,7 +36,7 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *FindLongFilesTool) Definition() mcp.Tool {
+func (t *FindLongFilesTool) Definition() mcpapi.Tool {
 	// Check if return prompt is disabled
 	returnPrompt, envExists := os.LookupEnv("LONG_FILES_RETURN_PROMPT")
 	isPromptDisabled := envExists && strings.TrimSpace(returnPrompt) == ""
@@ -55,31 +55,31 @@ func (t *FindLongFilesTool) Definition() mcp.Tool {
 		description = baseDescription + " and suggestions for the next step in handling them."
 	}
 
-	return mcp.NewTool(
+	return mcpapi.NewTool(
 		"find_long_files",
-		mcp.WithDescription(description),
-		mcp.WithString("path",
-			mcp.Required(),
-			mcp.Description("Absolute directory path to search for long files (e.g. '/Users/username/git/project')"),
+		mcpapi.WithDescription(description),
+		mcpapi.WithString("path",
+			mcpapi.Required(),
+			mcpapi.Description("Absolute directory path to search for long files (e.g. '/Users/username/git/project')"),
 		),
-		mcp.WithNumber("line_threshold",
-			mcp.Description("Minimum number of lines to consider 'long' (default: 700)"),
-			mcp.DefaultNumber(700),
+		mcpapi.WithNumber("line_threshold",
+			mcpapi.Description("Minimum number of lines to consider 'long' (default: 700)"),
+			mcpapi.DefaultNumber(700),
 		),
-		mcp.WithArray("additional_excludes",
-			mcp.Description("Additional glob patterns to exclude"),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("additional_excludes",
+			mcpapi.Description("Additional glob patterns to exclude"),
+			mcpapi.WithStringItems(),
 		),
 		// Read-only annotations for file analysis tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only analyses existing files, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same path and threshold return same results
-		mcp.WithOpenWorldHintAnnotation(false),   // Analyses local files only, no external interactions
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only analyses existing files, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same path and threshold return same results
+		mcpapi.WithOpenWorldHintAnnotation(false),   // Analyses local files only, no external interactions
 	)
 }
 
 // Execute executes the find-long-files tool
-func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *FindLongFilesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	startTime := time.Now()
 	logger.Info("Executing find-long-files tool")
 
@@ -684,8 +684,8 @@ func (t *FindLongFilesTool) getMaxFileSizeKB() int {
 }
 
 // newToolResultText creates a new tool result with text content
-func (t *FindLongFilesTool) newToolResultText(content string) (*mcp.CallToolResult, error) {
-	return mcp.NewToolResultText(content), nil
+func (t *FindLongFilesTool) newToolResultText(content string) (*mcpapi.CallToolResult, error) {
+	return mcpapi.NewToolResultText(content), nil
 }
 
 // ProvideExtendedInfo provides detailed usage information for the find_long_files tool

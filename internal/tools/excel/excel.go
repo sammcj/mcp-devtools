@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -33,10 +33,10 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *ExcelTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *ExcelTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"excel",
-		mcp.WithDescription(`Excel (.xlsx) manipulation: create/edit workbooks, sheets, data, formulas, charts, pivot tables, formatting, and validation. Supports many operations from simple data writes to complex formatted tables. Use this tool when creating or editing Excel spreadsheets.
+		mcpapi.WithDescription(`Excel (.xlsx) manipulation: create/edit workbooks, sheets, data, formulas, charts, pivot tables, formatting, and validation. Supports many operations from simple data writes to complex formatted tables. Use this tool when creating or editing Excel spreadsheets.
 
 EFFICIENT WORKFLOW - Use create_table with a data array to create formatted tables in one call:
   create_table: range="A1:B6", data=[["Breed","Count"],["Lab",100],...], style="TableStyleMedium9", auto_size=true
@@ -48,10 +48,10 @@ Other workflow examples:
 Functions: create_workbook (supports initial_sheets for multi-sheet creation), create_worksheet, read/write_data, format_range, create_table, create_chart, create_pivot_table, formulas, validation, row/column ops, and more.
 
 If you fail to use the excel tool twice or find the excel tool limiting call get_tool_help tool with tool_name="excel" for detailed examples, troubleshooting, and parameter reference.`),
-		mcp.WithString("function",
-			mcp.Required(),
-			mcp.Description("Operation to perform. For formatted tables, use create_table (all-in-one). For data with formulas, use write_data. For styling, use format_range."),
-			mcp.Enum(
+		mcpapi.WithString("function",
+			mcpapi.Required(),
+			mcpapi.Description("Operation to perform. For formatted tables, use create_table (all-in-one). For data with formulas, use write_data. For styling, use format_range."),
+			mcpapi.Enum(
 				// Workbook operations
 				"create_workbook", "get_workbook_metadata", "create_worksheet",
 				// Data operations
@@ -76,16 +76,16 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 				"get_data_validation_info",
 			),
 		),
-		mcp.WithString("filepath",
-			mcp.Required(),
-			mcp.Description("Absolute path to xlsx file (e.g., /Users/name/project/report.xlsx)"),
+		mcpapi.WithString("filepath",
+			mcpapi.Required(),
+			mcpapi.Description("Absolute path to xlsx file (e.g., /Users/name/project/report.xlsx)"),
 		),
-		mcp.WithString("sheet_name",
-			mcp.Description("Worksheet name (required for most operations except create_workbook)"),
+		mcpapi.WithString("sheet_name",
+			mcpapi.Description("Worksheet name (required for most operations except create_workbook)"),
 		),
-		mcp.WithObject("options",
-			mcp.Description("Function-specific options and parameters"),
-			mcp.Properties(map[string]any{
+		mcpapi.WithObject("options",
+			mcpapi.Description("Function-specific options and parameters"),
+			mcpapi.Properties(map[string]any{
 				// Common data operation parameters
 				"start_cell": map[string]any{
 					"type":        "string",
@@ -270,15 +270,15 @@ If you fail to use the excel tool twice or find the excel tool limiting call get
 			}),
 		),
 		// Tool annotations
-		mcp.WithReadOnlyHintAnnotation(false),   // Can modify Excel files
-		mcp.WithDestructiveHintAnnotation(true), // Can delete worksheets, ranges, etc.
-		mcp.WithIdempotentHintAnnotation(false), // Operations are generally not idempotent
-		mcp.WithOpenWorldHintAnnotation(false),  // No external network calls (local file operations only)
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Can modify Excel files
+		mcpapi.WithDestructiveHintAnnotation(true), // Can delete worksheets, ranges, etc.
+		mcpapi.WithIdempotentHintAnnotation(false), // Operations are generally not idempotent
+		mcpapi.WithOpenWorldHintAnnotation(false),  // No external network calls (local file operations only)
 	)
 }
 
 // Execute executes the Excel tool
-func (t *ExcelTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *ExcelTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Extract common parameters
 	function, ok := args["function"].(string)
 	if !ok || function == "" {

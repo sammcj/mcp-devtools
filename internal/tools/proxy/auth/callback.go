@@ -2,9 +2,11 @@ package auth
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -16,6 +18,12 @@ type CallbackServer struct {
 	listener net.Listener
 	codeCh   chan string
 	errCh    chan error
+
+	mu              sync.RWMutex
+	expectedState   string
+	expectedIssuer  string
+	requireIssuer   bool
+	expectationsSet bool
 }
 
 // NewCallbackServer creates a new callback server.
@@ -66,7 +74,10 @@ func (cs *CallbackServer) Start() {
 	go func() {
 		if err := cs.server.Serve(cs.listener); err != nil && err != http.ErrServerClosed {
 			logrus.WithError(err).Error("auth: callback server error")
-			cs.errCh <- err
+			select {
+			case cs.errCh <- err:
+			default:
+			}
 		}
 	}()
 }
@@ -98,8 +109,75 @@ func (cs *CallbackServer) Close() error {
 	return cs.server.Shutdown(ctx)
 }
 
+// Expect records what the authorisation response must carry to be accepted:
+// the state issued with the request, and the issuer identifier if the server
+// sends RFC 9207 `iss`.
+func (cs *CallbackServer) Expect(state, issuer string, issuerRequired bool) {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+
+	cs.expectedState = state
+	cs.expectedIssuer = issuer
+	cs.requireIssuer = issuerRequired
+	cs.expectationsSet = true
+}
+
+// validateResponse checks the authorisation response against what was sent.
+// Without the state check an attacker can deliver their own code to this
+// callback and bind the upstream connection to their account; the iss check is
+// RFC 9207 and rejects a code relayed from a different authorisation server.
+// It runs under the write lock and clears the expectation on success, so a
+// state can only be redeemed once even when two callbacks arrive at once.
+func (cs *CallbackServer) validateResponse(state, iss string) error {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+
+	if !cs.expectationsSet {
+		return fmt.Errorf("callback received before the expected state was registered")
+	}
+
+	if subtle.ConstantTimeCompare([]byte(state), []byte(cs.expectedState)) != 1 {
+		return fmt.Errorf("state parameter does not match the value sent with the authorisation request")
+	}
+
+	switch {
+	case iss == "" && cs.requireIssuer:
+		return fmt.Errorf("authorisation server advertises the iss parameter but did not send it")
+	case iss != "" && cs.expectedIssuer == "":
+		// Accepting an iss with nothing to compare it against would make this
+		// check decorative, which is worse than not having it.
+		return fmt.Errorf("authorisation response carries iss %q but no issuer identifier is known for this server; configure the issuer URL so it can be compared", iss)
+	case iss != "" && iss != cs.expectedIssuer:
+		return fmt.Errorf("iss parameter %q does not match the expected issuer %q", iss, cs.expectedIssuer)
+	}
+
+	cs.expectationsSet = false
+	return nil
+}
+
+// ServeCallback exposes the callback handler so its validation can be tested
+// without driving a browser through a real authorisation server.
+func (cs *CallbackServer) ServeCallback(w http.ResponseWriter, r *http.Request) {
+	cs.handleCallback(w, r)
+}
+
 func (cs *CallbackServer) handleCallback(w http.ResponseWriter, r *http.Request) {
 	logrus.WithField("path", r.URL.Path).Debug("auth: callback request received")
+
+	// Validate before looking at anything else, and drop the request without
+	// touching the error channel. Anything that can reach this loopback port
+	// could otherwise abort an in-flight flow just by sending rubbish; the
+	// caller waits for the genuine response or times out instead.
+	//
+	// The cost is that an authorisation server that omits state on an error
+	// response leaves the caller waiting for its timeout rather than failing
+	// immediately. RFC 6749 section 4.1.2.1 requires state on error responses,
+	// so that is a non-compliant server.
+	if err := cs.validateResponse(r.URL.Query().Get("state"), r.URL.Query().Get("iss")); err != nil {
+		logrus.WithError(err).Warn("auth: rejected callback")
+		http.Error(w, "Authorisation response failed validation", http.StatusBadRequest)
+		return
+	}
 
 	code := r.URL.Query().Get("code")
 	if code == "" {
@@ -111,7 +189,10 @@ func (cs *CallbackServer) handleCallback(w http.ResponseWriter, r *http.Request)
 				"description": errDesc,
 			}).Error("auth: authorisation error from server")
 			http.Error(w, fmt.Sprintf("Authorisation error: %s - %s", errMsg, errDesc), http.StatusBadRequest)
-			cs.errCh <- fmt.Errorf("authorisation error: %s - %s", errMsg, errDesc)
+			select {
+			case cs.errCh <- fmt.Errorf("authorisation error: %s - %s", errMsg, errDesc):
+			default:
+			}
 			return
 		}
 		logrus.Warn("auth: callback received without authorisation code")

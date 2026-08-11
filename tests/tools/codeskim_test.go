@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/codeskim"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +41,7 @@ func TestCodeSkimTool(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -67,7 +67,7 @@ func TestCodeSkimTool(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -90,7 +90,7 @@ func TestCodeSkimTool(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -113,7 +113,7 @@ func TestCodeSkimTool(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -136,7 +136,7 @@ func TestCodeSkimTool(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -158,7 +158,7 @@ func TestCodeSkimTool(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -180,7 +180,7 @@ func TestCodeSkimTool(t *testing.T) {
 		// First call
 		result1, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
-		textContent1, ok := mcp.AsTextContent(result1.Content[0])
+		textContent1, ok := mcpapi.AsTextContent(result1.Content[0])
 		require.True(t, ok)
 
 		var response1 codeskim.SkimResponse
@@ -191,7 +191,7 @@ func TestCodeSkimTool(t *testing.T) {
 		// Second call should use cache
 		result2, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
-		textContent2, ok := mcp.AsTextContent(result2.Content[0])
+		textContent2, ok := mcpapi.AsTextContent(result2.Content[0])
 		require.True(t, ok)
 
 		var response2 codeskim.SkimResponse
@@ -214,7 +214,7 @@ func TestCodeSkimTool(t *testing.T) {
 		args["clear_cache"] = true
 		result, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -261,7 +261,7 @@ func TestCodeSkimTool(t *testing.T) {
 		// First call - should be truncated
 		result1, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
-		textContent1, ok := mcp.AsTextContent(result1.Content[0])
+		textContent1, ok := mcpapi.AsTextContent(result1.Content[0])
 		require.True(t, ok)
 
 		var response1 codeskim.SkimResponse
@@ -279,7 +279,7 @@ func TestCodeSkimTool(t *testing.T) {
 		args["starting_line"] = *response1.Files[0].NextStartingLine
 		result2, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
-		textContent2, ok := mcp.AsTextContent(result2.Content[0])
+		textContent2, ok := mcpapi.AsTextContent(result2.Content[0])
 		require.True(t, ok)
 
 		var response2 codeskim.SkimResponse
@@ -301,7 +301,7 @@ func TestCodeSkimTool(t *testing.T) {
 		result, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -334,7 +334,7 @@ func TestCodeSkimTool(t *testing.T) {
 		result, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -359,7 +359,7 @@ func TestCodeSkimTool(t *testing.T) {
 		result, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -410,7 +410,7 @@ func TestCodeSkimTool(t *testing.T) {
 		result1, err := tool.Execute(ctx, logger, testCache, args1)
 		require.NoError(t, err)
 
-		textContent1, ok := mcp.AsTextContent(result1.Content[0])
+		textContent1, ok := mcpapi.AsTextContent(result1.Content[0])
 		require.True(t, ok)
 		var response1 codeskim.SkimResponse
 		err = json.Unmarshal([]byte(textContent1.Text), &response1)
@@ -425,7 +425,7 @@ func TestCodeSkimTool(t *testing.T) {
 		result2, err := tool.Execute(ctx, logger, testCache, args2)
 		require.NoError(t, err)
 
-		textContent2, ok := mcp.AsTextContent(result2.Content[0])
+		textContent2, ok := mcpapi.AsTextContent(result2.Content[0])
 		require.True(t, ok)
 		var response2 codeskim.SkimResponse
 		err = json.Unmarshal([]byte(textContent2.Text), &response2)
@@ -444,7 +444,7 @@ func TestCodeSkimTool(t *testing.T) {
 		result, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		sigilOutput := textContent.Text
@@ -464,7 +464,7 @@ func TestCodeSkimTool(t *testing.T) {
 		result, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -485,7 +485,7 @@ func TestCodeSkimTool(t *testing.T) {
 		result, err := tool.Execute(ctx, logger, testCache, args)
 		require.NoError(t, err)
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -521,7 +521,7 @@ func TestCodeSkimTool(t *testing.T) {
 		result, err := tool.Execute(ctx, logger, cache, args)
 		require.NoError(t, err) // Returns result with error in file, not tool error
 
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var response codeskim.SkimResponse
@@ -549,7 +549,7 @@ func TestCodeSkimTool(t *testing.T) {
 		if err != nil {
 			assert.Contains(t, err.Error(), "context")
 		} else {
-			textContent, ok := mcp.AsTextContent(result.Content[0])
+			textContent, ok := mcpapi.AsTextContent(result.Content[0])
 			require.True(t, ok)
 			var response codeskim.SkimResponse
 			err = json.Unmarshal([]byte(textContent.Text), &response)

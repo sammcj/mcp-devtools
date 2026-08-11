@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
 // handleWriteData writes data to cells in a worksheet
-func handleWriteData(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleWriteData(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -189,7 +189,7 @@ func handleWriteData(logger *logrus.Logger, filePath string, sheetName string, o
 
 		result := map[string]any{}
 
-		return mcp.NewToolResultJSON(result)
+		return mcpapi.NewToolResultJSON(result)
 
 	} else if hasStartCell {
 		// Range write
@@ -356,7 +356,7 @@ func handleWriteData(logger *logrus.Logger, filePath string, sheetName string, o
 			"cells_written": cellsWritten,
 		}
 
-		return mcp.NewToolResultJSON(result)
+		return mcpapi.NewToolResultJSON(result)
 
 	} else {
 		// Provide helpful error message with conversion hint
@@ -392,7 +392,7 @@ func handleWriteData(logger *logrus.Logger, filePath string, sheetName string, o
 }
 
 // handleReadData reads data from a range in a worksheet
-func handleReadData(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleReadData(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -595,11 +595,11 @@ func handleReadData(logger *logrus.Logger, filePath string, sheetName string, op
 		},
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleReadDataWithMetadata reads data with validation information
-func handleReadDataWithMetadata(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleReadDataWithMetadata(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -795,7 +795,7 @@ func handleReadDataWithMetadata(logger *logrus.Logger, filePath string, sheetNam
 		"cells": cells,
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // findValidationForCell finds data validation rules for a specific cell
@@ -965,7 +965,7 @@ func splitExcelList(list string) []string {
 }
 
 // handleReadAllData reads all data from one or more sheets in AI-agent-friendly format
-func handleReadAllData(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleReadAllData(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.WithField("filepath", filePath).Info("Reading all data from sheets")
 
 	// Open workbook
@@ -1159,7 +1159,7 @@ func handleReadAllData(logger *logrus.Logger, filePath string, sheetName string,
 		"sheets": sheetResults,
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // formatAsCSV formats rows as CSV string

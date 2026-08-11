@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -23,23 +23,23 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *GitHubTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *GitHubTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"github",
-		mcp.WithDescription(`Access GitHub repositories, issues, PRs and workflows.
+		mcpapi.WithDescription(`Access GitHub repositories, issues, PRs and workflows.
 
 Repository accepts: owner/repo, GitHub URLs, or full issue/PR/workflow URLs.`),
-		mcp.WithString("function",
-			mcp.Required(),
-			mcp.Description("Function to execute"),
-			mcp.Enum("search_repositories", "search_issues", "search_pull_requests", "get_issue", "get_pull_request", "get_file_contents", "list_directory", "clone_repository", "get_workflow_run"),
+		mcpapi.WithString("function",
+			mcpapi.Required(),
+			mcpapi.Description("Function to execute"),
+			mcpapi.Enum("search_repositories", "search_issues", "search_pull_requests", "get_issue", "get_pull_request", "get_file_contents", "list_directory", "clone_repository", "get_workflow_run"),
 		),
-		mcp.WithString("repository",
-			mcp.Description("Identifier: owner/repo, GitHub URL, or full URL for specific issue/PR/workflow"),
+		mcpapi.WithString("repository",
+			mcpapi.Description("Identifier: owner/repo, GitHub URL, or full URL for specific issue/PR/workflow"),
 		),
-		mcp.WithObject("options",
-			mcp.Description("Function-specific options"),
-			mcp.Properties(map[string]any{
+		mcpapi.WithObject("options",
+			mcpapi.Description("Function-specific options"),
+			mcpapi.Properties(map[string]any{
 				"query": map[string]any{
 					"type":        "string",
 					"description": "Search query (for search functions)",
@@ -98,15 +98,15 @@ Repository accepts: owner/repo, GitHub URLs, or full issue/PR/workflow URLs.`),
 			}),
 		),
 		// Destructive tool annotations
-		mcp.WithReadOnlyHintAnnotation(false),   // Can modify GitHub repositories via cloning and API calls
-		mcp.WithDestructiveHintAnnotation(true), // Can clone repositories and potentially modify GitHub resources
-		mcp.WithIdempotentHintAnnotation(false), // GitHub operations are generally not idempotent
-		mcp.WithOpenWorldHintAnnotation(true),   // Makes external GitHub API calls
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Can modify GitHub repositories via cloning and API calls
+		mcpapi.WithDestructiveHintAnnotation(true), // Can clone repositories and potentially modify GitHub resources
+		mcpapi.WithIdempotentHintAnnotation(false), // GitHub operations are generally not idempotent
+		mcpapi.WithOpenWorldHintAnnotation(true),   // Makes external GitHub API calls
 	)
 }
 
 // Execute executes the GitHub tool
-func (t *GitHubTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse and validate parameters
 	request, err := t.parseRequest(args)
 	if err != nil {
@@ -169,7 +169,7 @@ func (t *GitHubTool) parseRequest(args map[string]any) (*GitHubRequest, error) {
 }
 
 // handleSearchRepositories handles repository search
-func (t *GitHubTool) handleSearchRepositories(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) handleSearchRepositories(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcpapi.CallToolResult, error) {
 	query, ok := request.Options["query"].(string)
 	if !ok || query == "" {
 		return nil, fmt.Errorf("query parameter is required for search_repositories")
@@ -213,11 +213,11 @@ func (t *GitHubTool) handleSearchRepositories(ctx context.Context, client *GitHu
 		}
 	}
 
-	return mcp.NewToolResultText(jsonString), nil
+	return mcpapi.NewToolResultText(jsonString), nil
 }
 
 // handleSearchIssues handles issue search
-func (t *GitHubTool) handleSearchIssues(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) handleSearchIssues(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcpapi.CallToolResult, error) {
 	if request.Repository == "" {
 		return nil, fmt.Errorf("repository parameter is required for search_issues")
 	}
@@ -276,11 +276,11 @@ func (t *GitHubTool) handleSearchIssues(ctx context.Context, client *GitHubClien
 		}
 	}
 
-	return mcp.NewToolResultText(jsonString), nil
+	return mcpapi.NewToolResultText(jsonString), nil
 }
 
 // handleSearchPullRequests handles pull request search
-func (t *GitHubTool) handleSearchPullRequests(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) handleSearchPullRequests(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcpapi.CallToolResult, error) {
 	if request.Repository == "" {
 		return nil, fmt.Errorf("repository parameter is required for search_pull_requests")
 	}
@@ -339,11 +339,11 @@ func (t *GitHubTool) handleSearchPullRequests(ctx context.Context, client *GitHu
 		}
 	}
 
-	return mcp.NewToolResultText(jsonString), nil
+	return mcpapi.NewToolResultText(jsonString), nil
 }
 
 // handleGetIssue handles getting a specific issue
-func (t *GitHubTool) handleGetIssue(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) handleGetIssue(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcpapi.CallToolResult, error) {
 	if request.Repository == "" {
 		return nil, fmt.Errorf("repository parameter is required for get_issue")
 	}
@@ -414,11 +414,11 @@ func (t *GitHubTool) handleGetIssue(ctx context.Context, client *GitHubClient, r
 		}
 	}
 
-	return mcp.NewToolResultText(jsonString), nil
+	return mcpapi.NewToolResultText(jsonString), nil
 }
 
 // handleGetPullRequest handles getting a specific pull request
-func (t *GitHubTool) handleGetPullRequest(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) handleGetPullRequest(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcpapi.CallToolResult, error) {
 	if request.Repository == "" {
 		return nil, fmt.Errorf("repository parameter is required for get_pull_request")
 	}
@@ -489,11 +489,11 @@ func (t *GitHubTool) handleGetPullRequest(ctx context.Context, client *GitHubCli
 		}
 	}
 
-	return mcp.NewToolResultText(jsonString), nil
+	return mcpapi.NewToolResultText(jsonString), nil
 }
 
 // handleGetFileContents handles getting file contents with graceful error handling
-func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcpapi.CallToolResult, error) {
 	if request.Repository == "" {
 		return nil, fmt.Errorf("repository parameter is required for get_file_contents")
 	}
@@ -569,11 +569,11 @@ func (t *GitHubTool) handleGetFileContents(ctx context.Context, client *GitHubCl
 		}
 	}
 
-	return mcp.NewToolResultText(jsonString), nil
+	return mcpapi.NewToolResultText(jsonString), nil
 }
 
 // handleListDirectory handles listing directory contents
-func (t *GitHubTool) handleListDirectory(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) handleListDirectory(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcpapi.CallToolResult, error) {
 	if request.Repository == "" {
 		return nil, fmt.Errorf("repository parameter is required for list_directory")
 	}
@@ -624,11 +624,11 @@ func (t *GitHubTool) handleListDirectory(ctx context.Context, client *GitHubClie
 		}
 	}
 
-	return mcp.NewToolResultText(jsonString), nil
+	return mcpapi.NewToolResultText(jsonString), nil
 }
 
 // handleCloneRepository handles repository cloning
-func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcpapi.CallToolResult, error) {
 	if request.Repository == "" {
 		return nil, fmt.Errorf("repository parameter is required for clone_repository")
 	}
@@ -675,11 +675,11 @@ func (t *GitHubTool) handleCloneRepository(ctx context.Context, client *GitHubCl
 		}
 	}
 
-	return mcp.NewToolResultText(jsonString), nil
+	return mcpapi.NewToolResultText(jsonString), nil
 }
 
 // handleGetWorkflowRun handles getting workflow run information
-func (t *GitHubTool) handleGetWorkflowRun(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcp.CallToolResult, error) {
+func (t *GitHubTool) handleGetWorkflowRun(ctx context.Context, client *GitHubClient, request *GitHubRequest) (*mcpapi.CallToolResult, error) {
 	if request.Repository == "" {
 		return nil, fmt.Errorf("repository parameter is required for get_workflow_run")
 	}
@@ -750,7 +750,7 @@ func (t *GitHubTool) handleGetWorkflowRun(ctx context.Context, client *GitHubCli
 		}
 	}
 
-	return mcp.NewToolResultText(jsonString), nil
+	return mcpapi.NewToolResultText(jsonString), nil
 }
 
 // convertToJSON converts the response to JSON string for better formatting

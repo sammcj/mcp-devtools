@@ -44,9 +44,11 @@ func NewOAuth2Server(config *types.OAuth2Config, baseURL string, logger *logrus.
 	// Create metadata provider
 	metadataProvider := metadata.NewProvider(config, baseURL, logger)
 
-	// Create client registrar if dynamic registration is enabled
+	// Dynamic Client Registration is deprecated as of MCP 2026-07-28 in favour
+	// of Client ID Metadata Documents, so it only runs when asked for.
 	var clientRegistrar types.ClientRegistrar
 	if config.DynamicRegistration {
+		logger.Warn("Dynamic Client Registration (RFC 7591) is deprecated as of MCP 2026-07-28; prefer Client ID Metadata Documents, which need no registration endpoint")
 		clientRegistrar = registration.NewInMemoryRegistrar(logger)
 	}
 
@@ -183,7 +185,6 @@ func (s *OAuth2Server) isOAuthMetadataEndpoint(path string) bool {
 	oauthPaths := []string{
 		"/.well-known/oauth-authorization-server",
 		"/.well-known/oauth-protected-resource",
-		"/.well-known/jwks.json",
 	}
 
 	if s.config.DynamicRegistration {

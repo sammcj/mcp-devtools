@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -97,7 +97,7 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *InternetSearchTool) Definition() mcp.Tool {
+func (t *InternetSearchTool) Definition() mcpapi.Tool {
 	// Get available providers for description
 	availableProviders := make([]string, 0, len(t.providers))
 	for name := range t.providers {
@@ -153,86 +153,86 @@ Search Types: %v`,
 	providerEnumValues = append(providerEnumValues, availableProviders...)
 
 	// Start building the tool definition with common parameters
-	toolOptions := []mcp.ToolOption{
-		mcp.WithDescription(description),
-		mcp.WithString("type",
-			mcp.Description("Search type"),
-			mcp.DefaultString("web"),
-			mcp.Enum(enumValues...),
+	toolOptions := []mcpapi.ToolOption{
+		mcpapi.WithDescription(description),
+		mcpapi.WithString("type",
+			mcpapi.Description("Search type"),
+			mcpapi.DefaultString("web"),
+			mcpapi.Enum(enumValues...),
 		),
-		mcp.WithArray("query",
-			mcp.Required(),
-			mcp.Description("One or more search queries to execute. Multiple queries run in parallel."),
-			mcp.Items(map[string]any{"type": "string"}),
+		mcpapi.WithArray("query",
+			mcpapi.Required(),
+			mcpapi.Description("One or more search queries to execute. Multiple queries run in parallel."),
+			mcpapi.Items(map[string]any{"type": "string"}),
 		),
-		mcp.WithString("provider",
-			mcp.Description(fmt.Sprintf("Search provider to use (default: %s)", defaultProvider)),
-			mcp.DefaultString(defaultProvider),
-			mcp.Enum(providerEnumValues...),
+		mcpapi.WithString("provider",
+			mcpapi.Description(fmt.Sprintf("Search provider to use (default: %s)", defaultProvider)),
+			mcpapi.DefaultString(defaultProvider),
+			mcpapi.Enum(providerEnumValues...),
 		),
-		mcp.WithNumber("count",
-			mcp.Description("Number of results per query (limits vary by provider & type)"),
-			mcp.DefaultNumber(5),
+		mcpapi.WithNumber("count",
+			mcpapi.Description("Number of results per query (limits vary by provider & type)"),
+			mcpapi.DefaultNumber(5),
 		),
 	}
 
 	// Add provider-specific parameters only if the provider is available
 	if hasBrave {
 		toolOptions = append(toolOptions,
-			mcp.WithNumber("offset",
-				mcp.Description("Pagination offset (Brave internet search only)"),
-				mcp.DefaultNumber(0),
+			mcpapi.WithNumber("offset",
+				mcpapi.Description("Pagination offset (Brave internet search only)"),
+				mcpapi.DefaultNumber(0),
 			),
-			mcp.WithString("freshness",
-				mcp.Description("Time filter for Brave (pd/pw/pm/py or custom range)"),
+			mcpapi.WithString("freshness",
+				mcpapi.Description("Time filter for Brave (pd/pw/pm/py or custom range)"),
 			),
 		)
 	}
 
 	if hasGoogle {
 		toolOptions = append(toolOptions,
-			mcp.WithNumber("start",
-				mcp.Description("Start index for Google search pagination (default: 0)"),
-				mcp.DefaultNumber(0),
+			mcpapi.WithNumber("start",
+				mcpapi.Description("Start index for Google search pagination (default: 0)"),
+				mcpapi.DefaultNumber(0),
 			),
 		)
 	}
 
 	if hasSearXNG {
 		toolOptions = append(toolOptions,
-			mcp.WithNumber("pageno",
-				mcp.Description("Page number for SearXNG (starts at 1)"),
-				mcp.DefaultNumber(1),
+			mcpapi.WithNumber("pageno",
+				mcpapi.Description("Page number for SearXNG (starts at 1)"),
+				mcpapi.DefaultNumber(1),
 			),
-			mcp.WithString("time_range",
-				mcp.Description("Time range for SearXNG (day/month/year)"),
-				mcp.Enum("day", "month", "year"),
+			mcpapi.WithString("time_range",
+				mcpapi.Description("Time range for SearXNG (day/month/year)"),
+				mcpapi.Enum("day", "month", "year"),
 			),
-			mcp.WithString("language",
-				mcp.Description("Language code for SearXNG (e.g., 'all', 'en', 'fr', 'de')"),
-				mcp.DefaultString("en"),
+			mcpapi.WithString("language",
+				mcpapi.Description("Language code for SearXNG (e.g., 'all', 'en', 'fr', 'de')"),
+				mcpapi.DefaultString("en"),
 			),
-			mcp.WithString("safesearch",
-				mcp.Description("Safe search filter for SearXNG (0: None, 1: Moderate, 2: Strict)"),
-				mcp.Enum("0", "1", "2"),
-				mcp.DefaultString("1"),
+			mcpapi.WithString("safesearch",
+				mcpapi.Description("Safe search filter for SearXNG (0: None, 1: Moderate, 2: Strict)"),
+				mcpapi.Enum("0", "1", "2"),
+				mcpapi.DefaultString("1"),
 			),
 		)
 	}
 
 	// Add read-only annotations for internet search tool
 	toolOptions = append(toolOptions,
-		mcp.WithReadOnlyHintAnnotation(true),     // Only queries external APIs, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same query returns similar results
-		mcp.WithOpenWorldHintAnnotation(true),    // Interacts with external internet APIs
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only queries external APIs, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same query returns similar results
+		mcpapi.WithOpenWorldHintAnnotation(true),    // Interacts with external internet APIs
 	)
 
-	return mcp.NewTool("internet_search", toolOptions...)
+	return mcpapi.NewTool("internet_search", toolOptions...)
 }
 
 // Execute executes the unified search tool with parallel query support
-func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *InternetSearchTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse search type (with default)
 	searchType, ok := args["type"].(string)
 	if !ok || searchType == "" {
@@ -425,7 +425,7 @@ func (t *InternetSearchTool) executeSingleSearch(ctx context.Context, logger *lo
 }
 
 // aggregateResults combines individual query results into a MultiSearchResponse
-func (t *InternetSearchTool) aggregateResults(results []internetsearch.QueryResult) (*mcp.CallToolResult, error) {
+func (t *InternetSearchTool) aggregateResults(results []internetsearch.QueryResult) (*mcpapi.CallToolResult, error) {
 	successful := 0
 	failed := 0
 	var errors []string

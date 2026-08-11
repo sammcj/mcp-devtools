@@ -6,6 +6,16 @@ import (
 	"encoding/base64"
 )
 
+// NewState generates an unguessable state parameter, which binds an
+// authorisation response to the request this process made.
+func NewState() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
 // PKCE holds the code verifier and challenge for OAuth PKCE flow.
 type PKCE struct {
 	Verifier  string

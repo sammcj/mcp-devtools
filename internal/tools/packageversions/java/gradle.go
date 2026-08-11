@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -18,20 +18,20 @@ type GradleTool struct {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *GradleTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *GradleTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_gradle_versions",
-		mcp.WithDescription("Check latest stable versions for Java packages in build.gradle"),
-		mcp.WithArray("dependencies",
-			mcp.Description("Array of Gradle dependencies"),
-			mcp.Required(),
-			mcp.Items(map[string]any{"type": "object"}),
+		mcpapi.WithDescription("Check latest stable versions for Java packages in build.gradle"),
+		mcpapi.WithArray("dependencies",
+			mcpapi.Description("Array of Gradle dependencies"),
+			mcpapi.Required(),
+			mcpapi.Items(map[string]any{"type": "object"}),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *GradleTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *GradleTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Getting latest Gradle package versions")
 
 	// Parse dependencies

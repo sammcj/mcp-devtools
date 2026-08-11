@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -22,6 +24,10 @@ type ServerMetadata struct {
 	GrantTypesSupported               []string `json:"grant_types_supported,omitempty"`
 	CodeChallengeMethodsSupported     []string `json:"code_challenge_methods_supported,omitempty"`
 	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported,omitempty"`
+
+	// IssuerParameterSupported is RFC 9207. When true, an authorisation
+	// response without `iss` must be rejected.
+	IssuerParameterSupported bool `json:"authorization_response_iss_parameter_supported,omitempty"`
 }
 
 // FetchServerMetadata fetches OAuth authorisation server metadata.
@@ -59,6 +65,12 @@ func FetchServerMetadata(ctx context.Context, serverURL string) (*ServerMetadata
 	return nil, fmt.Errorf("failed to fetch authorisation server metadata: %w", lastErr)
 }
 
+// maxMetadataBytes bounds the discovery response. A metadata document is a few
+// kilobytes; anything larger is a server trying to exhaust this process.
+const maxMetadataBytes = 256 << 10
+
+var metadataClient = &http.Client{Timeout: 30 * time.Second}
+
 func fetchMetadataFromURL(ctx context.Context, metadataURL string) (*ServerMetadata, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL, nil)
 	if err != nil {
@@ -66,7 +78,7 @@ func fetchMetadataFromURL(ctx context.Context, metadataURL string) (*ServerMetad
 	}
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := metadataClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -77,11 +89,50 @@ func fetchMetadataFromURL(ctx context.Context, metadataURL string) (*ServerMetad
 	}
 
 	var metadata ServerMetadata
-	if err := json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxMetadataBytes)).Decode(&metadata); err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %w", err)
 	}
 
+	// Check against where the document actually came from, not where it was
+	// requested: the client follows redirects, and validating the pre-redirect
+	// URL would let an off-host redirect deliver an attacker-authored document
+	// that still passes.
+	servedFrom := metadataURL
+	if resp.Request != nil && resp.Request.URL != nil {
+		servedFrom = resp.Request.URL.String()
+	}
+	if err := validateIssuerMatchesURL(metadata.Issuer, servedFrom); err != nil {
+		return nil, err
+	}
+
 	return &metadata, nil
+}
+
+// validateIssuerMatchesURL checks scheme and host only, not the full RFC 8414
+// §3.3 equality. That blocks the cross-host mix-up, which is the attack that
+// matters here, while tolerating providers that issue from a path (Authentik
+// "/application/o/<slug>/", Okta "/oauth2/<id>") where full-path equality
+// against the two constructed well-known URLs would reject a valid document.
+func validateIssuerMatchesURL(issuer, metadataURL string) error {
+	if issuer == "" {
+		return fmt.Errorf("metadata document has no issuer")
+	}
+
+	fetched, err := url.Parse(metadataURL)
+	if err != nil {
+		return fmt.Errorf("invalid metadata URL: %w", err)
+	}
+
+	claimed, err := url.Parse(issuer)
+	if err != nil {
+		return fmt.Errorf("invalid issuer %q: %w", issuer, err)
+	}
+
+	if claimed.Scheme != fetched.Scheme || claimed.Host != fetched.Host {
+		return fmt.Errorf("metadata issuer %q was served from %s://%s", issuer, fetched.Scheme, fetched.Host)
+	}
+
+	return nil
 }
 
 // ValidateScopes validates requested scopes against supported scopes.

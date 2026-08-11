@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -21,10 +21,10 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *AceternityUITool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *AceternityUITool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"aceternity_ui",
-		mcp.WithDescription(`List, search, get details for Aceternity UI frontend components.
+		mcpapi.WithDescription(`List, search, get details for Aceternity UI frontend components.
 
 Actions:
 - list: Get all components
@@ -37,26 +37,26 @@ Examples:
 - List all components: {"action": "list"}
 - Search for grid components: {"action": "search", "query": "grid"}
 - Get bento-grid details: {"action": "details", "componentName": "bento-grid"}`),
-		mcp.WithString("action",
-			mcp.Required(),
-			mcp.Description("Action: 'list', 'search', 'details', or 'categories'"),
-			mcp.Enum("list", "search", "details", "categories"),
+		mcpapi.WithString("action",
+			mcpapi.Required(),
+			mcpapi.Description("Action: 'list', 'search', 'details', or 'categories'"),
+			mcpapi.Enum("list", "search", "details", "categories"),
 		),
-		mcp.WithString("query",
-			mcp.Description("Search query (required for 'search' action)"),
+		mcpapi.WithString("query",
+			mcpapi.Description("Search query (required for 'search' action)"),
 		),
-		mcp.WithString("componentName",
-			mcp.Description("Component name (required for 'details' action)"),
+		mcpapi.WithString("componentName",
+			mcpapi.Description("Component name (required for 'details' action)"),
 		),
-		mcp.WithReadOnlyHintAnnotation(true),
-		mcp.WithDestructiveHintAnnotation(false),
-		mcp.WithIdempotentHintAnnotation(true),
-		mcp.WithOpenWorldHintAnnotation(false), // Uses hardcoded data, no external calls
+		mcpapi.WithReadOnlyHintAnnotation(true),
+		mcpapi.WithDestructiveHintAnnotation(false),
+		mcpapi.WithIdempotentHintAnnotation(true),
+		mcpapi.WithOpenWorldHintAnnotation(false), // Uses hardcoded data, no external calls
 	)
 }
 
 // Execute executes the Aceternity UI tool
-func (t *AceternityUITool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AceternityUITool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	action, ok := args["action"].(string)
 	if !ok || action == "" {
 		return nil, fmt.Errorf("missing or invalid required parameter: action")
@@ -87,7 +87,7 @@ func (t *AceternityUITool) Execute(ctx context.Context, logger *logrus.Logger, c
 }
 
 // executeList handles the list action
-func (t *AceternityUITool) executeList(logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func (t *AceternityUITool) executeList(logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	logger.Info("Listing Aceternity UI components")
 
 	resultJSON, err := json.MarshalIndent(AceternityComponents, "", "  ")
@@ -96,11 +96,11 @@ func (t *AceternityUITool) executeList(logger *logrus.Logger) (*mcp.CallToolResu
 	}
 
 	logger.WithField("count", len(AceternityComponents)).Info("Successfully retrieved Aceternity UI components")
-	return mcp.NewToolResultText(string(resultJSON)), nil
+	return mcpapi.NewToolResultText(string(resultJSON)), nil
 }
 
 // executeSearch handles the search action
-func (t *AceternityUITool) executeSearch(logger *logrus.Logger, query string) (*mcp.CallToolResult, error) {
+func (t *AceternityUITool) executeSearch(logger *logrus.Logger, query string) (*mcpapi.CallToolResult, error) {
 	logger.Infof("Searching Aceternity UI components with query: %s", query)
 
 	var searchResults []ComponentInfo
@@ -122,11 +122,11 @@ func (t *AceternityUITool) executeSearch(logger *logrus.Logger, query string) (*
 		return nil, fmt.Errorf("failed to marshal search results: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(resultJSON)), nil
+	return mcpapi.NewToolResultText(string(resultJSON)), nil
 }
 
 // executeDetails handles the details action
-func (t *AceternityUITool) executeDetails(logger *logrus.Logger, componentName string) (*mcp.CallToolResult, error) {
+func (t *AceternityUITool) executeDetails(logger *logrus.Logger, componentName string) (*mcpapi.CallToolResult, error) {
 	logger.Infof("Getting details for Aceternity UI component: %s", componentName)
 
 	// Find the component
@@ -149,11 +149,11 @@ func (t *AceternityUITool) executeDetails(logger *logrus.Logger, componentName s
 		return nil, fmt.Errorf("failed to marshal component: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(resultJSON)), nil
+	return mcpapi.NewToolResultText(string(resultJSON)), nil
 }
 
 // executeCategories handles the categories action
-func (t *AceternityUITool) executeCategories(logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func (t *AceternityUITool) executeCategories(logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	logger.Info("Listing Aceternity UI component categories")
 
 	resultJSON, err := json.MarshalIndent(ComponentCategories, "", "  ")
@@ -162,7 +162,7 @@ func (t *AceternityUITool) executeCategories(logger *logrus.Logger) (*mcp.CallTo
 	}
 
 	logger.WithField("count", len(ComponentCategories)).Info("Successfully retrieved component categories")
-	return mcp.NewToolResultText(string(resultJSON)), nil
+	return mcpapi.NewToolResultText(string(resultJSON)), nil
 }
 
 // containsTag checks if a tag list contains a query string

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,7 +41,7 @@ type GitHubReleaseResponse []struct {
 }
 
 // GetLatestVersion gets the latest version of Swift packages
-func (h *SwiftHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (h *SwiftHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	h.logger.Info("Getting latest Swift package versions")
 
 	// Parse dependencies

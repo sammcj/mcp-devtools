@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
@@ -19,16 +19,16 @@ import (
 type GetComponentDetailsTool struct{}
 
 // Definition returns the tool's definition.
-func (t *GetComponentDetailsTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *GetComponentDetailsTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"shadcn_get_component_details",
-		mcp.WithDescription("Get detailed information about a specific shadcn ui component."),
-		mcp.WithString("componentName", mcp.Description("The name of the component (e.g., 'button', 'accordion')."), mcp.Required()),
+		mcpapi.WithDescription("Get detailed information about a specific shadcn ui component."),
+		mcpapi.WithString("componentName", mcpapi.Description("The name of the component (e.g., 'button', 'accordion')."), mcpapi.Required()),
 	)
 }
 
 // Execute performs the tool's action.
-func (t *GetComponentDetailsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *GetComponentDetailsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	componentName, ok := args["componentName"].(string)
 	if !ok || componentName == "" {
 		return nil, fmt.Errorf("componentName is a required argument and must be a non-empty string")

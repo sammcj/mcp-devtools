@@ -123,6 +123,8 @@ Both use the same OTLP endpoint and are enabled/disabled together.
 
 #### Session Metrics
 
+Session metrics are recorded for the stdio transport only. The HTTP transport is stateless and has no sessions.
+
 **`mcp.session.active`** (UpDownCounter)
 - Current concurrent sessions
 - Labels: `transport`
@@ -317,10 +319,11 @@ mcp-devtools uses **W3C Trace Context** for session correlation. Related tool ca
    - Each tool call has a unique span ID but inherits the parent trace ID
    - Session ID included in all spans for additional filtering
 
-2. **HTTP Transport**: Trace context propagation
-   - Client sends `traceparent` header with requests
-   - All tool calls with same trace ID are automatically grouped
-   - Works with any OTEL-compatible client
+2. **HTTP Transport**: Trace context propagation only
+   - The HTTP transport is stateless (MCP 2026-07-28), so there is no protocol session and no session span
+   - Client sends a `traceparent` header with each request and the tool span joins that trace
+   - Without a `traceparent`, each tool call is its own root trace
+   - `mcp.session.*` metrics are only recorded for stdio
 
 ### Session Correlation in Practice
 

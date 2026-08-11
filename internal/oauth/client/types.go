@@ -20,6 +20,16 @@ type OAuth2ClientConfig struct {
 	// Optional discovery
 	IssuerURL string `json:"issuer_url,omitempty"` // For .well-known/oauth-authorization-server discovery
 
+	// IssuerIdentifier is the issuer as the authorisation server declares it in
+	// its own metadata, which is what an RFC 9207 `iss` parameter is compared
+	// against. Populated by discovery; falls back to IssuerURL.
+	IssuerIdentifier string `json:"issuer_identifier,omitempty"`
+
+	// IssuerParameterSupported records whether the server advertises
+	// authorization_response_iss_parameter_supported. When true, an
+	// authorisation response without `iss` is rejected.
+	IssuerParameterSupported bool `json:"issuer_parameter_supported,omitempty"`
+
 	// Redirect configuration
 	RedirectURI string `json:"redirect_uri"` // Usually http://localhost:PORT/callback
 
@@ -86,6 +96,12 @@ type CallbackServer interface {
 	GetRedirectURI() string
 	GetAuthorizationCode() <-chan string
 	GetError() <-chan error
+
+	// Expect tells the server what the authorisation response must contain
+	// before its code is accepted: the state issued with the request, and the
+	// issuer identifier if the server sends RFC 9207 `iss`. Call it after
+	// Start and before the browser is opened.
+	Expect(state, issuer string, issuerRequired bool)
 }
 
 // OAuth2Client interface for browser-based OAuth flows

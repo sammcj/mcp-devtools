@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"sync"
 	"testing"
 
@@ -156,5 +157,5 @@ func TestRustTool_Definition(t *testing.T) {
 
 	assert.Equal(t, "check_rust_versions", def.Name)
 	assert.Contains(t, def.Description, "Rust crates")
-	assert.Contains(t, def.InputSchema.Properties, "dependencies")
+	assert.Contains(t, mcpapi.InputSchemaOf(def).Properties, "dependencies")
 }

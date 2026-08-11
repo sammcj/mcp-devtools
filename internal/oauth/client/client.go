@@ -103,21 +103,42 @@ func (c *DefaultOAuth2Client) tryDiscoverFromURL(ctx context.Context, discoveryU
 		return fmt.Errorf("failed to parse metadata: %w", err)
 	}
 
-	// Extract authorization endpoint
-	if authEndpoint, ok := metadata["authorization_endpoint"].(string); ok && authEndpoint != "" {
-		c.config.AuthorizationEndpoint = authEndpoint
-		c.logger.Debugf("Discovered authorization endpoint: %s", authEndpoint)
-	} else {
+	// Read everything into locals first. A partially applied discovery leaves
+	// an attacker-supplied endpoint in live config even though this returns an
+	// error, and StartAuthentication skips re-discovery once the endpoints are
+	// set.
+	authEndpoint, ok := metadata["authorization_endpoint"].(string)
+	if !ok || authEndpoint == "" {
 		return fmt.Errorf("authorization_endpoint not found in metadata")
 	}
 
-	// Extract token endpoint
-	if tokenEndpoint, ok := metadata["token_endpoint"].(string); ok && tokenEndpoint != "" {
-		c.config.TokenEndpoint = tokenEndpoint
-		c.logger.Debugf("Discovered token endpoint: %s", tokenEndpoint)
-	} else {
+	tokenEndpoint, ok := metadata["token_endpoint"].(string)
+	if !ok || tokenEndpoint == "" {
 		return fmt.Errorf("token_endpoint not found in metadata")
 	}
+
+	// Record the issuer as the server states it. RFC 9207 compares the `iss`
+	// parameter against this, not against the URL we happened to fetch from.
+	// A server claiming an issuer other than the one configured is a mix-up
+	// attempt or a misconfiguration; either way, do not proceed with it.
+	issuerIdentifier, _ := metadata["issuer"].(string)
+	if issuerIdentifier != "" {
+		if configured := strings.TrimSuffix(c.config.IssuerURL, "/"); configured != "" &&
+			strings.TrimSuffix(issuerIdentifier, "/") != configured {
+			return fmt.Errorf("metadata issuer %q does not match the configured issuer %q", issuerIdentifier, c.config.IssuerURL)
+		}
+	}
+
+	issuerParameterSupported, _ := metadata["authorization_response_iss_parameter_supported"].(bool)
+
+	c.config.AuthorizationEndpoint = authEndpoint
+	c.config.TokenEndpoint = tokenEndpoint
+	if issuerIdentifier != "" {
+		c.config.IssuerIdentifier = issuerIdentifier
+	}
+	c.config.IssuerParameterSupported = issuerParameterSupported
+	c.logger.Debugf("Discovered authorization endpoint: %s", authEndpoint)
+	c.logger.Debugf("Discovered token endpoint: %s", tokenEndpoint)
 
 	discoveryType := "OAuth 2.0 Authorization Server Metadata"
 	if isOpenIDConnect {
@@ -126,6 +147,17 @@ func (c *DefaultOAuth2Client) tryDiscoverFromURL(ctx context.Context, discoveryU
 	c.logger.Infof("Successfully discovered endpoints using %s", discoveryType)
 
 	return nil
+}
+
+// expectedIssuer returns the identifier an RFC 9207 `iss` parameter must match.
+// Discovery normalises the trailing slash, so the configured fallback has to be
+// normalised the same way or a config ending in "/" would never match the wire
+// value.
+func (c *DefaultOAuth2Client) expectedIssuer() string {
+	if c.config.IssuerIdentifier != "" {
+		return c.config.IssuerIdentifier
+	}
+	return strings.TrimSuffix(c.config.IssuerURL, "/")
 }
 
 // StartAuthentication initiates the OAuth 2.0 authorization code flow with PKCE
@@ -164,6 +196,10 @@ func (c *DefaultOAuth2Client) StartAuthentication(ctx context.Context) (*Authent
 
 	redirectURI := callbackServer.GetRedirectURI()
 	c.logger.Debugf("OAuth callback server started at: %s", redirectURI)
+
+	// Register what the authorisation response must carry before any code from
+	// it is redeemed.
+	callbackServer.Expect(state, c.expectedIssuer(), c.config.IssuerParameterSupported)
 
 	// Build authorization URL
 	authURL, err := c.buildAuthorizationURL(redirectURI, state, pkceChallenge)

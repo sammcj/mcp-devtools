@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -35,37 +35,37 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *GeminiTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *GeminiTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"gemini-agent",
-		mcp.WithDescription("Provides access to Google's Gemini CLI for AI capabilities. You can call out to this tool to treat Gemini as a sub-agent for tasks like reviewing completed implementations and for help with troubleshooting when stuck on stubborn problems."),
-		mcp.WithString("prompt",
-			mcp.Required(),
-			mcp.Description("A clear, concise prompt to send to Gemini CLI to instruct the AI Agent to perform a specific task. Can include @file, @directory/, @./ references for context."),
+		mcpapi.WithDescription("Provides access to Google's Gemini CLI for AI capabilities. You can call out to this tool to treat Gemini as a sub-agent for tasks like reviewing completed implementations and for help with troubleshooting when stuck on stubborn problems."),
+		mcpapi.WithString("prompt",
+			mcpapi.Required(),
+			mcpapi.Description("A clear, concise prompt to send to Gemini CLI to instruct the AI Agent to perform a specific task. Can include @file, @directory/, @./ references for context."),
 		),
-		mcp.WithString("override-model",
-			mcp.Description(fmt.Sprintf("Force Gemini to use a different model. Default: %s.", defaultModel)),
+		mcpapi.WithString("override-model",
+			mcpapi.Description(fmt.Sprintf("Force Gemini to use a different model. Default: %s.", defaultModel)),
 		),
-		mcp.WithBoolean("sandbox",
-			mcp.Description("Run the command in the Gemini sandbox (Default: False)"),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("sandbox",
+			mcpapi.Description("Run the command in the Gemini sandbox (Default: False)"),
+			mcpapi.DefaultBool(false),
 		),
 		tools.AddConditionalParameter("yolo-mode",
 			"Allow Gemini to make changes and run commands without confirmation. Only use if you want Gemini to make changes. Defaults to read-only mode."),
-		mcp.WithBoolean("include-all-files",
-			mcp.Description("Recursively includes all files within the current directory as context for the prompt."),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("include-all-files",
+			mcpapi.Description("Recursively includes all files within the current directory as context for the prompt."),
+			mcpapi.DefaultBool(false),
 		),
 		// Destructive tool annotations
-		mcp.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Gemini
-		mcp.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
-		mcp.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
-		mcp.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Gemini
+		mcpapi.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
+		mcpapi.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
+		mcpapi.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
 	)
 }
 
 // Execute executes the tool's logic by calling the gemini CLI
-func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Executing gemini tool")
 
 	// Get timeout from environment or use default
@@ -95,7 +95,7 @@ func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 			output, err = t.runGemini(ctx, logger, time.Duration(timeout)*time.Second, prompt, flashModel, sandbox, yoloMode, includeAllFiles)
 		} else if err == context.DeadlineExceeded {
 			timeoutMsg := fmt.Sprintf("\n\nThe Gemini Agent hit the configured timeout of %d seconds, output may be truncated!", timeout)
-			return mcp.NewToolResultText(output + timeoutMsg), nil
+			return mcpapi.NewToolResultText(output + timeoutMsg), nil
 		}
 	}
 
@@ -107,7 +107,7 @@ func (t *GeminiTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 	// Apply response size limits
 	output = t.ApplyResponseSizeLimit(output, logger)
 
-	return mcp.NewToolResultText(output), nil
+	return mcpapi.NewToolResultText(output), nil
 }
 
 func (t *GeminiTool) runGemini(ctx context.Context, logger *logrus.Logger, timeout time.Duration, prompt, model string, sandbox, yoloMode, includeAllFiles bool) (string, error) {

@@ -3,13 +3,13 @@ package excel
 import (
 	"fmt"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
 // handleGetDataValidationInfo retrieves data validation rules from a worksheet
-func handleGetDataValidationInfo(logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleGetDataValidationInfo(logger *logrus.Logger, filePath string, sheetName string) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -121,5 +121,5 @@ func handleGetDataValidationInfo(logger *logrus.Logger, filePath string, sheetNa
 		"validation_rules": validationRules,
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }

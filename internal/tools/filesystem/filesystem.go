@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -142,10 +142,10 @@ func (t *FileSystemTool) validateFileSize(size int64) error {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *FileSystemTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *FileSystemTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"filesystem",
-		mcp.WithDescription(`Advanced filesystem operations for managing files and directories. Do not use this tool unless explicitly requested by the user.
+		mcpapi.WithDescription(`Advanced filesystem operations for managing files and directories. Do not use this tool unless explicitly requested by the user.
 
 Functions and their required parameters:
 
@@ -162,17 +162,17 @@ Functions and their required parameters:
 • get_file_info: path (required)
 • list_allowed_directories: (no parameters)
 `),
-		mcp.WithString("function",
-			mcp.Required(),
-			mcp.Description("Function to execute"),
-			mcp.Enum("read_file", "read_multiple_files", "write_file", "edit_file",
+		mcpapi.WithString("function",
+			mcpapi.Required(),
+			mcpapi.Description("Function to execute"),
+			mcpapi.Enum("read_file", "read_multiple_files", "write_file", "edit_file",
 				"create_directory", "list_directory", "list_directory_with_sizes",
 				"directory_tree", "move_file", "search_files", "get_file_info",
 				"list_allowed_directories"),
 		),
-		mcp.WithObject("options",
-			mcp.Description("Function-specific options - see function description for parameters"),
-			mcp.Properties(map[string]any{
+		mcpapi.WithObject("options",
+			mcpapi.Description("Function-specific options - see function description for parameters"),
+			mcpapi.Properties(map[string]any{
 				"path": map[string]any{
 					"type":        "string",
 					"description": "File or directory path",
@@ -247,15 +247,15 @@ Functions and their required parameters:
 			}),
 		),
 		// Destructive tool annotations
-		mcp.WithReadOnlyHintAnnotation(false),   // Can modify files and directories
-		mcp.WithDestructiveHintAnnotation(true), // Can delete/overwrite files
-		mcp.WithIdempotentHintAnnotation(false), // File operations are not idempotent
-		mcp.WithOpenWorldHintAnnotation(false),  // Works with local filesystem only
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Can modify files and directories
+		mcpapi.WithDestructiveHintAnnotation(true), // Can delete/overwrite files
+		mcpapi.WithIdempotentHintAnnotation(false), // File operations are not idempotent
+		mcpapi.WithOpenWorldHintAnnotation(false),  // Works with local filesystem only
 	)
 }
 
 // Execute executes the filesystem tool
-func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Create security operations instance
 	ops := security.NewOperations("filesystem")
 
@@ -389,7 +389,7 @@ func (t *FileSystemTool) isPathWithinAllowedReal(realPath, allowedClean string) 
 }
 
 // readFile reads the contents of a file
-func (t *FileSystemTool) readFile(logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) readFile(logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcpapi.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -455,7 +455,7 @@ func (t *FileSystemTool) readFile(logger *logrus.Logger, ops *security.Operation
 		}
 	}
 
-	return mcp.NewToolResultText(content), nil
+	return mcpapi.NewToolResultText(content), nil
 }
 
 // readFileHead reads the first N lines of a file
@@ -559,7 +559,7 @@ func (t *FileSystemTool) readFileTail(path string, numLines int) (string, error)
 }
 
 // readMultipleFiles reads multiple files simultaneously
-func (t *FileSystemTool) readMultipleFiles(logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) readMultipleFiles(logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcpapi.CallToolResult, error) {
 	pathsRaw, ok := options["paths"]
 	if !ok {
 		return nil, fmt.Errorf("missing required parameter: paths")
@@ -617,11 +617,11 @@ func (t *FileSystemTool) readMultipleFiles(logger *logrus.Logger, ops *security.
 		results = append(results, fmt.Sprintf("%s:\n%s", path, string(safeFile.Content)))
 	}
 
-	return mcp.NewToolResultText(strings.Join(results, "\n---\n")), nil
+	return mcpapi.NewToolResultText(strings.Join(results, "\n---\n")), nil
 }
 
 // writeFile creates or overwrites a file
-func (t *FileSystemTool) writeFile(options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) writeFile(options map[string]any) (*mcpapi.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -663,11 +663,11 @@ func (t *FileSystemTool) writeFile(options map[string]any) (*mcp.CallToolResult,
 		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
 
-	return mcp.NewToolResultText(fmt.Sprintf("Successfully wrote to %s", path)), nil
+	return mcpapi.NewToolResultText(fmt.Sprintf("Successfully wrote to %s", path)), nil
 }
 
 // editFile performs line-based edits on a file
-func (t *FileSystemTool) editFile(logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) editFile(logger *logrus.Logger, ops *security.Operations, options map[string]any) (*mcpapi.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -771,7 +771,7 @@ func (t *FileSystemTool) editFile(logger *logrus.Logger, ops *security.Operation
 		}
 	}
 
-	return mcp.NewToolResultText(diff), nil
+	return mcpapi.NewToolResultText(diff), nil
 }
 
 // createDiff creates a simple diff between original and modified content
@@ -813,7 +813,7 @@ func (t *FileSystemTool) createDiff(original, modified, filename string) string 
 }
 
 // createDirectory creates a directory
-func (t *FileSystemTool) createDirectory(options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) createDirectory(options map[string]any) (*mcpapi.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -828,11 +828,11 @@ func (t *FileSystemTool) createDirectory(options map[string]any) (*mcp.CallToolR
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	return mcp.NewToolResultText(fmt.Sprintf("Successfully created directory %s", path)), nil
+	return mcpapi.NewToolResultText(fmt.Sprintf("Successfully created directory %s", path)), nil
 }
 
 // listDirectory lists directory contents
-func (t *FileSystemTool) listDirectory(options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listDirectory(options map[string]any) (*mcpapi.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -865,11 +865,11 @@ func (t *FileSystemTool) listDirectory(options map[string]any) (*mcp.CallToolRes
 		fmt.Fprintf(&result, "%s %s\n", prefix, entry.Name())
 	}
 
-	return mcp.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
+	return mcpapi.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
 }
 
 // listDirectoryWithSizes lists directory contents with sizes
-func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcpapi.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -954,7 +954,7 @@ func (t *FileSystemTool) listDirectoryWithSizes(options map[string]any) (*mcp.Ca
 	fmt.Fprintf(&result, "\nTotal: %d files, %d directories\n", totalFiles, totalDirs)
 	fmt.Fprintf(&result, "Combined size: %s\n", t.formatSize(totalSize))
 
-	return mcp.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
+	return mcpapi.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
 }
 
 // loadGitignorePatterns collects .gitignore patterns from the git repository
@@ -1170,7 +1170,7 @@ func (t *FileSystemTool) formatSize(bytes int64) string {
 }
 
 // directoryTree creates a recursive tree view of directories
-func (t *FileSystemTool) directoryTree(options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) directoryTree(options map[string]any) (*mcpapi.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1188,7 +1188,7 @@ func (t *FileSystemTool) directoryTree(options map[string]any) (*mcp.CallToolRes
 
 	// Convert to JSON-like string representation
 	result := t.formatDirectoryTree(tree, 0)
-	return mcp.NewToolResultText(result), nil
+	return mcpapi.NewToolResultText(result), nil
 }
 
 // buildDirectoryTree recursively builds a directory tree
@@ -1271,7 +1271,7 @@ func (t *FileSystemTool) formatDirectoryTree(entries []DirectoryEntry, indent in
 }
 
 // moveFile moves or renames files and directories
-func (t *FileSystemTool) moveFile(options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) moveFile(options map[string]any) (*mcpapi.CallToolResult, error) {
 	source, ok := options["source"].(string)
 	if !ok || source == "" {
 		return nil, fmt.Errorf("missing required parameter: source")
@@ -1301,11 +1301,11 @@ func (t *FileSystemTool) moveFile(options map[string]any) (*mcp.CallToolResult, 
 		return nil, fmt.Errorf("failed to move file: %w", err)
 	}
 
-	return mcp.NewToolResultText(fmt.Sprintf("Successfully moved %s to %s", source, destination)), nil
+	return mcpapi.NewToolResultText(fmt.Sprintf("Successfully moved %s to %s", source, destination)), nil
 }
 
 // searchFiles recursively searches for files matching a pattern
-func (t *FileSystemTool) searchFiles(options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) searchFiles(options map[string]any) (*mcpapi.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1338,10 +1338,10 @@ func (t *FileSystemTool) searchFiles(options map[string]any) (*mcp.CallToolResul
 	}
 
 	if len(results) == 0 {
-		return mcp.NewToolResultText("No matches found"), nil
+		return mcpapi.NewToolResultText("No matches found"), nil
 	}
 
-	return mcp.NewToolResultText(strings.Join(results, "\n")), nil
+	return mcpapi.NewToolResultText(strings.Join(results, "\n")), nil
 }
 
 // performSearch performs the actual file search
@@ -1390,7 +1390,7 @@ func (t *FileSystemTool) performSearch(rootPath, pattern string, excludePatterns
 }
 
 // getFileInfo retrieves detailed file information
-func (t *FileSystemTool) getFileInfo(options map[string]any) (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) getFileInfo(options map[string]any) (*mcpapi.CallToolResult, error) {
 	path, ok := options["path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("missing required parameter: path")
@@ -1435,11 +1435,11 @@ func (t *FileSystemTool) getFileInfo(options map[string]any) (*mcp.CallToolResul
 	fmt.Fprintf(&result, "Created: %s\n", fileInfo.Created.Format(time.RFC3339))
 	fmt.Fprintf(&result, "Accessed: %s", fileInfo.Accessed.Format(time.RFC3339))
 
-	return mcp.NewToolResultText(result.String()), nil
+	return mcpapi.NewToolResultText(result.String()), nil
 }
 
 // listAllowedDirectories returns the list of allowed directories
-func (t *FileSystemTool) listAllowedDirectories() (*mcp.CallToolResult, error) {
+func (t *FileSystemTool) listAllowedDirectories() (*mcpapi.CallToolResult, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
@@ -1449,7 +1449,7 @@ func (t *FileSystemTool) listAllowedDirectories() (*mcp.CallToolResult, error) {
 		fmt.Fprintf(&result, "  %s\n", dir)
 	}
 
-	return mcp.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
+	return mcpapi.NewToolResultText(strings.TrimSuffix(result.String(), "\n")), nil
 }
 
 // SetAllowedDirectories sets the allowed directories (for testing purposes)

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/codesearch"
 	"github.com/sammcj/mcp-devtools/internal/tools/codesearch/index"
 	"github.com/sammcj/mcp-devtools/internal/tools/codesearch/vectorstore"
@@ -33,7 +33,7 @@ func TestCodeSearchToolDefinition(t *testing.T) {
 	assert.NotEmpty(t, def.Description)
 
 	// Verify required parameters exist
-	schema := def.InputSchema
+	schema := mcpapi.InputSchemaOf(def)
 	require.NotNil(t, schema)
 
 	// Check required parameters exist
@@ -64,7 +64,7 @@ func TestCodeSearchStatus(t *testing.T) {
 	require.NotEmpty(t, result.Content)
 
 	// Parse response to verify structure
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	require.True(t, ok)
 
 	var status codesearch.StatusResponse
@@ -143,7 +143,7 @@ func TestCodeSearchClear(t *testing.T) {
 	require.NotNil(t, result)
 
 	// Parse response
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	require.True(t, ok)
 
 	var clearResult vectorstore.ClearResult
@@ -193,7 +193,7 @@ func Add(a, b int) int {
 	require.NotNil(t, result)
 
 	// Parse response
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	require.True(t, ok)
 
 	var indexResult index.IndexResult
@@ -280,7 +280,7 @@ func SetConfig(key, value string) error { return nil }
 	require.NotNil(t, result)
 
 	// Verify indexing succeeded
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	require.True(t, ok)
 
 	var indexResult index.IndexResult
@@ -295,7 +295,7 @@ func SetConfig(key, value string) error { return nil }
 	result, err = tool.Execute(context.Background(), logger, cache, statusArgs)
 	require.NoError(t, err)
 
-	textContent, ok = mcp.AsTextContent(result.Content[0])
+	textContent, ok = mcpapi.AsTextContent(result.Content[0])
 	require.True(t, ok)
 
 	var statusResponse codesearch.StatusResponse
@@ -322,7 +322,7 @@ func SetConfig(key, value string) error { return nil }
 		result, err = tool.Execute(context.Background(), logger, cache, searchArgs)
 		require.NoError(t, err)
 
-		textContent, ok = mcp.AsTextContent(result.Content[0])
+		textContent, ok = mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok)
 
 		var searchResponse codesearch.SearchResponse
@@ -348,7 +348,7 @@ func SetConfig(key, value string) error { return nil }
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
-	textContent, ok = mcp.AsTextContent(result.Content[0])
+	textContent, ok = mcpapi.AsTextContent(result.Content[0])
 	require.True(t, ok)
 
 	var searchResponse codesearch.SearchResponse

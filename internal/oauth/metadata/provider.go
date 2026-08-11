@@ -30,19 +30,23 @@ func NewProvider(config *types.OAuth2Config, baseURL string, logger *logrus.Logg
 
 // GetAuthorizationServerMetadata returns OAuth 2.0 Authorisation Server Metadata (RFC8414)
 func (p *Provider) GetAuthorizationServerMetadata(ctx context.Context) (*types.AuthorizationServerMetadata, error) {
+	// mcp-devtools is a resource server: it validates tokens issued elsewhere
+	// and serves no authorisation or token endpoint of its own. Advertising
+	// ones under this base URL pointed clients at 404s, so only endpoints that
+	// exist are published. Clients find the real authorisation server through
+	// the protected resource metadata below.
 	metadata := &types.AuthorizationServerMetadata{
 		Issuer:                            p.config.Issuer,
-		AuthorizationEndpoint:             p.baseURL + "/oauth/authorize",
-		TokenEndpoint:                     p.baseURL + "/oauth/token",
-		JWKSUri:                           p.baseURL + "/.well-known/jwks.json",
+		JWKSUri:                           p.config.JWKSUrl,
 		ResponseTypesSupported:            []string{"code"},
 		GrantTypesSupported:               []string{"authorization_code", "refresh_token"},
 		TokenEndpointAuthMethodsSupported: []string{"client_secret_basic", "client_secret_post", "none"},
-		CodeChallengeMethodsSupported:     []string{"S256", "plain"},
+		CodeChallengeMethodsSupported:     []string{"S256"},
 		ScopesSupported:                   []string{"openid", "profile", "email"},
 	}
 
-	// Add optional endpoints if enabled
+	// Advertised only when asked for: Dynamic Client Registration is deprecated
+	// as of MCP 2026-07-28 in favour of Client ID Metadata Documents.
 	if p.config.DynamicRegistration {
 		metadata.RegistrationEndpoint = p.baseURL + "/oauth/register"
 	}

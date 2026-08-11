@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -25,10 +25,10 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *FetchURLTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *FetchURLTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"fetch_url",
-		mcp.WithDescription(`Fetches content from URL and returns it in a readable markdown format.
+		mcpapi.WithDescription(`Fetches content from URL and returns it in a readable markdown format.
 
 This tool enables fetching web content for analysis and processing with enhanced pagination support.
 
@@ -42,31 +42,31 @@ Response includes detailed pagination information:
 
 This tool is useful for fetching web content - for example to get documentation, information from blog posts, implementation guidelines and content from search results.
 `),
-		mcp.WithString("url",
-			mcp.Required(),
-			mcp.Description("The URL to fetch (must be http or https). May include fragment to filter on (e.g., #section-id)"),
+		mcpapi.WithString("url",
+			mcpapi.Required(),
+			mcpapi.Description("The URL to fetch (must be http or https). May include fragment to filter on (e.g., #section-id)"),
 		),
-		mcp.WithNumber("max_length",
-			mcp.Description("Maximum number of characters to return (default: 6000, max: 1000000)"),
-			mcp.DefaultNumber(6000),
+		mcpapi.WithNumber("max_length",
+			mcpapi.Description("Maximum number of characters to return (default: 6000, max: 1000000)"),
+			mcpapi.DefaultNumber(6000),
 		),
-		mcp.WithNumber("start_index",
-			mcp.Description("Starting character index for pagination (default: 0)"),
-			mcp.DefaultNumber(0),
+		mcpapi.WithNumber("start_index",
+			mcpapi.Description("Starting character index for pagination (default: 0)"),
+			mcpapi.DefaultNumber(0),
 		),
-		mcp.WithBoolean("raw",
-			mcp.Description("Return raw HTML content without markdown conversion (default: false)"),
+		mcpapi.WithBoolean("raw",
+			mcpapi.Description("Return raw HTML content without markdown conversion (default: false)"),
 		),
 		// Read-only annotations for web content fetching tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches content, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same URL returns same content
-		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external URLs
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only fetches content, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same URL returns same content
+		mcpapi.WithOpenWorldHintAnnotation(true),    // Fetches from external URLs
 	)
 }
 
 // Execute executes the fetch-url tool
-func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *FetchURLTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Executing fetch-url tool")
 
 	// Parse and validate parameters
@@ -385,13 +385,13 @@ func (t *FetchURLTool) calculateLineNumber(content string, charIndex int) int {
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (t *FetchURLTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
+func (t *FetchURLTool) newToolResultJSON(data any) (*mcpapi.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // ProvideExtendedInfo provides detailed usage information for the fetch_url tool

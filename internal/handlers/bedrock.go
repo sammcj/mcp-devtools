@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,7 +32,7 @@ func NewBedrockHandler(logger *logrus.Logger, cache *sync.Map) *BedrockHandler {
 }
 
 // GetLatestVersion gets information about AWS Bedrock models
-func (h *BedrockHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (h *BedrockHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	h.logger.Info("Getting AWS Bedrock model information")
 
 	// Parse action
@@ -57,7 +57,7 @@ func (h *BedrockHandler) GetLatestVersion(ctx context.Context, args map[string]a
 }
 
 // listModels lists all available AWS Bedrock models
-func (h *BedrockHandler) listModels() (*mcp.CallToolResult, error) {
+func (h *BedrockHandler) listModels() (*mcpapi.CallToolResult, error) {
 	// In a real implementation, this would fetch data from AWS Bedrock API
 	// For now, we'll return a static list of models
 	models := []BedrockModel{
@@ -161,7 +161,7 @@ func (h *BedrockHandler) listModels() (*mcp.CallToolResult, error) {
 }
 
 // searchModels searches for AWS Bedrock models
-func (h *BedrockHandler) searchModels(args map[string]any) (*mcp.CallToolResult, error) {
+func (h *BedrockHandler) searchModels(args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Get all models
 	result, err := h.listModels()
 	if err != nil {
@@ -269,7 +269,7 @@ func (h *BedrockHandler) searchModels(args map[string]any) (*mcp.CallToolResult,
 }
 
 // getModel gets a specific AWS Bedrock model
-func (h *BedrockHandler) getModel(args map[string]any) (*mcp.CallToolResult, error) {
+func (h *BedrockHandler) getModel(args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse model ID
 	modelID, ok := args["modelId"].(string)
 	if !ok || modelID == "" {
@@ -317,7 +317,7 @@ func (h *BedrockHandler) getModel(args map[string]any) (*mcp.CallToolResult, err
 }
 
 // getLatestClaudeSonnet gets the latest Claude Sonnet model
-func (h *BedrockHandler) getLatestClaudeSonnet() (*mcp.CallToolResult, error) {
+func (h *BedrockHandler) getLatestClaudeSonnet() (*mcpapi.CallToolResult, error) {
 	// Get all models
 	result, err := h.listModels()
 	if err != nil {

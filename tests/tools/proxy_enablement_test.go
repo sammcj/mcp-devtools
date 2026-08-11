@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	mcpserver "github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/proxy"
 	"github.com/sirupsen/logrus"
@@ -178,10 +178,10 @@ func TestRegisterUpstreamToolsAsync_NotEnabled(t *testing.T) {
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
-	srv := mcpserver.NewMCPServer("test", "1.0")
+	srv := mcp.NewServer(&mcp.Implementation{Name: "test", Version: "1.0"}, nil)
 
 	// Should return immediately without spawning a goroutine
-	proxy.RegisterUpstreamToolsAsync(t.Context(), srv, logger, "stdio")
+	proxy.RegisterUpstreamToolsAsync(t.Context(), srv, logger, func(string) mcp.ToolHandler { return nil })
 
 	// Give a brief window for any goroutine to run (it shouldn't)
 	time.Sleep(50 * time.Millisecond)
@@ -198,10 +198,10 @@ func TestRegisterUpstreamToolsAsync_EnabledButNotConfigured(t *testing.T) {
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
-	srv := mcpserver.NewMCPServer("test", "1.0")
+	srv := mcp.NewServer(&mcp.Implementation{Name: "test", Version: "1.0"}, nil)
 
 	// Should return immediately without spawning a goroutine
-	proxy.RegisterUpstreamToolsAsync(t.Context(), srv, logger, "stdio")
+	proxy.RegisterUpstreamToolsAsync(t.Context(), srv, logger, func(string) mcp.ToolHandler { return nil })
 
 	time.Sleep(50 * time.Millisecond)
 }
@@ -217,13 +217,13 @@ func TestRegisterUpstreamToolsAsync_EnabledAndConfigured(t *testing.T) {
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
-	srv := mcpserver.NewMCPServer("test", "1.0")
+	srv := mcp.NewServer(&mcp.Implementation{Name: "test", Version: "1.0"}, nil)
 
 	// Use a context with a short deadline so the goroutine doesn't wait 5 minutes
 	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
 
-	proxy.RegisterUpstreamToolsAsync(ctx, srv, logger, "stdio")
+	proxy.RegisterUpstreamToolsAsync(ctx, srv, logger, func(string) mcp.ToolHandler { return nil })
 
 	// Wait for the goroutine to hit the timeout and exit
 	time.Sleep(3 * time.Second)

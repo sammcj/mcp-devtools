@@ -3,13 +3,13 @@ package excel
 import (
 	"fmt"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
 // handleCreateChart creates a chart in the worksheet
-func handleCreateChart(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleCreateChart(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -96,7 +96,7 @@ func handleCreateChart(logger *logrus.Logger, filePath string, sheetName string,
 
 	result := map[string]any{}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // mapChartType maps user-friendly chart type names to Excelize chart types
@@ -130,9 +130,9 @@ func buildChartConfig(chartType excelize.ChartType, sheetName string, options ma
 
 	// Set chart title
 	if title, ok := options["title"].(string); ok && title != "" {
-		config.Title = []excelize.RichTextRun{
-			{
-				Text: title,
+		config.Title = excelize.ChartTitle{
+			Paragraph: []excelize.RichTextRun{
+				{Text: title},
 			},
 		}
 	}
@@ -140,9 +140,9 @@ func buildChartConfig(chartType excelize.ChartType, sheetName string, options ma
 	// Set X-axis title
 	if xAxisTitle, ok := options["x_axis_title"].(string); ok && xAxisTitle != "" {
 		config.XAxis = excelize.ChartAxis{
-			Title: []excelize.RichTextRun{
-				{
-					Text: xAxisTitle,
+			Title: excelize.ChartTitle{
+				Paragraph: []excelize.RichTextRun{
+					{Text: xAxisTitle},
 				},
 			},
 		}
@@ -151,9 +151,9 @@ func buildChartConfig(chartType excelize.ChartType, sheetName string, options ma
 	// Set Y-axis title
 	if yAxisTitle, ok := options["y_axis_title"].(string); ok && yAxisTitle != "" {
 		config.YAxis = excelize.ChartAxis{
-			Title: []excelize.RichTextRun{
-				{
-					Text: yAxisTitle,
+			Title: excelize.ChartTitle{
+				Paragraph: []excelize.RichTextRun{
+					{Text: yAxisTitle},
 				},
 			},
 		}
@@ -300,12 +300,11 @@ func buildMarkerConfig(marker map[string]any) excelize.ChartMarker {
 }
 
 // buildLineConfig constructs line configuration
-func buildLineConfig(line map[string]any) excelize.ChartLine {
-	config := excelize.ChartLine{}
+func buildLineConfig(line map[string]any) excelize.LineOptions {
+	config := excelize.LineOptions{}
 
-	// Note: Type field for ChartLine is ChartLineType, not string
-	// We'll skip style configuration for now as it requires specific type mapping
-	// Common line styles would need to be mapped to excelize.ChartLineType values
+	// Style is not mapped: excelize takes a LineType/LineDashType enum rather
+	// than a string, so it would need its own vocabulary of accepted values.
 
 	if width, ok := line["width"].(float64); ok {
 		config.Width = width

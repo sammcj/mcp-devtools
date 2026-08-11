@@ -38,9 +38,13 @@ func TestMetadataProvider(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, config.Issuer, metadata.Issuer)
-		assert.Equal(t, baseURL+"/oauth/authorize", metadata.AuthorizationEndpoint)
-		assert.Equal(t, baseURL+"/oauth/token", metadata.TokenEndpoint)
-		assert.Equal(t, baseURL+"/.well-known/jwks.json", metadata.JWKSUri)
+
+		// This server validates tokens issued elsewhere; it serves no
+		// authorisation or token endpoint, so it must not advertise one.
+		assert.Empty(t, metadata.AuthorizationEndpoint)
+		assert.Empty(t, metadata.TokenEndpoint)
+
+		assert.Equal(t, config.JWKSUrl, metadata.JWKSUri)
 		assert.Equal(t, baseURL+"/oauth/register", metadata.RegistrationEndpoint)
 		assert.Contains(t, metadata.ResponseTypesSupported, "code")
 		assert.Contains(t, metadata.CodeChallengeMethodsSupported, "S256")
@@ -104,14 +108,6 @@ func TestPKCEValidator(t *testing.T) {
 		assert.True(t, len(challenge.CodeVerifier) <= 128)
 	})
 
-	t.Run("GenerateChallenge_Plain", func(t *testing.T) {
-		challenge, err := validator.GenerateChallenge("plain")
-		require.NoError(t, err)
-
-		assert.Equal(t, "plain", challenge.CodeChallengeMethod)
-		assert.Equal(t, challenge.CodeVerifier, challenge.CodeChallenge)
-	})
-
 	t.Run("ValidateChallenge_S256", func(t *testing.T) {
 		challenge, err := validator.GenerateChallenge("S256")
 		require.NoError(t, err)
@@ -124,17 +120,6 @@ func TestPKCEValidator(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("ValidateChallenge_Plain", func(t *testing.T) {
-		challenge, err := validator.GenerateChallenge("plain")
-		require.NoError(t, err)
-
-		err = validator.ValidateChallenge(challenge.CodeChallenge, "plain", challenge.CodeVerifier)
-		assert.NoError(t, err)
-
-		// Test with wrong verifier
-		err = validator.ValidateChallenge(challenge.CodeChallenge, "plain", "wrong-verifier")
-		assert.Error(t, err)
-	})
 }
 
 func TestDynamicClientRegistration(t *testing.T) {

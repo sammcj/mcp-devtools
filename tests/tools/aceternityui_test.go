@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"os"
 	"sync"
 	"testing"
@@ -27,7 +28,7 @@ func TestAceternityUITool(t *testing.T) {
 		def := tool.Definition()
 		assert.Equal(t, "aceternity_ui", def.Name)
 		assert.NotEmpty(t, def.Description)
-		assert.NotEmpty(t, def.InputSchema.Properties)
+		assert.NotEmpty(t, mcpapi.InputSchemaOf(def).Properties)
 	})
 
 	t.Run("List Action", func(t *testing.T) {

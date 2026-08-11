@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -30,20 +30,20 @@ func NewPythonTool(client packageversions.HTTPClient) *PythonTool {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *PythonTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *PythonTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_python_versions",
-		mcp.WithDescription("Check latest stable versions for Python packages"),
-		mcp.WithArray("requirements",
-			mcp.Description("Array of requirements from requirements.txt"),
-			mcp.Required(),
-			mcp.WithStringItems(),
+		mcpapi.WithDescription("Check latest stable versions for Python packages"),
+		mcpapi.WithArray("requirements",
+			mcpapi.Description("Array of requirements from requirements.txt"),
+			mcpapi.Required(),
+			mcpapi.WithStringItems(),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *PythonTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *PythonTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Getting latest Python package versions")
 
 	// Parse requirements

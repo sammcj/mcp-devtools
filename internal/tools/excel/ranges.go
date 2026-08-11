@@ -3,13 +3,13 @@ package excel
 import (
 	"fmt"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
 // handleMergeCells merges a range of cells
-func handleMergeCells(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleMergeCells(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -86,11 +86,11 @@ func handleMergeCells(logger *logrus.Logger, filePath string, sheetName string, 
 
 	result := map[string]any{}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleUnmergeCells unmerges a range of cells
-func handleUnmergeCells(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleUnmergeCells(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -159,11 +159,11 @@ func handleUnmergeCells(logger *logrus.Logger, filePath string, sheetName string
 
 	result := map[string]any{}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleGetMergedCells gets all merged cell ranges in a worksheet
-func handleGetMergedCells(logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleGetMergedCells(logger *logrus.Logger, filePath string, sheetName string) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -223,11 +223,11 @@ func handleGetMergedCells(logger *logrus.Logger, filePath string, sheetName stri
 		"count":        len(ranges),
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleCopyRange copies a range to another location
-func handleCopyRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleCopyRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -365,11 +365,11 @@ func handleCopyRange(logger *logrus.Logger, filePath string, sheetName string, o
 		"cells_copied": cellsCopied,
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleDeleteRange deletes a range and shifts cells
-func handleDeleteRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleDeleteRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -456,11 +456,11 @@ func handleDeleteRange(logger *logrus.Logger, filePath string, sheetName string,
 		"cells_deleted": cellsDeleted,
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleValidateRange validates that a range exists and returns its boundaries
-func handleValidateRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleValidateRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -549,5 +549,5 @@ func handleValidateRange(logger *logrus.Logger, filePath string, sheetName strin
 		},
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }

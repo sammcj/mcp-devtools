@@ -12,7 +12,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -28,10 +28,10 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *UnifiedShadcnTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *UnifiedShadcnTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"shadcn",
-		mcp.WithDescription(`List, search, get details & examples for shadcn ui components.
+		mcpapi.WithDescription(`List, search, get details & examples for shadcn ui components.
 
 Actions:
 - list: Get all available components
@@ -44,27 +44,27 @@ Examples:
 - Search for button components: {"action": "search", "query": "button"}
 - Get button details: {"action": "details", "componentName": "button"}
 - Get button examples: {"action": "examples", "componentName": "button"}`),
-		mcp.WithString("action",
-			mcp.Required(),
-			mcp.Description("Action to perform: 'list', 'search', 'details', or 'examples'"),
-			mcp.Enum("list", "search", "details", "examples"),
+		mcpapi.WithString("action",
+			mcpapi.Required(),
+			mcpapi.Description("Action to perform: 'list', 'search', 'details', or 'examples'"),
+			mcpapi.Enum("list", "search", "details", "examples"),
 		),
-		mcp.WithString("query",
-			mcp.Description("Search query (required for 'search' action)"),
+		mcpapi.WithString("query",
+			mcpapi.Description("Search query (required for 'search' action)"),
 		),
-		mcp.WithString("componentName",
-			mcp.Description("Component name (required for 'details' and 'examples' actions)"),
+		mcpapi.WithString("componentName",
+			mcpapi.Description("Component name (required for 'details' and 'examples' actions)"),
 		),
 		// Read-only annotations for UI component data tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches UI component data, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same component queries return same results
-		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external shadcn/ui data sources
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only fetches UI component data, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same component queries return same results
+		mcpapi.WithOpenWorldHintAnnotation(true),    // Fetches from external shadcn/ui data sources
 	)
 }
 
 // Execute executes the unified shadcn tool
-func (t *UnifiedShadcnTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse action (required)
 	action, ok := args["action"].(string)
 	if !ok || action == "" {
@@ -100,7 +100,7 @@ func (t *UnifiedShadcnTool) Execute(ctx context.Context, logger *logrus.Logger, 
 }
 
 // executeList handles the list action
-func (t *UnifiedShadcnTool) executeList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) (*mcpapi.CallToolResult, error) {
 	logger.Info("Listing shadcn ui components")
 
 	// Check cache
@@ -121,7 +121,7 @@ func (t *UnifiedShadcnTool) executeList(ctx context.Context, logger *logrus.Logg
 }
 
 // executeSearch handles the search action
-func (t *UnifiedShadcnTool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcpapi.CallToolResult, error) {
 	logger.Infof("Searching shadcn ui components with query: %s", query)
 
 	// Get component list (from cache or fetch)
@@ -157,7 +157,7 @@ func (t *UnifiedShadcnTool) executeSearch(ctx context.Context, logger *logrus.Lo
 }
 
 // executeDetails handles the details action
-func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcpapi.CallToolResult, error) {
 	logger.Infof("Getting details for shadcn ui component: %s", componentName)
 
 	cacheKey := getComponentDetailsCachePrefix + componentName
@@ -242,7 +242,7 @@ func (t *UnifiedShadcnTool) executeDetails(ctx context.Context, logger *logrus.L
 }
 
 // executeExamples handles the examples action
-func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
+func (t *UnifiedShadcnTool) executeExamples(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcpapi.CallToolResult, error) {
 	logger.Infof("Getting examples for shadcn ui component: %s", componentName)
 
 	cacheKey := getComponentExamplesCachePrefix + componentName

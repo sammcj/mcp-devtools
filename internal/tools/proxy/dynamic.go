@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,27 +21,27 @@ type DynamicProxyTool struct {
 }
 
 // Definition returns the tool's definition for MCP registration.
-func (d *DynamicProxyTool) Definition() mcp.Tool {
+func (d *DynamicProxyTool) Definition() mcpapi.Tool {
 	// Create base tool with name and description
-	opts := []mcp.ToolOption{
-		mcp.WithDescription(d.description),
+	opts := []mcpapi.ToolOption{
+		mcpapi.WithDescription(d.description),
 	}
 
 	// Add input schema if available
 	if d.inputSchema != nil {
 		// The input schema from upstream should be a JSON schema object
-		// We need to convert it to mcp.ToolOption format
+		// We need to convert it to mcpapi.ToolOption format
 		// For now, we'll accept any arguments as a passthrough
-		opts = append(opts, mcp.WithObject("arguments",
-			mcp.Description("Arguments for the upstream tool (passed through as-is)"),
+		opts = append(opts, mcpapi.WithObject("arguments",
+			mcpapi.Description("Arguments for the upstream tool (passed through as-is)"),
 		))
 	}
 
-	return mcp.NewTool(d.toolName, opts...)
+	return mcpapi.NewTool(d.toolName, opts...)
 }
 
 // Execute executes the upstream tool.
-func (d *DynamicProxyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (d *DynamicProxyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Ensure manager is initialised
 	if err := d.manager.EnsureInitialised(ctx, logger); err != nil {
 		return nil, fmt.Errorf("failed to initialise proxy manager: %w", err)
@@ -84,5 +84,5 @@ func (d *DynamicProxyTool) Execute(ctx context.Context, logger *logrus.Logger, c
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }

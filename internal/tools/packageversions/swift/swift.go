@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -20,24 +20,24 @@ type SwiftTool struct {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *SwiftTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *SwiftTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_swift_versions",
-		mcp.WithDescription("Check latest stable versions for Swift packages in Package.swift"),
-		mcp.WithArray("dependencies",
-			mcp.Description("Array of Swift package dependencies"),
-			mcp.Required(),
-			mcp.WithStringItems(),
+		mcpapi.WithDescription("Check latest stable versions for Swift packages in Package.swift"),
+		mcpapi.WithArray("dependencies",
+			mcpapi.Description("Array of Swift package dependencies"),
+			mcpapi.Required(),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithObject("constraints",
-			mcp.Description("Optional constraints for specific packages"),
-			mcp.Properties(map[string]any{}),
+		mcpapi.WithObject("constraints",
+			mcpapi.Description("Optional constraints for specific packages"),
+			mcpapi.Properties(map[string]any{}),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *SwiftTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SwiftTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Getting latest Swift package versions")
 
 	// Parse dependencies

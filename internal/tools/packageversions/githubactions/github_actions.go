@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -20,24 +20,24 @@ type GitHubActionsTool struct {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *GitHubActionsTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *GitHubActionsTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_github_actions",
-		mcp.WithDescription("Check latest versions for GitHub Actions"),
-		mcp.WithArray("actions",
-			mcp.Description("Array of GitHub Actions to check"),
-			mcp.Required(),
-			mcp.WithStringItems(),
+		mcpapi.WithDescription("Check latest versions for GitHub Actions"),
+		mcpapi.WithArray("actions",
+			mcpapi.Description("Array of GitHub Actions to check"),
+			mcpapi.Required(),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithBoolean("includeDetails",
-			mcp.Description("Include additional details like published date and URL"),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("includeDetails",
+			mcpapi.Description("Include additional details like published date and URL"),
+			mcpapi.DefaultBool(false),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *GitHubActionsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *GitHubActionsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Checking GitHub Actions versions")
 
 	// Parse actions

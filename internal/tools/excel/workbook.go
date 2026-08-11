@@ -8,13 +8,13 @@ import (
 	"slices"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
 // handleCreateWorkbook creates a new Excel workbook
-func handleCreateWorkbook(logger *logrus.Logger, filePath string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleCreateWorkbook(logger *logrus.Logger, filePath string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.WithField("filepath", filePath).Info("Creating new workbook")
 
 	// Check if file already exists
@@ -133,11 +133,11 @@ func handleCreateWorkbook(logger *logrus.Logger, filePath string, options map[st
 		"sheets": sheetNames,
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleGetWorkbookMetadata retrieves metadata about a workbook
-func handleGetWorkbookMetadata(logger *logrus.Logger, filePath string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleGetWorkbookMetadata(logger *logrus.Logger, filePath string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.WithField("filepath", filePath).Info("Getting workbook metadata")
 
 	// Check if file exists
@@ -230,7 +230,7 @@ func handleGetWorkbookMetadata(logger *logrus.Logger, filePath string, options m
 		"metadata": string(resultJSON),
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // validateWorksheetName validates a worksheet name according to Excel rules

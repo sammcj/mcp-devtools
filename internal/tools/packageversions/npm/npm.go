@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -36,24 +36,24 @@ func NewNpmTool(client packageversions.HTTPClient) *NpmTool {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *NpmTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *NpmTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_npm_versions",
-		mcp.WithDescription("Check latest stable versions for npm packages"),
-		mcp.WithObject("dependencies",
-			mcp.Description("Dependencies object from package.json"),
-			mcp.Properties(map[string]any{}),
-			mcp.Required(),
+		mcpapi.WithDescription("Check latest stable versions for npm packages"),
+		mcpapi.WithObject("dependencies",
+			mcpapi.Description("Dependencies object from package.json"),
+			mcpapi.Properties(map[string]any{}),
+			mcpapi.Required(),
 		),
-		mcp.WithObject("constraints",
-			mcp.Description("Optional constraints for specific packages"),
-			mcp.Properties(map[string]any{}),
+		mcpapi.WithObject("constraints",
+			mcpapi.Description("Optional constraints for specific packages"),
+			mcpapi.Properties(map[string]any{}),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *NpmTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *NpmTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Getting latest npm package versions")
 
 	// Parse dependencies

@@ -10,12 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	mcpserver "github.com/mark3labs/mcp-go/server"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/codesearch/filetracker"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // CodeSearchTool implements the tools.Tool interface for semantic code search
@@ -39,39 +40,39 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *CodeSearchTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *CodeSearchTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		toolName,
-		mcp.WithDescription("Finds code by natural language description using local embeddings. Index a codebase first, then use search."),
-		mcp.WithString("action",
-			mcp.Required(),
-			mcp.Description("'index' to index paths, 'search' to query, 'status' to check, 'clear' to reset"),
-			mcp.Enum("search", "index", "status", "clear"),
+		mcpapi.WithDescription("Finds code by natural language description using local embeddings. Index a codebase first, then use search."),
+		mcpapi.WithString("action",
+			mcpapi.Required(),
+			mcpapi.Description("'index' to index paths, 'search' to query, 'status' to check, 'clear' to reset"),
+			mcpapi.Enum("search", "index", "status", "clear"),
 		),
-		mcp.WithArray("source",
-			mcp.Description("Fully qualified path to index or filter results by (recursively walks directories)"),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("source",
+			mcpapi.Description("Fully qualified path to index or filter results by (recursively walks directories)"),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithString("query",
-			mcp.Description("Short natural language query. Describe what the code does if you don't know what it's called (e.g., 'function that handles authentication')"),
+		mcpapi.WithString("query",
+			mcpapi.Description("Short natural language query. Describe what the code does if you don't know what it's called (e.g., 'function that handles authentication')"),
 		),
-		mcp.WithNumber("limit",
-			mcp.Description("Limit max results (Optional)"),
-			mcp.DefaultNumber(10),
+		mcpapi.WithNumber("limit",
+			mcpapi.Description("Limit max results (Optional)"),
+			mcpapi.DefaultNumber(10),
 		),
-		mcp.WithNumber("threshold",
-			mcp.Description("Min similarity 0-1 (Optional)"),
-			mcp.DefaultNumber(0.3),
+		mcpapi.WithNumber("threshold",
+			mcpapi.Description("Min similarity 0-1 (Optional)"),
+			mcpapi.DefaultNumber(0.3),
 		),
-		mcp.WithReadOnlyHintAnnotation(false),
-		mcp.WithDestructiveHintAnnotation(false),
-		mcp.WithIdempotentHintAnnotation(true),
-		mcp.WithOpenWorldHintAnnotation(false),
+		mcpapi.WithReadOnlyHintAnnotation(false),
+		mcpapi.WithDestructiveHintAnnotation(false),
+		mcpapi.WithIdempotentHintAnnotation(true),
+		mcpapi.WithOpenWorldHintAnnotation(false),
 	)
 }
 
 // Execute executes the code search tool
-func (t *CodeSearchTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *CodeSearchTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Executing code_search")
 
 	// Parse request
@@ -148,7 +149,7 @@ func (t *CodeSearchTool) initialise(logger *logrus.Logger) error {
 }
 
 // executeSearch performs a semantic search
-func (t *CodeSearchTool) executeSearch(ctx context.Context, req *SearchRequest, logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func (t *CodeSearchTool) executeSearch(ctx context.Context, req *SearchRequest, logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	if req.Query == "" {
 		return nil, fmt.Errorf("query is required for search action")
 	}
@@ -216,7 +217,7 @@ func (t *CodeSearchTool) executeSearch(ctx context.Context, req *SearchRequest, 
 }
 
 // executeIndex indexes the specified paths
-func (t *CodeSearchTool) executeIndex(ctx context.Context, req *SearchRequest, logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func (t *CodeSearchTool) executeIndex(ctx context.Context, req *SearchRequest, logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	if len(req.Source) == 0 {
 		return nil, fmt.Errorf("source paths are required for index action")
 	}
@@ -238,7 +239,7 @@ func (t *CodeSearchTool) executeIndex(ctx context.Context, req *SearchRequest, l
 }
 
 // executeStatus returns the current index status
-func (t *CodeSearchTool) executeStatus(_ context.Context, _ *SearchRequest, _ *logrus.Logger) (*mcp.CallToolResult, error) {
+func (t *CodeSearchTool) executeStatus(_ context.Context, _ *SearchRequest, _ *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	status := t.vectorStore.Status()
 	status.ModelLoaded = t.embedder.IsLoaded()
 	status.RuntimeLoaded = t.embedder.IsRuntimeLoaded()
@@ -251,7 +252,7 @@ func (t *CodeSearchTool) executeStatus(_ context.Context, _ *SearchRequest, _ *l
 }
 
 // executeClear clears the index
-func (t *CodeSearchTool) executeClear(_ context.Context, req *SearchRequest, logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func (t *CodeSearchTool) executeClear(_ context.Context, req *SearchRequest, logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	result, err := t.vectorStore.Clear(req.Source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to clear index: %w", err)
@@ -275,23 +276,18 @@ func (t *CodeSearchTool) executeClear(_ context.Context, req *SearchRequest, log
 	return t.newToolResultJSON(result)
 }
 
-// sendIndexingNotification sends a notification to the client that indexing has started.
-// This is a best-effort operation - failures are logged but don't affect indexing.
+// sendIndexingNotification records that indexing has started.
+//
+// This used to send a notifications/message log to the client. Logging was
+// deprecated in MCP 2026-07-28 (SEP-2577), and a stateless server has no
+// client to push to, so the notice goes to the log and the trace instead.
 func (t *CodeSearchTool) sendIndexingNotification(ctx context.Context, logger *logrus.Logger) {
-	srv := mcpserver.ServerFromContext(ctx)
-	if srv == nil {
-		logger.Debug("No MCP server in context, skipping indexing notification")
-		return
-	}
+	const msg = "Indexing started - this may take a few minutes depending on codebase size and hardware"
 
-	// Send a log-style notification to inform the client
-	err := srv.SendNotificationToClient(ctx, "notifications/message", map[string]any{
-		"level":  "info",
-		"logger": toolName,
-		"data":   "Indexing started - this may take a few minutes depending on codebase size and hardware",
-	})
-	if err != nil {
-		logger.WithError(err).Debug("Failed to send indexing notification")
+	logger.WithField("tool", toolName).Info(msg)
+
+	if span := trace.SpanFromContext(ctx); span.IsRecording() {
+		span.AddEvent("indexing.started", trace.WithAttributes(attribute.String("message", msg)))
 	}
 }
 
@@ -355,12 +351,12 @@ func (t *CodeSearchTool) parseRequest(args map[string]any) (*SearchRequest, erro
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (t *CodeSearchTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
+func (t *CodeSearchTool) newToolResultJSON(data any) (*mcpapi.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // ProvideExtendedInfo implements the ExtendedHelpProvider interface

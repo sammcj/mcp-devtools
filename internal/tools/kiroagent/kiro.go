@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -33,43 +33,43 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *KiroTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *KiroTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"kiro-agent",
-		mcp.WithDescription("Provides access to Kiro CLI through MCP. Enables AI agents to leverage Kiro's capabilities for code analysis, generation, and assistance."),
-		mcp.WithString("prompt",
-			mcp.Required(),
-			mcp.Description("A clear, concise prompt to send to Kiro CLI to instruct the AI Agent to perform a specific task."),
+		mcpapi.WithDescription("Provides access to Kiro CLI through MCP. Enables AI agents to leverage Kiro's capabilities for code analysis, generation, and assistance."),
+		mcpapi.WithString("prompt",
+			mcpapi.Required(),
+			mcpapi.Description("A clear, concise prompt to send to Kiro CLI to instruct the AI Agent to perform a specific task."),
 		),
-		mcp.WithBoolean("resume",
-			mcp.Description("Continue the previous conversation from this directory."),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("resume",
+			mcpapi.Description("Continue the previous conversation from this directory."),
+			mcpapi.DefaultBool(false),
 		),
-		mcp.WithString("agent",
-			mcp.Description("Context profile to use for the conversation."),
+		mcpapi.WithString("agent",
+			mcpapi.Description("Context profile to use for the conversation."),
 		),
-		mcp.WithString("override-model",
-			mcp.Description("Model to use for the conversation."),
+		mcpapi.WithString("override-model",
+			mcpapi.Description("Model to use for the conversation."),
 		),
 		tools.AddConditionalParameter("yolo-mode",
 			"Trust all tools without confirmation (maps to --trust-all-tools)."),
-		mcp.WithString("trust-tools",
-			mcp.Description("Comma-separated list of specific tools to trust."),
+		mcpapi.WithString("trust-tools",
+			mcpapi.Description("Comma-separated list of specific tools to trust."),
 		),
-		mcp.WithBoolean("verbose",
-			mcp.Description("Enable verbose logging for detailed output."),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("verbose",
+			mcpapi.Description("Enable verbose logging for detailed output."),
+			mcpapi.DefaultBool(false),
 		),
 		// Destructive tool annotations
-		mcp.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Kiro
-		mcp.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
-		mcp.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
-		mcp.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Kiro
+		mcpapi.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
+		mcpapi.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
+		mcpapi.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
 	)
 }
 
 // Execute executes the tool's logic by calling the Kiro CLI
-func (t *KiroTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *KiroTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Executing Kiro tool")
 
 	// Get timeout from environment or use default
@@ -94,7 +94,7 @@ func (t *KiroTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			timeoutMsg := fmt.Sprintf("\n\nThe Kiro Agent hit the configured timeout of %d seconds, output may be truncated!", timeout)
-			return mcp.NewToolResultText(output + timeoutMsg), nil
+			return mcpapi.NewToolResultText(output + timeoutMsg), nil
 		}
 		logger.WithError(err).Error("Kiro tool execution failed")
 		return nil, fmt.Errorf("kiro command failed: %w", err)
@@ -103,7 +103,7 @@ func (t *KiroTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 	// Apply response size limits
 	output = t.ApplyResponseSizeLimit(output, logger)
 
-	return mcp.NewToolResultText(output), nil
+	return mcpapi.NewToolResultText(output), nil
 }
 
 // runKiro executes the Kiro CLI with the specified parameters

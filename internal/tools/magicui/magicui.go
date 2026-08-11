@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -23,10 +23,10 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *MagicUITool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *MagicUITool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"magic_ui",
-		mcp.WithDescription(`List, search, get details for Magic UI frontend components.
+		mcpapi.WithDescription(`List, search, get details for Magic UI frontend components.
 
 Actions:
 - list: Get all components
@@ -37,26 +37,26 @@ Examples:
 - List all components: {"action": "list"}
 - Search for text components: {"action": "search", "query": "text"}
 - Get marquee details: {"action": "details", "componentName": "marquee"}`),
-		mcp.WithString("action",
-			mcp.Required(),
-			mcp.Description("Action to perform: 'list', 'search', or 'details'"),
-			mcp.Enum("list", "search", "details"),
+		mcpapi.WithString("action",
+			mcpapi.Required(),
+			mcpapi.Description("Action to perform: 'list', 'search', or 'details'"),
+			mcpapi.Enum("list", "search", "details"),
 		),
-		mcp.WithString("query",
-			mcp.Description("Search query (required for 'search' action)"),
+		mcpapi.WithString("query",
+			mcpapi.Description("Search query (required for 'search' action)"),
 		),
-		mcp.WithString("componentName",
-			mcp.Description("Component name (required for 'details' action)"),
+		mcpapi.WithString("componentName",
+			mcpapi.Description("Component name (required for 'details' action)"),
 		),
-		mcp.WithReadOnlyHintAnnotation(true),
-		mcp.WithDestructiveHintAnnotation(false),
-		mcp.WithIdempotentHintAnnotation(true),
-		mcp.WithOpenWorldHintAnnotation(true),
+		mcpapi.WithReadOnlyHintAnnotation(true),
+		mcpapi.WithDestructiveHintAnnotation(false),
+		mcpapi.WithIdempotentHintAnnotation(true),
+		mcpapi.WithOpenWorldHintAnnotation(true),
 	)
 }
 
 // Execute executes the Magic UI tool
-func (t *MagicUITool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *MagicUITool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	action, ok := args["action"].(string)
 	if !ok || action == "" {
 		return nil, fmt.Errorf("missing or invalid required parameter: action")
@@ -85,7 +85,7 @@ func (t *MagicUITool) Execute(ctx context.Context, logger *logrus.Logger, cache 
 }
 
 // executeList handles the list action
-func (t *MagicUITool) executeList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) (*mcp.CallToolResult, error) {
+func (t *MagicUITool) executeList(ctx context.Context, logger *logrus.Logger, cache *sync.Map) (*mcpapi.CallToolResult, error) {
 	logger.Info("Listing Magic UI components")
 
 	components, err := t.fetchComponents(ctx, logger, cache)
@@ -100,11 +100,11 @@ func (t *MagicUITool) executeList(ctx context.Context, logger *logrus.Logger, ca
 		return nil, fmt.Errorf("failed to marshal components: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(resultJSON)), nil
+	return mcpapi.NewToolResultText(string(resultJSON)), nil
 }
 
 // executeSearch handles the search action
-func (t *MagicUITool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcp.CallToolResult, error) {
+func (t *MagicUITool) executeSearch(ctx context.Context, logger *logrus.Logger, cache *sync.Map, query string) (*mcpapi.CallToolResult, error) {
 	logger.Infof("Searching Magic UI components with query: %s", query)
 
 	allComponents, err := t.fetchComponents(ctx, logger, cache)
@@ -130,11 +130,11 @@ func (t *MagicUITool) executeSearch(ctx context.Context, logger *logrus.Logger, 
 		return nil, fmt.Errorf("failed to marshal search results: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(resultJSON)), nil
+	return mcpapi.NewToolResultText(string(resultJSON)), nil
 }
 
 // executeDetails handles the details action
-func (t *MagicUITool) executeDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcp.CallToolResult, error) {
+func (t *MagicUITool) executeDetails(ctx context.Context, logger *logrus.Logger, cache *sync.Map, componentName string) (*mcpapi.CallToolResult, error) {
 	logger.Infof("Getting details for Magic UI component: %s", componentName)
 
 	cacheKey := componentDetailsCachePrefix + componentName
@@ -147,7 +147,7 @@ func (t *MagicUITool) executeDetails(ctx context.Context, logger *logrus.Logger,
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal cached component: %w", err)
 			}
-			return mcp.NewToolResultText(string(resultJSON)), nil
+			return mcpapi.NewToolResultText(string(resultJSON)), nil
 		}
 	}
 
@@ -188,7 +188,7 @@ func (t *MagicUITool) executeDetails(ctx context.Context, logger *logrus.Logger,
 		return nil, fmt.Errorf("failed to marshal component: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(resultJSON)), nil
+	return mcpapi.NewToolResultText(string(resultJSON)), nil
 }
 
 // fetchComponents fetches and caches the component list from the registry

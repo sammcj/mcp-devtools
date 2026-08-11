@@ -1,6 +1,6 @@
 # OAuth 2.0/2.1 Authentication for MCP DevTools
 
-MCP DevTools provides comprehensive OAuth 2.0/2.1 support for HTTP-based transports, implementing both resource server and client functionality according to the MCP 2025-06-18 specification.
+MCP DevTools provides OAuth 2.0/2.1 support for the HTTP transport, implementing both resource server and client functionality according to the MCP 2026-07-28 specification.
 
 ## Overview
 
@@ -347,7 +347,24 @@ When OAuth is enabled, metadata endpoints are available:
 
 - `/.well-known/oauth-authorization-server` - Authorisation server metadata (RFC8414)
 - `/.well-known/oauth-protected-resource` - Protected resource metadata (RFC9728)
-- `/oauth/register` - Dynamic client registration (RFC7591) _(if enabled)_
+- `/oauth/register` - Dynamic client registration (RFC7591) _(if enabled, deprecated)_
+
+mcp-devtools is a resource server: it validates tokens issued by your identity provider and serves no authorisation or token endpoint of its own, so the authorisation server metadata does not advertise one. Clients discover the real authorisation server through the protected resource metadata.
+
+### Client identification
+
+MCP 2026-07-28 deprecates dynamic client registration in favour of **Client ID Metadata Documents**: a client uses an `https` URL it controls as its `client_id`, and the authorisation server fetches that URL to read the client metadata. There is no registration call and no stored client secret.
+
+mcp-devtools is a resource server, not an authorisation server, so there is nothing for it to implement on the server side. As a client, put the URL of your metadata document in the configured client ID (`PROXY_<UPSTREAM_NAME>_CLIENT_ID` for the proxy) and no registration call is made.
+
+Dynamic registration still works for existing clients but logs a deprecation warning on use, and the `/oauth/register` endpoint is only advertised when `DynamicRegistration` is enabled.
+
+### Authorisation response validation
+
+- `state` is required and checked in constant time before anything else in the callback, and can only be redeemed once. A callback that fails validation is dropped without notifying the waiter, so a stray request cannot cancel an authorisation in progress
+- RFC 9207 `iss` is validated when present. A promised-but-missing `iss`, and an `iss` with no known issuer to compare against, are both rejected. Configure the issuer URL if your provider sends `iss`
+- The issuer from discovery is bound to the stored credentials; a later discovery claiming a different issuer is refused
+- PKCE `S256` only; the `plain` method is neither advertised nor accepted
 
 ## Detailed Guides
 
@@ -401,9 +418,10 @@ This implementation follows these RFCs:
 - **OAuth 2.1** (draft-ietf-oauth-v2-1-12): Core authorisation framework
 - **RFC8414**: OAuth 2.0 Authorisation Server Metadata
 - **RFC9728**: OAuth 2.0 Protected Resource Metadata
-- **RFC7591**: OAuth 2.0 Dynamic Client Registration Protocol
+- **RFC7591**: OAuth 2.0 Dynamic Client Registration Protocol (deprecated, superseded by Client ID Metadata Documents)
 - **RFC8707**: Resource Indicators for OAuth 2.0
-- **MCP 2025-06-18**: Model Context Protocol authorisation specification
+- **RFC9207**: OAuth 2.0 Authorisation Server Issuer Identification
+- **MCP 2026-07-28**: Model Context Protocol authorisation specification
 
 ## Security Considerations
 

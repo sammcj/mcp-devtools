@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/filesystem"
 	"github.com/sirupsen/logrus"
 )
@@ -26,12 +26,12 @@ func setupFilesystemTool(tempDir string) *filesystem.FileSystemTool {
 }
 
 // Helper function to extract text content from MCP result
-func getTextContent(result *mcp.CallToolResult) string {
+func getTextContent(result *mcpapi.CallToolResult) string {
 	if result == nil || len(result.Content) == 0 {
 		return ""
 	}
 
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	if !ok {
 		return ""
 	}

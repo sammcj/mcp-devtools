@@ -10,7 +10,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -25,27 +25,27 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (c *Calculator) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (c *Calculator) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"calculator",
-		mcp.WithDescription("Use when performing arithmetic (e.g., calculating percentages, ratios, or large sums of numbers) to ensure accuracy. Supports +, -, *, /, %, ^, parentheses, and decimal numbers."),
-		mcp.WithString("expression",
-			mcp.Description("Single mathematical expression to evaluate (e.g., '2 + 3 * 4', '(10 + 5) / 3', '12.5 * 2', '2^8')"),
+		mcpapi.WithDescription("Use when performing arithmetic (e.g., calculating percentages, ratios, or large sums of numbers) to ensure accuracy. Supports +, -, *, /, %, ^, parentheses, and decimal numbers."),
+		mcpapi.WithString("expression",
+			mcpapi.Description("Single mathematical expression to evaluate (e.g., '2 + 3 * 4', '(10 + 5) / 3', '12.5 * 2', '2^8')"),
 		),
-		mcp.WithArray("expressions",
-			mcp.Description("Array of mathematical expressions to evaluate"),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("expressions",
+			mcpapi.Description("Array of mathematical expressions to evaluate"),
+			mcpapi.WithStringItems(),
 		),
 		// Read-only annotations for pure computation tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same inputs give same outputs
-		mcp.WithOpenWorldHintAnnotation(false),   // No external interactions
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same inputs give same outputs
+		mcpapi.WithOpenWorldHintAnnotation(false),   // No external interactions
 	)
 }
 
 // Execute executes the calculator's logic
-func (c *Calculator) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (c *Calculator) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Executing calculator")
 
 	// Check if we have a single expression or an array of expressions
@@ -353,13 +353,13 @@ func (p *parser) parseFactor() (float64, error) {
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (c *Calculator) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
+func (c *Calculator) newToolResultJSON(data any) (*mcpapi.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // ProvideExtendedInfo implements the ExtendedHelpProvider interface for the Calculator tool

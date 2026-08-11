@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"os"
 	"sync"
 	"testing"
@@ -38,7 +39,7 @@ func TestTerraformDocumentationTool_Definition(t *testing.T) {
 	assert.Contains(t, definition.Description, "Terraform Registry APIs")
 
 	// Check that required parameters exist
-	inputSchema := definition.InputSchema
+	inputSchema := mcpapi.InputSchemaOf(definition)
 	assert.NotNil(t, inputSchema)
 
 	properties := inputSchema.Properties

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -32,39 +32,39 @@ func NewDockerTool(client packageversions.HTTPClient) *DockerTool {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *DockerTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *DockerTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_docker_tags",
-		mcp.WithDescription("Check available tags for Docker container images from Docker Hub, GitHub Container Registry, or custom registries"),
-		mcp.WithString("image",
-			mcp.Description("Docker image name (e.g., \"nginx\", \"ubuntu\", \"ghcr.io/owner/repo\")"),
-			mcp.Required(),
+		mcpapi.WithDescription("Check available tags for Docker container images from Docker Hub, GitHub Container Registry, or custom registries"),
+		mcpapi.WithString("image",
+			mcpapi.Description("Docker image name (e.g., \"nginx\", \"ubuntu\", \"ghcr.io/owner/repo\")"),
+			mcpapi.Required(),
 		),
-		mcp.WithString("registry",
-			mcp.Description("Registry to check (dockerhub, ghcr, or custom)"),
-			mcp.Enum("dockerhub", "ghcr", "custom"),
-			mcp.DefaultString("dockerhub"),
+		mcpapi.WithString("registry",
+			mcpapi.Description("Registry to check (dockerhub, ghcr, or custom)"),
+			mcpapi.Enum("dockerhub", "ghcr", "custom"),
+			mcpapi.DefaultString("dockerhub"),
 		),
-		mcp.WithString("customRegistry",
-			mcp.Description("URL for custom registry (required when registry is \"custom\")"),
+		mcpapi.WithString("customRegistry",
+			mcpapi.Description("URL for custom registry (required when registry is \"custom\")"),
 		),
-		mcp.WithNumber("limit",
-			mcp.Description("Maximum number of tags to return"),
-			mcp.DefaultNumber(10),
+		mcpapi.WithNumber("limit",
+			mcpapi.Description("Maximum number of tags to return"),
+			mcpapi.DefaultNumber(10),
 		),
-		mcp.WithArray("filterTags",
-			mcp.Description("Array of regex patterns to filter tags"),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("filterTags",
+			mcpapi.Description("Array of regex patterns to filter tags"),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithBoolean("includeDigest",
-			mcp.Description("Include image digest in results"),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("includeDigest",
+			mcpapi.Description("Include image digest in results"),
+			mcpapi.DefaultBool(false),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *DockerTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *DockerTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Checking Docker image tags")
 
 	// Parse image

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -19,20 +19,20 @@ type MavenTool struct {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *MavenTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *MavenTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_maven_versions",
-		mcp.WithDescription("Check latest stable versions for Java packages in pom.xml"),
-		mcp.WithArray("dependencies",
-			mcp.Description("Array of Maven dependencies"),
-			mcp.Required(),
-			mcp.Items(map[string]any{"type": "object"}),
+		mcpapi.WithDescription("Check latest stable versions for Java packages in pom.xml"),
+		mcpapi.WithArray("dependencies",
+			mcpapi.Description("Array of Maven dependencies"),
+			mcpapi.Required(),
+			mcpapi.Items(map[string]any{"type": "object"}),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *MavenTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *MavenTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Getting latest Maven package versions")
 
 	// Parse dependencies

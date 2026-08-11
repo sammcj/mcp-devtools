@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch"
@@ -95,7 +95,7 @@ func TestInternetSearchMultiQueryExecution(t *testing.T) {
 		require.NotNil(t, result)
 
 		// Parse response
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok, "expected text content")
 
 		var response internetsearch.MultiSearchResponse
@@ -118,7 +118,7 @@ func TestInternetSearchMultiQueryExecution(t *testing.T) {
 		require.NotNil(t, result)
 
 		// Parse response
-		textContent, ok := mcp.AsTextContent(result.Content[0])
+		textContent, ok := mcpapi.AsTextContent(result.Content[0])
 		require.True(t, ok, "expected text content")
 
 		var response internetsearch.MultiSearchResponse

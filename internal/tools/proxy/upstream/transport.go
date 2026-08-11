@@ -18,30 +18,24 @@ type Transport interface {
 	Close() error
 }
 
-// Strategy defines the transport selection strategy.
+// Strategy names an upstream transport. Streamable HTTP is the only one left;
+// the sse values are kept so an existing config still parses, and the caller
+// warns before falling back to HTTP.
 type Strategy string
 
 // Transport strategy constants.
 const (
-	StrategyHTTPFirst Strategy = "http-first"
-	StrategySSEFirst  Strategy = "sse-first"
-	StrategyHTTPOnly  Strategy = "http-only"
-	StrategySSEOnly   Strategy = "sse-only"
+	StrategyHTTP Strategy = "http"
+	StrategySSE  Strategy = "sse"
 )
 
 // ParseStrategy parses a strategy string.
 func ParseStrategy(s string) Strategy {
 	switch s {
-	case "http-first":
-		return StrategyHTTPFirst
-	case "sse-first":
-		return StrategySSEFirst
-	case "http-only":
-		return StrategyHTTPOnly
-	case "sse-only":
-		return StrategySSEOnly
+	case "sse", "sse-first", "sse-only":
+		return StrategySSE
 	default:
-		return StrategyHTTPFirst
+		return StrategyHTTP
 	}
 }
 
@@ -59,7 +53,6 @@ type Config struct {
 	ServerURL    string
 	Headers      map[string]string
 	AuthProvider AuthProvider
-	Strategy     Strategy
 }
 
 // Transport errors.
@@ -67,5 +60,4 @@ var (
 	ErrUnauthorised     = errors.New("unauthorised")
 	ErrNotFound         = errors.New("not found (404)")
 	ErrMethodNotAllowed = errors.New("method not allowed (405)")
-	ErrClosed           = errors.New("transport closed")
 )

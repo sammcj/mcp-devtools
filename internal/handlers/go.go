@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -77,7 +77,7 @@ func (h *GoHandler) getLatestVersion(modulePath string) (string, error) {
 }
 
 // GetLatestVersion gets the latest version of Go packages
-func (h *GoHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (h *GoHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	h.logger.Info("Getting latest Go package versions")
 
 	// Parse dependencies

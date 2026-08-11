@@ -45,8 +45,8 @@ func (tx *RenameTransaction) PreflightCheck(edit *protocol.WorkspaceEdit) error 
 	}
 
 	// Modern DocumentChanges format
-	for _, textDocEdit := range edit.DocumentChanges {
-		filePath := uriToPath(string(textDocEdit.TextDocument.URI))
+	for _, textDocEdit := range textDocumentEdits(edit) {
+		filePath := uriToPath(string(textDocEdit.URI))
 		filePaths[filePath] = true
 	}
 

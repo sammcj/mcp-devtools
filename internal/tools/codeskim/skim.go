@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -38,44 +38,44 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *CodeSkimTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *CodeSkimTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		toolName,
-		mcp.WithDescription("Returns source code information in an efficient way by stripping function/method bodies whilst preserving signatures, types, structure. Useful to understand large files or codebases without implementation details to save token usage"),
-		mcp.WithArray("source",
-			mcp.Required(),
-			mcp.Description("Array of absolute file paths, directories (recursively processes all supported files - use sparingly!), or glob patterns (e.g., [\"/path/file.py\", \"/dir\", \"**/*.go\"])"),
-			mcp.WithStringItems(),
+		mcpapi.WithDescription("Returns source code information in an efficient way by stripping function/method bodies whilst preserving signatures, types, structure. Useful to understand large files or codebases without implementation details to save token usage"),
+		mcpapi.WithArray("source",
+			mcpapi.Required(),
+			mcpapi.Description("Array of absolute file paths, directories (recursively processes all supported files - use sparingly!), or glob patterns (e.g., [\"/path/file.py\", \"/dir\", \"**/*.go\"])"),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithBoolean("clear_cache",
-			mcp.Description("Force clear cache entries before processing"),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("clear_cache",
+			mcpapi.Description("Force clear cache entries before processing"),
+			mcpapi.DefaultBool(false),
 		),
-		mcp.WithNumber("starting_line",
-			mcp.Description("Line to start from (1-based) for pagination of large results. Use when previous response was truncated"),
+		mcpapi.WithNumber("starting_line",
+			mcpapi.Description("Line to start from (1-based) for pagination of large results. Use when previous response was truncated"),
 		),
-		mcp.WithArray("filter",
-			mcp.Description("Optional array of globs to filter by function/method/class name (e.g., [\"handle_*\", \"process_*\"]). Optionally prefix pattern with ! for exclusions. Returns matched_items, total_items, filtered_items counts"),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("filter",
+			mcpapi.Description("Optional array of globs to filter by function/method/class name (e.g., [\"handle_*\", \"process_*\"]). Optionally prefix pattern with ! for exclusions. Returns matched_items, total_items, filtered_items counts"),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithBoolean("extract_graph",
-			mcp.Description("Extract relationship graph (imports, calls, inheritance)"),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("extract_graph",
+			mcpapi.Description("Extract relationship graph (imports, calls, inheritance)"),
+			mcpapi.DefaultBool(false),
 		),
-		mcp.WithString("output_format",
-			mcp.Description("Output format: 'json' (default) or 'sigil' (compressed notation for LLMs with !imports $classes #functions ->calls ★connectivity)"),
-			mcp.Enum("json", "sigil"),
+		mcpapi.WithString("output_format",
+			mcpapi.Description("Output format: 'json' (default) or 'sigil' (compressed notation for LLMs with !imports $classes #functions ->calls ★connectivity)"),
+			mcpapi.Enum("json", "sigil"),
 		),
 		// Read-only annotations - reads files but doesn't modify them
-		mcp.WithReadOnlyHintAnnotation(true),
-		mcp.WithDestructiveHintAnnotation(false),
-		mcp.WithIdempotentHintAnnotation(true),
-		mcp.WithOpenWorldHintAnnotation(false),
+		mcpapi.WithReadOnlyHintAnnotation(true),
+		mcpapi.WithDestructiveHintAnnotation(false),
+		mcpapi.WithIdempotentHintAnnotation(true),
+		mcpapi.WithOpenWorldHintAnnotation(false),
 	)
 }
 
 // Execute executes the code skim tool
-func (t *CodeSkimTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *CodeSkimTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Executing code_skim")
 	startTime := time.Now()
 
@@ -120,7 +120,7 @@ func (t *CodeSkimTool) Execute(ctx context.Context, logger *logrus.Logger, cache
 	// Return sigil format if requested
 	if req.OutputFormat == "sigil" {
 		sigilOutput := FormatSigilResponse(response)
-		return mcp.NewToolResultText(sigilOutput), nil
+		return mcpapi.NewToolResultText(sigilOutput), nil
 	}
 
 	return t.newToolResultJSON(response)
@@ -544,13 +544,13 @@ func (t *CodeSkimTool) generateCacheKey(filePath string, mtime int64, lang Langu
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (t *CodeSkimTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
+func (t *CodeSkimTool) newToolResultJSON(data any) (*mcpapi.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // ProvideExtendedInfo implements the ExtendedHelpProvider interface

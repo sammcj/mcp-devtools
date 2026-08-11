@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"os"
 	"sync"
 	"testing"
@@ -20,7 +21,7 @@ func TestAWSDocumentationTool_Definition(t *testing.T) {
 	assert.NotEmpty(t, definition.Description)
 
 	// Check parameters
-	schema := definition.InputSchema
+	schema := mcpapi.InputSchemaOf(definition)
 	require.NotNil(t, schema.Properties)
 
 	// action parameter should be required

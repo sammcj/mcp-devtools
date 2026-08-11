@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/think"
 	"github.com/sammcj/mcp-devtools/tests/testutils"
 )
@@ -51,13 +51,9 @@ func TestThinkTool_Execute_ValidInput(t *testing.T) {
 
 	// The content should be text type and contain our thought with default "hard" prefix
 	content := result.Content[0]
-	textContent, ok := mcp.AsTextContent(content)
+	textContent, ok := mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent, got different type")
-	}
-
-	if textContent.Type != "text" {
-		t.Errorf("Expected content type 'text', got: %s", textContent.Type)
 	}
 
 	expectedText := "I should use the think hard tool on this problem: This is a test thought"
@@ -135,7 +131,7 @@ func TestThinkTool_Execute_LongThought(t *testing.T) {
 
 	// Verify the full thought is preserved
 	content := result.Content[0]
-	textContent, ok := mcp.AsTextContent(content)
+	textContent, ok := mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent, got different type")
 	}
@@ -239,7 +235,7 @@ func TestThinkTool_Execute_HowHardParameter(t *testing.T) {
 	testutils.AssertNotNil(t, result)
 
 	content := result.Content[0]
-	textContent, ok := mcp.AsTextContent(content)
+	textContent, ok := mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent, got different type")
 	}
@@ -261,7 +257,7 @@ func TestThinkTool_Execute_HowHardParameter(t *testing.T) {
 	testutils.AssertNotNil(t, result)
 
 	content = result.Content[0]
-	textContent, ok = mcp.AsTextContent(content)
+	textContent, ok = mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent, got different type")
 	}
@@ -283,7 +279,7 @@ func TestThinkTool_Execute_HowHardParameter(t *testing.T) {
 	testutils.AssertNotNil(t, result)
 
 	content = result.Content[0]
-	textContent, ok = mcp.AsTextContent(content)
+	textContent, ok = mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent, got different type")
 	}

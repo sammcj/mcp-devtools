@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/filelength"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -99,7 +99,7 @@ func TestFindLongFilesTool(t *testing.T) {
 
 			// Get the content
 			require.True(t, len(result.Content) > 0, "Expected content in result")
-			textContent, ok := mcp.AsTextContent(result.Content[0])
+			textContent, ok := mcpapi.AsTextContent(result.Content[0])
 			require.True(t, ok, "Expected TextContent type")
 			content := textContent.Text
 			assert.Contains(t, content, "# Checklist of files over")
@@ -257,7 +257,7 @@ func TestFindLongFilesTool_EnvironmentVariables(t *testing.T) {
 	require.NotNil(t, result)
 
 	require.True(t, len(result.Content) > 0, "Expected content in result")
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	require.True(t, ok, "Expected TextContent type")
 	content_result := textContent.Text
 
@@ -316,7 +316,7 @@ func TestFindLongFilesTool_MaxFileSize(t *testing.T) {
 	require.NotNil(t, result)
 
 	require.True(t, len(result.Content) > 0, "Expected content in result")
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	require.True(t, ok, "Expected TextContent type")
 	content := textContent.Text
 
@@ -334,7 +334,7 @@ func TestFindLongFilesTool_MaxFileSize(t *testing.T) {
 	require.NotNil(t, result2)
 
 	require.True(t, len(result2.Content) > 0, "Expected content in result")
-	textContent2, ok := mcp.AsTextContent(result2.Content[0])
+	textContent2, ok := mcpapi.AsTextContent(result2.Content[0])
 	require.True(t, ok, "Expected TextContent type")
 	content2 := textContent2.Text
 
@@ -353,7 +353,7 @@ func TestFindLongFilesTool_Definition(t *testing.T) {
 	assert.NotEmpty(t, definition.Description)
 
 	// Check that required parameters are defined
-	inputSchema := definition.InputSchema
+	inputSchema := mcpapi.InputSchemaOf(definition)
 	assert.NotNil(t, inputSchema)
 
 	// Just check that the schema exists and has properties
