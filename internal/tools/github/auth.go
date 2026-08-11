@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v76/github"
+	"github.com/google/go-github/v90/github"
 	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"golang.org/x/oauth2"
 )
@@ -88,17 +88,17 @@ func NewGitHubClient(ctx context.Context, config *AuthConfig) (*github.Client, e
 			&oauth2.Token{AccessToken: config.Token},
 		)
 		tc := oauth2.NewClient(ctx, ts)
-		return github.NewClient(tc), nil
+		return github.NewClient(github.WithHTTPClient(tc))
 
 	case "ssh":
 		// For SSH, we still need to use the REST API for most operations
 		// SSH is primarily for git operations (cloning, etc.)
 		// We'll create a client without authentication for API calls with proxy support
-		return github.NewClient(httpclient.NewHTTPClientWithProxy(30 * time.Second)), nil
+		return github.NewClient(github.WithHTTPClient(httpclient.NewHTTPClientWithProxy(30 * time.Second)))
 
 	case "none":
 		// No authentication - public repos only with proxy support
-		return github.NewClient(httpclient.NewHTTPClientWithProxy(30 * time.Second)), nil
+		return github.NewClient(github.WithHTTPClient(httpclient.NewHTTPClientWithProxy(30 * time.Second)))
 
 	default:
 		return nil, fmt.Errorf("unsupported authentication method: %s", config.Method)
