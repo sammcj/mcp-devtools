@@ -121,6 +121,12 @@ func (c *DefaultOAuth2Client) tryDiscoverFromURL(ctx context.Context, discoveryU
 	// parameter against this, not against the URL we happened to fetch from.
 	// A server claiming an issuer other than the one configured is a mix-up
 	// attempt or a misconfiguration; either way, do not proceed with it.
+	//
+	// The trailing slash is normalised on both sides here, and only here: this
+	// weighs the server's issuer against the operator's own configuration,
+	// where a stray slash is a typo rather than a different party. The verbatim
+	// declared value is what gets stored and later compared against `iss`, so
+	// that check stays exact.
 	issuerIdentifier, _ := metadata["issuer"].(string)
 	if issuerIdentifier != "" {
 		if configured := strings.TrimSuffix(c.config.IssuerURL, "/"); configured != "" &&
@@ -150,14 +156,16 @@ func (c *DefaultOAuth2Client) tryDiscoverFromURL(ctx context.Context, discoveryU
 }
 
 // expectedIssuer returns the identifier an RFC 9207 `iss` parameter must match.
-// Discovery normalises the trailing slash, so the configured fallback has to be
-// normalised the same way or a config ending in "/" would never match the wire
-// value.
+//
+// Neither value is normalised. RFC 8414 compares issuer identifiers exactly,
+// and discovery stores what the server declared verbatim, so trimming the
+// configured fallback would both reject a server whose issuer genuinely ends in
+// "/" and accept the neighbouring identifier that does not.
 func (c *DefaultOAuth2Client) expectedIssuer() string {
 	if c.config.IssuerIdentifier != "" {
 		return c.config.IssuerIdentifier
 	}
-	return strings.TrimSuffix(c.config.IssuerURL, "/")
+	return c.config.IssuerURL
 }
 
 // StartAuthentication initiates the OAuth 2.0 authorization code flow with PKCE
