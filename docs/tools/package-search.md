@@ -95,7 +95,7 @@ The Package Search tool includes an optional "dependency cooldown" feature that 
 | **AWS Bedrock**    | AI/ML models          | Model availability and capabilities                                                     |
 | **Docker**         | Container images      | Tag information and registries                                                          |
 | **GitHub Actions** | Workflow actions      | Action versions and metadata                                                            |
-| **Go**             | Go modules            | Module versions and dependencies                                                        |
+| **Go**             | Go modules            | Module versions, deprecation notices, newer major versions                              |
 | **Java**           | Maven & Gradle        | Group/artifact resolution                                                               |
 | **NPM**            | Node.js packages      | Version constraints, dependency trees                                                   |
 | **Python**         | PyPI packages         | Requirements.txt and pyproject.toml formats                                             |
@@ -121,6 +121,14 @@ The Package Search tool includes an optional "dependency cooldown" feature that 
 #### NPM
 - **`data`**: Object with package names as keys, version constraints as values
 - **`constraints`**: Version requirements per package
+
+#### Go
+- **`data`**: Object with module paths as keys, versions as values, or a parsed go.mod with a `require` array
+
+Go lookups use the [pkg.go.dev API](https://go.dev/blog/pkgsite-api) and fall back to `proxy.golang.org` if it is unavailable. Two extra fields appear when relevant:
+
+- **`deprecated`**: the module's deprecation reason, e.g. `Use the "google.golang.org/protobuf" module instead.`
+- **`newerMajor`**: a newer major version published under a different import path, e.g. `github.com/golang-jwt/jwt/v5 v5.3.1`. `latestVersion` stays on the major you depend on, because moving major versions requires an import path change.
 
 #### Python
 - **`data`**: Array of requirement strings or dependency object (pyproject.toml)

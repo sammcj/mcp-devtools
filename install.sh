@@ -352,7 +352,7 @@ generate_configs() {
     local defaultEnv='"env": {
         "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,code_skim,code_rename",
         "DISABLED_TOOLS": "",
-        "NOTE_FOR_HUMANS": "A minimal set of tools are enabled by default, MCP DevTools provides many additional useful tools including efficient Context7 documentation search, AWS documentation, Frontend UI Framework templates, Code search and optimisation and many others, visit https://github.com/sammcj/mcp-devtools for more information on available tools and configuration"
+        "NOTE_FOR_HUMANS": "A minimal set of tools are enabled by default, MCP DevTools provides many additional useful tools including efficient Context7 documentation search, Frontend UI Framework templates, Code search and optimisation and many others, visit https://github.com/sammcj/mcp-devtools for more information on available tools and configuration"
       }'
 
     if dry_run "Would generate example configurations in:"; then

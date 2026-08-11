@@ -10,6 +10,12 @@ type PackageVersion struct {
 	SkipReason     string          `json:"skipReason,omitempty"`
 	Details        *PackageDetails `json:"details,omitempty"`
 	Cooldown       *CooldownInfo   `json:"cooldown,omitempty"`
+	// Deprecated holds the upstream deprecation reason when the package is deprecated.
+	Deprecated string `json:"deprecated,omitempty"`
+	// NewerMajor names a newer major version published under a different import
+	// path, e.g. "github.com/golang-jwt/jwt/v5 v5.3.1". Upgrading requires an
+	// import path change, so it is reported separately from LatestVersion.
+	NewerMajor string `json:"newerMajor,omitempty"`
 }
 
 // PackageDetails contains detailed metadata about a package

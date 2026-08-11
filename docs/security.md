@@ -243,6 +243,7 @@ Only minimal environment variables are supported. Most configuration is done via
 | Variable                        | Default                               | Description                          |
 |---------------------------------|---------------------------------------|--------------------------------------|
 | `MCP_SECURITY_RULES_PATH`       | `~/.mcp-devtools/security.yaml` | Custom rules file path               |
+| `SECURITY_HTTP_TIMEOUT`         | `60`                            | Timeout in seconds for HTTP requests made through the security helpers |
 
 All other configuration options are now managed through the YAML rules file configuration.
 

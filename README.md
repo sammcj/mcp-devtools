@@ -43,7 +43,7 @@ graph LR
     A --> D[UI Component<br>Libraries]
     A --> H[MCP]
 
-    B --> B_Tools[📝 Terraform Docs<br>☁️ AWS Documentation & Pricing]
+    B --> B_Tools[📝 Terraform Docs]
 
     C --> C_Tools[📄 Document Processing<br>📈 Excel Spreadsheets<br>📑 PDF Processing]
 
@@ -176,7 +176,7 @@ MCP Client Configuration:
       "env": {
         "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,code_skim,code_rename",
         "DISABLED_TOOLS": "",
-        "NOTE_FOR_HUMANS": "A minimal set of tools are enabled by default, MCP DevTools provides many additional useful tools including efficient Context7 documentation search, AWS documentation, Frontend UI Framework templates, Code search and optimisation and many others, visit https://github.com/sammcj/mcp-devtools for more information on available tools and configuration"
+        "NOTE_FOR_HUMANS": "A minimal set of tools are enabled by default, MCP DevTools provides many additional useful tools including efficient Context7 documentation search, Frontend UI Framework templates, Code search and optimisation and many others, visit https://github.com/sammcj/mcp-devtools for more information on available tools and configuration"
       }
     }
   }
@@ -190,7 +190,7 @@ claude mcp add --transport stdio mcp-devtools go run github.com/sammcj/mcp-devto
 ```
 
 - [![Add MCP DevTools to LM Studio (Requires Golang installed)](https://files.lmstudio.ai/deeplink/mcp-install-dark.svg)](https://lmstudio.ai/install-mcp?name=dev-tools&config=eyJjb21tYW5kIjoiZ28iLCJhcmdzIjpbInJ1biIsImh0dHBzOi8vZ2l0aHViLmNvbS9zYW1tY2ovbWNwLWRldnRvb2xzQEhFQUQiXSwiZW52Ijp7IkVOQUJMRV9BRERJVElPTkFMX1RPT0xTIjoic2VjdXJpdHksc2VxdWVudGlhbF90aGlua2luZyxnaXRodWIsZ2V0X3Rvb2xfaGVscCIsIkRJU0FCTEVEX1RPT0xTIjoic2VhcmNoX3BhY2thZ2VzLHJlc29sdmVfbGlicmFyeV9pZCxnZXRfbGlicmFyeV9kb2N1bWVudGF0aW9uIiwiTk9URV9GT1JfSFVNQU5TIjoiQSBtaW5pbWFsIHNldCBvZiB0b29scyBhcmUgZW5hYmxlZCBieSBkZWZhdWx0LCBNQ1AgRGV2VG9vbHMgcHJvdmlkZXMgbWFueSBhZGRpdGlvbmFsIHVzZWZ1bCB0b29scyBpbmNsdWRpbmcgZWZmaWNpZW50IENvbnRleHQ3IGRvY3VtZW50YXRpb24gc2VhcmNoLCBBV1MgZG9jdW1lbnRhdGlvbiwgRnJvbnRlbmQgVUkgRnJhbWV3b3JrIHRlbXBsYXRlcywgQ29kZSBzZWFyY2ggYW5kIG9wdGltaXNhdGlvbiBhbmQgbWFueSBvdGhlcnMsIHZpc2l0IGh0dHBzOi8vZ2l0aHViLmNvbS9zYW1tY2ovbWNwLWRldnRvb2xzIGZvciBtb3JlIGluZm9ybWF0aW9uIG9uIGF2YWlsYWJsZSB0b29scyBhbmQgY29uZmlndXJhdGlvbiJ9fQ%3D%3D)
-- [![Install in VS Code (Requires Golang installed)](https://img.shields.io/badge/VS_Code-Install_dev--tools-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22dev-tools%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22go%22%2C%22args%22%3A%5B%22run%22%2C%22https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%40HEAD%22%5D%2C%22env%22%3A%7B%22ENABLE_ADDITIONAL_TOOLS%22%3A%22security%2Csequential_thinking%2Ccode_skim%2Ccode_rename%22%2C%22DISABLED_TOOLS%22%3A%22search_packages%2Cresolve_library_id%2Cget_library_documentation%22%2C%22NOTE_FOR_HUMANS%22%3A%22A%20minimal%20set%20of%20tools%20are%20enabled%20by%20default%2C%20MCP%20DevTools%20provides%20many%20additional%20useful%20tools%20including%20efficient%20Context7%20documentation%20search%2C%20AWS%20documentation%2C%20Frontend%20UI%20Framework%20templates%2C%20Code%20search%20and%20optimisation%20and%20many%20others%2C%20visit%20https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%20for%20more%20information%20on%20available%20tools%20and%20configuration%22%7D%7D)
+- [![Install in VS Code (Requires Golang installed)](https://img.shields.io/badge/VS_Code-Install_dev--tools-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22dev-tools%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22go%22%2C%22args%22%3A%5B%22run%22%2C%22https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%40HEAD%22%5D%2C%22env%22%3A%7B%22ENABLE_ADDITIONAL_TOOLS%22%3A%22security%2Csequential_thinking%2Ccode_skim%2Ccode_rename%22%2C%22DISABLED_TOOLS%22%3A%22search_packages%2Cresolve_library_id%2Cget_library_documentation%22%2C%22NOTE_FOR_HUMANS%22%3A%22A%20minimal%20set%20of%20tools%20are%20enabled%20by%20default%2C%20MCP%20DevTools%20provides%20many%20additional%20useful%20tools%20including%20efficient%20Context7%20documentation%20search%2C%20Frontend%20UI%20Framework%20templates%2C%20Code%20search%20and%20optimisation%20and%20many%20others%2C%20visit%20https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%20for%20more%20information%20on%20available%20tools%20and%20configuration%22%7D%7D)
 
 #### Golang option 3: Download, then run
 
@@ -218,7 +218,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
       "env": {
         "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,code_skim,code_rename",
         "DISABLED_TOOLS": "",
-        "NOTE_FOR_HUMANS": "A minimal set of tools are enabled by default, MCP DevTools provides many additional useful tools including efficient Context7 documentation search, AWS documentation, Frontend UI Framework templates, Code search and optimisation and many others, visit https://github.com/sammcj/mcp-devtools for more information on available tools and configuration"
+        "NOTE_FOR_HUMANS": "A minimal set of tools are enabled by default, MCP DevTools provides many additional useful tools including efficient Context7 documentation search, Frontend UI Framework templates, Code search and optimisation and many others, visit https://github.com/sammcj/mcp-devtools for more information on available tools and configuration"
       }
     }
   }
@@ -226,7 +226,7 @@ xattr -r -d com.apple.quarantine ${GOPATH}/bin/mcp-devtools
 ```
 
 - [![Add MCP Server dev-tools to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-dark.svg)](https://lmstudio.ai/install-mcp?name=dev-tools&config=eyJjb21tYW5kIjoiL3BhdGgvdG8vbWNwLWRldnRvb2xzIiwiZW52Ijp7IkVOQUJMRV9BRERJVElPTkFMX1RPT0xTIjoic2VjdXJpdHksc2VxdWVudGlhbF90aGlua2luZyxnaXRodWIsZ2V0X3Rvb2xfaGVscCIsIkRJU0FCTEVEX1RPT0xTIjoic2VhcmNoX3BhY2thZ2VzLHJlc29sdmVfbGlicmFyeV9pZCxnZXRfbGlicmFyeV9kb2N1bWVudGF0aW9uIiwiTk9URV9GT1JfSFVNQU5TIjoiQSBtaW5pbWFsIHNldCBvZiB0b29scyBhcmUgZW5hYmxlZCBieSBkZWZhdWx0LCBNQ1AgRGV2VG9vbHMgcHJvdmlkZXMgbWFueSBhZGRpdGlvbmFsIHVzZWZ1bCB0b29scyBpbmNsdWRpbmcgZWZmaWNpZW50IENvbnRleHQ3IGRvY3VtZW50YXRpb24gc2VhcmNoLCBBV1MgZG9jdW1lbnRhdGlvbiwgRnJvbnRlbmQgVUkgRnJhbWV3b3JrIHRlbXBsYXRlcywgQ29kZSBzZWFyY2ggYW5kIG9wdGltaXNhdGlvbiBhbmQgbWFueSBvdGhlcnMsIHZpc2l0IGh0dHBzOi8vZ2l0aHViLmNvbS9zYW1tY2ovbWNwLWRldnRvb2xzIGZvciBtb3JlIGluZm9ybWF0aW9uIG9uIGF2YWlsYWJsZSB0b29scyBhbmQgY29uZmlndXJhdGlvbiJ9fQ%3D%3D)
-- [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_dev--tools-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22dev-tools%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22%2Fpath%2Fto%2Fmcp-devtools%22%2C%22env%22%3A%7B%22ENABLE_ADDITIONAL_TOOLS%22%3A%22security%2Csequential_thinking%2Ccode_skim%2Ccode_rename%22%2C%22DISABLED_TOOLS%22%3A%22search_packages%2Cresolve_library_id%2Cget_library_documentation%22%2C%22NOTE_FOR_HUMANS%22%3A%22A%20minimal%20set%20of%20tools%20are%20enabled%20by%20default%2C%20MCP%20DevTools%20provides%20many%20additional%20useful%20tools%20including%20efficient%20Context7%20documentation%20search%2C%20AWS%20documentation%2C%20Frontend%20UI%20Framework%20templates%2C%20Code%20search%20and%20optimisation%20and%20many%20others%2C%20visit%20https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%20for%20more%20information%20on%20available%20tools%20and%20configuration%22%7D%7D)
+- [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_dev--tools-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22dev-tools%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22%2Fpath%2Fto%2Fmcp-devtools%22%2C%22env%22%3A%7B%22ENABLE_ADDITIONAL_TOOLS%22%3A%22security%2Csequential_thinking%2Ccode_skim%2Ccode_rename%22%2C%22DISABLED_TOOLS%22%3A%22search_packages%2Cresolve_library_id%2Cget_library_documentation%22%2C%22NOTE_FOR_HUMANS%22%3A%22A%20minimal%20set%20of%20tools%20are%20enabled%20by%20default%2C%20MCP%20DevTools%20provides%20many%20additional%20useful%20tools%20including%20efficient%20Context7%20documentation%20search%2C%20Frontend%20UI%20Framework%20templates%2C%20Code%20search%20and%20optimisation%20and%20many%20others%2C%20visit%20https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%20for%20more%20information%20on%20available%20tools%20and%20configuration%22%7D%7D)
 
 </details>
 
@@ -253,7 +253,7 @@ Configure your MCP client to use the downloaded binary (replacing `/path/to/mcp-
       "env": {
         "ENABLE_ADDITIONAL_TOOLS": "security,sequential_thinking,code_skim,code_rename",
         "DISABLED_TOOLS": "",
-        "NOTE_FOR_HUMANS": "A minimal set of tools are enabled by default, MCP DevTools provides many additional useful tools including efficient Context7 documentation search, AWS documentation, Frontend UI Framework templates, Code search and optimisation and many others, visit https://github.com/sammcj/mcp-devtools for more information on available tools and configuration"
+        "NOTE_FOR_HUMANS": "A minimal set of tools are enabled by default, MCP DevTools provides many additional useful tools including efficient Context7 documentation search, Frontend UI Framework templates, Code search and optimisation and many others, visit https://github.com/sammcj/mcp-devtools for more information on available tools and configuration"
       }
     }
   }
@@ -261,7 +261,7 @@ Configure your MCP client to use the downloaded binary (replacing `/path/to/mcp-
 ```
 
 - [![Add MCP Server dev-tools to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-dark.svg)](https://lmstudio.ai/install-mcp?name=dev-tools&config=eyJjb21tYW5kIjoiL3BhdGgvdG8vbWNwLWRldnRvb2xzIiwiZW52Ijp7IkVOQUJMRV9BRERJVElPTkFMX1RPT0xTIjoic2VjdXJpdHksc2VxdWVudGlhbF90aGlua2luZyxnaXRodWIsZ2V0X3Rvb2xfaGVscCIsIkRJU0FCTEVEX1RPT0xTIjoic2VhcmNoX3BhY2thZ2VzLHJlc29sdmVfbGlicmFyeV9pZCxnZXRfbGlicmFyeV9kb2N1bWVudGF0aW9uIiwiTk9URV9GT1JfSFVNQU5TIjoiQSBtaW5pbWFsIHNldCBvZiB0b29scyBhcmUgZW5hYmxlZCBieSBkZWZhdWx0LCBNQ1AgRGV2VG9vbHMgcHJvdmlkZXMgbWFueSBhZGRpdGlvbmFsIHVzZWZ1bCB0b29scyBpbmNsdWRpbmcgZWZmaWNpZW50IENvbnRleHQ3IGRvY3VtZW50YXRpb24gc2VhcmNoLCBBV1MgZG9jdW1lbnRhdGlvbiwgRnJvbnRlbmQgVUkgRnJhbWV3b3JrIHRlbXBsYXRlcywgQ29kZSBzZWFyY2ggYW5kIG9wdGltaXNhdGlvbiBhbmQgbWFueSBvdGhlcnMsIHZpc2l0IGh0dHBzOi8vZ2l0aHViLmNvbS9zYW1tY2ovbWNwLWRldnRvb2xzIGZvciBtb3JlIGluZm9ybWF0aW9uIG9uIGF2YWlsYWJsZSB0b29scyBhbmQgY29uZmlndXJhdGlvbiJ9fQ%3D%3D)
-- [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_dev--tools-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22dev-tools%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22%2Fpath%2Fto%2Fmcp-devtools%22%2C%22env%22%3A%7B%22ENABLE_ADDITIONAL_TOOLS%22%3A%22security%2Csequential_thinking%2Ccode_skim%2Ccode_rename%22%2C%22DISABLED_TOOLS%22%3A%22search_packages%2Cresolve_library_id%2Cget_library_documentation%22%2C%22NOTE_FOR_HUMANS%22%3A%22A%20minimal%20set%20of%20tools%20are%20enabled%20by%20default%2C%20MCP%20DevTools%20provides%20many%20additional%20useful%20tools%20including%20efficient%20Context7%20documentation%20search%2C%20AWS%20documentation%2C%20Frontend%20UI%20Framework%20templates%2C%20Code%20search%20and%20optimisation%20and%20many%20others%2C%20visit%20https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%20for%20more%20information%20on%20available%20tools%20and%20configuration%22%7D%7D)
+- [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_dev--tools-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22dev-tools%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22%2Fpath%2Fto%2Fmcp-devtools%22%2C%22env%22%3A%7B%22ENABLE_ADDITIONAL_TOOLS%22%3A%22security%2Csequential_thinking%2Ccode_skim%2Ccode_rename%22%2C%22DISABLED_TOOLS%22%3A%22search_packages%2Cresolve_library_id%2Cget_library_documentation%22%2C%22NOTE_FOR_HUMANS%22%3A%22A%20minimal%20set%20of%20tools%20are%20enabled%20by%20default%2C%20MCP%20DevTools%20provides%20many%20additional%20useful%20tools%20including%20efficient%20Context7%20documentation%20search%2C%20Frontend%20UI%20Framework%20templates%2C%20Code%20search%20and%20optimisation%20and%20many%20others%2C%20visit%20https%3A%2F%2Fgithub.com%2Fsammcj%2Fmcp-devtools%20for%20more%20information%20on%20available%20tools%20and%20configuration%22%7D%7D)
 
 </details>
 
@@ -299,7 +299,6 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[Document Processing](docs/tools/document-processing.md)**         | Convert documents to Markdown                             | `process_document`        | PDF, DOCX → Markdown with OCR                 | 🟡       |
 | **[PDF Processing](docs/tools/pdf-processing.md)**                   | Fast PDF text extraction                                  | `pdf`                     | Quick PDF to Markdown                         | 🟢       |
 | **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                   | `excel`                   | Workbooks, charts, pivot tables, formulas     | 🟢       |
-| **[AWS Documentation & Pricing](docs/tools/aws_documentation.md)**   | AWS documentation & pricing search and retrieval          | `aws_documentation`       | Search and read AWS docs, recommendations     | 🟡       |
 | **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API (providers, modules, and policies) | `terraform_documentation` | Provider docs, module search, policy lookup   | 🟡       |
 | **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                             | `filesystem`              | Read, write, edit, search files               | 🟡       |
 | **[MCP Proxy](docs/tools/proxy.md)**                                 | Proxies MCP requests to upstream HTTP MCP servers         | `proxy`                   | Provide remote HTTP MCP servers to stdio clients | 🟡    |
@@ -335,7 +334,6 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 
 ### Candidates for major refactoring
 
-- Wrapping up [Terraform Documentation](docs/tools/terraform-documentation.md) and [AWS Documentation & Pricing](docs/tools/aws_documentation.md) into a single tool with subcommands
 - Wrapping up all frontend UI component libraries into a single tool with subcommands
 
 The following tools are currently in review for potential deprecation (unless I hear people are using them):
@@ -585,7 +583,7 @@ export HTTPS_PROXY="http://username:password@proxy.company.com:8080"
 ./bin/mcp-devtools stdio
 ```
 
-**Supported tools**: All network-based tools including `package_docs`, `internet_search`, `webfetch`, `github`, `aws_docs`, and others automatically respect proxy settings when configured.
+**Supported tools**: All network-based tools including `package_docs`, `internet_search`, `webfetch`, `github`, and others automatically respect proxy settings when configured.
 
 **Security**: Proxy credentials are automatically redacted from logs for security.
 

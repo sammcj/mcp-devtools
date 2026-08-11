@@ -3,7 +3,6 @@ package imports
 import (
 	// Standard tools - always available
 	_ "github.com/sammcj/mcp-devtools/internal/tools/api"
-	_ "github.com/sammcj/mcp-devtools/internal/tools/aws_documentation"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/calculator"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/claudeagent"
 	_ "github.com/sammcj/mcp-devtools/internal/tools/code_rename"

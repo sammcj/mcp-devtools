@@ -251,7 +251,7 @@ All HTTP requests to external APIs create child spans with:
 - **Response size** - Size in bytes
 - **Target host** - Hostname of external service
 
-This applies to all tools making HTTP requests (internet search, package docs, GitHub, AWS docs, etc.).
+This applies to all tools making HTTP requests (internet search, package docs, GitHub, etc.).
 
 ### Security Framework (Opt-in)
 

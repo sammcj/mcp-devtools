@@ -42,13 +42,6 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
 4. Security framework validates all requests automatically
 ```
 
-#### AWS Documentation Research Workflow
-
-```
-1. AWS Documentation (search) → Find relevant AWS guides
-2. AWS Documentation (fetch) → Get detailed AWS content
-```
-
 #### Terraform Documentation Research Workflow
 
 ```
@@ -114,7 +107,7 @@ Each tool has it's own documentation in this directory, detailing its purpose, a
       "type": "stdio",
       "command": "/path/to/mcp-devtools",
       "env": {
-        "ENABLE_ADDITIONAL_TOOLS": "github,aws_documentation,fetch_url,internet_search,think,memory,filesystem,shadcn_ui,magic_ui,aceternity_ui,security,claude-agent,codex-agent,copilot-agent,gemini-agent,kiro-agent,brave_local_search,brave_video_search,pdf,process_document,excel,find_long_files,code_skim,code_search,code_rename",
+        "ENABLE_ADDITIONAL_TOOLS": "github,fetch_url,internet_search,think,memory,filesystem,shadcn_ui,magic_ui,aceternity_ui,security,claude-agent,codex-agent,copilot-agent,gemini-agent,kiro-agent,brave_local_search,brave_video_search,pdf,process_document,excel,find_long_files,code_skim,code_search,code_rename",
         "GOOGLE_CLOUD_PROJECT": "gemini-code-assist-123456",
         "BRAVE_API_KEY": "abc123",
         "SEARXNG_BASE_URL": "https://searxng.your.domain",
