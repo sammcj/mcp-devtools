@@ -121,6 +121,47 @@ func issuerMatches(what, stored, current string) error {
 	return fmt.Errorf("stored %s belongs to issuer %q but the server now reports %q; delete the cached credentials and authenticate again", what, stored, current)
 }
 
+// cachedTokenStillBound reports whether an unexpired token loaded from disk was
+// issued by the authorisation server the upstream currently points at.
+//
+// A token recording no issuer predates issuer binding and is accepted under the
+// same grace as issuerMatches, which also keeps the common path free of a
+// network call. Otherwise the metadata is discovered so the two can be
+// compared, and it is kept on the provider for whatever runs next.
+//
+// A discovery failure accepts the token. The authorisation server being
+// unreachable says nothing about who issued the token, and refusing here would
+// break a working upstream every time an unrelated server had an outage.
+func (p *Provider) cachedTokenStillBound(ctx context.Context, tokens *Tokens) bool {
+	if tokens.Issuer == "" {
+		return true
+	}
+
+	metadata, err := FetchServerMetadata(ctx, p.serverURL)
+	if err != nil {
+		logrus.WithError(err).Debug("auth: could not confirm the cached token's issuer, using it anyway")
+		return true
+	}
+	p.mu.Lock()
+	p.metadata = metadata
+	p.mu.Unlock()
+
+	if mismatch := issuerMatches("access token", tokens.Issuer, metadata.Issuer); mismatch != nil {
+		logrus.WithError(mismatch).Warn("auth: discarding the cached access token")
+		// Drop it from memory and disk rather than only declining it here.
+		// Leaving it in place lets GetAccessToken hand it straight back, having
+		// either read the field this sets or reloaded the file from disk.
+		p.mu.Lock()
+		p.tokens = nil
+		p.mu.Unlock()
+		if err := DeleteTokens(p.cacheDir, p.serverHash); err != nil {
+			logrus.WithError(err).Warn("auth: could not remove the stale cached token")
+		}
+		return false
+	}
+	return true
+}
+
 // RefreshToken refreshes the access token.
 func (p *Provider) RefreshToken(ctx context.Context) error {
 	logrus.Debug("auth: starting token refresh")
@@ -235,12 +276,12 @@ func (p *Provider) Initialise(ctx context.Context) error {
 		p.tokens = tokens
 		p.mu.Unlock()
 
-		if !tokens.IsExpired() {
+		if !tokens.IsExpired() && p.cachedTokenStillBound(ctx, tokens) {
 			logrus.WithField("expires_at", tokens.ExpiresAt).Info("auth: using existing valid tokens")
 			return nil // Already authenticated
 		}
 
-		logrus.Debug("auth: existing tokens expired, attempting refresh")
+		logrus.Debug("auth: existing tokens unusable, attempting refresh")
 		if tokens.RefreshToken != "" {
 			if err := p.RefreshToken(ctx); err == nil {
 				logrus.Info("auth: refreshed existing tokens")

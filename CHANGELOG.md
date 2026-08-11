@@ -17,7 +17,7 @@ Migration to the official [modelcontextprotocol/go-sdk](https://github.com/model
 
 - HTTP bearer token authentication now rejects unauthenticated requests. The previous middleware read the token but never enforced it. Comparison is constant-time.
 - OAuth `state` is now generated, sent and validated on both the server-side browser flow and the proxy's upstream flow. Neither previously checked it, so anything able to reach the loopback callback could deliver an authorisation code of its choosing.
-- RFC 9207 issuer identification on the OAuth client side: the issuer is captured from discovery and bound to stored credentials, `iss` is validated when present, and both a promised-but-missing `iss` and an `iss` with no known issuer to compare against are rejected.
+- RFC 9207 issuer identification on the OAuth client side: the issuer is captured from discovery and bound to stored credentials, `iss` is validated when present, and both a promised-but-missing `iss` and an `iss` with no known issuer to compare against are rejected. The binding covers cached access tokens as well as refresh tokens and client registrations; a token whose issuer no longer matches is dropped from memory and disk rather than reused.
 - OAuth callbacks validate `state` before anything else and drop a failed request without notifying the waiter, so anything able to reach the loopback callback port can no longer abort an in-flight flow. A `state` can only be redeemed once, and validation and redemption happen under one lock.
 - A failed metadata discovery no longer leaves the rejected authorisation and token endpoints in live config.
 - PKCE `plain` is no longer advertised or accepted; the accepting branch was removed and `S256` is the only method.
