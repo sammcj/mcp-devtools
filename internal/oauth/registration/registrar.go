@@ -97,6 +97,12 @@ func (r *InMemoryRegistrar) RegisterClient(ctx context.Context, req *types.Dynam
 		scope = r.config.DefaultScope
 	}
 
+	// OpenID Connect defaults an absent application_type to "web".
+	applicationType := req.ApplicationType
+	if applicationType == "" {
+		applicationType = "web"
+	}
+
 	// Create client registration response
 	response := &types.DynamicClientRegistrationResponse{
 		ClientID:                clientID,
@@ -117,6 +123,7 @@ func (r *InMemoryRegistrar) RegisterClient(ctx context.Context, req *types.Dynam
 		JWKSUri:                 req.JWKSUri,
 		SoftwareID:              req.SoftwareID,
 		SoftwareVersion:         req.SoftwareVersion,
+		ApplicationType:         applicationType,
 	}
 
 	// Store the client
@@ -248,6 +255,10 @@ func (r *InMemoryRegistrar) validateRegistrationRequest(req *types.DynamicClient
 	// Validate token endpoint auth method
 	if req.TokenEndpointAuthMethod != "" && !r.isValidAuthMethod(req.TokenEndpointAuthMethod) {
 		return fmt.Errorf("unsupported token endpoint auth method: %s", req.TokenEndpointAuthMethod)
+	}
+
+	if req.ApplicationType != "" && req.ApplicationType != "native" && req.ApplicationType != "web" {
+		return fmt.Errorf("unsupported application type: %s (expected native or web)", req.ApplicationType)
 	}
 
 	return nil

@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/calculator"
 	"github.com/sammcj/mcp-devtools/tests/testutils"
 )
 
 // extractCalculatorResult extracts the result from calculator tool response
-func extractCalculatorResult(result *mcp.CallToolResult) (any, error) {
+func extractCalculatorResult(result *mcpapi.CallToolResult) (any, error) {
 	if len(result.Content) == 0 {
 		return nil, fmt.Errorf("no content in result")
 	}
 
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	if !ok {
 		return nil, fmt.Errorf("expected text content")
 	}
@@ -320,7 +320,7 @@ func TestCalculator_Execute_ArrayMode(t *testing.T) {
 	testutils.AssertNotNil(t, result)
 
 	// Extract results from JSON response
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	testutils.AssertNotNil(t, textContent)
 	if !ok {
 		t.Fatal("Expected text content")

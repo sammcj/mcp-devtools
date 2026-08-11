@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -33,40 +33,40 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *ClaudeTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *ClaudeTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"claude-agent",
-		mcp.WithDescription("Provides access to Claude Code AI Agent. You can call out to this tool to treat Claude as a sub-agent for tasks like reviewing completed implementations and for help with troubleshooting when stubborn problems."),
-		mcp.WithString("prompt",
-			mcp.Required(),
-			mcp.Description("A clear, concise prompt to send to Claude CLI to instruct the AI Agent to perform a specific task. Can include @file, @directory/, @./ references for context."),
+		mcpapi.WithDescription("Provides access to Claude Code AI Agent. You can call out to this tool to treat Claude as a sub-agent for tasks like reviewing completed implementations and for help with troubleshooting when stubborn problems."),
+		mcpapi.WithString("prompt",
+			mcpapi.Required(),
+			mcpapi.Description("A clear, concise prompt to send to Claude CLI to instruct the AI Agent to perform a specific task. Can include @file, @directory/, @./ references for context."),
 		),
-		mcp.WithString("override-model",
-			mcp.Description(fmt.Sprintf("Force Claude to use a different model. Default: %s.", defaultModel)),
+		mcpapi.WithString("override-model",
+			mcpapi.Description(fmt.Sprintf("Force Claude to use a different model. Default: %s.", defaultModel)),
 		),
 		tools.AddConditionalParameter("yolo-mode",
 			"Optional: Bypass all permission checks and allow the agent to write and execute anything"),
-		mcp.WithBoolean("continue-last-conversation",
-			mcp.Description("Optional: Continue the most recent conversation."),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("continue-last-conversation",
+			mcpapi.Description("Optional: Continue the most recent conversation."),
+			mcpapi.DefaultBool(false),
 		),
-		mcp.WithString("resume-specific-session",
-			mcp.Description("Optional: Resume a conversation - provide a session ID."),
+		mcpapi.WithString("resume-specific-session",
+			mcpapi.Description("Optional: Resume a conversation - provide a session ID."),
 		),
-		mcp.WithArray("include-directories",
-			mcp.Description("Optional: Fully qualified paths to additional directories to allow the agent to access."),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("include-directories",
+			mcpapi.Description("Optional: Fully qualified paths to additional directories to allow the agent to access."),
+			mcpapi.WithStringItems(),
 		),
 		// Destructive tool annotations
-		mcp.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands
-		mcp.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
-		mcp.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
-		mcp.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands
+		mcpapi.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
+		mcpapi.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
+		mcpapi.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
 	)
 }
 
 // Execute executes the tool's logic by calling the claude CLI
-func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Executing claude tool")
 
 	timeoutStr := os.Getenv("AGENT_TIMEOUT")
@@ -100,7 +100,7 @@ func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			timeoutMsg := fmt.Sprintf("\n\nThe Claude Agent hit the configured timeout of %d seconds, output may be truncated!", timeout)
-			return mcp.NewToolResultText(output + timeoutMsg), nil
+			return mcpapi.NewToolResultText(output + timeoutMsg), nil
 		}
 		logger.WithError(err).Error("Claude tool execution failed")
 		return nil, fmt.Errorf("claude command failed: %w", err)
@@ -113,7 +113,7 @@ func (t *ClaudeTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 	// Apply response size limits
 	output = t.ApplyResponseSizeLimit(output, logger)
 
-	return mcp.NewToolResultText(output), nil
+	return mcpapi.NewToolResultText(output), nil
 }
 
 func (t *ClaudeTool) runClaude(ctx context.Context, logger *logrus.Logger, timeout time.Duration, prompt, model string, yoloMode, continueLast bool, resumeSession, sessionID string, includeDirs []any) (string, error) {

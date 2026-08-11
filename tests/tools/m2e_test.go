@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/m2e"
 	"github.com/sammcj/mcp-devtools/tests/testutils"
 )
@@ -55,13 +55,9 @@ func TestM2ETool_Execute_InlineMode_ValidInput(t *testing.T) {
 	}
 
 	content := result.Content[0]
-	textContent, ok := mcp.AsTextContent(content)
+	textContent, ok := mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent, got different type")
-	}
-
-	if textContent.Type != "text" {
-		t.Errorf("Expected content type 'text', got: %s", textContent.Type)
 	}
 
 	// Check that conversions were made (color->colour, organization->organisation, behavior->behaviour)
@@ -353,7 +349,7 @@ func TestM2ETool_Execute_SmartQuotesOption(t *testing.T) {
 
 	// Check that the result contains some response
 	content := result.Content[0]
-	textContent, ok := mcp.AsTextContent(content)
+	textContent, ok := mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent, got different type")
 	}

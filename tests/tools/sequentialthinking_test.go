@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/sequentialthinking"
 	"github.com/sammcj/mcp-devtools/tests/testutils"
 )
@@ -30,7 +30,7 @@ func TestSequentialThinkingTool_Definition(t *testing.T) {
 	testutils.AssertNotNil(t, definition.InputSchema)
 
 	// Test that required parameters are present in schema
-	schema := definition.InputSchema
+	schema := mcpapi.InputSchemaOf(definition)
 	if schema.Type != "object" {
 		t.Errorf("Expected schema type 'object', got: %s", schema.Type)
 	}
@@ -84,7 +84,7 @@ func TestSequentialThinkingTool_Execute_ValidInput(t *testing.T) {
 	}
 
 	content := result.Content[0]
-	textContent, ok := mcp.AsTextContent(content)
+	textContent, ok := mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent, got different type")
 	}
@@ -149,7 +149,7 @@ func TestSequentialThinkingTool_Execute_WithBranching(t *testing.T) {
 	// Check that the result mentions branches
 	if len(result.Content) > 0 {
 		content := result.Content[0]
-		textContent, ok := mcp.AsTextContent(content)
+		textContent, ok := mcpapi.AsTextContent(content)
 		if ok {
 			textResult := textContent.Text
 			if !testutils.Contains(textResult, "branches") {
@@ -237,7 +237,7 @@ func TestSequentialThinkingTool_Execute_AutoNumbering(t *testing.T) {
 	// Check that the first thought is numbered 1
 	if len(result.Content) > 0 {
 		content := result.Content[0]
-		textContent, ok := mcp.AsTextContent(content)
+		textContent, ok := mcpapi.AsTextContent(content)
 		if ok {
 			textResult := textContent.Text
 			if !testutils.Contains(textResult, `"thoughtNumber": 1`) {
@@ -299,7 +299,7 @@ func TestSequentialThinkingTool_Execute_GetUsage(t *testing.T) {
 	}
 
 	content := result.Content[0]
-	textContent, ok := mcp.AsTextContent(content)
+	textContent, ok := mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent, got different type")
 	}
@@ -344,7 +344,7 @@ func TestSequentialThinkingTool_Execute_DefaultAction(t *testing.T) {
 	}
 
 	content := result.Content[0]
-	textContent, ok := mcp.AsTextContent(content)
+	textContent, ok := mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent, got different type")
 	}

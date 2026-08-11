@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -56,7 +56,7 @@ type GHCRTagsResponse struct {
 }
 
 // GetLatestVersion gets information about Docker image tags
-func (h *DockerHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (h *DockerHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	h.logger.Info("Getting Docker image tag information")
 
 	// Parse image

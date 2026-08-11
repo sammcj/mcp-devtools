@@ -12,9 +12,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -38,37 +38,37 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *PDFTool) Definition() mcp.Tool {
-	tool := mcp.NewTool(
+func (t *PDFTool) Definition() mcpapi.Tool {
+	tool := mcpapi.NewTool(
 		"pdf",
-		mcp.WithDescription(`Extract text, tables & images from PDFs. The text extraction quality depends on the PDF structure. This PDF extraction tool is simpler & faster than the document processing tool, in general try this tool for PDFs first`),
-		mcp.WithString("file_path",
-			mcp.Required(),
-			mcp.Description("Absolute file path to the PDF document to process"),
+		mcpapi.WithDescription(`Extract text, tables & images from PDFs. The text extraction quality depends on the PDF structure. This PDF extraction tool is simpler & faster than the document processing tool, in general try this tool for PDFs first`),
+		mcpapi.WithString("file_path",
+			mcpapi.Required(),
+			mcpapi.Description("Absolute file path to the PDF document to process"),
 		),
-		mcp.WithString("output_dir",
-			mcp.Description("Output directory for markdown & images (defaults to same directory as PDF)"),
+		mcpapi.WithString("output_dir",
+			mcpapi.Description("Output directory for markdown & images (defaults to same directory as PDF)"),
 		),
-		mcp.WithBoolean("extract_images",
-			mcp.Description("Extract images from the PDF (default: false)"),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("extract_images",
+			mcpapi.Description("Extract images from the PDF (default: false)"),
+			mcpapi.DefaultBool(false),
 		),
-		mcp.WithString("pages",
-			mcp.Description("Page range to process (e.g., '1-5', '1,3,5', or 'all' for all pages, default: all)"),
-			mcp.DefaultString("all"),
+		mcpapi.WithString("pages",
+			mcpapi.Description("Page range to process (e.g., '1-5', '1,3,5', or 'all' for all pages, default: all)"),
+			mcpapi.DefaultString("all"),
 		),
 
 		// Non-destructive writing annotations
-		mcp.WithReadOnlyHintAnnotation(false),    // Extracts text to new format
-		mcp.WithDestructiveHintAnnotation(false), // Doesn't modify source PDF
-		mcp.WithIdempotentHintAnnotation(true),   // Same PDF produces same output
-		mcp.WithOpenWorldHintAnnotation(false),   // Works with local files only
+		mcpapi.WithReadOnlyHintAnnotation(false),    // Extracts text to new format
+		mcpapi.WithDestructiveHintAnnotation(false), // Doesn't modify source PDF
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same PDF produces same output
+		mcpapi.WithOpenWorldHintAnnotation(false),   // Works with local files only
 	)
 	return tool
 }
 
 // Execute processes the PDF file
-func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *PDFTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Debug("Executing PDF processing tool")
 
 	// Parse and validate parameters
@@ -735,13 +735,13 @@ func (t *PDFTool) getImagesForPage(allImages []string, pageNum int) []string {
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (t *PDFTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
+func (t *PDFTool) newToolResultJSON(data any) (*mcpapi.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // GetMaxFileSize returns the configured maximum file size in bytes

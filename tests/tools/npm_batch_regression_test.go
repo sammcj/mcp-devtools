@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions/npm"
 	"github.com/sirupsen/logrus"
 )
@@ -56,10 +56,9 @@ func TestNpmBatchRequestRegression(t *testing.T) {
 	}
 
 	// Extract text from MCP content
-	// mcp.TextContent has a Text field (not method)
 	resultText := ""
 	for _, content := range result.Content {
-		if tc, ok := content.(mcp.TextContent); ok {
+		if tc, ok := content.(*mcpapi.TextContent); ok {
 			resultText += tc.Text
 		} else {
 			t.Logf("Unexpected content type: %T", content)

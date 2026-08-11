@@ -115,7 +115,7 @@ func NewLSPClient(ctx context.Context, logger *logrus.Logger, server *LanguageSe
 	// Create JSON-RPC connection
 	// Combine stdout (reader) and stdin (writer) into a single ReadWriteCloser
 	stream := &readWriteCloser{reader: stdout, writer: stdin}
-	conn := jsonrpc2.NewConn(jsonrpc2.NewStream(stream))
+	conn := jsonrpc2.NewConn(jsonrpc2.NewStream(stream), jsonrpc2.WithCodec(lspCodec{}))
 
 	client := &LSPClient{
 		server:       server,
@@ -130,21 +130,20 @@ func NewLSPClient(ctx context.Context, logger *logrus.Logger, server *LanguageSe
 
 	// Start the message pump with a handler for server->client messages
 	// Use background context so message pump lifetime isn't tied to MCP tool execution timeout
-	handler := func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+	handler := func(_ context.Context, req *jsonrpc2.Request) (any, error) {
 		// Log server->client requests/notifications for debugging
 		logger.WithFields(logrus.Fields{
 			"method": req.Method(),
 			"server": server.Command,
 		}).Debug("LSP server message")
 
-		// Check if this is a Call (request with ID) or Notification (no reply expected)
-		if _, isCall := req.(*jsonrpc2.Call); isCall {
-			// This is a request, send method not found since we don't handle server->client requests
-			return reply(ctx, nil, jsonrpc2.NewError(jsonrpc2.MethodNotFound, "method not supported"))
+		// A call expects a response, send method not found since we don't handle server->client requests
+		if req.IsCall() {
+			return nil, jsonrpc2.NewError(jsonrpc2.MethodNotFound, "method not supported")
 		}
 
 		// This is a notification, don't reply
-		return nil
+		return nil, nil
 	}
 	conn.Go(context.Background(), handler)
 
@@ -163,13 +162,17 @@ func (c *LSPClient) initialize(_ context.Context) error {
 	initCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	processID := int32(os.Getpid())
+	rootURI := uri.URI(c.rootURI)
+	prepareSupport := true
+
 	initParams := &protocol.InitializeParams{
-		ProcessID: int32(os.Getpid()),
-		RootURI:   protocol.DocumentURI(c.rootURI),
+		ProcessID: &processID,
+		RootURI:   &rootURI,
 		Capabilities: protocol.ClientCapabilities{
 			TextDocument: &protocol.TextDocumentClientCapabilities{
 				Rename: &protocol.RenameClientCapabilities{
-					PrepareSupport: true,
+					PrepareSupport: &prepareSupport,
 				},
 			},
 		},
@@ -220,8 +223,8 @@ func (c *LSPClient) openDocument(ctx context.Context, filePath string) error {
 
 	params := &protocol.DidOpenTextDocumentParams{
 		TextDocument: protocol.TextDocumentItem{
-			URI:        protocol.DocumentURI(fileURI),
-			LanguageID: protocol.LanguageIdentifier(c.server.Language),
+			URI:        uri.URI(fileURI),
+			LanguageID: protocol.LanguageKind(c.server.Language),
 			Version:    1,
 			Text:       string(content),
 		},
@@ -272,13 +275,13 @@ func (c *LSPClient) SyncDocument(ctx context.Context, filePath string) error {
 	params := &protocol.DidChangeTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
-				URI: protocol.DocumentURI(fileURI),
+				URI: uri.URI(fileURI),
 			},
 			Version: version,
 		},
 		ContentChanges: []protocol.TextDocumentContentChangeEvent{
-			{
-				// Full document sync - replace entire content
+			// Full document sync - replace entire content
+			&protocol.TextDocumentContentChangeWholeDocument{
 				Text: string(content),
 			},
 		},
@@ -308,7 +311,7 @@ func (c *LSPClient) PrepareRename(ctx context.Context, filePath string, line, co
 	params := &protocol.PrepareRenameParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{
-				URI: protocol.DocumentURI(fileURI),
+				URI: uri.URI(fileURI),
 			},
 			Position: protocol.Position{
 				Line:      uint32(line - 1),   // LSP uses 0-based lines
@@ -368,7 +371,7 @@ func (c *LSPClient) Rename(ctx context.Context, filePath string, line, column in
 	params := &protocol.RenameParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{
-				URI: protocol.DocumentURI(fileURI),
+				URI: uri.URI(fileURI),
 			},
 			Position: protocol.Position{
 				Line:      uint32(line - 1),   // LSP uses 0-based lines
@@ -504,8 +507,11 @@ func pathToURI(path string) string {
 
 // uriToPath converts a URI to a file path
 func uriToPath(uriStr string) string {
-	u := uri.New(uriStr)
-	return u.Filename()
+	u, err := uri.Parse(uriStr)
+	if err != nil {
+		return uriStr
+	}
+	return u.FsPath()
 }
 
 // convertWorkspaceEdit converts LSP WorkspaceEdit to our RenameResult format
@@ -557,8 +563,8 @@ func convertWorkspaceEdit(edit *protocol.WorkspaceEdit, preview bool) (*RenameRe
 	}
 
 	// Process modern DocumentChanges format (array of TextDocumentEdit)
-	for _, textDocEdit := range edit.DocumentChanges {
-		filePath := uriToPath(string(textDocEdit.TextDocument.URI))
+	for _, textDocEdit := range textDocumentEdits(edit) {
+		filePath := uriToPath(string(textDocEdit.URI))
 
 		// Security: Check file access permission
 		if err := security.CheckFileAccess(filePath); err != nil {

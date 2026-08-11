@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/think"
@@ -17,19 +17,19 @@ import (
 // mockExtendedInfoTool is a test tool that implements ExtendedHelpProvider
 type mockExtendedInfoTool struct{}
 
-func (m *mockExtendedInfoTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (m *mockExtendedInfoTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"mock_extended_tool",
-		mcp.WithDescription("A mock tool that provides extended info"),
-		mcp.WithString("param1",
-			mcp.Required(),
-			mcp.Description("A required parameter"),
+		mcpapi.WithDescription("A mock tool that provides extended info"),
+		mcpapi.WithString("param1",
+			mcpapi.Required(),
+			mcpapi.Description("A required parameter"),
 		),
 	)
 }
 
-func (m *mockExtendedInfoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
-	return mcp.NewToolResultText("mock result"), nil
+func (m *mockExtendedInfoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
+	return mcpapi.NewToolResultText("mock result"), nil
 }
 
 func (m *mockExtendedInfoTool) ProvideExtendedInfo() *tools.ExtendedHelp {
@@ -151,7 +151,7 @@ func TestToolHelpTool_Execute_ValidToolWithExtendedInfo(t *testing.T) {
 	}
 
 	content := result.Content[0]
-	jsonContent, ok := mcp.AsTextContent(content)
+	jsonContent, ok := mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent with JSON, got different type")
 	}
@@ -259,7 +259,7 @@ func TestToolHelpTool_Execute_AlwaysIncludeExamples(t *testing.T) {
 	testutils.AssertNotNil(t, result)
 
 	content := result.Content[0]
-	jsonContent, ok := mcp.AsTextContent(content)
+	jsonContent, ok := mcpapi.AsTextContent(content)
 	if !ok {
 		t.Fatal("Expected TextContent with JSON, got different type")
 	}

@@ -3,14 +3,14 @@ package excel
 import (
 	"fmt"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
 // handleCreateTable creates an Excel table object in the worksheet
 // Optionally writes data first and auto-sizes columns for an all-in-one table creation
-func handleCreateTable(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleCreateTable(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -219,7 +219,7 @@ func handleCreateTable(logger *logrus.Logger, filePath string, sheetName string,
 		result["columns_resized"] = columnsResized
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // generateTableName generates a table name based on sheet name or uses the provided one

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -22,7 +22,7 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *ToolHelpTool) Definition() mcp.Tool {
+func (t *ToolHelpTool) Definition() mcpapi.Tool {
 	// Get only tools that provide extended help
 	toolsWithExtendedHelp := registry.GetToolNamesWithExtendedHelp()
 
@@ -39,24 +39,24 @@ func (t *ToolHelpTool) Definition() mcp.Tool {
 		enumValues = []string{} // Empty enum will prevent the tool from being used
 	}
 
-	return mcp.NewTool(
+	return mcpapi.NewTool(
 		"get_tool_help",
-		mcp.WithDescription(description),
-		mcp.WithString("tool_name",
-			mcp.Required(),
-			mcp.Description("Name of the DevTools tool to get help for"),
-			mcp.Enum(enumValues...),
+		mcpapi.WithDescription(description),
+		mcpapi.WithString("tool_name",
+			mcpapi.Required(),
+			mcpapi.Description("Name of the DevTools tool to get help for"),
+			mcpapi.Enum(enumValues...),
 		),
 		// Read-only annotations for help information tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only provides help information, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same tool name returns same help information
-		mcp.WithOpenWorldHintAnnotation(false),   // Provides local help information only, no external interactions
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only provides help information, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same tool name returns same help information
+		mcpapi.WithOpenWorldHintAnnotation(false),   // Provides local help information only, no external interactions
 	)
 }
 
 // Execute executes the get_tool_help tool
-func (t *ToolHelpTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *ToolHelpTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse and validate parameters
 	toolName, err := t.parseRequest(args)
 	if err != nil {
@@ -118,8 +118,8 @@ func (t *ToolHelpTool) extractBasicInfo(tool tools.Tool) map[string]any {
 	}
 
 	// Add input schema if available
-	if definition.InputSchema.Type != "" {
-		basicInfo["input_schema"] = definition.InputSchema
+	if schema := mcpapi.InputSchemaOf(definition); schema != nil && schema.Type != "" {
+		basicInfo["input_schema"] = schema
 	}
 
 	return basicInfo
@@ -161,11 +161,11 @@ func (t *ToolHelpTool) convertExtendedInfo(info *tools.ExtendedHelp) *ExtendedHe
 }
 
 // newToolResult creates a new tool result from the response
-func (t *ToolHelpTool) newToolResult(response *ToolHelpResponse) (*mcp.CallToolResult, error) {
+func (t *ToolHelpTool) newToolResult(response *ToolHelpResponse) (*mcpapi.CallToolResult, error) {
 	responseJSON, err := json.MarshalIndent(response, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal response: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(responseJSON)), nil
+	return mcpapi.NewToolResultText(string(responseJSON)), nil
 }

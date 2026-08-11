@@ -11,6 +11,8 @@ Use `sequential_thinking` instead of `think` when:
 
 The tool handles numbering, tracking, and branching automatically -- focus on your thinking content.
 
+**stdio transport only.** This tool keeps thought history in the server process between calls. The HTTP transport is stateless, so the tool is not registered when running with `--transport http`.
+
 ## Features
 
 - **Auto-Managed State**: Automatic thought numbering and progress tracking

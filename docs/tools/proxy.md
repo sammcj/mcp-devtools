@@ -4,7 +4,7 @@ Connect to upstream MCP servers and expose their tools via mcp-devtools, enablin
 
 Example use cases:
 
-- You have an upstream HTTP or SSE MCP server (e.g., Atlassian's MCP server) - but your MCP client doesn't support HTTP/SSE yet.
+- You have an upstream HTTP MCP server (e.g., Atlassian's MCP server) - but your MCP client only speaks stdio.
 - You have an upstream HTTP MCP server with OAuth, but your client fails to handle OAuth flows.
 - You have an upstream MCP server where you want to filter or restrict which tools are available to your clients.
 
@@ -14,7 +14,7 @@ By using the proxy tool, you can connect to the upstream server, authenticate vi
 
 - **Dynamic Tool Registration**: Automatically fetches and registers tools from upstream MCP servers before the main server starts
 - **OAuth 2.0/2.1 Support**: Full OAuth flow with PKCE, automatic browser opening, and secure token management
-- **Multiple Transport Types**: Support for SSE, HTTP, and streamable HTTP transports
+- **Streamable HTTP**: Connects to upstream servers over streamable HTTP
 - **Tool Filtering**: Configure which upstream tools to expose or ignore using patterns
 - **Transparent Proxying**: Tools appear as native mcp-devtools tools to clients
 - **Token Persistence**: Securely stores OAuth tokens and client registration info for seamless reconnection
@@ -33,7 +33,7 @@ The proxy tool is configured via the `PROXY_UPSTREAMS` environment variable, whi
 ```json
 {
   "ENABLE_ADDITIONAL_TOOLS": "proxy",
-  "PROXY_UPSTREAMS": "[{\"name\": \"atlassian\", \"url\": \"https://mcp.atlassian.com/v1/sse\", \"transport\": \"http-first\"}]"
+  "PROXY_UPSTREAMS": "[{\"name\": \"atlassian\", \"url\": \"https://mcp.atlassian.com/v1/mcp\"}]"
 }
 ```
 
@@ -45,10 +45,7 @@ Each upstream server configuration supports these parameters:
 
 - **`name`** (required): Unique identifier for the upstream server (e.g., "atlassian", "github-mcp")
 - **`url`** (required): Server URL endpoint
-- **`transport`** (optional): Transport protocol to use:
-  - `http-first` (default): Try HTTP first, fall back to SSE if needed
-  - `http`: Use streamable HTTP transport only
-  - `sse`: Use Server-Sent Events transport only
+- **`transport`** (optional): Kept for backwards compatibility. Streamable HTTP is the only supported transport; an `sse` value logs a warning and connects over HTTP anyway.
 - **`ignore_tools`** (optional): Array of glob patterns for tools to exclude
 - **`include_tools`** (optional): Array of glob patterns for tools to include (when specified, only matching tools are exposed)
 - **`headers`** (optional): Custom HTTP headers as key-value pairs
@@ -60,15 +57,13 @@ Each upstream server configuration supports these parameters:
   "ENABLE_ADDITIONAL_TOOLS": "proxy",
   "PROXY_UPSTREAMS": "[
     {
-      \"name\": \"example-atlassian-sse\",
-      \"url\": \"https://mcp.atlassian.com/v1/sse\",
-      \"transport\": \"http-first\",
+      \"name\": \"example-atlassian\",
+      \"url\": \"https://mcp.atlassian.com/v1/mcp\",
       \"ignore_tools\": [\"*update*\", \"*create*\", \"*add*\", \"*edit*\", \"*delete*\", \"*jira*\"]
     },
     {
       \"name\": \"example-http-mcp\",
-      \"url\": \"https://mcp.example.com/mcp\",
-      \"transport\": \"http\",
+      \"url\": \"https://mcp.example.com/mcp\"
     }
   ]"
 }
@@ -107,41 +102,15 @@ OAuth tokens and client registration info are stored securely:
   - `client-info.json`: Dynamic client registration details
 - **Permissions**: 0600 (read/write for owner only)
 
-## Transport Types
+## Transport
 
-### HTTP-First (Recommended)
+The proxy speaks streamable HTTP only. SSE was removed in MCP spec revision 2026-07-28 and dropped here with it.
 
-Automatically selects the best transport:
-- Tries HTTP/streamable HTTP first
-- Falls back to SSE if HTTP returns 404/405
-- Best for servers that support multiple transports
+Each call is a single `POST` carrying the `_meta` fields the stateless spec requires (protocol version, client capabilities, client info) plus the `Mcp-Method` and `Mcp-Name` routing headers. There is no `initialize` handshake and no session ID.
 
-```json
-{"transport": "http-first"}
-```
+Existing configs with `"transport": "sse"` or `"http-first"` still load; the value is ignored, and an `sse` value logs a warning.
 
-### Streamable HTTP
-
-For servers that support the streamable HTTP protocol:
-- Responses may be returned in POST body or via SSE stream
-- Efficient for request/response patterns
-- Lower overhead than pure SSE
-
-```json
-{"transport": "http"}
-```
-
-### Server-Sent Events (SSE)
-
-For servers using SSE transport:
-- Long-lived connection for bi-directional communication
-- Client GETs SSE stream, server sends endpoint URL
-- Client POSTs requests to endpoint, receives responses via SSE
-- Connection stays alive across multiple requests
-
-```json
-{"transport": "sse"}
-```
+An upstream that predates 2026-07-28 rejects the new framing with a 400. When that happens the request is retried once without the version header, routing headers and `_meta`, and the connection stays in that older mode for its lifetime. A warning is logged the first time it happens.
 
 ## Tool Filtering
 
@@ -182,7 +151,7 @@ Only expose specific tools (whitelist mode):
 
 1. Proxy reads `PROXY_UPSTREAMS` configuration
 2. For each upstream:
-   - Connects using the specified transport
+   - Connects over streamable HTTP
    - Performs OAuth flow if required (with browser popup)
    - Fetches available tools via `tools/list`
    - Applies filtering rules
@@ -194,7 +163,7 @@ Only expose specific tools (whitelist mode):
 1. Client calls a proxied tool (e.g., `search`)
 2. Proxy identifies the upstream server for that tool
 3. Proxy forwards the request to the upstream server
-4. Proxy receives the response (via HTTP body or SSE stream)
+4. Proxy receives the response from the POST body
 5. Proxy returns the response to the client
 
 ### Architecture
@@ -219,7 +188,7 @@ Only expose specific tools (whitelist mode):
 │   Upstream MCP Server            │
 │   (Atlassian)                    │
 │  ┌────────────────────────────┐  │
-│  │  SSE/HTTP Transport        │  │
+│  │  Streamable HTTP           │  │
 │  │  OAuth Authentication      │  │
 │  │  Native Tool: search       │  │
 │  └────────────────────────────┘  │
@@ -237,8 +206,7 @@ Connect to Atlassian's MCP server to access Confluence and Jira tools:
   "ENABLE_ADDITIONAL_TOOLS": "proxy",
   "PROXY_UPSTREAMS": "[{
     \"name\": \"atlassian\",
-    \"url\": \"https://mcp.atlassian.com/v1/sse\",
-    \"transport\": \"http-first\"
+    \"url\": \"https://mcp.atlassian.com/v1/mcp\"
   }]"
 }
 ```
@@ -259,14 +227,12 @@ This exposes 27 Atlassian tools including:
   "PROXY_UPSTREAMS": "[
     {
       \"name\": \"atlassian\",
-      \"url\": \"https://mcp.atlassian.com/v1/sse\",
-      \"transport\": \"http-first\",
+      \"url\": \"https://mcp.atlassian.com/v1/mcp\",
       \"include_tools\": [\"search*\", \"get*\"]
     },
     {
       \"name\": \"internal\",
       \"url\": \"https://internal-mcp.corp/api\",
-      \"transport\": \"http\",
       \"ignore_tools\": [\"debug_*\", \"test_*\"],
       \"headers\": {
         \"X-Environment\": \"production\"
@@ -292,7 +258,6 @@ export PROXY_UPSTREAMS='[{"name": "example", "url": "https://mcp.example.com"}]'
 - **PKCE Flow**: Uses Proof Key for Code Exchange for enhanced security
 - **Token Refresh**: Automatically refreshes tokens before expiry
 - **Transport Security**: All connections use HTTPS
-- **Origin Validation**: SSE endpoint URLs validated against server origin
 - **Rate Limiting**: Respects upstream server rate limits
 - **Error Handling**: Doesn't expose sensitive auth details in errors
 
@@ -317,14 +282,6 @@ export PROXY_UPSTREAMS='[{"name": "example", "url": "https://mcp.example.com"}]'
 - Some MCP servers may have additional authentication requirements
 
 ## Implementation Details
-
-### SSE Context Lifecycle
-
-The SSE transport uses a long-lived context for the connection that's separate from individual request contexts. This ensures the SSE event reader stays alive across multiple requests:
-
-- Connection context: `context.Background()` with cancellation
-- Request contexts: Used only for timeout logic when waiting for responses
-- Event reader: Runs until transport is explicitly closed
 
 ### Tool Registration
 

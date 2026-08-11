@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/excel"
 	"github.com/sammcj/mcp-devtools/tests/testutils"
 	"github.com/xuri/excelize/v2"
@@ -1620,7 +1620,7 @@ func TestExcel_ReadAllData_JSON(t *testing.T) {
 	testutils.AssertTrue(t, len(result.Content) > 0)
 
 	// Validate JSON structure
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	testutils.AssertTrue(t, ok)
 
 	var jsonData map[string]any
@@ -1757,7 +1757,7 @@ func TestExcel_ReadAllData_Pagination(t *testing.T) {
 	testutils.AssertNotNil(t, result3)
 
 	// Parse result to verify empty sheets array
-	textContent3, ok3 := mcp.AsTextContent(result3.Content[0])
+	textContent3, ok3 := mcpapi.AsTextContent(result3.Content[0])
 	testutils.AssertTrue(t, ok3)
 
 	var result3Data map[string]any
@@ -1843,7 +1843,7 @@ func TestExcel_ReadAllData_IrregularRowLengths(t *testing.T) {
 	testutils.AssertNotNil(t, csvResult)
 
 	// Verify CSV data has normalised row lengths
-	csvTextContent, csvOk := mcp.AsTextContent(csvResult.Content[0])
+	csvTextContent, csvOk := mcpapi.AsTextContent(csvResult.Content[0])
 	testutils.AssertTrue(t, csvOk)
 
 	var csvData map[string]any
@@ -1883,7 +1883,7 @@ func TestExcel_ReadAllData_IrregularRowLengths(t *testing.T) {
 	testutils.AssertNoError(t, err)
 	testutils.AssertNotNil(t, tsvResult)
 
-	tsvTextContent, tsvOk := mcp.AsTextContent(tsvResult.Content[0])
+	tsvTextContent, tsvOk := mcpapi.AsTextContent(tsvResult.Content[0])
 	testutils.AssertTrue(t, tsvOk)
 
 	var tsvData map[string]any
@@ -1915,7 +1915,7 @@ func TestExcel_ReadAllData_IrregularRowLengths(t *testing.T) {
 	testutils.AssertNoError(t, err)
 	testutils.AssertNotNil(t, jsonResult)
 
-	jsonTextContent, jsonOk := mcp.AsTextContent(jsonResult.Content[0])
+	jsonTextContent, jsonOk := mcpapi.AsTextContent(jsonResult.Content[0])
 	testutils.AssertTrue(t, jsonOk)
 
 	var jsonData map[string]any

@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/service/pricing/types"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/aws_documentation/pricing"
@@ -31,49 +31,49 @@ func init() {
 }
 
 // Definition returns the AWS documentation tool's definition for MCP registration
-func (t *AWSDocumentationTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *AWSDocumentationTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"aws_documentation",
-		mcp.WithDescription("AWS documentation search, fetch, recommendation, and pricing capabilities. (For AWS Strands Agents SDK instead use resolve_library_id 'strands agents')"),
-		mcp.WithString("action",
-			mcp.Required(),
-			mcp.Description("Action to perform: 'search', 'fetch', 'recommend', 'list_pricing_services', 'get_service_pricing'"),
-			mcp.Enum("search", "fetch", "recommend", "list_pricing_services", "get_service_pricing"),
+		mcpapi.WithDescription("AWS documentation search, fetch, recommendation, and pricing capabilities. (For AWS Strands Agents SDK instead use resolve_library_id 'strands agents')"),
+		mcpapi.WithString("action",
+			mcpapi.Required(),
+			mcpapi.Description("Action to perform: 'search', 'fetch', 'recommend', 'list_pricing_services', 'get_service_pricing'"),
+			mcpapi.Enum("search", "fetch", "recommend", "list_pricing_services", "get_service_pricing"),
 		),
-		mcp.WithString("search_phrase",
-			mcp.Description("Search phrase (required for 'search' action)"),
+		mcpapi.WithString("search_phrase",
+			mcpapi.Description("Search phrase (required for 'search' action)"),
 		),
-		mcp.WithNumber("limit",
-			mcp.Description("Max results (Optional, 1-50, default: 5, only used for 'search' action)"),
+		mcpapi.WithNumber("limit",
+			mcpapi.Description("Max results (Optional, 1-50, default: 5, only used for 'search' action)"),
 		),
-		mcp.WithString("url",
-			mcp.Description("documentation URL (required for 'fetch', 'recommend' actions, must be from docs.aws.amazon.com and end with .html)"),
+		mcpapi.WithString("url",
+			mcpapi.Description("documentation URL (required for 'fetch', 'recommend' actions, must be from docs.aws.amazon.com and end with .html)"),
 		),
-		mcp.WithNumber("max_length",
-			mcp.Description("Max characters to fetch (Optional, default: 5000)"),
+		mcpapi.WithNumber("max_length",
+			mcpapi.Description("Max characters to fetch (Optional, default: 5000)"),
 		),
-		mcp.WithNumber("start_index",
-			mcp.Description("Starting character index for pagination in fetch (Optional, default: 0)"),
+		mcpapi.WithNumber("start_index",
+			mcpapi.Description("Starting character index for pagination in fetch (Optional, default: 0)"),
 		),
-		mcp.WithString("service_code",
-			mcp.Description("AWS service code for pricing (required for 'get_service_pricing' action, e.g., 'AmazonEC2', 'AmazonS3')"),
+		mcpapi.WithString("service_code",
+			mcpapi.Description("AWS service code for pricing (required for 'get_service_pricing' action, e.g., 'AmazonEC2', 'AmazonS3')"),
 		),
-		mcp.WithArray("filters",
-			mcp.Description("Pricing filters (optional for 'get_service_pricing' action). Array of filter objects with 'field' and 'value' properties. Each object MUST contain 'field' (string), 'value' (string), optionally 'type' (string, default: 'TERM_MATCH')"),
+		mcpapi.WithArray("filters",
+			mcpapi.Description("Pricing filters (optional for 'get_service_pricing' action). Array of filter objects with 'field' and 'value' properties. Each object MUST contain 'field' (string), 'value' (string), optionally 'type' (string, default: 'TERM_MATCH')"),
 		),
-		mcp.WithNumber("max_results",
-			mcp.Description("Max pricing results to return (optional, default: 10)"),
+		mcpapi.WithNumber("max_results",
+			mcpapi.Description("Max pricing results to return (optional, default: 10)"),
 		),
 		// Read-only annotations for AWS documentation fetching tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches AWS documentation and pricing, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same queries return same results
-		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external AWS APIs
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only fetches AWS documentation and pricing, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same queries return same results
+		mcpapi.WithOpenWorldHintAnnotation(true),    // Fetches from external AWS APIs
 	)
 }
 
 // Execute performs the specified action on AWS documentation
-func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Initialise client and parser if needed
 	if t.client == nil {
 		t.client = NewClient(logger)
@@ -111,7 +111,7 @@ func (t *AWSDocumentationTool) Execute(ctx context.Context, logger *logrus.Logge
 }
 
 // executeSearch performs documentation search
-func (t *AWSDocumentationTool) executeSearch(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeSearch(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse search phrase
 	searchPhrase, ok := args["search_phrase"].(string)
 	if !ok {
@@ -152,11 +152,11 @@ func (t *AWSDocumentationTool) executeSearch(ctx context.Context, args map[strin
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // executeFetch performs documentation fetching and conversion
-func (t *AWSDocumentationTool) executeFetch(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeFetch(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse the URL parameter
 	urlRaw, ok := args["url"].(string)
 	if !ok {
@@ -226,11 +226,11 @@ func (t *AWSDocumentationTool) executeFetch(ctx context.Context, args map[string
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // executeRecommend performs recommendation fetching
-func (t *AWSDocumentationTool) executeRecommend(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeRecommend(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse URL
 	url, ok := args["url"].(string)
 	if !ok {
@@ -262,7 +262,7 @@ func (t *AWSDocumentationTool) executeRecommend(ctx context.Context, args map[st
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // validateAWSDocumentationURL validates that the URL is a valid AWS documentation URL
@@ -286,7 +286,7 @@ func validateAWSDocumentationURL(url string) error {
 }
 
 // executeListPricingServices lists all AWS services with available pricing
-func (t *AWSDocumentationTool) executeListPricingServices(ctx context.Context, logger *logrus.Logger, _ map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeListPricingServices(ctx context.Context, logger *logrus.Logger, _ map[string]any) (*mcpapi.CallToolResult, error) {
 	// Initialise pricing client if needed (thread-safe)
 	t.pricingClientOnce.Do(func() {
 		t.pricingClient, t.pricingClientErr = pricing.NewClient(ctx, logger)
@@ -322,11 +322,11 @@ func (t *AWSDocumentationTool) executeListPricingServices(ctx context.Context, l
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // executeGetServicePricing gets pricing for a specific AWS service
-func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, logger *logrus.Logger, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, logger *logrus.Logger, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse service_code (required) - validate BEFORE initialising AWS client
 	serviceCode, ok := args["service_code"].(string)
 	if !ok {
@@ -413,7 +413,7 @@ func (t *AWSDocumentationTool) executeGetServicePricing(ctx context.Context, log
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // ProvideExtendedInfo implements the ExtendedHelpProvider interface for the AWS documentation tool

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -23,64 +23,64 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *TerraformDocumentationTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *TerraformDocumentationTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"terraform_documentation",
-		mcp.WithDescription("Access Terraform Registry APIs for providers, modules, and policies with search and documentation capabilities."),
-		mcp.WithString("action",
-			mcp.Required(),
-			mcp.Description("Action to perform"),
-			mcp.Enum("search_providers", "get_provider_details", "get_latest_provider_version", "search_modules", "get_module_details", "get_latest_module_version", "search_policies", "get_policy_details"),
+		mcpapi.WithDescription("Access Terraform Registry APIs for providers, modules, and policies with search and documentation capabilities."),
+		mcpapi.WithString("action",
+			mcpapi.Required(),
+			mcpapi.Description("Action to perform"),
+			mcpapi.Enum("search_providers", "get_provider_details", "get_latest_provider_version", "search_modules", "get_module_details", "get_latest_module_version", "search_policies", "get_policy_details"),
 		),
 		// Common search parameter (consolidates *_query parameters)
-		mcp.WithString("query",
-			mcp.Description("Search query (for search_modules, search_policies, or service slug for search_providers). Examples: 'vpc', 'kubernetes', 'security'"),
+		mcpapi.WithString("query",
+			mcpapi.Description("Search query (for search_modules, search_policies, or service slug for search_providers). Examples: 'vpc', 'kubernetes', 'security'"),
 		),
 		// Resource-specific ID parameters (semantically different, keep separate)
-		mcp.WithString("provider_doc_id",
-			mcp.Description("Terraform provider document ID (required for get_provider_details) - must be a numeric ID from the provider's documentation index"),
+		mcpapi.WithString("provider_doc_id",
+			mcpapi.Description("Terraform provider document ID (required for get_provider_details) - must be a numeric ID from the provider's documentation index"),
 		),
-		mcp.WithString("module_id",
-			mcp.Description("Terraform module ID (required for get_module_details and get_latest_module_version). Format: 'namespace/name/provider/version' (e.g., 'terraform-aws-modules/vpc/aws/3.14.0')"),
+		mcpapi.WithString("module_id",
+			mcpapi.Description("Terraform module ID (required for get_module_details and get_latest_module_version). Format: 'namespace/name/provider/version' (e.g., 'terraform-aws-modules/vpc/aws/3.14.0')"),
 		),
-		mcp.WithString("policy_id",
-			mcp.Description("Terraform policy ID (required for get_policy_details)"),
+		mcpapi.WithString("policy_id",
+			mcpapi.Description("Terraform policy ID (required for get_policy_details)"),
 		),
 		// Provider-specific parameters (grouped together for clarity)
-		mcp.WithString("provider_name",
-			mcp.Description("Name of the Terraform provider (required for all provider actions). Examples: 'aws', 'azurerm', 'google'"),
+		mcpapi.WithString("provider_name",
+			mcpapi.Description("Name of the Terraform provider (required for all provider actions). Examples: 'aws', 'azurerm', 'google'"),
 		),
-		mcp.WithString("provider_namespace",
-			mcp.Description("Publisher namespace of the Terraform provider (required for all provider actions). Examples: 'hashicorp', 'integrations'"),
+		mcpapi.WithString("provider_namespace",
+			mcpapi.Description("Publisher namespace of the Terraform provider (required for all provider actions). Examples: 'hashicorp', 'integrations'"),
 		),
-		mcp.WithString("provider_data_type",
-			mcp.Description("Type of provider documentation to retrieve"),
-			mcp.Enum("resources", "data-sources", "functions", "guides", "overview"),
-			mcp.DefaultString("resources"),
+		mcpapi.WithString("provider_data_type",
+			mcpapi.Description("Type of provider documentation to retrieve"),
+			mcpapi.Enum("resources", "data-sources", "functions", "guides", "overview"),
+			mcpapi.DefaultString("resources"),
 		),
-		mcp.WithString("provider_version",
-			mcp.Description("Provider version (Default: 'latest', optional: specific version 'x.y.z')"),
-			mcp.DefaultString("latest"),
+		mcpapi.WithString("provider_version",
+			mcpapi.Description("Provider version (Default: 'latest', optional: specific version 'x.y.z')"),
+			mcpapi.DefaultString("latest"),
 		),
 		// General pagination and limits
-		mcp.WithNumber("current_offset",
-			mcp.Description("Pagination offset for search operations"),
-			mcp.DefaultNumber(0),
+		mcpapi.WithNumber("current_offset",
+			mcpapi.Description("Pagination offset for search operations"),
+			mcpapi.DefaultNumber(0),
 		),
-		mcp.WithNumber("limit",
-			mcp.Description("Maximum number of results to return for search operations"),
-			mcp.DefaultNumber(5),
+		mcpapi.WithNumber("limit",
+			mcpapi.Description("Maximum number of results to return for search operations"),
+			mcpapi.DefaultNumber(5),
 		),
 		// Read-only annotations for Terraform documentation fetching tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches Terraform documentation, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same queries return same documentation results
-		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external Terraform Registry APIs
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only fetches Terraform documentation, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same queries return same documentation results
+		mcpapi.WithOpenWorldHintAnnotation(true),    // Fetches from external Terraform Registry APIs
 	)
 }
 
 // Execute executes the tool's logic
-func (t *TerraformDocumentationTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Initialise client if needed
 	if t.client == nil {
 		t.client = NewClient(logger)
@@ -121,7 +121,7 @@ func (t *TerraformDocumentationTool) Execute(ctx context.Context, logger *logrus
 }
 
 // executeSearchProviders handles search_providers action
-func (t *TerraformDocumentationTool) executeSearchProviders(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeSearchProviders(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	providerName, ok := args["provider_name"].(string)
 	if !ok || providerName == "" {
 		return nil, fmt.Errorf("search_providers requires 'provider_name' parameter (e.g., 'aws', 'azurerm', 'google')")
@@ -151,7 +151,7 @@ func (t *TerraformDocumentationTool) executeSearchProviders(ctx context.Context,
 }
 
 // executeGetProviderDetails handles get_provider_details action
-func (t *TerraformDocumentationTool) executeGetProviderDetails(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetProviderDetails(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	providerDocID, ok := args["provider_doc_id"].(string)
 	if !ok || providerDocID == "" {
 		return nil, fmt.Errorf("missing required parameter: provider_doc_id")
@@ -161,7 +161,7 @@ func (t *TerraformDocumentationTool) executeGetProviderDetails(ctx context.Conte
 }
 
 // executeGetLatestProviderVersion handles get_latest_provider_version action
-func (t *TerraformDocumentationTool) executeGetLatestProviderVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetLatestProviderVersion(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	providerName, ok := args["provider_name"].(string)
 	if !ok || providerName == "" {
 		return nil, fmt.Errorf("missing required parameter: provider_name")
@@ -176,7 +176,7 @@ func (t *TerraformDocumentationTool) executeGetLatestProviderVersion(ctx context
 }
 
 // executeSearchModules handles search_modules action
-func (t *TerraformDocumentationTool) executeSearchModules(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeSearchModules(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	moduleQuery, ok := args["query"].(string)
 	if !ok || moduleQuery == "" {
 		return nil, fmt.Errorf("missing required parameter: query")
@@ -191,7 +191,7 @@ func (t *TerraformDocumentationTool) executeSearchModules(ctx context.Context, a
 }
 
 // executeGetModuleDetails handles get_module_details action
-func (t *TerraformDocumentationTool) executeGetModuleDetails(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetModuleDetails(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	moduleID, ok := args["module_id"].(string)
 	if !ok || moduleID == "" {
 		return nil, fmt.Errorf("missing required parameter: module_id")
@@ -201,7 +201,7 @@ func (t *TerraformDocumentationTool) executeGetModuleDetails(ctx context.Context
 }
 
 // executeGetLatestModuleVersion handles get_latest_module_version action
-func (t *TerraformDocumentationTool) executeGetLatestModuleVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetLatestModuleVersion(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	moduleID, ok := args["module_id"].(string)
 	if !ok || moduleID == "" {
 		return nil, fmt.Errorf("missing required parameter: module_id")
@@ -211,7 +211,7 @@ func (t *TerraformDocumentationTool) executeGetLatestModuleVersion(ctx context.C
 }
 
 // executeSearchPolicies handles search_policies action
-func (t *TerraformDocumentationTool) executeSearchPolicies(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeSearchPolicies(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	policyQuery, ok := args["query"].(string)
 	if !ok || policyQuery == "" {
 		return nil, fmt.Errorf("missing required parameter: query")
@@ -221,7 +221,7 @@ func (t *TerraformDocumentationTool) executeSearchPolicies(ctx context.Context, 
 }
 
 // executeGetPolicyDetails handles get_policy_details action
-func (t *TerraformDocumentationTool) executeGetPolicyDetails(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *TerraformDocumentationTool) executeGetPolicyDetails(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	policyID, ok := args["policy_id"].(string)
 	if !ok || policyID == "" {
 		return nil, fmt.Errorf("missing required parameter: policy_id")

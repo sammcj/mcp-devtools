@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions" // Added import
 	"github.com/sirupsen/logrus"
@@ -20,16 +20,16 @@ import (
 type ListShadcnComponentsTool struct{}
 
 // Definition returns the tool's definition.
-func (t *ListShadcnComponentsTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *ListShadcnComponentsTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"shadcn_list_components",
-		mcp.WithDescription("Get a list of all available shadcn ui components."),
+		mcpapi.WithDescription("Get a list of all available shadcn ui components."),
 	// No input schema needed as it's an empty object.
 	)
 }
 
 // Execute performs the tool's action.
-func (t *ListShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *ListShadcnComponentsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Listing shadcn ui components")
 
 	// Check cache

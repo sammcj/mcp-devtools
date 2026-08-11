@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"strings"
 	"sync"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sirupsen/logrus"
 )
@@ -16,15 +18,15 @@ import (
 // fakeTool is a minimal tools.Tool used to drive newToolHandler in tests.
 type fakeTool struct {
 	name   string
-	result *mcp.CallToolResult
+	result *mcpapi.CallToolResult
 	err    error
 }
 
-func (f *fakeTool) Definition() mcp.Tool {
-	return mcp.NewTool(f.name, mcp.WithDescription("fake tool for handler tests"))
+func (f *fakeTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(f.name, mcpapi.WithDescription("fake tool for handler tests"))
 }
 
-func (f *fakeTool) Execute(_ context.Context, _ *logrus.Logger, _ *sync.Map, _ map[string]any) (*mcp.CallToolResult, error) {
+func (f *fakeTool) Execute(_ context.Context, _ *logrus.Logger, _ *sync.Map, _ map[string]any) (*mcpapi.CallToolResult, error) {
 	return f.result, f.err
 }
 
@@ -35,11 +37,11 @@ func quietLogger() *logrus.Logger {
 	return l
 }
 
-func toolResultText(result *mcp.CallToolResult) string {
+func toolResultText(result *mcpapi.CallToolResult) string {
 	if result == nil || len(result.Content) == 0 {
 		return ""
 	}
-	text, ok := mcp.AsTextContent(result.Content[0])
+	text, ok := mcpapi.AsTextContent(result.Content[0])
 	if !ok {
 		return ""
 	}
@@ -47,16 +49,14 @@ func toolResultText(result *mcp.CallToolResult) string {
 }
 
 // A tool whose Execute returns an error must surface as an isError result with
-// nil Go error, otherwise mcp-go responds with a JSON-RPC -32603 internal error
+// nil Go error, otherwise the SDK responds with a JSON-RPC protocol error
 // that clients treat as a server crash.
 func TestNewToolHandler_ExecutionFailureReturnsIsError(t *testing.T) {
 	const name = "fake_exec_failure_tool"
 	registry.RegisterProxiedTool(&fakeTool{name: name, err: errors.New("missing required parameter: expression")})
 
 	handler := newToolHandler(name, "http", quietLogger())
-	req := mcp.CallToolRequest{}
-	req.Params.Name = name
-	req.Params.Arguments = map[string]any{}
+	req := &mcpapi.CallToolRequest{Params: &mcp.CallToolParamsRaw{Name: name, Arguments: json.RawMessage(`{}`)}}
 
 	result, err := handler(context.Background(), req)
 	if err != nil {
@@ -76,7 +76,7 @@ func TestNewToolHandler_ExecutionFailureReturnsIsError(t *testing.T) {
 // An unknown tool name must also return an isError result rather than a Go error.
 func TestNewToolHandler_ToolNotFoundReturnsIsError(t *testing.T) {
 	handler := newToolHandler("definitely_not_registered_tool", "http", quietLogger())
-	req := mcp.CallToolRequest{}
+	req := &mcpapi.CallToolRequest{Params: &mcp.CallToolParamsRaw{}}
 
 	result, err := handler(context.Background(), req)
 	if err != nil {
@@ -91,13 +91,11 @@ func TestNewToolHandler_ToolNotFoundReturnsIsError(t *testing.T) {
 // nil error and IsError unset.
 func TestNewToolHandler_SuccessPassesResultThrough(t *testing.T) {
 	const name = "fake_success_tool"
-	want := mcp.NewToolResultText("ok")
+	want := mcpapi.NewToolResultText("ok")
 	registry.RegisterProxiedTool(&fakeTool{name: name, result: want})
 
 	handler := newToolHandler(name, "http", quietLogger())
-	req := mcp.CallToolRequest{}
-	req.Params.Name = name
-	req.Params.Arguments = map[string]any{}
+	req := &mcpapi.CallToolRequest{Params: &mcp.CallToolParamsRaw{Name: name, Arguments: json.RawMessage(`{}`)}}
 
 	result, err := handler(context.Background(), req)
 	if err != nil {

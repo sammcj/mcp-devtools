@@ -12,5 +12,5 @@ func TestGeminiAgentTool_Definition(t *testing.T) {
 	def := tool.Definition()
 
 	assert.NotNil(t, def)
-	assert.Equal(t, "gemini-agent", def.GetName())
+	assert.Equal(t, "gemini-agent", def.Name)
 }

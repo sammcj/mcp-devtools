@@ -13,6 +13,11 @@ type ClientInfo struct {
 	ClientName              string   `json:"client_name,omitempty"`
 	ClientURI               string   `json:"client_uri,omitempty"`
 	Scope                   string   `json:"scope,omitempty"`
+
+	// Issuer records which authorisation server issued this registration.
+	// Credentials are only reused when the issuer still matches, so a server
+	// that changes issuer cannot silently inherit another one's client ID.
+	Issuer string `json:"issuer,omitempty"`
 }
 
 // ClientMetadata holds OAuth client metadata for registration.
@@ -26,6 +31,10 @@ type ClientMetadata struct {
 	Scope                   string   `json:"scope,omitempty"`
 	SoftwareID              string   `json:"software_id,omitempty"`
 	SoftwareVersion         string   `json:"software_version,omitempty"`
+
+	// ApplicationType tells the server this is a native client, so it applies
+	// the redirect-URI rules for one (loopback allowed, https not required).
+	ApplicationType string `json:"application_type,omitempty"`
 }
 
 // SaveClientInfo persists client info to the cache directory.

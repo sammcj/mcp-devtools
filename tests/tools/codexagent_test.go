@@ -1,6 +1,7 @@
 package tools_test
 
 import (
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"os"
 	"slices"
 	"strings"
@@ -18,7 +19,7 @@ func TestCodexTool_Definition(t *testing.T) {
 	def := tool.Definition()
 
 	assert.NotNil(t, def)
-	assert.Equal(t, "codex-agent", def.GetName())
+	assert.Equal(t, "codex-agent", def.Name)
 }
 
 func TestCodexTool_Definition_ParameterSchema(t *testing.T) {
@@ -39,7 +40,7 @@ func TestCodexTool_Definition_ParameterSchema(t *testing.T) {
 	testutils.AssertNotNil(t, def.InputSchema)
 
 	// Test that input schema has required properties
-	schema := def.InputSchema
+	schema := mcpapi.InputSchemaOf(def)
 	testutils.AssertNotNil(t, schema.Properties)
 
 	// Verify required prompt parameter exists
@@ -55,7 +56,7 @@ func TestCodexTool_Definition_ParameterSchema(t *testing.T) {
 func TestCodexTool_Definition_OptionalParameters(t *testing.T) {
 	tool := &codexagent.CodexTool{}
 	def := tool.Definition()
-	schema := def.InputSchema
+	schema := mcpapi.InputSchemaOf(def)
 
 	// Test optional parameters exist based on requirements
 	optionalParams := []string{
@@ -86,7 +87,7 @@ func TestCodexTool_Definition_OptionalParameters(t *testing.T) {
 func TestCodexTool_Definition_ParameterNamingConventions(t *testing.T) {
 	tool := &codexagent.CodexTool{}
 	def := tool.Definition()
-	schema := def.InputSchema
+	schema := mcpapi.InputSchemaOf(def)
 
 	// Test that we use consistent naming conventions from requirements
 	expectedParams := map[string]bool{

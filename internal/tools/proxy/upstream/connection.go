@@ -84,85 +84,40 @@ func (c *Connection) Connect(ctx context.Context) error {
 		// Don't fail here - auth might be handled during transport Start
 	}
 
-	// Create transport based on strategy
-	strategy := ParseStrategy(c.config.Transport)
-	if strategy == "" {
-		strategy = StrategyHTTPFirst
+	// Streamable HTTP is the only upstream transport. HTTP+SSE was deprecated
+	// in MCP 2026-07-28 and removed here in v2.
+	if strategy := ParseStrategy(c.config.Transport); strategy != StrategyHTTP {
+		logrus.WithFields(logrus.Fields{
+			"name":      c.config.Name,
+			"requested": c.config.Transport,
+		}).Warn("upstream SSE transport was removed; using Streamable HTTP")
 	}
 
 	transportConfig := &Config{
 		ServerURL:    c.config.URL,
 		Headers:      c.config.Headers,
 		AuthProvider: c.authProvider,
-		Strategy:     strategy,
 	}
 
-	// Try to connect with configured strategy
-	var transport Transport
-	var err error
+	transport := NewHTTPTransport(transportConfig)
 
-	useSSE := strategy == StrategySSEOnly || strategy == StrategySSEFirst
+	logrus.WithField("name", c.config.Name).Debug("attempting connection")
 
-	if useSSE {
-		transport = NewSSETransport(transportConfig)
-	} else {
-		transport = NewHTTPTransport(transportConfig)
-	}
-
-	logrus.WithFields(logrus.Fields{
-		"name":      c.config.Name,
-		"transport": transportName(useSSE),
-	}).Debug("attempting connection")
-
-	err = transport.Start(ctx)
+	err := transport.Start(ctx)
 	if err == nil {
 		c.transport = transport
 		c.connected = true
-		logrus.WithFields(logrus.Fields{
-			"name":      c.config.Name,
-			"transport": transportName(useSSE),
-		}).Info("connected to upstream server")
+		logrus.WithField("name", c.config.Name).Info("connected to upstream server")
 		return nil
 	}
 
-	logrus.WithError(err).WithFields(logrus.Fields{
-		"name":      c.config.Name,
-		"transport": transportName(useSSE),
-	}).Debug("connection failed")
-
-	// Handle transport fallback
-	if (strategy == StrategyHTTPFirst && err == ErrNotFound) ||
-		(strategy == StrategySSEFirst && err == ErrMethodNotAllowed) {
-		// Switch transport type
-		useSSE = !useSSE
-		logrus.WithFields(logrus.Fields{
-			"name":      c.config.Name,
-			"transport": transportName(useSSE),
-		}).Info("falling back to alternate transport")
-
-		if useSSE {
-			transport = NewSSETransport(transportConfig)
-		} else {
-			transport = NewHTTPTransport(transportConfig)
-		}
-
-		err = transport.Start(ctx)
-		if err == nil {
-			c.transport = transport
-			c.connected = true
-			logrus.WithFields(logrus.Fields{
-				"name":      c.config.Name,
-				"transport": transportName(useSSE),
-			}).Info("connected to upstream server after fallback")
-			return nil
-		}
-	}
+	logrus.WithError(err).WithField("name", c.config.Name).Debug("connection failed")
 
 	// Handle authentication
 	if err == ErrUnauthorised {
 		logrus.WithField("name", c.config.Name).Info("authentication required")
 
-		if err := c.authenticateAndConnect(ctx, useSSE, transportConfig); err != nil {
+		if err := c.authenticateAndConnect(ctx, transportConfig); err != nil {
 			return fmt.Errorf("authentication failed: %w", err)
 		}
 
@@ -175,7 +130,7 @@ func (c *Connection) Connect(ctx context.Context) error {
 }
 
 // authenticateAndConnect performs OAuth authentication and connects.
-func (c *Connection) authenticateAndConnect(ctx context.Context, useSSE bool, transportConfig *Config) error {
+func (c *Connection) authenticateAndConnect(ctx context.Context, transportConfig *Config) error {
 	// Start callback server
 	callbackServer, err := auth.NewCallbackServer(c.authProvider.Port())
 	if err != nil {
@@ -189,6 +144,10 @@ func (c *Connection) authenticateAndConnect(ctx context.Context, useSSE bool, tr
 	if err != nil {
 		return fmt.Errorf("failed to get authorisation URL: %w", err)
 	}
+
+	// Tell the callback server what a valid response looks like before any
+	// browser redirect can reach it.
+	callbackServer.Expect(c.authProvider.AuthorizationExpectations())
 
 	logrus.WithFields(logrus.Fields{
 		"name": c.config.Name,
@@ -215,12 +174,7 @@ func (c *Connection) authenticateAndConnect(ctx context.Context, useSSE bool, tr
 	logrus.WithField("name", c.config.Name).Info("authorisation successful")
 
 	// Retry connection with new token
-	var transport Transport
-	if useSSE {
-		transport = NewSSETransport(transportConfig)
-	} else {
-		transport = NewHTTPTransport(transportConfig)
-	}
+	transport := NewHTTPTransport(transportConfig)
 
 	if err := transport.Start(ctx); err != nil {
 		return fmt.Errorf("failed to connect after auth: %w", err)
@@ -243,12 +197,9 @@ func (c *Connection) FetchTools(ctx context.Context) error {
 
 	logrus.WithField("name", c.config.Name).Debug("fetching tools from upstream")
 
-	// Create tools/list request
-	req := &Message{
-		JSONRPC: "2.0",
-		ID:      "fetch-tools",
-		Method:  "tools/list",
-		Params:  json.RawMessage("{}"),
+	req, err := newRequest("fetch-tools", "tools/list", "", nil)
+	if err != nil {
+		return err
 	}
 
 	// Add timeout to context
@@ -302,21 +253,14 @@ func (c *Connection) ExecuteTool(ctx context.Context, toolName string, args map[
 		"tool": toolName,
 	}).Debug("executing tool on upstream")
 
-	// Create tools/call request
-	params := map[string]any{
-		"name":      toolName,
-		"arguments": args,
-	}
-	paramsJSON, err := json.Marshal(params)
+	req, err := newRequest(
+		fmt.Sprintf("tool-call-%d", time.Now().UnixNano()),
+		"tools/call",
+		toolName,
+		map[string]any{"name": toolName, "arguments": args},
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal params: %w", err)
-	}
-
-	req := &Message{
-		JSONRPC: "2.0",
-		ID:      fmt.Sprintf("tool-call-%d", time.Now().UnixNano()),
-		Method:  "tools/call",
-		Params:  paramsJSON,
+		return nil, err
 	}
 
 	logrus.WithFields(logrus.Fields{
@@ -329,18 +273,9 @@ func (c *Connection) ExecuteTool(ctx context.Context, toolName string, args map[
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	// Send request and wait for response
-	transportType := "unknown"
-	if _, ok := c.transport.(*HTTPTransport); ok {
-		transportType = "HTTP"
-	} else if _, ok := c.transport.(*SSETransport); ok {
-		transportType = "SSE"
-	}
-
 	logrus.WithFields(logrus.Fields{
-		"name":      c.config.Name,
-		"tool":      toolName,
-		"transport": transportType,
+		"name": c.config.Name,
+		"tool": toolName,
 	}).Debug("Proxy: calling SendReceive")
 
 	msg, err := c.transport.SendReceive(ctx, req)
@@ -374,13 +309,6 @@ func (c *Connection) Close() error {
 	c.connected = false
 	logrus.WithField("name", c.config.Name).Info("closed connection to upstream")
 	return nil
-}
-
-func transportName(useSSE bool) string {
-	if useSSE {
-		return "SSE"
-	}
-	return "HTTP"
 }
 
 // openBrowser opens a URL in the default system browser

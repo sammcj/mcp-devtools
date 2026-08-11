@@ -3,7 +3,7 @@
 The MCP DevTools server is designed to be easily extensible with new tools. This section provides detailed guidance on how to create and integrate new tools into the server.
 
 - [Creating New Tools](#creating-new-tools)
-  - [mcp-go](#mcp-go)
+  - [MCP SDK and the mcpapi package](#mcp-sdk-and-the-mcpapi-package)
   - [Tool Interface](#tool-interface)
   - [Tool Structure](#tool-structure)
   - [Step-by-Step Guide](#step-by-step-guide)
@@ -14,15 +14,18 @@ The MCP DevTools server is designed to be easily extensible with new tools. This
   - [Tool Error Logging](#tool-error-logging)
   - [Additional Considerations](#additional-considerations)
 
-## mcp-go
+## MCP SDK and the mcpapi package
 
-MCP DevTools uses the [mcp-go](https://mcp-go.dev) library.
+MCP DevTools uses the official [modelcontextprotocol/go-sdk](https://github.com/modelcontextprotocol/go-sdk) and targets MCP spec revision 2026-07-28.
 
-You shouldn't need to read the mcp-go documentation to add a simple tool, but it may be useful if you want to understand specific features or functionality in more detail.
+Tools don't use the SDK directly. They use `internal/mcpapi`, a small package that wraps the SDK with the builder style used throughout this codebase (`mcpapi.NewTool`, `mcpapi.WithString`, `mcpapi.NewToolResultText`, and so on). `mcpapi.Tool` and `mcpapi.CallToolResult` are type aliases for the SDK types, so anything the SDK accepts still works if you need it.
 
-- https://mcp-go.dev/servers/tools (MCP tools)
-- https://mcp-go.dev/servers/resources (MCP resources)
-- https://mcp-go.dev/servers/advanced (typed tools, middleware, hooks, filtering, notifications, client capability filtering)
+Use `mcpapi` for everything a tool definition needs. Reach for the SDK directly only for server-level features (middleware, resources, prompts), which live in `main.go`.
+
+- https://pkg.go.dev/github.com/modelcontextprotocol/go-sdk/mcp (SDK reference)
+- https://modelcontextprotocol.io/specification/2026-07-28 (spec)
+
+Input schemas are [JSON Schema draft 2020-12](https://github.com/google/jsonschema-go). `mcpapi.NewTool` always produces an object schema, which the SDK requires.
 
 ## Tool Interface
 
@@ -31,10 +34,10 @@ All tools must implement the `tools.Tool` interface defined in `internal/tools/t
 ```go
 type Tool interface {
     // Definition returns the tool's definition for MCP registration
-    Definition() mcp.Tool
+    Definition() mcpapi.Tool
 
     // Execute executes the tool's logic
-    Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error)
+    Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error)
 }
 ```
 
@@ -70,7 +73,7 @@ import (
     "fmt"
     "sync"
 
-    "github.com/mark3labs/mcp-go/mcp"
+    "github.com/sammcj/mcp-devtools/internal/mcpapi"
     "github.com/sammcj/mcp-devtools/internal/registry"
     "github.com/sammcj/mcp-devtools/internal/security"
     "github.com/sirupsen/logrus"
@@ -87,26 +90,26 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *YourTool) Definition() mcp.Tool {
-    return mcp.NewTool(
+func (t *YourTool) Definition() mcpapi.Tool {
+    return mcpapi.NewTool(
         "your_tool_name",
-        mcp.WithDescription("Description of your tool"),
+        mcpapi.WithDescription("Description of your tool"),
         // Define required parameters
-        mcp.WithString("param1",
-            mcp.Required(),
-            mcp.Description("Description of param1"),
+        mcpapi.WithString("param1",
+            mcpapi.Required(),
+            mcpapi.Description("Description of param1"),
         ),
         // Define optional parameters
-        mcp.WithNumber("param2",
-            mcp.Description("Description of param2"),
-            mcp.DefaultNumber(10),
+        mcpapi.WithNumber("param2",
+            mcpapi.Description("Description of param2"),
+            mcpapi.DefaultNumber(10),
         ),
         // Add more parameters as needed
     )
 }
 
 // Execute executes the tool's logic
-func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
     // Log the start of execution
     logger.Info("Executing your tool")
 
@@ -162,7 +165,7 @@ func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
     }
 
     // Return the result
-    return mcp.NewCallToolResult(result), nil
+    return mcpapi.NewToolResultJSON(result)
 }
 ```
 
@@ -170,54 +173,42 @@ func (t *YourTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sy
 
 The MCP framework supports various parameter types:
 
-- **String**: `mcp.WithString("name", ...)`
-- **Number**: `mcp.WithNumber("name", ...)`
-- **Boolean**: `mcp.WithBoolean("name", ...)`
-- **Array**: `mcp.WithArray("name", ...)`
-- **Object**: `mcp.WithObject("name", ...)`
+- **String**: `mcpapi.WithString("name", ...)`
+- **Number**: `mcpapi.WithNumber("name", ...)`
+- **Boolean**: `mcpapi.WithBoolean("name", ...)`
+- **Array**: `mcpapi.WithArray("name", ...)`
+- **Object**: `mcpapi.WithObject("name", ...)`
 
 For each parameter, you can specify:
 
-- **Required**: `mcp.Required()` - Mark the parameter as required
-- **Description**: `mcp.Description("...")` - Provide a description
-- **Default Value**: `mcp.DefaultString("...")`, `mcp.DefaultNumber(10)`, `mcp.DefaultBool(false)` - Set a default value
-- **Enum**: `mcp.Enum("value1", "value2", ...)` - Restrict to a set of values
-- **Properties**: `mcp.Properties(map[string]any{...})` - Define properties for object parameters
+- **Required**: `mcpapi.Required()` - Mark the parameter as required
+- **Description**: `mcpapi.Description("...")` - Provide a description
+- **Default Value**: `mcpapi.DefaultString("...")`, `mcpapi.DefaultNumber(10)`, `mcpapi.DefaultBool(false)` - Set a default value
+- **Enum**: `mcpapi.Enum("value1", "value2", ...)` - Restrict to a set of values
+- **Properties**: `mcpapi.Properties(map[string]any{...})` - Define properties for object parameters
 
 ### 4. Result Schema
 
-The result of a tool execution should be a `*mcp.CallToolResult` object, which can be created with:
+The result of a tool execution is a `*mcpapi.CallToolResult`. Build it with one of:
+
+- `mcpapi.NewToolResultText(text)` - plain text
+- `mcpapi.NewToolResultJSON(value)` - marshals any Go value to JSON text, returns `(*CallToolResult, error)`
+- `mcpapi.NewToolResultError(message)` - a tool-level error the model can read and act on
+- `mcpapi.NewToolResultErrorFromErr(message, err)` - the same, wrapping a Go error
 
 ```go
-mcp.NewCallToolResult(result)
-```
-
-Where `result` is a `map[string]any` containing the tool's output data.
-
-For structured results, you can use:
-
-```go
-// Define a result struct
 type Result struct {
     Message string `json:"message"`
     Count   int    `json:"count"`
 }
 
-// Create a result
-result := Result{
+return mcpapi.NewToolResultJSON(Result{
     Message: "Tool executed successfully",
     Count:   42,
-}
-
-// Convert to JSON
-resultJSON, err := json.Marshal(result)
-if err != nil {
-    return nil, fmt.Errorf("failed to marshal result: %w", err)
-}
-
-// Create a CallToolResult
-return mcp.NewCallToolResultJSON(resultJSON)
+})
 ```
+
+**Errors**: returning a non-nil `error` from `Execute` is fine. The server's tool handler converts it into a tool result with `isError: true` before it reaches the client, so a failing tool never surfaces as a JSON-RPC protocol error. Return an error for genuine failures; use `mcpapi.NewToolResultError` when you want to control the wording the model sees.
 
 ### 5. Caching
 
@@ -247,7 +238,7 @@ The preferred approach is to use security helper functions that provide simplifi
 ops := security.NewOperations("your_tool_name")
 
 // Secure HTTP GET with content integrity preservation
-safeResp, err := ops.SafeHTTPGet(urlStr)
+safeResp, err := ops.SafeHTTPGet(ctx, urlStr)
 if err != nil {
     // Handle security blocks or network errors
     if secErr, ok := err.(*security.SecurityError); ok {
@@ -397,7 +388,7 @@ import (
     "fmt"
     "sync"
 
-    "github.com/mark3labs/mcp-go/mcp"
+    "github.com/sammcj/mcp-devtools/internal/mcpapi"
     "github.com/sammcj/mcp-devtools/internal/registry"
     "github.com/sirupsen/logrus"
 )
@@ -411,19 +402,19 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *HelloTool) Definition() mcp.Tool {
-    return mcp.NewTool(
+func (t *HelloTool) Definition() mcpapi.Tool {
+    return mcpapi.NewTool(
         "hello_world",
-        mcp.WithDescription("A simple hello world tool"),
-        mcp.WithString("name",
-            mcp.Description("Name to greet"),
-            mcp.DefaultString("World"),
+        mcpapi.WithDescription("A simple hello world tool"),
+        mcpapi.WithString("name",
+            mcpapi.Description("Name to greet"),
+            mcpapi.DefaultString("World"),
         ),
     )
 }
 
 // Execute executes the tool's logic
-func (t *HelloTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *HelloTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
     // Parse parameters
     name := "World"
     if nameRaw, ok := args["name"].(string); ok && nameRaw != "" {
@@ -436,7 +427,7 @@ func (t *HelloTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
     }
 
     // Return the result
-    return mcp.NewCallToolResult(result), nil
+    return mcpapi.NewToolResultJSON(result)
 }
 ```
 
@@ -614,5 +605,6 @@ If you want to view the tool descriptions, parameters and annotations as a MCP c
 - No tool should ever log to stdout or stderr when the MCP server is running in stdio mode as this breaks the MCP protocol.
 - Tool enablement decision: By default, ALL new tools should be DISABLED by default unless explicitly approved by Sam, if approved tool gets enabled by being added to the `defaultTools` list in the `enabledByDefault()` function in `registry.go`. Having tools disabled by default follows the secure-by-default principle and helps to prevent context bloat.
 - You should update docs/tools/overview.md with adding or changing a tool.
+- **Tools must be stateless across calls.** The HTTP transport is stateless: consecutive calls from one client can land on different server processes, so anything stored in a tool struct between calls will be missing or wrong. Cache derived data that can be recomputed, not conversation state. If a tool genuinely cannot work this way, implement the `tools.StdioOnly` marker interface (an empty `StdioOnly()` method) and it will only be registered on the stdio transport. `sequential_thinking` is the only tool that does this.
 - **SECURITY**: All tools that access files or make HTTP requests MUST integrate with the security system. See [Security Integration](#6-security-integration) above and [Security System Documentation](security.md) for details.
 - Follow least privilege security principles.

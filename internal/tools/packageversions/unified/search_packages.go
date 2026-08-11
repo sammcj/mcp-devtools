@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
@@ -37,48 +37,48 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *SearchPackagesTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *SearchPackagesTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"search_packages",
-		mcp.WithDescription("Search for software packages / libraries (by name) and check versions (npm, Go, Python, Java, Swift, GitHub Actions, Docker, Anthropic, AWS Bedrock, Rust). Use when adding or updating dependencies or Anthropic model IDs in code to ensure you get the latest stable version. Pass multiple packages in a single call using the 'data' parameter"),
-		mcp.WithString("ecosystem",
-			mcp.Description("Ecosystem to search: 'npm', 'go', 'python', 'python-pyproject' (pyproject.toml), 'java-maven', 'java-gradle', 'swift', 'github-actions', 'docker', 'anthropic' (Anthropic Claude models), 'bedrock' (AWS Bedrock models), 'rust'"),
-			mcp.Enum("npm", "go", "python", "python-pyproject", "java-maven", "java-gradle", "swift", "github-actions", "docker", "anthropic", "bedrock", "rust"),
-			mcp.Required(),
+		mcpapi.WithDescription("Search for software packages / libraries (by name) and check versions (npm, Go, Python, Java, Swift, GitHub Actions, Docker, Anthropic, AWS Bedrock, Rust). Use when adding or updating dependencies or Anthropic model IDs in code to ensure you get the latest stable version. Pass multiple packages in a single call using the 'data' parameter"),
+		mcpapi.WithString("ecosystem",
+			mcpapi.Description("Ecosystem to search: 'npm', 'go', 'python', 'python-pyproject' (pyproject.toml), 'java-maven', 'java-gradle', 'swift', 'github-actions', 'docker', 'anthropic' (Anthropic Claude models), 'bedrock' (AWS Bedrock models), 'rust'"),
+			mcpapi.Enum("npm", "go", "python", "python-pyproject", "java-maven", "java-gradle", "swift", "github-actions", "docker", "anthropic", "bedrock", "rust"),
+			mcpapi.Required(),
 		),
-		mcp.WithString("query",
-			mcp.Description("Search query. Package name or dependency object, for bedrock use model names, for docker use image names"),
-			mcp.Required(),
+		mcpapi.WithString("query",
+			mcpapi.Description("Search query. Package name or dependency object, for bedrock use model names, for docker use image names"),
+			mcpapi.Required(),
 		),
-		mcp.WithObject("data",
-			mcp.Description("Ecosystem-specific data object for checking multiple packages / libraries, structure depends on the ecosystem (e.g., for python: `[\"requests\", \"numpy\"]`, for npm: `{\"react\": \"latest\", \"lodash\": \"^4.0.0\"}`) (Optional)"),
+		mcpapi.WithObject("data",
+			mcpapi.Description("Ecosystem-specific data object for checking multiple packages / libraries, structure depends on the ecosystem (e.g., for python: `[\"requests\", \"numpy\"]`, for npm: `{\"react\": \"latest\", \"lodash\": \"^4.0.0\"}`) (Optional)"),
 		),
-		mcp.WithObject("constraints",
-			mcp.Description("Constraints for specific packages / libraries (version constraints, exclusions, etc.) (Optional)"),
+		mcpapi.WithObject("constraints",
+			mcpapi.Description("Constraints for specific packages / libraries (version constraints, exclusions, etc.) (Optional)"),
 		),
-		mcp.WithString("action",
-			mcp.Description("Action for ecosystem. Bedrock: 'list', 'search', 'get'. Docker: 'tags', 'info'. Defaults to appropriate action for ecosystem (Optional)"),
-			mcp.Enum("list", "search", "get", "tags", "info"),
+		mcpapi.WithString("action",
+			mcpapi.Description("Action for ecosystem. Bedrock: 'list', 'search', 'get'. Docker: 'tags', 'info'. Defaults to appropriate action for ecosystem (Optional)"),
+			mcpapi.Enum("list", "search", "get", "tags", "info"),
 		),
-		mcp.WithNumber("limit",
-			mcp.Description("Max results to return (Optional)"),
+		mcpapi.WithNumber("limit",
+			mcpapi.Description("Max results to return (Optional)"),
 		),
-		mcp.WithString("registry",
-			mcp.Description("Registry to use (for docker: 'dockerhub', 'ghcr', 'custom') (Optional)"),
+		mcpapi.WithString("registry",
+			mcpapi.Description("Registry to use (for docker: 'dockerhub', 'ghcr', 'custom') (Optional)"),
 		),
-		mcp.WithBoolean("includeDetails",
-			mcp.Description("Verbose details in results (Optional)"),
+		mcpapi.WithBoolean("includeDetails",
+			mcpapi.Description("Verbose details in results (Optional)"),
 		),
 		// Read-only annotations for package search tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only searches packages, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same search query returns same results
-		mcp.WithOpenWorldHintAnnotation(true),    // Searches external package registries
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only searches packages, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same search query returns same results
+		mcpapi.WithOpenWorldHintAnnotation(true),    // Searches external package registries
 	)
 }
 
 // Execute executes the unified package search tool
-func (t *SearchPackagesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse ecosystem
 	ecosystem, ok := args["ecosystem"].(string)
 	if !ok || ecosystem == "" {
@@ -92,7 +92,7 @@ func (t *SearchPackagesTool) Execute(ctx context.Context, logger *logrus.Logger,
 	}).Info("Executing unified package search")
 
 	// Route to appropriate ecosystem handler
-	var result *mcp.CallToolResult
+	var result *mcpapi.CallToolResult
 	var err error
 
 	switch ecosystem {
@@ -133,7 +133,7 @@ func (t *SearchPackagesTool) Execute(ctx context.Context, logger *logrus.Logger,
 }
 
 // handleNpm handles npm package searches
-func (t *SearchPackagesTool) handleNpm(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleNpm(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
@@ -167,7 +167,7 @@ func (t *SearchPackagesTool) handleNpm(ctx context.Context, logger *logrus.Logge
 }
 
 // handleGo handles Go module searches
-func (t *SearchPackagesTool) handleGo(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleGo(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
@@ -183,7 +183,7 @@ func (t *SearchPackagesTool) handleGo(ctx context.Context, logger *logrus.Logger
 }
 
 // handlePython handles Python package searches
-func (t *SearchPackagesTool) handlePython(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handlePython(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Convert query to requirements format if needed
 	if data, ok := args["data"]; ok {
 		args["requirements"] = data
@@ -197,7 +197,7 @@ func (t *SearchPackagesTool) handlePython(ctx context.Context, logger *logrus.Lo
 }
 
 // handlePythonPyproject handles Python pyproject.toml package searches
-func (t *SearchPackagesTool) handlePythonPyproject(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handlePythonPyproject(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
@@ -215,7 +215,7 @@ func (t *SearchPackagesTool) handlePythonPyproject(ctx context.Context, logger *
 }
 
 // handleJavaMaven handles Maven dependency searches
-func (t *SearchPackagesTool) handleJavaMaven(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleJavaMaven(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
@@ -235,7 +235,7 @@ func (t *SearchPackagesTool) handleJavaMaven(ctx context.Context, logger *logrus
 }
 
 // handleJavaGradle handles Gradle dependency searches
-func (t *SearchPackagesTool) handleJavaGradle(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleJavaGradle(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
@@ -255,7 +255,7 @@ func (t *SearchPackagesTool) handleJavaGradle(ctx context.Context, logger *logru
 }
 
 // handleSwift handles Swift package searches
-func (t *SearchPackagesTool) handleSwift(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleSwift(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		args["dependencies"] = data
@@ -269,7 +269,7 @@ func (t *SearchPackagesTool) handleSwift(ctx context.Context, logger *logrus.Log
 }
 
 // handleGitHubActions handles GitHub Actions searches
-func (t *SearchPackagesTool) handleGitHubActions(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleGitHubActions(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Convert query to actions format if needed
 	if data, ok := args["data"]; ok {
 		args["actions"] = data
@@ -287,7 +287,7 @@ func (t *SearchPackagesTool) handleGitHubActions(ctx context.Context, logger *lo
 }
 
 // handleDocker handles Docker image searches
-func (t *SearchPackagesTool) handleDocker(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleDocker(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Use query as image name
 	if query, ok := args["query"].(string); ok {
 		args["image"] = query
@@ -309,7 +309,7 @@ func (t *SearchPackagesTool) handleDocker(ctx context.Context, logger *logrus.Lo
 }
 
 // handleAnthropic handles Anthropic Claude model searches
-func (t *SearchPackagesTool) handleAnthropic(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleAnthropic(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Set default action if not provided
 	if _, ok := args["action"]; !ok {
 		if query, ok := args["query"].(string); ok && query != "" {
@@ -325,7 +325,7 @@ func (t *SearchPackagesTool) handleAnthropic(ctx context.Context, logger *logrus
 }
 
 // handleBedrock handles AWS Bedrock model searches
-func (t *SearchPackagesTool) handleBedrock(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleBedrock(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Set default action if not provided
 	if _, ok := args["action"]; !ok {
 		if query, ok := args["query"].(string); ok && query != "" {
@@ -341,7 +341,7 @@ func (t *SearchPackagesTool) handleBedrock(ctx context.Context, logger *logrus.L
 }
 
 // handleRust handles Rust crate searches
-func (t *SearchPackagesTool) handleRust(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) handleRust(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Convert query to dependencies format if needed
 	if data, ok := args["data"]; ok {
 		// Handle array format by converting to object: ["serde", "tokio"] -> {"serde": "latest", "tokio": "latest"}
@@ -407,7 +407,7 @@ func (t *SearchPackagesTool) handleRust(ctx context.Context, logger *logrus.Logg
 }
 
 // validateAndEnhanceResult checks if the result contains useful information and provides helpful error messages
-func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult, query, ecosystem string) (*mcp.CallToolResult, error) {
+func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcpapi.CallToolResult, query, ecosystem string) (*mcpapi.CallToolResult, error) {
 	if result == nil {
 		return packageversions.NewToolResultJSON(map[string]any{
 			"error":     fmt.Sprintf("No results for query '%s' in ecosystem '%s'", query, ecosystem),
@@ -419,7 +419,7 @@ func (t *SearchPackagesTool) validateAndEnhanceResult(result *mcp.CallToolResult
 
 	// Check if result content indicates empty or failed results
 	if len(result.Content) > 0 {
-		if textContent, ok := result.Content[0].(mcp.TextContent); ok {
+		if textContent, ok := result.Content[0].(*mcpapi.TextContent); ok {
 			text := textContent.Text
 
 			// Check for various indicators of empty/failed results

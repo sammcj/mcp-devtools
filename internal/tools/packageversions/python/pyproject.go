@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -18,20 +18,20 @@ type PyProjectTool struct {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *PyProjectTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *PyProjectTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_pyproject_versions",
-		mcp.WithDescription("Check latest stable versions for Python packages in pyproject.toml"),
-		mcp.WithObject("dependencies",
-			mcp.Description("Dependencies object from pyproject.toml"),
-			mcp.Properties(map[string]any{}),
-			mcp.Required(),
+		mcpapi.WithDescription("Check latest stable versions for Python packages in pyproject.toml"),
+		mcpapi.WithObject("dependencies",
+			mcpapi.Description("Dependencies object from pyproject.toml"),
+			mcpapi.Properties(map[string]any{}),
+			mcpapi.Required(),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *PyProjectTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *PyProjectTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Getting latest Python package versions from pyproject.toml")
 
 	// Parse dependencies

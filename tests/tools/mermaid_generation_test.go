@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/joho/godotenv"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools/docprocessing"
 	"github.com/sirupsen/logrus"
@@ -108,7 +108,7 @@ func TestMermaidGeneration(t *testing.T) {
 
 		// Extract the JSON response
 		content := result.Content[0]
-		textContent, ok := mcp.AsTextContent(content)
+		textContent, ok := mcpapi.AsTextContent(content)
 		if !ok {
 			t.Fatal("Expected TextContent, got different type")
 		}

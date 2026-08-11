@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/security"
 )
 
 // executeBatch processes multiple documents concurrently
-func (t *DocumentProcessorTool) executeBatch(args map[string]any, sources []any) (*mcp.CallToolResult, error) {
+func (t *DocumentProcessorTool) executeBatch(args map[string]any, sources []any) (*mcpapi.CallToolResult, error) {
 	startTime := time.Now()
 
 	// Convert sources to strings

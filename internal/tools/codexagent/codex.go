@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -34,61 +34,61 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *CodexTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *CodexTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"codex-agent",
-		mcp.WithDescription("Provides integration with the Codex CLI through MCP. Enables AI agents to leverage Codex's capabilities for code analysis, generation, and assistance. Exclusively uses 'codex exec' command for non-interactive execution."),
-		mcp.WithString("prompt",
-			mcp.Required(),
-			mcp.Description("A clear, concise prompt to send to Codex CLI to instruct the AI Agent to perform a specific task. Supports @file, @directory/ syntax for file references."),
+		mcpapi.WithDescription("Provides integration with the Codex CLI through MCP. Enables AI agents to leverage Codex's capabilities for code analysis, generation, and assistance. Exclusively uses 'codex exec' command for non-interactive execution."),
+		mcpapi.WithString("prompt",
+			mcpapi.Required(),
+			mcpapi.Description("A clear, concise prompt to send to Codex CLI to instruct the AI Agent to perform a specific task. Supports @file, @directory/ syntax for file references."),
 		),
-		mcp.WithString("override-model",
-			mcp.Description("Model to override the default. No default model is provided, allowing Codex to use user's configured default."),
+		mcpapi.WithString("override-model",
+			mcpapi.Description("Model to override the default. No default model is provided, allowing Codex to use user's configured default."),
 		),
-		mcp.WithString("sandbox",
-			mcp.Description("Sandbox policy for execution security. Options: read-only, workspace-write, danger-full-access. WARNING: Controls execution security context."),
+		mcpapi.WithString("sandbox",
+			mcpapi.Description("Sandbox policy for execution security. Options: read-only, workspace-write, danger-full-access. WARNING: Controls execution security context."),
 		),
-		mcp.WithBoolean("full-auto",
-			mcp.Description("Enable low-friction sandboxed automatic execution. In exec mode, implies --sandbox workspace-write."),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("full-auto",
+			mcpapi.Description("Enable low-friction sandboxed automatic execution. In exec mode, implies --sandbox workspace-write."),
+			mcpapi.DefaultBool(false),
 		),
 		tools.AddConditionalParameter("yolo-mode",
 			"DANGER: Bypass all approvals and sandbox restrictions (maps to --dangerously-bypass-approvals-and-sandbox). Use with extreme caution."),
-		mcp.WithBoolean("resume",
-			mcp.Description("Continue the most recent session using --last flag."),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("resume",
+			mcpapi.Description("Continue the most recent session using --last flag."),
+			mcpapi.DefaultBool(false),
 		),
-		mcp.WithString("session-id",
-			mcp.Description("Specify a session identifier for resuming specific sessions."),
+		mcpapi.WithString("session-id",
+			mcpapi.Description("Specify a session identifier for resuming specific sessions."),
 		),
-		mcp.WithString("profile",
-			mcp.Description("Configuration profile to use from config.toml."),
+		mcpapi.WithString("profile",
+			mcpapi.Description("Configuration profile to use from config.toml."),
 		),
-		mcp.WithArray("config",
-			mcp.Description("Configuration overrides in key=value format. Supports dotted path notation for nested values with JSON parsing."),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("config",
+			mcpapi.Description("Configuration overrides in key=value format. Supports dotted path notation for nested values with JSON parsing."),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithArray("images",
-			mcp.Description("Image files to attach to the prompt. Multiple files supported."),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("images",
+			mcpapi.Description("Image files to attach to the prompt. Multiple files supported."),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithString("cd",
-			mcp.Description("Working directory for Codex execution. Directory must exist."),
+		mcpapi.WithString("cd",
+			mcpapi.Description("Working directory for Codex execution. Directory must exist."),
 		),
-		mcp.WithBoolean("skip-git-repo-check",
-			mcp.Description("Skip git repository validation checks."),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("skip-git-repo-check",
+			mcpapi.Description("Skip git repository validation checks."),
+			mcpapi.DefaultBool(false),
 		),
 		// Destructive tool annotations
-		mcp.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Codex
-		mcp.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
-		mcp.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
-		mcp.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Codex
+		mcpapi.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
+		mcpapi.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
+		mcpapi.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
 	)
 }
 
 // Execute executes the tool's logic by calling the Codex CLI
-func (t *CodexTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *CodexTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Executing Codex tool")
 
 	// Get timeout from environment or use default
@@ -150,7 +150,7 @@ func (t *CodexTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			timeoutMsg := fmt.Sprintf("\n\nThe Codex Agent hit the configured timeout of %d seconds, output may be truncated!", timeout)
-			return mcp.NewToolResultText(output + timeoutMsg), nil
+			return mcpapi.NewToolResultText(output + timeoutMsg), nil
 		}
 		logger.WithError(err).Error("Codex tool execution failed")
 		return nil, fmt.Errorf("codex command failed: %w", err)
@@ -168,7 +168,7 @@ func (t *CodexTool) Execute(ctx context.Context, logger *logrus.Logger, cache *s
 		output = fmt.Sprintf("New Codex session started\n\n%s", output)
 	}
 
-	return mcp.NewToolResultText(output), nil
+	return mcpapi.NewToolResultText(output), nil
 }
 
 // runCodex executes the Codex CLI with the specified parameters

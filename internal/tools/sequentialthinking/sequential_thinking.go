@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/fatih/color"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sirupsen/logrus"
 )
@@ -39,41 +39,48 @@ func init() {
 	})
 }
 
+// StdioOnly marks this tool as stdio-only. Thought history lives in this
+// process, keyed by nothing the client sends, so a second instance behind a
+// load balancer would answer with someone else's chain of thought or none at
+// all. Making it stateless would mean handing the history back to the client
+// on every call, which is a different tool.
+func (t *SequentialThinkingTool) StdioOnly() {}
+
 // Definition returns the tool's definition for MCP registration
-func (t *SequentialThinkingTool) Definition() mcp.Tool {
-	tool := mcp.NewTool(
+func (t *SequentialThinkingTool) Definition() mcpapi.Tool {
+	tool := mcpapi.NewTool(
 		"sequential_thinking",
-		mcp.WithDescription(`A multi-step reasoning tool for dynamic and reflective problem-solving through sequential thoughts. Each step should be a focused, concise observation or decision (1-3 sentences per step, ~50-100 words). Use sparingly only when needed for the most complex problems.
+		mcpapi.WithDescription(`A multi-step reasoning tool for dynamic and reflective problem-solving through sequential thoughts. Each step should be a focused, concise observation or decision (1-3 sentences per step, ~50-100 words). Use sparingly only when needed for the most complex problems.
 
 Helps with complex problems where you need to expand the problem space by breaking down complex problems into steps`),
-		mcp.WithString("action",
-			mcp.Description("Action to perform: 'think' or 'get_usage'"),
-			mcp.Enum("think", "get_usage"),
+		mcpapi.WithString("action",
+			mcpapi.Description("Action to perform: 'think' or 'get_usage'"),
+			mcpapi.Enum("think", "get_usage"),
 		),
-		mcp.WithString("thought",
-			mcp.Description("A single focused reasoning step: 1-3 sentences covering one observation, decision, or question. Use multiple steps for longer analysis rather than one long step."),
+		mcpapi.WithString("thought",
+			mcpapi.Description("A single focused reasoning step: 1-3 sentences covering one observation, decision, or question. Use multiple steps for longer analysis rather than one long step."),
 		),
-		mcp.WithBoolean("nextThoughtNeeded",
-			mcp.Description("Whether another thought step is needed (required for 'think' action)"),
+		mcpapi.WithBoolean("nextThoughtNeeded",
+			mcpapi.Description("Whether another thought step is needed (required for 'think' action)"),
 		),
-		mcp.WithString("revise",
-			mcp.Description("Brief text snippet from previous thought to revise (optional)"),
+		mcpapi.WithString("revise",
+			mcpapi.Description("Brief text snippet from previous thought to revise (optional)"),
 		),
-		mcp.WithString("explore",
-			mcp.Description("Label for exploring alternative approach (optional)"),
+		mcpapi.WithString("explore",
+			mcpapi.Description("Label for exploring alternative approach (optional)"),
 		),
 
 		// Non-destructive writing annotations
-		mcp.WithReadOnlyHintAnnotation(false),    // Stores thinking state and history
-		mcp.WithDestructiveHintAnnotation(false), // Doesn't destroy previous thoughts
-		mcp.WithIdempotentHintAnnotation(false),  // Each thought adds new content
-		mcp.WithOpenWorldHintAnnotation(false),   // Works with local state management
+		mcpapi.WithReadOnlyHintAnnotation(false),    // Stores thinking state and history
+		mcpapi.WithDestructiveHintAnnotation(false), // Doesn't destroy previous thoughts
+		mcpapi.WithIdempotentHintAnnotation(false),  // Each thought adds new content
+		mcpapi.WithOpenWorldHintAnnotation(false),   // Works with local state management
 	)
 	return tool
 }
 
 // Execute executes the tool's logic
-func (t *SequentialThinkingTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SequentialThinkingTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Executing sequential thinking tool")
 
 	// Get action parameter (defaults to "think" for backward compatibility)
@@ -106,7 +113,7 @@ func (t *SequentialThinkingTool) Execute(ctx context.Context, logger *logrus.Log
 			return nil, fmt.Errorf("failed to marshal result: %w", err)
 		}
 
-		return mcp.NewToolResultText(string(jsonBytes)), nil
+		return mcpapi.NewToolResultText(string(jsonBytes)), nil
 	default:
 		return nil, fmt.Errorf("invalid action: %s. Must be 'think' or 'get_usage'", action)
 	}
@@ -244,7 +251,7 @@ func (t *SequentialThinkingTool) formatThought(thoughtData *ThoughtData) string 
 }
 
 // getUsage returns detailed usage instructions for the sequential thinking tool
-func (t *SequentialThinkingTool) getUsage() *mcp.CallToolResult {
+func (t *SequentialThinkingTool) getUsage() *mcpapi.CallToolResult {
 	usage := `# Sequential Thinking Tool - Detailed Usage Guide
 
 ## Purpose
@@ -313,5 +320,5 @@ Focus on your thinking content - the tool handles numbering, tracking, and branc
 4. Keep thoughts focused and clear
 5. Don't worry about numbering - the tool handles it`
 
-	return mcp.NewToolResultText(usage)
+	return mcpapi.NewToolResultText(usage)
 }

@@ -277,12 +277,13 @@ These tools can be disabled by adding their function name to the `DISABLED_TOOLS
 | ---------------------------------------------------------------- | ------------------------------------- | ----------------------------- | ------------------------------- | -------- |
 | **[Internet Search](docs/tools/internet_search.md)**             | Multi-provider internet search        | None (Provider keys optional) | Web, image, news, video search  | 🟢       |
 | **[Web Fetch](docs/tools/web-fetch.md)**                         | Retrieve internet content as Markdown | None                          | Documentation and articles      | 🟢       |
-| **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, mark3labs/mcp-go         | 🟢       |
+| **[Package Documentation](docs/tools/package-documentation.md)** | Context7 library documentation lookup | None                          | React, modelcontextprotocol/go-sdk | 🟢    |
 | **[Package Search](docs/tools/package-search.md)**               | Check package versions                | None                          | NPM, Python, Go, Java, Docker   | 🟢       |
 | **[Think](docs/tools/think.md)**                                 | Structured reasoning space            | None                          | Complex problem analysis        | 🟢       |
 | **[Calculator](docs/tools/calculator.md)**                       | Basic arithmetic calculations         | None                          | 2 + 3 \* 4, batch processing    | 🟢       |
 | **[DevTools Help](docs/tools/get_tool_help.md)**                 | Extended info about DevTools tools    | None                          | Usage examples, troubleshooting | 🟢       |
 | **[Find Long Files](docs/tools/find_long_files.md)**             | Identify files needing refactoring    |                               | Find files over 700 lines       | 🟢       |
+| **[Sequential Thinking](docs/tools/sequential-thinking.md)**     | Structured multi-step reasoning        | None                          | Step-by-step analysis (stdio only) | 🟢    |
 
 ### Additional Tools (Disabled By Default)
 
@@ -300,9 +301,8 @@ These tools can be enabled by setting the `ENABLE_ADDITIONAL_TOOLS` environment 
 | **[Excel](docs/tools/excel.md)**                                     | Excel file manipulation                                   | `excel`                   | Workbooks, charts, pivot tables, formulas     | 🟢       |
 | **[AWS Documentation & Pricing](docs/tools/aws_documentation.md)**   | AWS documentation & pricing search and retrieval          | `aws_documentation`       | Search and read AWS docs, recommendations     | 🟡       |
 | **[Terraform Documentation](docs/tools/terraform-documentation.md)** | Terraform Registry API (providers, modules, and policies) | `terraform_documentation` | Provider docs, module search, policy lookup   | 🟡       |
-| **[Sequential Thinking](docs/tools/sequential-thinking.md)**         | Dynamic problem-solving through structured thoughts       | `sequential-thinking`     | Step-by-step analysis, revision, branching    | 🟢       |
 | **[Filesystem](docs/tools/filesystem.md)**                           | File and directory operations                             | `filesystem`              | Read, write, edit, search files               | 🟡       |
-| **[MCP Proxy](docs/tools/proxy.md)**                                 | Proxies MCP requests from upstream HTTP/SSE servers       | `proxy`                   | Provide HTTP/SSE MCP servers to STDIO clients | 🟡       |
+| **[MCP Proxy](docs/tools/proxy.md)**                                 | Proxies MCP requests to upstream HTTP MCP servers         | `proxy`                   | Provide remote HTTP MCP servers to stdio clients | 🟡    |
 | **[American→English](docs/tools/american-to-english.md)**            | Convert to British spelling                               | `murican_to_english`      | Organise, colour, centre                      | 🟡       |
 | **[API to MCP](docs/tools/api.md)**                                  | Dynamic REST API integration                              | `api`                     | Configure any REST API via YAML               | 🔴       |
 
@@ -405,7 +405,7 @@ mcp-devtools --transport http --port 18080
 
 ## Transport Options
 
-MCP DevTools supports three transport modes for different use cases:
+MCP DevTools supports two transport modes:
 
 ### STDIO Transport (Default)
 
@@ -453,6 +453,12 @@ mcp-devtools --transport http --port 18080 --oauth-enabled
 }
 ```
 
+**Stateless by design**: the HTTP transport implements MCP 2026-07-28, which has no `initialize` handshake and no `Mcp-Session-Id`. Every request carries its own protocol version and client info, so any request can be served by any replica. Round-robin load balancing, scale-to-zero and rolling restarts all work without sticky sessions. `GET` and `DELETE` on the endpoint return `405`; only `POST` is used.
+
+The one exception is `sequential_thinking`, which keeps thought history in the server process. It is registered on stdio only and is not exposed over HTTP.
+
+Tools that persist state under `~/.mcp-devtools` still need a single replica or a shared volume: `code_search` (index built by one call, queried by the next), `memory` (knowledge graph) and `security_override` (override tokens). They hold nothing in the process, so a restart is fine, but two replicas with separate disks will disagree.
+
 ## Configuration Options
 
 ### Environment Variables
@@ -463,7 +469,7 @@ All environment variables are optional, but if you want to use specific search p
 
 - `LOG_LEVEL` - Logging level: `debug`, `info`, `warn`, `error` (default: `warn`). Logs are written to `~/.mcp-devtools/logs/mcp-devtools.log` for all transports. Stdio transport uses minimum `warn` level and never logs to stdout/stderr to prevent MCP protocol pollution.
 - `LOG_TOOL_ERRORS` - Enable logging of failed tool calls to `~/.mcp-devtools/logs/tool-errors.log` (set to `true` to enable). Logs older than 60 days are automatically removed on server startup.
-- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,filesystem,claude-agent,codex-agent,gemini-agent,kiro-agent,process_document,pdf,memory,terraform_documentation,sequential-thinking`)
+- `ENABLE_ADDITIONAL_TOOLS` - Comma-separated list to enable security-sensitive tools (e.g. `security,security_override,filesystem,claude-agent,codex-agent,gemini-agent,kiro-agent,process_document,pdf,memory,terraform_documentation`)
 - `DISABLED_TOOLS` - Comma-separated list of functions to disable (e.g. `think,internet_search`)
 
 **Default Tools:**
@@ -490,10 +496,11 @@ All environment variables are optional, but if you want to use specific search p
 
 ### Command-Line Options
 
-- `--transport`, `-t` - Transport type (`stdio`, `sse`, `http`). Default: `stdio`
-- `--port` - Port for HTTP transports. Default: `18080`
-- `--base-url` - Base URL for HTTP transports. Default: `http://localhost`
-- `--auth-token` - Authentication token for HTTP transport
+- `--transport`, `-t` - Transport type (`stdio`, `http`). Default: `stdio`
+- `--port` - Port for the HTTP transport. Default: `18080`
+- `--base-url` - Base URL for the HTTP transport. Default: `http://localhost`
+- `--auth-token` - Bearer token required on HTTP requests
+- `--endpoint-path` - Endpoint path for the HTTP transport. Default: `/http`
 
 ## Architecture
 
@@ -501,7 +508,7 @@ MCP DevTools uses a modular architecture:
 
 - **Tool Registry**: Central registry managing tool discovery and registration
 - **Tool Interface**: Standardised interface all tools implement
-- **Transport Layer**: Supports STDIO, HTTP, and SSE transports
+- **Transport Layer**: stdio and stateless Streamable HTTP
 - **Plugin System**: Easy to add new tools following the interface
 
 Each tool is self-contained and registers automatically when the binary starts.
@@ -606,7 +613,7 @@ MCP DevTools maintains two log files in `~/.mcp-devtools/logs/`:
 - Contains all application logs at the configured level
 - Configure via `LOG_LEVEL` environment variable: `debug`, `info`, `warn`, `error` (default: `warn`)
 - **Stdio transport**: Always logs to file (never to stderr to prevent MCP protocol pollution)
-- **HTTP/SSE transports**: Logs to file at configured level
+- **HTTP transport**: Logs to file at configured level
 
 **Tool Error Logs** (`tool-errors.log`):
 

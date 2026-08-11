@@ -52,7 +52,7 @@ Tools are organised into categories under `internal/tools/`, e.g:
 1. Create package under `internal/tools/[category]/[toolname]/`
 2. Implement the `tools.Tool` interface with `Definition()` and `Execute()` methods
 3. Register tool in `init()` function using `registry.Register(&YourTool{})`
-4. Import the package in `main.go` to trigger registration
+4. Import the package in `internal/imports/tools.go` (NOT in `main.go`) to trigger registration
 
 Tools automatically get:
 - Shared cache (`sync.Map`)
@@ -61,10 +61,11 @@ Tools automatically get:
 
 ### Transport Support
 
-The server supports three transport modes:
+The server supports two transport modes:
 - **stdio** (default) - Standard input/output for MCP clients
-- **http** - Streamable HTTP with optional authentication, optional upgrade to SSE if needed
-- **sse** - Legacy Server-Sent Events for web clients (deprecated in favour of streamable HTTP), will be removed in future versions
+- **http** - Stateless Streamable HTTP (MCP 2026-07-28) with optional bearer token or OAuth authentication
+
+SSE was removed in MCP 2026-07-28; `--transport sse` exits with an error.
 
 ## Important Files
 
@@ -125,7 +126,7 @@ All tools follow this pattern:
 - On occasion the user may ask you to build a new tool and provide reference code or information in a provided directory such as `tmp_repo_clones/<dirname>` unless specified otherwise this should only be used for reference and learning purposes, we don't ever want to use code that directory as part of the project's codebase.
 - After making changes and performing a build if you need to test the MCP server with the updated changes you MUST either test it from the command line - or STOP and ask the user to restart the MCP client otherwise you won't pick up the latest changes
 - When creating new MCP tools make sure descriptions are clear and concise as they are what is used as hints to the AI coding agent using the tool, you should also make good use of MCP's annotations.
-- The mcp-go package documentation contains useful examples of using the package which you can lookup when asked to implement specific MCP features https://mcp-go.dev/servers/tools
+- Tools use the `internal/mcpapi` package, which wraps the official https://github.com/modelcontextprotocol/go-sdk. See docs/creating-new-tools.md.
 
 ---
 

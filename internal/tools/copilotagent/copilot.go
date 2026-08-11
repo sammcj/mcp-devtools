@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -33,59 +33,59 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *CopilotTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *CopilotTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"copilot-agent",
-		mcp.WithDescription("Provides access to GitHub Copilot CLI through MCP. Enables AI agents to leverage Copilot's capabilities for code analysis, generation, and assistance."),
-		mcp.WithString("prompt",
-			mcp.Required(),
-			mcp.Description("A clear, concise prompt to send to Copilot CLI to instruct the AI Agent to perform a specific task."),
+		mcpapi.WithDescription("Provides access to GitHub Copilot CLI through MCP. Enables AI agents to leverage Copilot's capabilities for code analysis, generation, and assistance."),
+		mcpapi.WithString("prompt",
+			mcpapi.Required(),
+			mcpapi.Description("A clear, concise prompt to send to Copilot CLI to instruct the AI Agent to perform a specific task."),
 		),
-		mcp.WithString("override-model",
-			mcp.Description("Model to override the default. No default model is provided, allowing Copilot to use user's configured default."),
+		mcpapi.WithString("override-model",
+			mcpapi.Description("Model to override the default. No default model is provided, allowing Copilot to use user's configured default."),
 		),
-		mcp.WithBoolean("resume",
-			mcp.Description("Continue the most recent session using --continue flag."),
-			mcp.DefaultBool(false),
+		mcpapi.WithBoolean("resume",
+			mcpapi.Description("Continue the most recent session using --continue flag."),
+			mcpapi.DefaultBool(false),
 		),
-		mcp.WithString("session-id",
-			mcp.Description("Specify a session identifier for resuming specific sessions."),
+		mcpapi.WithString("session-id",
+			mcpapi.Description("Specify a session identifier for resuming specific sessions."),
 		),
-		mcp.WithString("agent",
-			mcp.Description("Specify a custom agent to use."),
+		mcpapi.WithString("agent",
+			mcpapi.Description("Specify a custom agent to use."),
 		),
-		mcp.WithArray("additional-mcp-config",
-			mcp.Description("Additional MCP servers configuration as JSON string or file path (prefix with @) (can be used multiple times)."),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("additional-mcp-config",
+			mcpapi.Description("Additional MCP servers configuration as JSON string or file path (prefix with @) (can be used multiple times)."),
+			mcpapi.WithStringItems(),
 		),
 		tools.AddConditionalParameter("yolo-mode",
 			"Trust all tools without confirmation (maps to --allow-all-tools)."),
-		mcp.WithArray("allow-tool",
-			mcp.Description("Specific tool permissions to grant (maps to --allow-tool flags)."),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("allow-tool",
+			mcpapi.Description("Specific tool permissions to grant (maps to --allow-tool flags)."),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithArray("deny-tool",
-			mcp.Description("Specific tool permissions to deny (maps to --deny-tool flags)."),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("deny-tool",
+			mcpapi.Description("Specific tool permissions to deny (maps to --deny-tool flags)."),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithArray("include-directories",
-			mcp.Description("Additional directories to grant access to (maps to --add-dir flags)."),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("include-directories",
+			mcpapi.Description("Additional directories to grant access to (maps to --add-dir flags)."),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithArray("disable-mcp-server",
-			mcp.Description("MCP servers to disable during execution (maps to --disable-mcp-server flags)."),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("disable-mcp-server",
+			mcpapi.Description("MCP servers to disable during execution (maps to --disable-mcp-server flags)."),
+			mcpapi.WithStringItems(),
 		),
 		// Destructive tool annotations
-		mcp.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Copilot
-		mcp.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
-		mcp.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
-		mcp.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Agent can execute arbitrary commands via Copilot
+		mcpapi.WithDestructiveHintAnnotation(true), // Can perform destructive operations via external agent
+		mcpapi.WithIdempotentHintAnnotation(false), // Agent operations are not idempotent
+		mcpapi.WithOpenWorldHintAnnotation(true),   // Agent can interact with external systems
 	)
 }
 
 // Execute executes the tool's logic by calling the Copilot CLI
-func (t *CopilotTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *CopilotTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Executing Copilot tool")
 
 	// Get timeout from environment or use default
@@ -101,7 +101,7 @@ func (t *CopilotTool) Execute(ctx context.Context, logger *logrus.Logger, cache 
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			timeoutMsg := fmt.Sprintf("\n\nThe Copilot Agent hit the configured timeout of %d seconds, output may be truncated!", timeout)
-			return mcp.NewToolResultText(output + timeoutMsg), nil
+			return mcpapi.NewToolResultText(output + timeoutMsg), nil
 		}
 		logger.WithError(err).Error("Copilot tool execution failed")
 		return nil, fmt.Errorf("copilot command failed: %w", err)
@@ -113,7 +113,7 @@ func (t *CopilotTool) Execute(ctx context.Context, logger *logrus.Logger, cache 
 	// Apply response size limits
 	output = t.ApplyResponseSizeLimit(output, logger)
 
-	return mcp.NewToolResultText(output), nil
+	return mcpapi.NewToolResultText(output), nil
 }
 
 // runCopilot executes the Copilot CLI with the specified parameters

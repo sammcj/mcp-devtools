@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
 // handleCreateWorksheet adds a new worksheet to an existing workbook
-func handleCreateWorksheet(logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleCreateWorksheet(logger *logrus.Logger, filePath string, sheetName string) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -75,11 +75,11 @@ func handleCreateWorksheet(logger *logrus.Logger, filePath string, sheetName str
 
 	result := map[string]any{}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleCopyWorksheet creates a copy of an existing worksheet
-func handleCopyWorksheet(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleCopyWorksheet(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -187,11 +187,11 @@ func handleCopyWorksheet(logger *logrus.Logger, filePath string, sheetName strin
 
 	result := map[string]any{}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleDeleteWorksheet removes a worksheet from the workbook
-func handleDeleteWorksheet(logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleDeleteWorksheet(logger *logrus.Logger, filePath string, sheetName string) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -256,11 +256,11 @@ func handleDeleteWorksheet(logger *logrus.Logger, filePath string, sheetName str
 
 	result := map[string]any{}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleRenameWorksheet renames an existing worksheet
-func handleRenameWorksheet(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleRenameWorksheet(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -344,5 +344,5 @@ func handleRenameWorksheet(logger *logrus.Logger, filePath string, sheetName str
 
 	result := map[string]any{}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }

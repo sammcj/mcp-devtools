@@ -12,6 +12,10 @@ type Tokens struct {
 	ExpiresIn    int       `json:"expires_in,omitempty"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	Scope        string    `json:"scope,omitempty"`
+
+	// Issuer records which authorisation server minted these tokens, so a
+	// server that later declares a different issuer does not get to reuse them.
+	Issuer string `json:"issuer,omitempty"`
 }
 
 // IsExpired returns true if the access token is expired.

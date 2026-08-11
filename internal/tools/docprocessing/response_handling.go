@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/security"
 )
 
@@ -55,7 +55,7 @@ func (t *DocumentProcessorTool) shouldSaveToFile(req *DocumentProcessingRequest)
 }
 
 // handleSaveToFile saves the converted content to the specified file and returns a success message
-func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *DocumentProcessingResponse, securityNotice string) (*mcp.CallToolResult, error) {
+func (t *DocumentProcessorTool) handleSaveToFile(savePath string, response *DocumentProcessingResponse, securityNotice string) (*mcpapi.CallToolResult, error) {
 	// Auto-generate save path if not provided
 	if savePath == "" {
 		generatedPath, err := t.generateSavePath(response.Source)
@@ -165,11 +165,11 @@ func (t *DocumentProcessorTool) generateSavePath(source string) (string, error) 
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (t *DocumentProcessorTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
+func (t *DocumentProcessorTool) newToolResultJSON(data any) (*mcpapi.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }

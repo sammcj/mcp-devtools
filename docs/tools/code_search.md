@@ -1,5 +1,7 @@
 # code_search
 
+_Over the HTTP transport this tool needs a single replica or a shared volume: the index lives on disk under `~/.mcp-devtools`, so indexing on one replica and searching on another returns nothing._
+
 Semantic code search using local embeddings. Find functions, classes, and methods by describing what they do in natural language.
 
 ## Overview

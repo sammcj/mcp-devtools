@@ -2,14 +2,11 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	mcpserver "github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/sammcj/mcp-devtools/internal/registry"
-	"github.com/sammcj/mcp-devtools/internal/telemetry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
 )
@@ -128,13 +125,14 @@ func RegisterUpstreamTools(ctx context.Context, fastPath bool) bool {
 	return true
 }
 
-// RegisterUpstreamToolsAsync discovers upstream tools in the background and registers them
-// directly on the running MCP server. mcp-go automatically sends tools/list_changed
-// notifications to connected clients when tools are added via AddTool().
+// RegisterUpstreamToolsAsync discovers upstream tools in the background and
+// registers them directly on the running MCP server, using newHandler to build
+// each tool's handler so proxied tools behave like built-in ones.
 //
 // This avoids blocking server startup while still making upstream tools available as
-// soon as the connection succeeds.
-func RegisterUpstreamToolsAsync(ctx context.Context, mcpSrv *mcpserver.MCPServer, mainLogger *logrus.Logger, transport string) {
+// soon as the connection succeeds. Stateless HTTP clients pick the new tools up on
+// their next tools/list; long-lived stdio clients are notified by the SDK.
+func RegisterUpstreamToolsAsync(ctx context.Context, mcpSrv *mcp.Server, mainLogger *logrus.Logger, newHandler func(name string) mcp.ToolHandler) {
 	// Quick pre-checks before spawning goroutine (avoid needless goroutines)
 	if !isProxyEnabled() {
 		mainLogger.Debug("Proxy: not enabled in ENABLE_ADDITIONAL_TOOLS, skipping async upstream registration")
@@ -181,44 +179,11 @@ func RegisterUpstreamToolsAsync(ctx context.Context, mcpSrv *mcpserver.MCPServer
 			// Register in our internal registry (for GetTool lookups)
 			registry.RegisterProxiedTool(dynamicTool)
 
-			// Register directly on the running MCP server so clients see it immediately
-			name := tool.Name
-			mcpSrv.AddTool(dynamicTool.Definition(), func(toolCtx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-				currentTool, ok := registry.GetTool(name)
-				if !ok {
-					return nil, fmt.Errorf("tool not found: %s", name)
-				}
-				var args map[string]any
-				if request.Params.Arguments != nil {
-					args, ok = request.Params.Arguments.(map[string]any)
-					if !ok {
-						return nil, fmt.Errorf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)
-					}
-				} else {
-					args = make(map[string]any)
-				}
-
-				startTime := time.Now()
-				spanCtx, span := telemetry.StartToolSpan(toolCtx, name, args)
-
-				result, err := currentTool.Execute(spanCtx, registry.GetLogger(), registry.GetCache(), args)
-
-				durationMs := float64(time.Since(startTime).Milliseconds())
-				telemetry.RecordToolCall(spanCtx, name, transport, err == nil, durationMs)
-				if err != nil {
-					errorType := telemetry.CategoriseToolError(err)
-					telemetry.RecordToolError(spanCtx, name, errorType)
-				}
-				telemetry.EndToolSpan(span, err)
-
-				if err != nil {
-					if errorLogger := tools.GetGlobalErrorLogger(); errorLogger != nil && errorLogger.IsEnabled() {
-						errorLogger.LogToolError(name, args, err, transport)
-					}
-					return nil, fmt.Errorf("tool execution failed: %w", err)
-				}
-				return result, nil
-			})
+			// Register directly on the running MCP server so clients see it
+			// immediately, reusing the shared handler so proxied tools get the
+			// same metrics, telemetry and error semantics as built-in tools.
+			definition := dynamicTool.Definition()
+			mcpSrv.AddTool(&definition, newHandler(tool.Name))
 			registered++
 
 			logger.WithFields(logrus.Fields{

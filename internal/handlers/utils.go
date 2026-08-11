@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -124,13 +124,13 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, url
 }
 
 // NewToolResultJSON creates a new tool result with JSON content
-func NewToolResultJSON(data any) (*mcp.CallToolResult, error) {
+func NewToolResultJSON(data any) (*mcpapi.CallToolResult, error) {
 	jsonBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // ParseVersion parses a version string into major, minor, and patch components

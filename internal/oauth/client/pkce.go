@@ -34,41 +34,6 @@ func GeneratePKCEChallenge() (*types.PKCEChallenge, error) {
 	}, nil
 }
 
-// ValidatePKCEChallenge validates a PKCE challenge against a verifier
-func ValidatePKCEChallenge(challenge *types.PKCEChallenge, verifier string) error {
-	if challenge == nil {
-		return fmt.Errorf("PKCE challenge is nil")
-	}
-
-	if challenge.CodeVerifier != verifier {
-		return fmt.Errorf("code verifier does not match")
-	}
-
-	// Verify the challenge was created correctly
-	switch challenge.CodeChallengeMethod {
-	case "S256":
-		challengeBytes := sha256.Sum256([]byte(verifier))
-		expectedChallenge := base64.RawURLEncoding.EncodeToString(challengeBytes[:])
-		if challenge.CodeChallenge != expectedChallenge {
-			return fmt.Errorf("code challenge does not match verifier")
-		}
-	case "plain":
-		// Plain method is discouraged but supported
-		if challenge.CodeChallenge != verifier {
-			return fmt.Errorf("code challenge does not match verifier (plain method)")
-		}
-	default:
-		return fmt.Errorf("unsupported code challenge method: %s", challenge.CodeChallengeMethod)
-	}
-
-	// Check if challenge is not too old (optional security measure)
-	if time.Since(challenge.CreatedAt) > 10*time.Minute {
-		return fmt.Errorf("PKCE challenge has expired")
-	}
-
-	return nil
-}
-
 // GenerateState generates a cryptographically secure state parameter for OAuth flow
 func GenerateState() (string, error) {
 	stateBytes := make([]byte, 32) // 32 bytes = 256 bits of entropy

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -26,7 +26,7 @@ func NewAnthropicTool() *AnthropicTool {
 }
 
 // Execute handles Anthropic model queries
-func (t *AnthropicTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AnthropicTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Getting Anthropic model information")
 
 	// Initialise parser thread-safely using sync.Once
@@ -70,7 +70,7 @@ func (t *AnthropicTool) getModels(ctx context.Context) ([]AnthropicModel, error)
 }
 
 // listModels lists all available Anthropic models
-func (t *AnthropicTool) listModels(ctx context.Context) (*mcp.CallToolResult, error) {
+func (t *AnthropicTool) listModels(ctx context.Context) (*mcpapi.CallToolResult, error) {
 	models, err := t.getModels(ctx)
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func (t *AnthropicTool) listModels(ctx context.Context) (*mcp.CallToolResult, er
 }
 
 // searchModels searches for Anthropic models
-func (t *AnthropicTool) searchModels(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AnthropicTool) searchModels(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Get all models
 	models, err := t.getModels(ctx)
 	if err != nil {
@@ -137,7 +137,7 @@ func (t *AnthropicTool) searchModels(ctx context.Context, args map[string]any) (
 }
 
 // getModel gets a specific Anthropic model by ID
-func (t *AnthropicTool) getModel(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *AnthropicTool) getModel(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse model ID (can be any of the ID formats)
 	modelID, ok := args["modelId"].(string)
 	if !ok || modelID == "" {

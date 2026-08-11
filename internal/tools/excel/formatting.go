@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
 // handleFormatRange applies formatting to a cell range
-func handleFormatRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleFormatRange(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -263,11 +263,11 @@ func handleFormatRange(logger *logrus.Logger, filePath string, sheetName string,
 		"cells_formatted": cellsFormatted,
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // applyConditionalFormatting applies conditional formatting rules
-func applyConditionalFormatting(logger *logrus.Logger, f *excelize.File, filePath string, sheetName string, rangeRef string, conditionalFormat map[string]any) (*mcp.CallToolResult, error) {
+func applyConditionalFormatting(logger *logrus.Logger, f *excelize.File, filePath string, sheetName string, rangeRef string, conditionalFormat map[string]any) (*mcpapi.CallToolResult, error) {
 	formatType, ok := conditionalFormat["type"].(string)
 	if !ok {
 		return nil, &ValidationError{
@@ -305,7 +305,7 @@ func applyConditionalFormatting(logger *logrus.Logger, f *excelize.File, filePat
 }
 
 // applyColourScale applies colour scale conditional formatting
-func applyColourScale(f *excelize.File, filePath string, sheetName string, rangeRef string, rule map[string]any, logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func applyColourScale(f *excelize.File, filePath string, sheetName string, rangeRef string, rule map[string]any, logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	minColour, _ := rule["min_colour"].(string)
 	if minColour == "" {
 		minColour, _ = rule["min_color"].(string)
@@ -379,11 +379,11 @@ func applyColourScale(f *excelize.File, filePath string, sheetName string, range
 		"type": "colour_scale",
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // applyDataBar applies data bar conditional formatting
-func applyDataBar(f *excelize.File, filePath string, sheetName string, rangeRef string, rule map[string]any, logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func applyDataBar(f *excelize.File, filePath string, sheetName string, rangeRef string, rule map[string]any, logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	barColour, _ := rule["bar_colour"].(string)
 	if barColour == "" {
 		barColour, _ = rule["bar_color"].(string)
@@ -435,11 +435,11 @@ func applyDataBar(f *excelize.File, filePath string, sheetName string, rangeRef 
 		"type": "data_bar",
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // applyIconSet applies icon set conditional formatting
-func applyIconSet(f *excelize.File, filePath string, sheetName string, rangeRef string, rule map[string]any, logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func applyIconSet(f *excelize.File, filePath string, sheetName string, rangeRef string, rule map[string]any, logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	iconStyle, _ := rule["icon_style"].(string)
 	if iconStyle == "" {
 		iconStyle = "3Arrows" // Default 3 arrows
@@ -479,11 +479,11 @@ func applyIconSet(f *excelize.File, filePath string, sheetName string, rangeRef 
 		"type": "icon_set",
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // applyRuleBasedFormatting applies rule-based conditional formatting
-func applyRuleBasedFormatting(f *excelize.File, filePath string, sheetName string, rangeRef string, formatType string, rule map[string]any, logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func applyRuleBasedFormatting(f *excelize.File, filePath string, sheetName string, rangeRef string, formatType string, rule map[string]any, logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	format := excelize.ConditionalFormatOptions{
 		Type: formatType,
 	}
@@ -567,7 +567,7 @@ func applyRuleBasedFormatting(f *excelize.File, filePath string, sheetName strin
 		"type": formatType,
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // getPatternType converts pattern name to Excelize pattern type

@@ -14,7 +14,7 @@ Browser authentication implements OAuth 2.1 authorisation code flow with PKCE (P
 - **Localhost Callback Server**: Temporary HTTP server for handling OAuth callbacks
 - **RFC8414 Discovery**: Automatic endpoint discovery from issuer metadata
 - **RFC8707 Resource Indicators**: Proper token audience binding
-- **MCP 2025-06-18 Compliant**: Follows latest MCP specification requirements
+- **MCP 2026-07-28 Compliant**: Follows the current MCP specification
 
 ## Authentication Flow
 
@@ -243,7 +243,7 @@ This implementation complies with:
 - **RFC7636**: Proof Key for Code Exchange (PKCE)
 - **RFC8414**: OAuth 2.0 Authorisation Server Metadata
 - **RFC8707**: Resource Indicators for OAuth 2.0
-- **MCP 2025-06-18**: Model Context Protocol authorisation specification
+- **MCP 2026-07-28**: Model Context Protocol authorisation specification
 
 ## Limitations
 

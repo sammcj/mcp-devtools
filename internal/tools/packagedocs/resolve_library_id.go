@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -23,10 +23,10 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *ResolveLibraryIDTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *ResolveLibraryIDTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"resolve_library_id",
-		mcp.WithDescription(`Resolves a package/product name to a Context7-compatible library ID and returns a list of matching libraries. Use this as the first step when you need to lookup documentation for a package or library.
+		mcpapi.WithDescription(`Resolves a package/product name to a Context7-compatible library ID and returns a list of matching libraries. Use this as the first step when you need to lookup documentation for a package or library.
 
 You MUST call this function before 'get_library_documentation' to obtain a valid Context7-compatible library ID UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.
 
@@ -39,20 +39,20 @@ Selection Process:
 - Trust score (consider libraries with scores of 7-10 more authoritative)
 
 For ambiguous queries, request clarification before proceeding with a best-guess match.`),
-		mcp.WithString("libraryName",
-			mcp.Required(),
-			mcp.Description("Library name to search for and retrieve a Context7-compatible library ID."),
+		mcpapi.WithString("libraryName",
+			mcpapi.Required(),
+			mcpapi.Description("Library name to search for and retrieve a Context7-compatible library ID."),
 		),
 		// Read-only annotations for library ID resolution tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only queries package registries, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same library name returns same results
-		mcp.WithOpenWorldHintAnnotation(true),    // Queries external package registries
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only queries package registries, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same library name returns same results
+		mcpapi.WithOpenWorldHintAnnotation(true),    // Queries external package registries
 	)
 }
 
 // Execute executes the resolve_library_id tool
-func (t *ResolveLibraryIDTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *ResolveLibraryIDTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Lazy initialise client
 	if t.client == nil {
 		t.client = NewClient(logger)
@@ -74,12 +74,12 @@ func (t *ResolveLibraryIDTool) Execute(ctx context.Context, logger *logrus.Logge
 	results, err := t.client.SearchLibraries(ctx, libraryName)
 	if err != nil {
 		logger.WithError(err).Error("Failed to search libraries")
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to search for libraries: %v", err)), nil
+		return mcpapi.NewToolResultError(fmt.Sprintf("Failed to search for libraries: %v", err)), nil
 	}
 
 	if len(results) == 0 {
 		logger.WithField("library_name", libraryName).Warn("No libraries found")
-		return mcp.NewToolResultError(fmt.Sprintf("No libraries found matching '%s'. Try a more specific or different search term.", libraryName)), nil
+		return mcpapi.NewToolResultError(fmt.Sprintf("No libraries found matching '%s'. Try a more specific or different search term.", libraryName)), nil
 	}
 
 	// Format the response
@@ -91,7 +91,7 @@ func (t *ResolveLibraryIDTool) Execute(ctx context.Context, logger *logrus.Logge
 		"selected_id":  results[0].GetResourceURI(),
 	}).Info("Library ID resolution completed")
 
-	return mcp.NewToolResultText(response), nil
+	return mcpapi.NewToolResultText(response), nil
 }
 
 // formatResponse formats the search results into a user-friendly response

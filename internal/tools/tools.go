@@ -4,17 +4,26 @@ import (
 	"context"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
 // Tool is the interface that all MCP tool implementations must satisfy
 type Tool interface {
 	// Definition returns the tool's definition for MCP registration
-	Definition() mcp.Tool
+	Definition() mcpapi.Tool
 
 	// Execute executes the tool's logic using shared resources (logger, cache) and parsed arguments
-	Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error)
+	Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error)
+}
+
+// StdioOnly marks a tool that keeps state in the server process between calls
+// and so only works on the stdio transport, where one client owns one process.
+// MCP 2026-07-28 is stateless, and such a tool gives wrong answers as soon as a
+// load balancer puts consecutive calls on different instances. Tools marked
+// this way are not registered on any other transport.
+type StdioOnly interface {
+	StdioOnly()
 }
 
 // ExtendedHelpProvider is an optional interface that tools can implement to provide

@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"html/template"
 	"net"
@@ -22,6 +23,11 @@ type LocalCallbackServer struct {
 	logger      *logrus.Logger
 	mutex       sync.RWMutex
 	started     bool
+
+	expectedState   string
+	expectedIssuer  string
+	requireIssuer   bool
+	expectationsSet bool
 }
 
 // NewCallbackServer creates a new OAuth callback server
@@ -131,6 +137,60 @@ func (s *LocalCallbackServer) GetError() <-chan error {
 	return s.errorCh
 }
 
+// Expect records what the authorisation response must carry to be accepted.
+func (s *LocalCallbackServer) Expect(state, issuer string, issuerRequired bool) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.expectedState = state
+	s.expectedIssuer = issuer
+	s.requireIssuer = issuerRequired
+	s.expectationsSet = true
+}
+
+// validateResponse checks the authorisation response against what was sent.
+//
+// state defends against CSRF: without it, an attacker can feed their own
+// authorisation code to this callback and bind the session to their account.
+// iss is RFC 9207 and defends against mix-up attacks, where a malicious
+// authorisation server relays a code that belongs to a different one.
+// It runs under the write lock and clears the expectation on success, so a
+// state can only be redeemed once even when two callbacks arrive at once.
+func (s *LocalCallbackServer) validateResponse(state, iss string) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Refusing to accept anything until the caller has declared its
+	// expectations keeps a future caller from silently losing this check.
+	if !s.expectationsSet {
+		return fmt.Errorf("callback received before the expected state was registered")
+	}
+
+	if subtle.ConstantTimeCompare([]byte(state), []byte(s.expectedState)) != 1 {
+		return fmt.Errorf("state parameter does not match the value sent with the authorisation request")
+	}
+
+	switch {
+	case iss == "" && s.requireIssuer:
+		return fmt.Errorf("authorisation server advertises the iss parameter but did not send it")
+	case iss != "" && s.expectedIssuer == "":
+		// Accepting an iss with nothing to compare it against would make this
+		// check decorative, which is worse than not having it.
+		return fmt.Errorf("authorisation response carries iss %q but no issuer identifier is known for this server; configure the issuer URL so it can be compared", iss)
+	case iss != "" && iss != s.expectedIssuer:
+		return fmt.Errorf("iss parameter %q does not match the expected issuer %q", iss, s.expectedIssuer)
+	}
+
+	s.expectationsSet = false
+	return nil
+}
+
+// ServeCallback exposes the callback handler so its validation can be tested
+// without driving a browser through a real authorisation server.
+func (s *LocalCallbackServer) ServeCallback(w http.ResponseWriter, r *http.Request) {
+	s.handleCallback(w, r)
+}
+
 // handleCallback handles the OAuth callback request
 func (s *LocalCallbackServer) handleCallback(w http.ResponseWriter, r *http.Request) {
 	// Only allow GET requests
@@ -141,6 +201,21 @@ func (s *LocalCallbackServer) handleCallback(w http.ResponseWriter, r *http.Requ
 
 	// Parse query parameters
 	query := r.URL.Query()
+
+	// Validate before looking at anything else, and drop the request without
+	// touching the error channel. Anything that can reach this loopback port
+	// could otherwise abort an in-flight flow just by sending rubbish; the
+	// caller waits for the genuine response or times out instead.
+	//
+	// The cost is that an authorisation server that omits state on an error
+	// response leaves the caller waiting for its timeout rather than failing
+	// immediately. RFC 6749 section 4.1.2.1 requires state on error responses,
+	// so that is a non-compliant server.
+	if err := s.validateResponse(query.Get("state"), query.Get("iss")); err != nil {
+		s.logger.WithError(err).Warn("Rejected OAuth callback")
+		s.writeErrorPage(w, "Invalid Request", "The authorisation response failed validation and was discarded")
+		return
+	}
 
 	// Check for error parameter first
 	if errorParam := query.Get("error"); errorParam != "" {
@@ -173,11 +248,6 @@ func (s *LocalCallbackServer) handleCallback(w http.ResponseWriter, r *http.Requ
 		}
 		return
 	}
-
-	// State validation would happen here in a full implementation
-	// For now, we'll just log it
-	state := query.Get("state")
-	s.logger.Debugf("Received authorization callback with state: %s", state)
 
 	// Send success page
 	s.writeSuccessPage(w)

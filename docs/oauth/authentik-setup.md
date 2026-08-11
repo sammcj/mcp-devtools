@@ -1,6 +1,6 @@
 # OAuth 2.0/2.1 Setup Guide with Authentik
 
-This guide demonstrates how to configure [Authentik](https://goauthentik.io/) as an OAuth 2.0/2.1 provider for the MCP DevTools server, following the MCP 2025-06-18 specification.
+This guide demonstrates how to configure [Authentik](https://goauthentik.io/) as an OAuth 2.0/2.1 provider for the MCP DevTools server, following the MCP 2026-07-28 specification.
 
 ## Overview
 
@@ -506,7 +506,7 @@ return False
 
 ## References
 
-- [MCP Authorisation Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization)
+- [MCP Authorisation Specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization)
 - [Authentik OAuth2 Provider Documentation](https://docs.goauthentik.io/docs/add-secure-apps/providers/oauth2/)
 - [OAuth 2.1 Specification](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-12)
 - [RFC8414: OAuth 2.0 Authorisation Server Metadata](https://datatracker.ietf.org/doc/html/rfc8414)

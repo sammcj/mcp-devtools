@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -23,31 +23,31 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *GetLibraryDocsTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *GetLibraryDocsTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"get_library_documentation",
-		mcp.WithDescription(`Fetches up to date documentation for a library / package. You must call 'resolve_library_id' first to obtain the exact Context7-compatible library ID required to use this tool, UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.`),
-		mcp.WithString("context7CompatibleLibraryID",
-			mcp.Required(),
-			mcp.Description("Exact Context7-compatible library ID (e.g., '/vercel/next.js') retrieved from 'resolve_library_id' or directly from user query in the format '/org/project' or '/org/project/version'."),
+		mcpapi.WithDescription(`Fetches up to date documentation for a library / package. You must call 'resolve_library_id' first to obtain the exact Context7-compatible library ID required to use this tool, UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.`),
+		mcpapi.WithString("context7CompatibleLibraryID",
+			mcpapi.Required(),
+			mcpapi.Description("Exact Context7-compatible library ID (e.g., '/vercel/next.js') retrieved from 'resolve_library_id' or directly from user query in the format '/org/project' or '/org/project/version'."),
 		),
-		mcp.WithString("topic",
-			mcp.Description("Topic to focus documentation on (e.g., 'hooks', 'routing')."),
+		mcpapi.WithString("topic",
+			mcpapi.Description("Topic to focus documentation on (e.g., 'hooks', 'routing')."),
 		),
-		mcp.WithNumber("tokens",
-			mcp.Description("Maximum number of tokens of documentation to retrieve (default: 10000)."),
-			mcp.DefaultNumber(10000),
+		mcpapi.WithNumber("tokens",
+			mcpapi.Description("Maximum number of tokens of documentation to retrieve (default: 10000)."),
+			mcpapi.DefaultNumber(10000),
 		),
 		// Read-only annotations for library documentation fetching tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only fetches documentation, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Same library ID returns same documentation
-		mcp.WithOpenWorldHintAnnotation(true),    // Fetches from external documentation APIs
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only fetches documentation, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Same library ID returns same documentation
+		mcpapi.WithOpenWorldHintAnnotation(true),    // Fetches from external documentation APIs
 	)
 }
 
 // Execute executes the get_library_documentation tool
-func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Lazy initialise client
 	if t.client == nil {
 		t.client = NewClient(logger)
@@ -101,12 +101,12 @@ func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger,
 	docs, err := t.client.GetLibraryDocs(ctx, libraryID, params)
 	if err != nil {
 		logger.WithError(err).Error("Failed to fetch library documentation")
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to fetch documentation: %v", err)), nil
+		return mcpapi.NewToolResultError(fmt.Sprintf("Failed to fetch documentation: %v", err)), nil
 	}
 
 	if strings.TrimSpace(docs) == "" {
 		logger.WithField("library_id", libraryID).Warn("No documentation content returned")
-		return mcp.NewToolResultError("No documentation content found for the specified library."), nil
+		return mcpapi.NewToolResultError("No documentation content found for the specified library."), nil
 	}
 
 	// Format the response with metadata
@@ -119,7 +119,7 @@ func (t *GetLibraryDocsTool) Execute(ctx context.Context, logger *logrus.Logger,
 		"content_length": len(docs),
 	}).Info("Library documentation retrieved successfully")
 
-	return mcp.NewToolResultText(response), nil
+	return mcpapi.NewToolResultText(response), nil
 }
 
 // formatResponse formats the documentation with helpful metadata

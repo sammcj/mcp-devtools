@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -35,20 +35,20 @@ func NewRustTool(client packageversions.HTTPClient) *RustTool {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *RustTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *RustTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_rust_versions",
-		mcp.WithDescription("Check latest stable versions for Rust crates"),
-		mcp.WithObject("dependencies",
-			mcp.Description("Dependencies from Cargo.toml"),
-			mcp.Properties(map[string]any{}),
-			mcp.Required(),
+		mcpapi.WithDescription("Check latest stable versions for Rust crates"),
+		mcpapi.WithObject("dependencies",
+			mcpapi.Description("Dependencies from Cargo.toml"),
+			mcpapi.Properties(map[string]any{}),
+			mcpapi.Required(),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *RustTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Getting latest Rust crate versions")
 
 	// Parse dependencies

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -23,33 +23,33 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *SecurityOverrideTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *SecurityOverrideTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"security_override",
-		mcp.WithDescription(`Allowlist security warnings and blocks when they are false positives or when the user has verified the content is safe. All overrides are logged with justification for audit purposes.`),
-		mcp.WithString("security_id",
-			mcp.Required(),
-			mcp.Description("Security warning/block ID from security log (e.g., sec_warn_a1b2c3)"),
+		mcpapi.WithDescription(`Allowlist security warnings and blocks when they are false positives or when the user has verified the content is safe. All overrides are logged with justification for audit purposes.`),
+		mcpapi.WithString("security_id",
+			mcpapi.Required(),
+			mcpapi.Description("Security warning/block ID from security log (e.g., sec_warn_a1b2c3)"),
 		),
-		mcp.WithString("justification",
-			mcp.Required(),
-			mcp.Description("Detailed justification for why this override is necessary"),
+		mcpapi.WithString("justification",
+			mcpapi.Required(),
+			mcpapi.Description("Detailed justification for why this override is necessary"),
 		),
-		mcp.WithString("action",
-			mcp.Description("Override action: 'bypass' (ignore this instance), 'allowlist' (ignore future similar patterns)"),
-			mcp.DefaultString("bypass"),
-			mcp.Enum("bypass", "allowlist"),
+		mcpapi.WithString("action",
+			mcpapi.Description("Override action: 'bypass' (ignore this instance), 'allowlist' (ignore future similar patterns)"),
+			mcpapi.DefaultString("bypass"),
+			mcpapi.Enum("bypass", "allowlist"),
 		),
 		// Destructive tool annotations
-		mcp.WithReadOnlyHintAnnotation(false),   // Modifies security configuration
-		mcp.WithDestructiveHintAnnotation(true), // Can override security controls
-		mcp.WithIdempotentHintAnnotation(false), // Override effects are not reversible
-		mcp.WithOpenWorldHintAnnotation(false),  // Works with local security system
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Modifies security configuration
+		mcpapi.WithDestructiveHintAnnotation(true), // Can override security controls
+		mcpapi.WithIdempotentHintAnnotation(false), // Override effects are not reversible
+		mcpapi.WithOpenWorldHintAnnotation(false),  // Works with local security system
 	)
 }
 
 // Execute processes security override requests
-func (t *SecurityOverrideTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *SecurityOverrideTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Check if security system is enabled (dependency check)
 	if !tools.IsToolEnabled("security") {
 		return nil, fmt.Errorf("security system is not enabled. Ask the user to set ENABLE_ADDITIONAL_TOOLS environment variable to include 'security'")
@@ -133,7 +133,7 @@ func (t *SecurityOverrideTool) Execute(ctx context.Context, logger *logrus.Logge
 		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonBytes)), nil
+	return mcpapi.NewToolResultText(string(jsonBytes)), nil
 }
 
 // extractPatternFromLogEntry extracts the relevant pattern from a log entry

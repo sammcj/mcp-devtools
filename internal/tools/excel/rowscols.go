@@ -3,13 +3,13 @@ package excel
 import (
 	"fmt"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
 // handleInsertRows inserts one or more rows
-func handleInsertRows(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleInsertRows(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -92,11 +92,11 @@ func handleInsertRows(logger *logrus.Logger, filePath string, sheetName string, 
 		"rows_inserted": int(count),
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleInsertColumns inserts one or more columns
-func handleInsertColumns(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleInsertColumns(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -189,11 +189,11 @@ func handleInsertColumns(logger *logrus.Logger, filePath string, sheetName strin
 		"columns_inserted": int(count),
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleDeleteRows deletes one or more rows
-func handleDeleteRows(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleDeleteRows(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -276,11 +276,11 @@ func handleDeleteRows(logger *logrus.Logger, filePath string, sheetName string, 
 		"rows_deleted": int(count),
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleDeleteColumns deletes one or more columns
-func handleDeleteColumns(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleDeleteColumns(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -373,11 +373,11 @@ func handleDeleteColumns(logger *logrus.Logger, filePath string, sheetName strin
 		"columns_deleted": int(count),
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleAutoSizeColumns automatically adjusts column widths to fit content
-func handleAutoSizeColumns(logger *logrus.Logger, filePath string, sheetName string) (*mcp.CallToolResult, error) {
+func handleAutoSizeColumns(logger *logrus.Logger, filePath string, sheetName string) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -421,7 +421,7 @@ func handleAutoSizeColumns(logger *logrus.Logger, filePath string, sheetName str
 
 	if len(rows) == 0 {
 		result := map[string]any{}
-		return mcp.NewToolResultJSON(result)
+		return mcpapi.NewToolResultJSON(result)
 	}
 
 	// Calculate max width for each column
@@ -476,5 +476,5 @@ func handleAutoSizeColumns(logger *logrus.Logger, filePath string, sheetName str
 		"columns_resized": columnsResized,
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }

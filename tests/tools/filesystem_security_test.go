@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/filesystem"
 	"github.com/sammcj/mcp-devtools/tests/testutils"
 	"github.com/sirupsen/logrus"
@@ -450,7 +450,7 @@ func TestFilesystem_MultipleFilesSizeValidation(t *testing.T) {
 	testutils.AssertNotNil(t, result)
 
 	// Should contain error message for the large file but succeed for small file
-	textContent, ok := mcp.AsTextContent(result.Content[0])
+	textContent, ok := mcpapi.AsTextContent(result.Content[0])
 	testutils.AssertTrue(t, ok)
 	resultText := textContent.Text
 	testutils.AssertTrue(t, strings.Contains(resultText, "small"))

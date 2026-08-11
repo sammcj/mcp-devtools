@@ -13,7 +13,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -30,7 +30,7 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *CodeRenameTool) Definition() mcp.Tool {
+func (t *CodeRenameTool) Definition() mcpapi.Tool {
 	// Detect available languages at registration time
 	ctx := context.Background()
 	logger := logrus.New()
@@ -45,30 +45,30 @@ func (t *CodeRenameTool) Definition() mcp.Tool {
 		description += " No LSP servers detected - install language servers to enable renaming."
 	}
 
-	return mcp.NewTool(
+	return mcpapi.NewTool(
 		"code_rename",
-		mcp.WithDescription(description),
-		mcp.WithString("file_path",
-			mcp.Required(),
-			mcp.Description("Absolute path to file containing the symbol"),
+		mcpapi.WithDescription(description),
+		mcpapi.WithString("file_path",
+			mcpapi.Required(),
+			mcpapi.Description("Absolute path to file containing the symbol"),
 		),
-		mcp.WithString("old_name",
-			mcp.Required(),
-			mcp.Description("Current name of the symbol to rename"),
+		mcpapi.WithString("old_name",
+			mcpapi.Required(),
+			mcpapi.Description("Current name of the symbol to rename"),
 		),
-		mcp.WithString("new_name",
-			mcp.Required(),
-			mcp.Description("New name for the symbol"),
+		mcpapi.WithString("new_name",
+			mcpapi.Required(),
+			mcpapi.Description("New name for the symbol"),
 		),
-		mcp.WithBoolean("preview",
-			mcp.Description("Return preview without applying changes"),
-			mcp.DefaultBool(true),
+		mcpapi.WithBoolean("preview",
+			mcpapi.Description("Return preview without applying changes"),
+			mcpapi.DefaultBool(true),
 		),
-		mcp.WithNumber("line",
-			mcp.Description("Optional 1-based line number for symbol disambiguation"),
+		mcpapi.WithNumber("line",
+			mcpapi.Description("Optional 1-based line number for symbol disambiguation"),
 		),
-		mcp.WithNumber("column",
-			mcp.Description("Optional 1-based column number for symbol disambiguation"),
+		mcpapi.WithNumber("column",
+			mcpapi.Description("Optional 1-based column number for symbol disambiguation"),
 		),
 	)
 }
@@ -282,7 +282,7 @@ func performLSPRename(
 }
 
 // Execute executes the tool's logic
-func (t *CodeRenameTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *CodeRenameTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Validate and prepare parameters
 	params, err := validateAndPrepareParams(args)
 	if err != nil {
@@ -406,7 +406,7 @@ func (t *CodeRenameTool) Execute(ctx context.Context, logger *logrus.Logger, cac
 	}
 
 	// Return result as structured content for better machine readability
-	return &mcp.CallToolResult{
+	return &mcpapi.CallToolResult{
 		StructuredContent: result,
 	}, nil
 }
@@ -503,8 +503,8 @@ func getModifiedFiles(edit *protocol.WorkspaceEdit) []string {
 	}
 
 	// Handle modern DocumentChanges format
-	for _, textDocEdit := range edit.DocumentChanges {
-		filePath := uriToPath(string(textDocEdit.TextDocument.URI))
+	for _, textDocEdit := range textDocumentEdits(edit) {
+		filePath := uriToPath(string(textDocEdit.URI))
 		fileSet[filePath] = true
 	}
 
@@ -739,8 +739,8 @@ func applyWorkspaceEdit(edit *protocol.WorkspaceEdit) (*RenameResult, error) {
 		}
 
 		// Apply modern DocumentChanges format
-		for _, textDocEdit := range edit.DocumentChanges {
-			filePath := uriToPath(string(textDocEdit.TextDocument.URI))
+		for _, textDocEdit := range textDocumentEdits(edit) {
+			filePath := uriToPath(string(textDocEdit.URI))
 
 			// Check file modification time before applying
 			if originalChecksum, exists := tx.checksums[filePath]; exists {

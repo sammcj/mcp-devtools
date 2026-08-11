@@ -77,6 +77,11 @@ type DynamicClientRegistrationRequest struct {
 	JWKSUri                 string   `json:"jwks_uri,omitempty"`
 	SoftwareID              string   `json:"software_id,omitempty"`
 	SoftwareVersion         string   `json:"software_version,omitempty"`
+
+	// ApplicationType is "native" or "web". It is recorded and echoed back;
+	// redirect URI validation is the same for both. Absent, OpenID Connect
+	// defaults it to "web".
+	ApplicationType string `json:"application_type,omitempty"`
 }
 
 // DynamicClientRegistrationResponse represents a client registration response (RFC7591)
@@ -99,6 +104,7 @@ type DynamicClientRegistrationResponse struct {
 	JWKSUri                 string   `json:"jwks_uri,omitempty"`
 	SoftwareID              string   `json:"software_id,omitempty"`
 	SoftwareVersion         string   `json:"software_version,omitempty"`
+	ApplicationType         string   `json:"application_type,omitempty"`
 }
 
 // PKCEChallenge represents a PKCE code challenge

@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 )
 
 // PermissionsMode represents the agent permissions mode configuration
@@ -69,15 +69,15 @@ func GetEffectivePermissionsValue(paramValue bool) bool {
 // AddConditionalParameter adds the yolo-mode parameter to tool definition only if in default mode
 // parameterName is the name of the parameter (e.g., "yolo-mode")
 // description is the parameter description
-func AddConditionalParameter(parameterName, description string, options ...mcp.ToolOption) mcp.ToolOption {
+func AddConditionalParameter(parameterName, description string, options ...mcpapi.ToolOption) mcpapi.ToolOption {
 	if !ShouldExposePermissionsParameter() {
 		// Return a no-op option when permissions mode is forced
-		return func(t *mcp.Tool) {}
+		return func(t *mcpapi.Tool) {}
 	}
 
 	// Return the actual parameter definition
-	return mcp.WithBoolean(parameterName,
-		mcp.Description(description),
-		mcp.DefaultBool(false),
+	return mcpapi.WithBoolean(parameterName,
+		mcpapi.Description(description),
+		mcpapi.DefaultBool(false),
 	)
 }

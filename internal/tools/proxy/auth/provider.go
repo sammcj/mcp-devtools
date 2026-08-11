@@ -31,6 +31,7 @@ type Provider struct {
 	clientInfo *ClientInfo
 	tokens     *Tokens
 	pkce       *PKCE
+	state      string
 
 	mu sync.RWMutex
 }
@@ -109,6 +110,58 @@ func (p *Provider) GetAccessToken(ctx context.Context) (string, error) {
 	return tokens.AccessToken, nil
 }
 
+// issuerMatches reports whether a stored credential still belongs to the
+// authorisation server now in play. A credential saved before issuer binding
+// existed has no issuer recorded; those are accepted so an upgrade does not
+// force everyone to reauthenticate.
+func issuerMatches(what, stored, current string) error {
+	if stored == "" || stored == current {
+		return nil
+	}
+	return fmt.Errorf("stored %s belongs to issuer %q but the server now reports %q; delete the cached credentials and authenticate again", what, stored, current)
+}
+
+// cachedTokenStillBound reports whether an unexpired token loaded from disk was
+// issued by the authorisation server the upstream currently points at.
+//
+// A token recording no issuer predates issuer binding and is accepted under the
+// same grace as issuerMatches, which also keeps the common path free of a
+// network call. Otherwise the metadata is discovered so the two can be
+// compared, and it is kept on the provider for whatever runs next.
+//
+// A discovery failure accepts the token. The authorisation server being
+// unreachable says nothing about who issued the token, and refusing here would
+// break a working upstream every time an unrelated server had an outage.
+func (p *Provider) cachedTokenStillBound(ctx context.Context, tokens *Tokens) bool {
+	if tokens.Issuer == "" {
+		return true
+	}
+
+	metadata, err := FetchServerMetadata(ctx, p.serverURL)
+	if err != nil {
+		logrus.WithError(err).Debug("auth: could not confirm the cached token's issuer, using it anyway")
+		return true
+	}
+	p.mu.Lock()
+	p.metadata = metadata
+	p.mu.Unlock()
+
+	if mismatch := issuerMatches("access token", tokens.Issuer, metadata.Issuer); mismatch != nil {
+		logrus.WithError(mismatch).Warn("auth: discarding the cached access token")
+		// Drop it from memory and disk rather than only declining it here.
+		// Leaving it in place lets GetAccessToken hand it straight back, having
+		// either read the field this sets or reloaded the file from disk.
+		p.mu.Lock()
+		p.tokens = nil
+		p.mu.Unlock()
+		if err := DeleteTokens(p.cacheDir, p.serverHash); err != nil {
+			logrus.WithError(err).Warn("auth: could not remove the stale cached token")
+		}
+		return false
+	}
+	return true
+}
+
 // RefreshToken refreshes the access token.
 func (p *Provider) RefreshToken(ctx context.Context) error {
 	logrus.Debug("auth: starting token refresh")
@@ -148,6 +201,16 @@ func (p *Provider) RefreshToken(ctx context.Context) error {
 		p.mu.Lock()
 		p.clientInfo = loaded
 		p.mu.Unlock()
+	}
+
+	// Credentials belong to the authorisation server that issued them. If the
+	// upstream now points at a different issuer, posting this refresh token or
+	// client secret to its token endpoint would hand them to a new party.
+	if err := issuerMatches("refresh token", tokens.Issuer, metadata.Issuer); err != nil {
+		return err
+	}
+	if err := issuerMatches("client registration", clientInfo.Issuer, metadata.Issuer); err != nil {
+		return err
 	}
 
 	// Exchange refresh token
@@ -192,6 +255,8 @@ func (p *Provider) RefreshToken(ctx context.Context) error {
 		newTokens.ExpiresAt = time.Now().Add(time.Duration(newTokens.ExpiresIn) * time.Second)
 	}
 
+	newTokens.Issuer = metadata.Issuer
+
 	p.mu.Lock()
 	p.tokens = &newTokens
 	p.mu.Unlock()
@@ -211,12 +276,12 @@ func (p *Provider) Initialise(ctx context.Context) error {
 		p.tokens = tokens
 		p.mu.Unlock()
 
-		if !tokens.IsExpired() {
+		if !tokens.IsExpired() && p.cachedTokenStillBound(ctx, tokens) {
 			logrus.WithField("expires_at", tokens.ExpiresAt).Info("auth: using existing valid tokens")
 			return nil // Already authenticated
 		}
 
-		logrus.Debug("auth: existing tokens expired, attempting refresh")
+		logrus.Debug("auth: existing tokens unusable, attempting refresh")
 		if tokens.RefreshToken != "" {
 			if err := p.RefreshToken(ctx); err == nil {
 				logrus.Info("auth: refreshed existing tokens")
@@ -251,8 +316,14 @@ func (p *Provider) Initialise(ctx context.Context) error {
 		p.mu.Unlock()
 	} else {
 		clientInfo, err := LoadClientInfo(p.cacheDir, p.serverHash)
+		if err == nil {
+			if mismatch := issuerMatches("client registration", clientInfo.Issuer, metadata.Issuer); mismatch != nil {
+				logrus.WithError(mismatch).Warn("auth: discarding cached client registration and re-registering")
+				clientInfo, err = nil, mismatch
+			}
+		}
 		if err != nil {
-			logrus.Debug("auth: no stored client info, attempting registration")
+			logrus.Debug("auth: no usable stored client info, attempting registration")
 			// Need to register
 			if metadata.RegistrationEndpoint == "" {
 				logrus.Error("auth: server does not support dynamic client registration")
@@ -266,6 +337,15 @@ func (p *Provider) Initialise(ctx context.Context) error {
 			logrus.WithField("client_id", clientInfo.ClientID).Info("auth: client registered successfully")
 		} else {
 			logrus.WithField("client_id", clientInfo.ClientID).Debug("auth: loaded stored client info")
+			// A registration saved before issuer binding existed carries no
+			// issuer, and issuerMatches lets it through. Stamp it now so the
+			// grace only applies once rather than forever.
+			if clientInfo.Issuer == "" && metadata.Issuer != "" {
+				clientInfo.Issuer = metadata.Issuer
+				if err := SaveClientInfo(p.cacheDir, p.serverHash, clientInfo); err != nil {
+					logrus.WithError(err).Warn("auth: could not record the issuer against the stored client registration")
+				}
+			}
 		}
 		p.mu.Lock()
 		p.clientInfo = clientInfo
@@ -290,6 +370,7 @@ func (p *Provider) registerClient(ctx context.Context, metadata *ServerMetadata)
 		GrantTypes:              []string{"authorization_code", "refresh_token"},
 		ResponseTypes:           []string{"code"},
 		ClientName:              p.clientName,
+		ApplicationType:         "native",
 	}
 
 	// Merge with static metadata if provided
@@ -340,6 +421,8 @@ func (p *Provider) registerClient(ctx context.Context, metadata *ServerMetadata)
 		return nil, err
 	}
 
+	clientInfo.Issuer = metadata.Issuer
+
 	logrus.WithField("client_id", clientInfo.ClientID).Debug("auth: saving client info")
 	if err := SaveClientInfo(p.cacheDir, p.serverHash, &clientInfo); err != nil {
 		logrus.WithError(err).Error("auth: failed to save client info")
@@ -370,8 +453,18 @@ func (p *Provider) GetAuthorizationURL(resource string) (string, error) {
 		logrus.WithError(err).Error("auth: failed to generate PKCE")
 		return "", err
 	}
+	// Bind the response to this request. Without state, any authorisation code
+	// delivered to the callback would be accepted, including one an attacker
+	// obtained for their own account.
+	state, err := NewState()
+	if err != nil {
+		logrus.WithError(err).Error("auth: failed to generate state")
+		return "", err
+	}
+
 	p.mu.Lock()
 	p.pkce = pkce
+	p.state = state
 	p.mu.Unlock()
 
 	redirectURI := fmt.Sprintf("http://%s:%d/callback", p.callbackHost, p.callbackPort)
@@ -380,6 +473,7 @@ func (p *Provider) GetAuthorizationURL(resource string) (string, error) {
 	params.Set("response_type", "code")
 	params.Set("client_id", clientInfo.ClientID)
 	params.Set("redirect_uri", redirectURI)
+	params.Set("state", state)
 	params.Set("code_challenge", pkce.Challenge)
 	params.Set("code_challenge_method", pkce.Method)
 
@@ -394,6 +488,21 @@ func (p *Provider) GetAuthorizationURL(resource string) (string, error) {
 	authURL := metadata.AuthorizationEndpoint + "?" + params.Encode()
 	logrus.WithField("endpoint", metadata.AuthorizationEndpoint).Debug("auth: authorisation URL built")
 	return authURL, nil
+}
+
+// AuthorizationExpectations returns what the authorisation response must carry
+// to be accepted: the state sent with the request, the issuer identifier, and
+// whether the server promised an RFC 9207 `iss` parameter. Valid only after
+// GetAuthorizationURL.
+func (p *Provider) AuthorizationExpectations() (state, issuer string, issuerRequired bool) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.metadata != nil {
+		issuer = p.metadata.Issuer
+		issuerRequired = p.metadata.IssuerParameterSupported
+	}
+	return p.state, issuer, issuerRequired
 }
 
 // ExchangeCode exchanges an authorisation code for tokens.
@@ -454,6 +563,9 @@ func (p *Provider) ExchangeCode(ctx context.Context, code string) error {
 	if tokens.ExpiresIn > 0 {
 		tokens.ExpiresAt = time.Now().Add(time.Duration(tokens.ExpiresIn) * time.Second)
 	}
+
+	// Bind the tokens to the server that issued them.
+	tokens.Issuer = metadata.Issuer
 
 	p.mu.Lock()
 	p.tokens = &tokens

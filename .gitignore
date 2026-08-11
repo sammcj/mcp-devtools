@@ -47,6 +47,7 @@ bin/
 dist/
 
 .claude/settings.local.json
+.claude/agent-memory/
 
 **/*/extracted_images
 **/*/exported_output.md

@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
+	"maps"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,8 +20,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	mcpserver "github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	oauthclient "github.com/sammcj/mcp-devtools/internal/oauth/client"
 	oauthserver "github.com/sammcj/mcp-devtools/internal/oauth/server"
 	"github.com/sammcj/mcp-devtools/internal/oauth/types"
@@ -107,27 +111,24 @@ func setMemoryLimit() {
 
 // newToolHandler builds the MCP handler for a registered tool. Tool execution
 // failures (missing parameters, invalid input, unsupported options, etc.) are
-// returned as tool results with isError set rather than Go errors. Returning a
-// Go error here makes mcp-go respond with a JSON-RPC -32603 internal error,
-// which clients treat as a server fault; an isError result lets the calling
-// agent read the message and self-correct.
-func newToolHandler(name, transport string, logger *logrus.Logger) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return func(toolCtx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+// returned as tool results with isError set rather than Go errors. A Go error
+// returned from an SDK tool handler becomes a JSON-RPC protocol error, which
+// clients treat as a server fault; an isError result lets the calling agent
+// read the message and self-correct.
+func newToolHandler(name, transport string, logger *logrus.Logger) mcp.ToolHandler {
+	return func(toolCtx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		// Get fresh reference from registry to ensure consistency
 		currentTool, ok := registry.GetTool(name)
 		if !ok {
-			return mcp.NewToolResultError(fmt.Sprintf("tool not found: %s", name)), nil
+			return mcpapi.NewToolResultError(fmt.Sprintf("tool not found: %s", name)), nil
 		}
 
-		// Type assert the arguments to map[string]interface{}
-		var args map[string]any
-		if request.Params.Arguments != nil {
-			args, ok = request.Params.Arguments.(map[string]any)
-			if !ok {
-				return mcp.NewToolResultError(fmt.Sprintf("invalid arguments type: expected map[string]interface{}, got %T", request.Params.Arguments)), nil
+		// The SDK hands raw JSON to untyped handlers; decoding it is our job.
+		args := make(map[string]any)
+		if len(request.Params.Arguments) > 0 {
+			if err := json.Unmarshal(request.Params.Arguments, &args); err != nil {
+				return mcpapi.NewToolResultError(fmt.Sprintf("invalid arguments: expected a JSON object: %s", err)), nil
 			}
-		} else {
-			args = make(map[string]any)
 		}
 
 		// Start timing for metrics
@@ -165,7 +166,7 @@ func newToolHandler(name, transport string, logger *logrus.Logger) func(context.
 				errorLogger.LogToolError(name, args, err, transport)
 			}
 
-			return mcp.NewToolResultError(fmt.Sprintf("tool execution failed: %s", err)), nil
+			return mcpapi.NewToolResultError(fmt.Sprintf("tool execution failed: %s", err)), nil
 		}
 
 		return result, nil
@@ -208,12 +209,12 @@ func main() {
 				Name:    "transport",
 				Aliases: []string{"t"},
 				Value:   "stdio",
-				Usage:   "Transport type (stdio, sse, or http)",
+				Usage:   "Transport type (stdio or http)",
 			},
 			&cli.StringFlag{
 				Name:  "port",
 				Value: "18080",
-				Usage: "Port to use for HTTP transports (SSE and Streamable HTTP)",
+				Usage: "Port to use for the Streamable HTTP transport",
 			},
 			&cli.StringFlag{
 				Name:  "base-url",
@@ -228,11 +229,6 @@ func main() {
 				Name:  "endpoint-path",
 				Value: "/http",
 				Usage: "Endpoint path for Streamable HTTP transport",
-			},
-			&cli.DurationFlag{
-				Name:  "session-timeout",
-				Value: 30 * time.Minute,
-				Usage: "Session timeout for Streamable HTTP transport",
 			},
 			// OAuth 2.0/2.1 flags
 			&cli.BoolFlag{
@@ -351,7 +347,6 @@ func main() {
 			// Get transport settings
 			transport := cmd.String("transport")
 			port := cmd.String("port")
-			baseURL := cmd.String("base-url")
 
 			// Track stdio mode for error handling (atomic to prevent races with signal handlers)
 			isStdioMode.Store(transport == "stdio")
@@ -463,29 +458,48 @@ func main() {
 					Version, Commit, BuildDate)
 			}
 
-			// Create MCP server
+			// Create MCP server. Capabilities are set explicitly because a nil
+			// value makes the SDK advertise the deprecated logging capability.
 			logger.Debug("Creating MCP server")
-			mcpSrv := mcpserver.NewMCPServer("mcp-devtools", "MCP DevTools Server")
+			mcpSrv := mcp.NewServer(
+				&mcp.Implementation{
+					Name:        "mcp-devtools",
+					Title:       "MCP DevTools Server",
+					Version:     Version,
+					WebsiteURL:  "https://github.com/sammcj/mcp-devtools",
+					Description: "Developer tools for AI coding agents",
+				},
+				&mcp.ServerOptions{Capabilities: &mcp.ServerCapabilities{}},
+			)
 
 			enabledTools := registry.GetEnabledTools()
 			logger.WithField("tool_count", len(enabledTools)).Debug("MCP server created, registering tools")
 
-			// Register tools - fix race condition by capturing variables properly
-			for toolName, toolImpl := range enabledTools {
-				// Capture variables to avoid closure race condition
-				name := toolName
-				tool := toolImpl
+			// Register tools in name order so tools/list is byte-identical across
+			// restarts, which prompt caches on the client side depend on.
+			for _, name := range slices.Sorted(maps.Keys(enabledTools)) {
+				tool := enabledTools[name]
+
+				// Tools holding per-client state in this process cannot serve a
+				// stateless transport, where consecutive calls may land on
+				// different instances.
+				if _, stdioOnly := tool.(tools.StdioOnly); stdioOnly && transport != "stdio" {
+					logger.Infof("Skipping tool %s: it is stdio-only", name)
+					continue
+				}
 
 				if transport != "stdio" {
 					logger.Infof("Registering tool: %s", name)
 				}
 
-				mcpSrv.AddTool(tool.Definition(), newToolHandler(name, transport, logger))
+				definition := tool.Definition()
+				mcpSrv.AddTool(&definition, newToolHandler(name, transport, logger))
 			}
 
 			// Register upstream proxy tools asynchronously (avoids blocking startup for OAuth)
-			// mcp-go will automatically notify connected clients via tools/list_changed
-			proxy.RegisterUpstreamToolsAsync(cliCtx, mcpSrv, logger, transport)
+			proxy.RegisterUpstreamToolsAsync(cliCtx, mcpSrv, logger, func(name string) mcp.ToolHandler {
+				return newToolHandler(name, transport, logger)
+			})
 
 			// Handle browser-based OAuth authentication if enabled
 			if cmd.Bool("oauth-browser-auth") {
@@ -527,16 +541,14 @@ func main() {
 					logger.WithField("session_id", sessionID).Debug("Created session span/metrics for stdio transport")
 				}
 
-				return mcpserver.ServeStdio(mcpSrv)
-			case "sse":
-				logger.WithField("port", port).Debug("Starting SSE server")
-				sseServer := mcpserver.NewSSEServer(mcpSrv, mcpserver.WithBaseURL(baseURL+"/sse"))
-				return sseServer.Start(":" + port)
+				return mcpSrv.Run(cliCtx, &mcp.StdioTransport{})
 			case "http":
 				logger.WithField("port", port).Debug("Starting HTTP server")
 				return startStreamableHTTPServer(cliCtx, cmd, mcpSrv, logger)
+			case "sse":
+				return fmt.Errorf("the sse transport was removed in v2; use --transport http, which now serves stateless Streamable HTTP")
 			default:
-				return fmt.Errorf("unsupported transport: %s", transport)
+				return fmt.Errorf("unsupported transport: %s (expected stdio or http)", transport)
 			}
 		},
 	}
@@ -588,34 +600,43 @@ func performCleanup(logger *logrus.Logger) {
 	coderename.StopCleanupRoutine(registry.GetCache(), logger)
 }
 
-// startStreamableHTTPServer configures and starts the Streamable HTTP server with graceful shutdown
-func startStreamableHTTPServer(ctx context.Context, cmd *cli.Command, mcpServer *mcpserver.MCPServer, logger *logrus.Logger) error {
+// maxRequestBodyBytes caps a single MCP request body. Tool arguments are small;
+// anything larger is a mistake or an attempt to exhaust memory.
+const maxRequestBodyBytes = 8 << 20 // 8MB
+
+// startStreamableHTTPServer configures and starts the stateless Streamable HTTP
+// server with graceful shutdown.
+//
+// The server is stateless (MCP 2026-07-28): every request carries its own
+// context, no session is created or tracked, and GET and DELETE on the MCP
+// endpoint return 405.
+func startStreamableHTTPServer(ctx context.Context, cmd *cli.Command, mcpServer *mcp.Server, logger *logrus.Logger) error {
 	port := cmd.String("port")
 	authToken := cmd.String("auth-token")
 	endpointPath := cmd.String("endpoint-path")
-	sessionTimeout := cmd.Duration("session-timeout")
 	baseURL := cmd.String("base-url")
 
-	logger.Infof("Starting Streamable HTTP server on port %s with endpoint %s", port, endpointPath)
+	logger.Infof("Starting stateless Streamable HTTP server on port %s with endpoint %s", port, endpointPath)
 
-	// Configure server options
-	var opts []mcpserver.StreamableHTTPOption
+	var handler http.Handler = mcp.NewStreamableHTTPHandler(
+		func(*http.Request) *mcp.Server { return mcpServer },
+		&mcp.StreamableHTTPOptions{
+			Stateless: true,
+			// A dropped connection cancels the tool's context rather than
+			// leaving it running. Only honoured on protocol 2026-07-28+.
+			PropagateRequestCancellation: true,
+			MaxRequestBodyBytes:          maxRequestBodyBytes,
+			Logger:                       slog.New(logrusSlogHandler{logger: logger}),
+		},
+	)
 
-	// Set endpoint path
-	opts = append(opts, mcpserver.WithEndpointPath(endpointPath))
+	// Trace context has to be extracted per request now that there is no
+	// session-scoped context func.
+	handler = withWriteDeadline(withTraceContext(handler))
 
-	// Set session timeout (create a custom session manager)
-	if sessionTimeout > 0 {
-		opts = append(opts, mcpserver.WithSessionIdManager(&TimeoutSessionManager{
-			timeout: sessionTimeout,
-			logger:  logger,
-		}))
-	}
+	mux := http.NewServeMux()
 
-	// Check if OAuth is enabled
-	oauthEnabled := cmd.Bool("oauth-enabled")
-	if oauthEnabled {
-		// Configure OAuth 2.1
+	if cmd.Bool("oauth-enabled") {
 		oauthConfig := &types.OAuth2Config{
 			Enabled:             true,
 			Issuer:              cmd.String("oauth-issuer"),
@@ -626,113 +647,75 @@ func startStreamableHTTPServer(ctx context.Context, cmd *cli.Command, mcpServer 
 			RequireHTTPS:        cmd.Bool("oauth-require-https"),
 		}
 
-		// Validate OAuth configuration
 		if err := validateOAuthConfig(oauthConfig); err != nil {
 			return fmt.Errorf("invalid OAuth configuration: %w", err)
 		}
 
-		// Create OAuth server
 		fullBaseURL := fmt.Sprintf("%s:%s", baseURL, port)
 		oauthServer, err := oauthserver.NewOAuth2Server(oauthConfig, fullBaseURL, logger)
 		if err != nil {
 			return fmt.Errorf("failed to create OAuth server: %w", err)
 		}
 
-		// Use OAuth middleware
-		opts = append(opts, mcpserver.WithHTTPContextFunc(createOAuthMiddleware(oauthServer, logger)))
+		// AuthMiddleware rejects unauthenticated requests with 401 rather than
+		// only annotating the context, which is what the old HTTPContextFunc did.
+		handler = oauthServer.CreateMiddleware()(handler)
+		oauthServer.RegisterHandlers(mux)
 
 		logger.Info("OAuth 2.1 authentication enabled")
 		logger.Infof("OAuth issuer: %s", oauthConfig.Issuer)
 		logger.Infof("OAuth audience: %s", oauthConfig.Audience)
 		logger.Infof("Dynamic client registration: %t", oauthConfig.DynamicRegistration)
-
-		// Register OAuth endpoints
-		httpServer := mcpserver.NewStreamableHTTPServer(mcpServer, opts...)
-
-		// Get the underlying HTTP mux to register OAuth endpoints
-		// Note: This is a simplified approach - in production you might need a more sophisticated setup
-		mux := http.NewServeMux()
-
-		// Register OAuth metadata endpoints
-		oauthServer.RegisterHandlers(mux)
-
-		// Register the main MCP endpoint
-		mux.Handle(endpointPath, httpServer)
-
-		// Start the server with custom mux and security timeouts
 		logger.Infof("OAuth endpoints available at %s/.well-known/", fullBaseURL)
-		server := &http.Server{
-			Addr:           ":" + port,
-			Handler:        mux,
-			ReadTimeout:    30 * time.Second,  // Prevent slow loris attacks
-			WriteTimeout:   30 * time.Second,  // Prevent slow writes
-			IdleTimeout:    120 * time.Second, // Close idle connections
-			MaxHeaderBytes: 1 << 20,           // 1MB max header size
-		}
-
-		// Start server in goroutine to allow graceful shutdown
-		serverErr := make(chan error, 1)
-		go func() {
-			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				// Use select to prevent blocking if context is cancelled
-				select {
-				case serverErr <- err:
-				case <-ctx.Done():
-					// Context cancelled, error no longer relevant
-				}
-			}
-		}()
-
-		// Wait for context cancellation or server error
-		select {
-		case err := <-serverErr:
-			return fmt.Errorf("HTTP server failed: %w", err)
-		case <-ctx.Done():
-			logger.Info("Shutdown signal received, stopping HTTP server")
-		}
-
-		// Graceful shutdown with timeout
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer shutdownCancel()
-
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			logger.WithError(err).Error("HTTP server shutdown failed")
-			return err
-		}
-
-		logger.Info("HTTP server stopped gracefully")
-		return nil
-
 	} else if authToken != "" {
-		// Use legacy token authentication
-		opts = append(opts, mcpserver.WithHTTPContextFunc(createAuthMiddleware(authToken, logger)))
+		handler = requireBearerToken(authToken, logger)(handler)
 		logger.Info("Legacy token authentication enabled")
 	}
 
-	// Add heartbeat interval for keep-alive
-	heartbeatInterval := 30 * time.Second
-	if sessionTimeout > 0 {
-		// Set heartbeat to 1/4 of session timeout
-		heartbeatInterval = sessionTimeout / 4
+	mux.Handle(endpointPath, handler)
+
+	// Reject cross-origin browser requests. The SDK already blocks the
+	// DNS-rebinding case; this covers the wider CSRF surface.
+	server := &http.Server{
+		Addr:              ":" + port,
+		Handler:           http.NewCrossOriginProtection().Handler(mux),
+		ReadHeaderTimeout: 10 * time.Second,  // Prevent slow loris attacks
+		ReadTimeout:       30 * time.Second,  // Prevent slow reads
+		IdleTimeout:       120 * time.Second, // Close idle connections
+		MaxHeaderBytes:    1 << 20,           // 1MB max header size
+		// No server-wide WriteTimeout: it starts when the request headers are
+		// read, so any value also caps how long a tool may run, and document
+		// processing and the agent tools routinely take minutes. withWriteDeadline
+		// bounds a stalled reader per request instead.
 	}
-	opts = append(opts, mcpserver.WithHeartbeatInterval(heartbeatInterval))
 
-	// Add logger
-	opts = append(opts, mcpserver.WithLogger(&logrusAdapter{logger: logger}))
+	serverErr := make(chan error, 1)
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			select {
+			case serverErr <- err:
+			case <-ctx.Done():
+			}
+		}
+	}()
 
-	// Create streamable HTTP server
-	httpServer := mcpserver.NewStreamableHTTPServer(mcpServer, opts...)
+	select {
+	case err := <-serverErr:
+		return fmt.Errorf("HTTP server failed: %w", err)
+	case <-ctx.Done():
+		logger.Info("Shutdown signal received, stopping HTTP server")
+	}
 
-	logger.Infof("Heartbeat interval: %v", heartbeatInterval)
-	logger.Info("Server supports multiple simultaneous connections")
-	logger.Info("MCP Protocol compliance: Full specification support")
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
 
-	// Start server
-	// Note: The mcp-go StreamableHTTPServer.Start() method doesn't currently support
-	// context-based graceful shutdown. Consider using OAuth mode (which creates its own
-	// http.Server) for production deployments requiring graceful shutdown.
-	// TODO: Update when mcp-go library adds graceful shutdown support
-	return httpServer.Start(":" + port)
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.WithError(err).Error("HTTP server shutdown failed")
+		return err
+	}
+
+	logger.Info("HTTP server stopped gracefully")
+	return nil
 }
 
 // extractTraceContext extracts W3C Trace Context from HTTP request headers
@@ -748,137 +731,91 @@ func extractTraceContext(ctx context.Context, req *http.Request) context.Context
 	return propagator.Extract(ctx, propagation.HeaderCarrier(req.Header))
 }
 
-// createAuthMiddleware creates an HTTP context function for token authentication
-func createAuthMiddleware(expectedToken string, logger *logrus.Logger) mcpserver.HTTPContextFunc {
-	return func(ctx context.Context, req *http.Request) context.Context {
-		// Extract W3C Trace Context from request headers
-		ctx = extractTraceContext(ctx, req)
-		// Validate MCP Protocol Version header
-		protocolVersion := req.Header.Get("MCP-Protocol-Version")
-		if protocolVersion != "" {
-			if !isValidProtocolVersion(protocolVersion) {
-				logger.Warnf("Unsupported MCP Protocol Version: %s", protocolVersion)
-				// Note: In a full implementation, we would return an error response
-				// For now, we log and continue
-			} else {
-				logger.Debugf("MCP Protocol Version: %s", protocolVersion)
+// withTraceContext puts any inbound W3C trace context on the request context so
+// tool spans join the caller's trace.
+func withTraceContext(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(extractTraceContext(r.Context(), r)))
+	})
+}
+
+// maxResponseWriteWait bounds how long a single response may stall on a client
+// that has stopped reading. It has to clear the slowest tool, so it is far
+// longer than a normal call takes.
+const maxResponseWriteWait = 60 * time.Minute
+
+// withWriteDeadline replaces the server-wide WriteTimeout, which would have
+// capped tool runtime. A client that opens a request and then reads at zero
+// rate would otherwise pin a connection and a goroutine indefinitely.
+func withWriteDeadline(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Not supported by every ResponseWriter, and not fatal when it is not.
+		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(maxResponseWriteWait))
+		next.ServeHTTP(w, r)
+	})
+}
+
+// requireBearerToken rejects requests that do not present the shared token.
+// The previous implementation only logged, letting unauthenticated requests
+// through.
+func requireBearerToken(expectedToken string, logger *logrus.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+			if !ok || subtle.ConstantTimeCompare([]byte(token), []byte(expectedToken)) != 1 {
+				logger.Warn("Rejected request with missing or invalid bearer token")
+				w.Header().Set("WWW-Authenticate", `Bearer realm="mcp-devtools"`)
+				http.Error(w, "unauthorised", http.StatusUnauthorized)
+				return
 			}
-		} else {
-			// Default to 2025-06-18 as per specification
-			logger.Debug("No MCP-Protocol-Version header, assuming 2025-06-18")
-		}
-
-		// Validate Origin header for security (DNS rebinding protection)
-		origin := req.Header.Get("Origin")
-		if origin != "" && !isValidOrigin(origin) {
-			logger.Warnf("Invalid Origin header: %s", origin)
-			// Note: In production, this should return a 403 Forbidden
-		}
-
-		// Check Authorization header if token is required
-		if expectedToken != "" {
-			authHeader := req.Header.Get("Authorization")
-			if authHeader == "" {
-				logger.Warn("Request missing Authorization header")
-				return ctx
-			}
-
-			// Extract Bearer token
-			const bearerPrefix = "Bearer "
-			if !strings.HasPrefix(authHeader, bearerPrefix) {
-				logger.Warn("Invalid authorization format, expected Bearer token")
-				return ctx
-			}
-
-			token := strings.TrimPrefix(authHeader, bearerPrefix)
-			if token != expectedToken {
-				logger.Warn("Invalid authentication token")
-				return ctx
-			}
-
-			logger.Debug("Request authenticated successfully")
-		}
-
-		return ctx
+			next.ServeHTTP(w, r)
+		})
 	}
 }
 
-// isValidProtocolVersion checks if the MCP protocol version is supported
-func isValidProtocolVersion(version string) bool {
-	supportedVersions := []string{
-		"2025-06-18", // Current version
-		"2024-11-05", // Backwards compatibility
-	}
-
-	return slices.Contains(supportedVersions, version)
-}
-
-// isValidOrigin validates the Origin header to prevent DNS rebinding attacks
-func isValidOrigin(origin string) bool {
-	// Allow localhost and 127.0.0.1 origins for development
-	allowedOrigins := []string{
-		"http://localhost",
-		"https://localhost",
-		"http://127.0.0.1",
-		"https://127.0.0.1",
-	}
-
-	for _, allowed := range allowedOrigins {
-		if strings.HasPrefix(origin, allowed) {
-			return true
-		}
-	}
-
-	// In production, you would add your specific allowed origins here
-	return false
-}
-
-// TimeoutSessionManager implements SessionIdManager with timeout support
-type TimeoutSessionManager struct {
-	timeout time.Duration
-	logger  *logrus.Logger
-}
-
-func (t *TimeoutSessionManager) Generate() string {
-	// Use telemetry package's session ID generation for consistency
-	return telemetry.GenerateSessionID()
-}
-
-func (t *TimeoutSessionManager) Validate(sessionID string) (bool, error) {
-	// For this simple implementation, we don't track session expiry
-	// In production, you'd store sessions with timestamps and check expiry
-	if sessionID == "" {
-		return false, fmt.Errorf("empty session ID")
-	}
-	return false, nil // Session is not terminated
-}
-
-func (t *TimeoutSessionManager) Terminate(sessionID string) (bool, error) {
-	// For this simple implementation, we don't track sessions
-	// In production, you'd remove the session from storage
-	t.logger.Debugf("Session terminated: %s", sessionID)
-	return true, nil // Session was terminated successfully
-}
-
-// logrusAdapter adapts logrus.Logger to the mcp-go util.Logger interface
-type logrusAdapter struct {
+// logrusSlogHandler routes the SDK's slog output through logrus so HTTP server
+// logs land in the same file as everything else.
+type logrusSlogHandler struct {
 	logger *logrus.Logger
+	attrs  []slog.Attr
 }
 
-func (l *logrusAdapter) Debugf(format string, args ...any) {
-	l.logger.Debugf(format, args...)
+func (h logrusSlogHandler) Enabled(_ context.Context, level slog.Level) bool {
+	return h.logger.IsLevelEnabled(slogToLogrusLevel(level))
 }
 
-func (l *logrusAdapter) Infof(format string, args ...any) {
-	l.logger.Infof(format, args...)
+func (h logrusSlogHandler) Handle(_ context.Context, record slog.Record) error {
+	fields := make(logrus.Fields, len(h.attrs)+record.NumAttrs())
+	for _, attr := range h.attrs {
+		fields[attr.Key] = attr.Value.Any()
+	}
+	record.Attrs(func(attr slog.Attr) bool {
+		fields[attr.Key] = attr.Value.Any()
+		return true
+	})
+	h.logger.WithFields(fields).Log(slogToLogrusLevel(record.Level), record.Message)
+	return nil
 }
 
-func (l *logrusAdapter) Warnf(format string, args ...any) {
-	l.logger.Warnf(format, args...)
+func (h logrusSlogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return logrusSlogHandler{logger: h.logger, attrs: append(slices.Clip(h.attrs), attrs...)}
 }
 
-func (l *logrusAdapter) Errorf(format string, args ...any) {
-	l.logger.Errorf(format, args...)
+// WithGroup is a no-op: logrus fields are flat, so grouping would only mangle
+// key names.
+func (h logrusSlogHandler) WithGroup(string) slog.Handler { return h }
+
+func slogToLogrusLevel(level slog.Level) logrus.Level {
+	switch {
+	case level >= slog.LevelError:
+		return logrus.ErrorLevel
+	case level >= slog.LevelWarn:
+		return logrus.WarnLevel
+	case level >= slog.LevelInfo:
+		return logrus.InfoLevel
+	default:
+		return logrus.DebugLevel
+	}
 }
 
 // validateOAuthConfig validates OAuth configuration
@@ -900,33 +837,6 @@ func validateOAuthConfig(config *types.OAuth2Config) error {
 	}
 
 	return nil
-}
-
-// createOAuthMiddleware creates OAuth 2.1 authentication middleware
-func createOAuthMiddleware(oauthServer *oauthserver.OAuth2Server, logger *logrus.Logger) func(context.Context, *http.Request) context.Context {
-	return func(ctx context.Context, req *http.Request) context.Context {
-		// Extract W3C Trace Context from request headers
-		ctx = extractTraceContext(ctx, req)
-
-		// Skip OAuth for metadata endpoints
-		if strings.HasPrefix(req.URL.Path, "/.well-known/") || req.URL.Path == "/oauth/register" {
-			logger.Debug("Skipping OAuth authentication for metadata endpoint")
-			return ctx
-		}
-
-		// Authenticate the request
-		result := oauthServer.AuthenticateRequest(ctx, req)
-
-		if !result.Authenticated {
-			logger.WithError(result.Error).Debug("OAuth authentication failed")
-			// The authentication result will be handled by the OAuth middleware
-			// We add a marker to the context to indicate authentication failure
-			return context.WithValue(ctx, types.OAuthAuthFailedKey, result)
-		}
-
-		// Add claims to context for downstream handlers
-		return context.WithValue(ctx, types.OAuthClaimsKey, result.Claims)
-	}
 }
 
 // handleBrowserAuthentication handles the browser-based OAuth authentication flow

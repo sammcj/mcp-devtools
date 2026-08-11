@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -29,20 +29,20 @@ func NewGoTool(client packageversions.HTTPClient) *GoTool {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *GoTool) Definition() mcp.Tool {
-	return mcp.NewTool(
+func (t *GoTool) Definition() mcpapi.Tool {
+	return mcpapi.NewTool(
 		"check_go_versions",
-		mcp.WithDescription("Check latest stable versions for Go packages in go.mod"),
-		mcp.WithObject("dependencies",
-			mcp.Description("Dependencies from go.mod"),
-			mcp.Properties(map[string]any{}),
-			mcp.Required(),
+		mcpapi.WithDescription("Check latest stable versions for Go packages in go.mod"),
+		mcpapi.WithObject("dependencies",
+			mcpapi.Description("Dependencies from go.mod"),
+			mcpapi.Properties(map[string]any{}),
+			mcpapi.Required(),
 		),
 	)
 }
 
 // Execute executes the tool's logic
-func (t *GoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *GoTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	logger.Info("Getting latest Go package versions")
 
 	// Parse dependencies

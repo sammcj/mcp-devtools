@@ -58,9 +58,14 @@ func (v *JWTValidator) ValidateToken(ctx context.Context, tokenString string) (*
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		// Get the key from JWKS
+		// Get the key from JWKS. The header is attacker-controlled, so a
+		// missing or non-string kid must be an error rather than a panic.
 		if v.jwks != nil {
-			return v.jwks.GetKey(ctx, token.Header["kid"].(string))
+			kid, ok := token.Header["kid"].(string)
+			if !ok {
+				return nil, fmt.Errorf("token header has no kid")
+			}
+			return v.jwks.GetKey(ctx, kid)
 		}
 
 		return nil, fmt.Errorf("no JWKS configured for token validation")
@@ -158,15 +163,10 @@ func (p *PKCEValidator) ValidateChallenge(challenge, method, verifier string) er
 			return fmt.Errorf("invalid code challenge")
 		}
 
-	case "plain":
-		// Plain text method (not recommended but supported)
-		if subtle.ConstantTimeCompare([]byte(challenge), []byte(verifier)) != 1 {
-			p.logger.Debug("PKCE plain challenge validation failed")
-			return fmt.Errorf("invalid code challenge")
-		}
-
 	default:
-		return fmt.Errorf("unsupported challenge method: %s", method)
+		// OAuth 2.1 removed the plain method; accepting it would let a
+		// man-in-the-middle who captured the authorisation request replay it.
+		return fmt.Errorf("unsupported challenge method: %s (only S256 is accepted)", method)
 	}
 
 	p.logger.Debug("PKCE challenge validation successful")
@@ -186,10 +186,8 @@ func (p *PKCEValidator) GenerateChallenge(method string) (*types.PKCEChallenge, 
 	case "S256":
 		hash := sha256.Sum256([]byte(verifier))
 		challenge = base64.RawURLEncoding.EncodeToString(hash[:])
-	case "plain":
-		challenge = verifier
 	default:
-		return nil, fmt.Errorf("unsupported challenge method: %s", method)
+		return nil, fmt.Errorf("unsupported challenge method: %s (only S256 is accepted)", method)
 	}
 
 	return &types.PKCEChallenge{

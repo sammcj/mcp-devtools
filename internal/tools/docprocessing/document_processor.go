@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -42,7 +42,7 @@ func init() {
 }
 
 // Definition returns the MCP tool definition
-func (t *DocumentProcessorTool) Definition() mcp.Tool {
+func (t *DocumentProcessorTool) Definition() mcpapi.Tool {
 	// Build profile description dynamically based on available features
 	profileDesc := "Processing profile: 'text-and-image' (text and images, default), 'basic' (text only), 'scanned' (OCR), 'llm-smoldocling' (SmolDocling vision)"
 
@@ -51,46 +51,46 @@ func (t *DocumentProcessorTool) Definition() mcp.Tool {
 		profileDesc += ", 'llm-external' (external LLM for chart / diagram conversion to mermaid)"
 	}
 
-	tool := mcp.NewTool(
+	tool := mcpapi.NewTool(
 		"process_document",
-		mcp.WithDescription("Process documents (PDF, DOCX, DOC, XLSX, XLS, PPTX, PPT, TXT, MD, RTF, HTML, CSV, PNG, JPG, JPEG, GIF, BMP, TIFF) and convert them to structured Markdown with optional OCR, image extraction, and table processing. Supports hardware acceleration, intelligent caching, and batch processing."),
-		mcp.WithString("source",
-			mcp.Description("Document source: MUST be a fully qualified absolute file path (e.g., /Users/user/documents/file.pdf), complete URL (e.g., https://example.com/doc.pdf). Relative paths are NOT supported - always provide the complete absolute path to the file. For batch processing, use 'sources' instead."),
+		mcpapi.WithDescription("Process documents (PDF, DOCX, DOC, XLSX, XLS, PPTX, PPT, TXT, MD, RTF, HTML, CSV, PNG, JPG, JPEG, GIF, BMP, TIFF) and convert them to structured Markdown with optional OCR, image extraction, and table processing. Supports hardware acceleration, intelligent caching, and batch processing."),
+		mcpapi.WithString("source",
+			mcpapi.Description("Document source: MUST be a fully qualified absolute file path (e.g., /Users/user/documents/file.pdf), complete URL (e.g., https://example.com/doc.pdf). Relative paths are NOT supported - always provide the complete absolute path to the file. For batch processing, use 'sources' instead."),
 		),
-		mcp.WithArray("sources",
-			mcp.Description("Multiple document sources for batch processing: Array of fully qualified absolute file paths or URLs. When provided, 'source' parameter is ignored."),
-			mcp.WithStringItems(),
+		mcpapi.WithArray("sources",
+			mcpapi.Description("Multiple document sources for batch processing: Array of fully qualified absolute file paths or URLs. When provided, 'source' parameter is ignored."),
+			mcpapi.WithStringItems(),
 		),
-		mcp.WithString("profile",
-			mcp.Description(profileDesc),
+		mcpapi.WithString("profile",
+			mcpapi.Description(profileDesc),
 		),
-		mcp.WithBoolean("return_inline_only",
-			mcp.Description("Optionally return content inline only. When false (default), the tool will save the processed content to a file in the same directory as the source file which is usually desired."),
+		mcpapi.WithBoolean("return_inline_only",
+			mcpapi.Description("Optionally return content inline only. When false (default), the tool will save the processed content to a file in the same directory as the source file which is usually desired."),
 		),
-		mcp.WithString("save_to",
-			mcp.Description("Override the file path for saved content (default: same directory as source file). MUST be a fully qualified absolute path"),
+		mcpapi.WithString("save_to",
+			mcpapi.Description("Override the file path for saved content (default: same directory as source file). MUST be a fully qualified absolute path"),
 		),
-		mcp.WithNumber("timeout",
-			mcp.Description("Processing timeout in seconds (overrides default)"),
+		mcpapi.WithNumber("timeout",
+			mcpapi.Description("Processing timeout in seconds (overrides default)"),
 		),
-		mcp.WithBoolean("clear_file_cache",
-			mcp.Description("Force clear all cache entries the source file before processing"),
+		mcpapi.WithBoolean("clear_file_cache",
+			mcpapi.Description("Force clear all cache entries the source file before processing"),
 		),
-		mcp.WithBoolean("debug",
-			mcp.Description("Return debug information including environment variables (secrets masked)"),
+		mcpapi.WithBoolean("debug",
+			mcpapi.Description("Return debug information including environment variables (secrets masked)"),
 		),
 
 		// Non-destructive writing annotations
-		mcp.WithReadOnlyHintAnnotation(false),    // Converts documents to new formats
-		mcp.WithDestructiveHintAnnotation(false), // Doesn't destroy source documents
-		mcp.WithIdempotentHintAnnotation(false),  // Creates new content each run
-		mcp.WithOpenWorldHintAnnotation(true),    // May fetch from external URLs
+		mcpapi.WithReadOnlyHintAnnotation(false),    // Converts documents to new formats
+		mcpapi.WithDestructiveHintAnnotation(false), // Doesn't destroy source documents
+		mcpapi.WithIdempotentHintAnnotation(false),  // Creates new content each run
+		mcpapi.WithOpenWorldHintAnnotation(true),    // May fetch from external URLs
 	)
 	return tool
 }
 
 // Execute processes the document using the Python wrapper
-func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *DocumentProcessorTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Note: No logging to stdout/stderr in stdio mode to avoid breaking MCP protocol
 
 	// Perform cache maintenance and temporary file cleanup in background

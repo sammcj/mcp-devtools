@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -97,7 +97,7 @@ func (h *JavaHandler) getLatestVersion(groupID, artifactID string) (string, erro
 }
 
 // GetLatestVersionFromMaven gets the latest version of Java packages from Maven
-func (h *JavaHandler) GetLatestVersionFromMaven(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (h *JavaHandler) GetLatestVersionFromMaven(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	h.logger.Info("Getting latest Maven package versions")
 
 	// Parse dependencies
@@ -185,7 +185,7 @@ func (h *JavaHandler) GetLatestVersionFromMaven(ctx context.Context, args map[st
 }
 
 // GetLatestVersionFromGradle gets the latest version of Java packages from Gradle
-func (h *JavaHandler) GetLatestVersionFromGradle(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (h *JavaHandler) GetLatestVersionFromGradle(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	h.logger.Info("Getting latest Gradle package versions")
 
 	// Parse dependencies

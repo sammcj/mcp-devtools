@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -99,7 +99,7 @@ func parseRequirement(req string) (name string, version string, err error) {
 }
 
 // GetLatestVersionFromRequirements gets the latest version of Python packages from requirements.txt
-func (h *PythonHandler) GetLatestVersionFromRequirements(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (h *PythonHandler) GetLatestVersionFromRequirements(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	h.logger.Info("Getting latest Python package versions from requirements.txt")
 
 	// Parse requirements
@@ -188,7 +188,7 @@ func (h *PythonHandler) GetLatestVersionFromRequirements(ctx context.Context, ar
 }
 
 // GetLatestVersionFromPyProject gets the latest version of Python packages from pyproject.toml
-func (h *PythonHandler) GetLatestVersionFromPyProject(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (h *PythonHandler) GetLatestVersionFromPyProject(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	h.logger.Info("Getting latest Python package versions from pyproject.toml")
 
 	// Parse dependencies

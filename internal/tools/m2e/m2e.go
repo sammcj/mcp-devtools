@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/sammcj/m2e/pkg/converter"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/security"
 	"github.com/sammcj/mcp-devtools/internal/tools"
@@ -42,35 +42,35 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (m *M2ETool) Definition() mcp.Tool {
-	tool := mcp.NewTool(
+func (m *M2ETool) Definition() mcpapi.Tool {
+	tool := mcpapi.NewTool(
 		"murican_to_english",
-		mcp.WithDescription(`Convert American English text to standard International / British English spelling.
+		mcpapi.WithDescription(`Convert American English text to standard International / British English spelling.
 
 Default behaviour: Updates files in place. Provide a file_path to convert a file.
 Inline mode: Provide text parameter instead to get converted text returned directly.`),
-		mcp.WithString("file_path",
-			mcp.Description("Fully qualified absolute path to the file to update in place"),
+		mcpapi.WithString("file_path",
+			mcpapi.Description("Fully qualified absolute path to the file to update in place"),
 		),
-		mcp.WithString("text",
-			mcp.MaxLength(getMaxTextLength()),
-			mcp.Description("Text to convert and return inline (if not using file_path)"),
+		mcpapi.WithString("text",
+			mcpapi.MaxLength(getMaxTextLength()),
+			mcpapi.Description("Text to convert and return inline (if not using file_path)"),
 		),
-		mcp.WithBoolean("keep_smart_quotes",
-			mcp.Description("Whether to keep smart quotes and em-dashes as-is (default: false, as we usually want to normalise them)"),
+		mcpapi.WithBoolean("keep_smart_quotes",
+			mcpapi.Description("Whether to keep smart quotes and em-dashes as-is (default: false, as we usually want to normalise them)"),
 		),
 
 		// Non-destructive writing annotations (note: file mode updates files in place)
-		mcp.WithReadOnlyHintAnnotation(false),   // Modifies text/files
-		mcp.WithDestructiveHintAnnotation(true), // File mode updates files in place
-		mcp.WithIdempotentHintAnnotation(true),  // Converting same text produces same result
-		mcp.WithOpenWorldHintAnnotation(false),  // Works with local text/files only
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Modifies text/files
+		mcpapi.WithDestructiveHintAnnotation(true), // File mode updates files in place
+		mcpapi.WithIdempotentHintAnnotation(true),  // Converting same text produces same result
+		mcpapi.WithOpenWorldHintAnnotation(false),  // Works with local text/files only
 	)
 	return tool
 }
 
 // Execute executes the m2e tool
-func (m *M2ETool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (m *M2ETool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse and validate parameters
 	request, err := m.parseRequest(args)
 	if err != nil {
@@ -96,7 +96,7 @@ func (m *M2ETool) Execute(ctx context.Context, logger *logrus.Logger, cache *syn
 }
 
 // executeInlineMode handles inline text conversion
-func (m *M2ETool) executeInlineMode(conv *converter.Converter, request *ConvertRequest, logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func (m *M2ETool) executeInlineMode(conv *converter.Converter, request *ConvertRequest, logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	// Convert the text (note: !KeepSmartQuotes because the converter expects normaliseSmartQuotes bool)
 	normaliseSmartQuotes := !request.KeepSmartQuotes
 	convertedText := conv.ConvertToBritish(request.Text, normaliseSmartQuotes)
@@ -128,12 +128,12 @@ func (m *M2ETool) executeInlineMode(conv *converter.Converter, request *ConvertR
 		"keep_smart_quotes": request.KeepSmartQuotes,
 	}).Debug("Text converted from American to English")
 
-	return mcp.NewToolResultText(fmt.Sprintf("Successfully converted text from American to English.\n\nOriginal text length: %d characters\nChanges made: %d\nSmart quotes normalised: %t\n\nConverted text:\n%s",
+	return mcpapi.NewToolResultText(fmt.Sprintf("Successfully converted text from American to English.\n\nOriginal text length: %d characters\nChanges made: %d\nSmart quotes normalised: %t\n\nConverted text:\n%s",
 		len(request.Text), changesCount, normaliseSmartQuotes, convertedText)), nil
 }
 
 // executeUpdateFileMode handles file update operations
-func (m *M2ETool) executeUpdateFileMode(conv *converter.Converter, request *ConvertRequest, logger *logrus.Logger) (*mcp.CallToolResult, error) {
+func (m *M2ETool) executeUpdateFileMode(conv *converter.Converter, request *ConvertRequest, logger *logrus.Logger) (*mcpapi.CallToolResult, error) {
 	// Security check for file access (both read and write)
 	if err := security.CheckFileAccess(request.FilePath); err != nil {
 		return nil, err
@@ -194,10 +194,10 @@ func (m *M2ETool) executeUpdateFileMode(conv *converter.Converter, request *Conv
 	}).Info("File processed for American to English conversion")
 
 	if changesCount > 0 {
-		return mcp.NewToolResultText(fmt.Sprintf("Successfully updated file %s\n\nFile size: %d bytes\nChanges made: %d\nSmart quotes normalised: %t\n\nThe file has been updated in place with English spellings.",
+		return mcpapi.NewToolResultText(fmt.Sprintf("Successfully updated file %s\n\nFile size: %d bytes\nChanges made: %d\nSmart quotes normalised: %t\n\nThe file has been updated in place with English spellings.",
 			request.FilePath, len(originalContent), changesCount, normaliseSmartQuotes)), nil
 	} else {
-		return mcp.NewToolResultText(fmt.Sprintf("No changes needed for file %s\n\nFile size: %d bytes\nChanges made: 0\nSmart quotes normalised: %t\n\nThe file already uses English spellings or contains no American spellings to convert.",
+		return mcpapi.NewToolResultText(fmt.Sprintf("No changes needed for file %s\n\nFile size: %d bytes\nChanges made: 0\nSmart quotes normalised: %t\n\nThe file already uses English spellings or contains no American spellings to convert.",
 			request.FilePath, len(originalContent), normaliseSmartQuotes)), nil
 	}
 }

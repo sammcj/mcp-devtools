@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,7 +42,7 @@ type GitHubRelease struct {
 }
 
 // GetLatestVersion gets the latest version of GitHub Actions
-func (h *GitHubActionsHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func (h *GitHubActionsHandler) GetLatestVersion(ctx context.Context, args map[string]any) (*mcpapi.CallToolResult, error) {
 	h.logger.Info("Getting latest GitHub Actions versions")
 
 	// Parse actions

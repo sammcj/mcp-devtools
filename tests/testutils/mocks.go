@@ -6,30 +6,30 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 )
 
 // MockTool implements the Tool interface for testing
 type MockTool struct {
 	name       string
-	definition mcp.Tool
+	definition mcpapi.Tool
 	executeErr error
-	result     *mcp.CallToolResult
+	result     *mcpapi.CallToolResult
 }
 
 // NewMockTool creates a new mock tool
 func NewMockTool(name string) *MockTool {
 	return &MockTool{
 		name: name,
-		definition: mcp.NewTool(name,
-			mcp.WithDescription("Mock tool for testing"),
-			mcp.WithString("input",
-				mcp.Required(),
-				mcp.Description("Test input parameter"),
+		definition: mcpapi.NewTool(name,
+			mcpapi.WithDescription("Mock tool for testing"),
+			mcpapi.WithString("input",
+				mcpapi.Required(),
+				mcpapi.Description("Test input parameter"),
 			),
 		),
-		result: mcp.NewToolResultText("mock result"),
+		result: mcpapi.NewToolResultText("mock result"),
 	}
 }
 
@@ -40,18 +40,18 @@ func (m *MockTool) WithError(err error) *MockTool {
 }
 
 // WithResult configures the mock to return a specific result
-func (m *MockTool) WithResult(result *mcp.CallToolResult) *MockTool {
+func (m *MockTool) WithResult(result *mcpapi.CallToolResult) *MockTool {
 	m.result = result
 	return m
 }
 
 // Definition returns the tool's definition for MCP registration
-func (m *MockTool) Definition() mcp.Tool {
+func (m *MockTool) Definition() mcpapi.Tool {
 	return m.definition
 }
 
 // Execute executes the mock tool
-func (m *MockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (m *MockTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	if m.executeErr != nil {
 		return nil, m.executeErr
 	}

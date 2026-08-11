@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	"github.com/sirupsen/logrus"
 )
@@ -127,9 +127,9 @@ func ExtractPackageVersions(t *testing.T, result any) []packageversions.PackageV
 	t.Helper()
 
 	// Cast to CallToolResult
-	toolResult, ok := result.(*mcp.CallToolResult)
+	toolResult, ok := result.(*mcpapi.CallToolResult)
 	if !ok {
-		t.Fatalf("Expected *mcp.CallToolResult, got %T", result)
+		t.Fatalf("Expected *mcpapi.CallToolResult, got %T", result)
 	}
 
 	// Extract text content
@@ -137,7 +137,7 @@ func ExtractPackageVersions(t *testing.T, result any) []packageversions.PackageV
 		t.Fatal("Expected content in tool result")
 	}
 
-	textContent, ok := toolResult.Content[0].(mcp.TextContent)
+	textContent, ok := toolResult.Content[0].(*mcpapi.TextContent)
 	if !ok {
 		t.Fatalf("Expected TextContent, got %T", toolResult.Content[0])
 	}

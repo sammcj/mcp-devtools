@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
 )
@@ -33,7 +33,7 @@ var dangerousFunctions = []string{
 const maxFormulaLength = 8192
 
 // handleApplyFormula applies a formula to a cell
-func handleApplyFormula(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcp.CallToolResult, error) {
+func handleApplyFormula(logger *logrus.Logger, filePath string, sheetName string, options map[string]any) (*mcpapi.CallToolResult, error) {
 	if sheetName == "" {
 		return nil, &ValidationError{
 			Field:   "sheet_name",
@@ -175,11 +175,11 @@ func handleApplyFormula(logger *logrus.Logger, filePath string, sheetName string
 
 	result := map[string]any{}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // handleValidateFormulaSyntax validates a formula without applying it
-func handleValidateFormulaSyntax(logger *logrus.Logger, options map[string]any) (*mcp.CallToolResult, error) {
+func handleValidateFormulaSyntax(logger *logrus.Logger, options map[string]any) (*mcpapi.CallToolResult, error) {
 	formula, ok := options["formula"].(string)
 	if !ok || formula == "" {
 		return nil, &ValidationError{
@@ -253,7 +253,7 @@ func handleValidateFormulaSyntax(logger *logrus.Logger, options map[string]any) 
 		"injection_risk":    injectionRisk,
 	}
 
-	return mcp.NewToolResultJSON(result)
+	return mcpapi.NewToolResultJSON(result)
 }
 
 // checkFormulaSafety checks if a formula contains dangerous functions

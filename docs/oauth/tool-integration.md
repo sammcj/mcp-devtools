@@ -122,7 +122,7 @@ type MyTool struct {
     oauthHelper *toolhelper.OAuthHelper
 }
 
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
     // Create OAuth helper
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
@@ -135,7 +135,7 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 ### Check User Authentication
 
 ```go
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Get user's OAuth claims
@@ -151,14 +151,14 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
     }).Info("Tool executing with user context")
 
     // Tool logic using user identity...
-    return mcp.NewToolResultText("Success"), nil
+    return mcpapi.NewToolResultText("Success"), nil
 }
 ```
 
 ### Require Specific Permissions
 
 ```go
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Require specific scope for this tool
@@ -167,14 +167,14 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
     }
 
     // Tool logic that requires document access...
-    return mcp.NewToolResultText("Document operation completed"), nil
+    return mcpapi.NewToolResultText("Document operation completed"), nil
 }
 ```
 
 ### Check Optional Permissions
 
 ```go
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Check if user has admin permissions
@@ -187,7 +187,7 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
     }
 
     // Tool logic...
-    return mcp.NewToolResultText("Operation completed"), nil
+    return mcpapi.NewToolResultText("Operation completed"), nil
 }
 ```
 
@@ -196,7 +196,7 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 ### Basic Service Authentication Setup
 
 ```go
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Configure OAuth for external service (e.g., Confluence)
@@ -223,7 +223,7 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
 
     // Use authenticated HTTP client for API calls...
     _ = httpClient
-    return mcp.NewToolResultText("Service authentication configured"), nil
+    return mcpapi.NewToolResultText("Service authentication configured"), nil
 }
 ```
 
@@ -237,7 +237,7 @@ import (
     "fmt"
     "sync"
 
-    "github.com/mark3labs/mcp-go/mcp"
+    "github.com/sammcj/mcp-devtools/internal/mcpapi"
     "github.com/sammcj/mcp-devtools/internal/oauth/toolhelper"
     "github.com/sammcj/mcp-devtools/internal/registry"
     "github.com/sirupsen/logrus"
@@ -250,22 +250,22 @@ func init() {
     registry.Register(&DocumentTool{})
 }
 
-func (t *DocumentTool) Definition() mcp.Tool {
-    return mcp.NewTool(
+func (t *DocumentTool) Definition() mcpapi.Tool {
+    return mcpapi.NewTool(
         "document_access",
-        mcp.WithDescription("Access documents with user permissions"),
-        mcp.WithString("action",
-            mcp.Required(),
-            mcp.Description("Action to perform: read, write, delete"),
+        mcpapi.WithDescription("Access documents with user permissions"),
+        mcpapi.WithString("action",
+            mcpapi.Required(),
+            mcpapi.Description("Action to perform: read, write, delete"),
         ),
-        mcp.WithString("document_id",
-            mcp.Required(),
-            mcp.Description("Document identifier"),
+        mcpapi.WithString("document_id",
+            mcpapi.Required(),
+            mcpapi.Description("Document identifier"),
         ),
     )
 }
 
-func (t *DocumentTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *DocumentTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Parse arguments
@@ -313,7 +313,7 @@ func (t *DocumentTool) Execute(ctx context.Context, logger *logrus.Logger, cache
     result := fmt.Sprintf("Document %s %s operation completed for user %s",
         documentID, action, claims.Subject)
 
-    return mcp.NewToolResultText(result), nil
+    return mcpapi.NewToolResultText(result), nil
 }
 ```
 
@@ -374,7 +374,7 @@ Configure your OAuth provider (Authentik, Keycloak, etc.) with these scopes and 
 ### Graceful Authentication Failures
 
 ```go
-func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
     oauthHelper := toolhelper.NewOAuthHelper(logger)
 
     // Check if user is authenticated
@@ -390,7 +390,7 @@ func (t *MyTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync
     }
 
     // Tool logic...
-    return mcp.NewToolResultText("Success"), nil
+    return mcpapi.NewToolResultText("Success"), nil
 }
 ```
 

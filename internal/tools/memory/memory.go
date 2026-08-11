@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sammcj/mcp-devtools/internal/tools"
 	"github.com/sirupsen/logrus"
@@ -24,10 +24,10 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (m *MemoryTool) Definition() mcp.Tool {
-	tool := mcp.NewTool(
+func (m *MemoryTool) Definition() mcpapi.Tool {
+	tool := mcpapi.NewTool(
 		"memory",
-		mcp.WithDescription(`Persistent knowledge graph memory system. Stores entities, relations, and observations across sessions.
+		mcpapi.WithDescription(`Persistent knowledge graph memory system. Stores entities, relations, and observations across sessions.
 
 This can be useful if the user asks you to store or retrieve something specific in your memory.
 
@@ -39,10 +39,10 @@ This can be useful if the user asks you to store or retrieve something specific 
 - **Observations** are discrete facts - keep them atomic (one fact per observation)`),
 
 		// Subcommand parameter to specify the operation
-		mcp.WithString("operation",
-			mcp.Required(),
-			mcp.Description("Operation to perform"),
-			mcp.Enum(
+		mcpapi.WithString("operation",
+			mcpapi.Required(),
+			mcpapi.Description("Operation to perform"),
+			mcpapi.Enum(
 				"create_entities",
 				"create_relations",
 				"add_observations",
@@ -56,27 +56,27 @@ This can be useful if the user asks you to store or retrieve something specific 
 		),
 
 		// Data parameter for operation-specific input
-		mcp.WithObject("data",
-			mcp.Description("Operation-specific data (structure varies by operation)"),
+		mcpapi.WithObject("data",
+			mcpapi.Description("Operation-specific data (structure varies by operation)"),
 		),
 
 		// Namespace parameter for memory separation
-		mcp.WithString("namespace",
-			mcp.Description("Memory namespace for organising memories into separate projects/contexts (default: 'default')"),
-			mcp.DefaultString("default"),
+		mcpapi.WithString("namespace",
+			mcpapi.Description("Memory namespace for organising memories into separate projects/contexts (default: 'default')"),
+			mcpapi.DefaultString("default"),
 		),
 
 		// Non-destructive writing annotations (note: has some destructive operations)
-		mcp.WithReadOnlyHintAnnotation(false),   // Stores and modifies memory data
-		mcp.WithDestructiveHintAnnotation(true), // Has delete operations
-		mcp.WithIdempotentHintAnnotation(false), // Not idempotent: destructive and duplicative operations
-		mcp.WithOpenWorldHintAnnotation(false),  // Works with local memory storage
+		mcpapi.WithReadOnlyHintAnnotation(false),   // Stores and modifies memory data
+		mcpapi.WithDestructiveHintAnnotation(true), // Has delete operations
+		mcpapi.WithIdempotentHintAnnotation(false), // Not idempotent: destructive and duplicative operations
+		mcpapi.WithOpenWorldHintAnnotation(false),  // Works with local memory storage
 	)
 	return tool
 }
 
 // Execute executes the memory tool operations
-func (m *MemoryTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse namespace parameter (default: "default")
 	namespace := "default"
 	if namespaceRaw, exists := args["namespace"]; exists && namespaceRaw != nil {
@@ -141,7 +141,7 @@ func (m *MemoryTool) Execute(ctx context.Context, logger *logrus.Logger, cache *
 }
 
 // handleCreateEntities handles entity creation
-func (m *MemoryTool) handleCreateEntities(data map[string]any) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleCreateEntities(data map[string]any) (*mcpapi.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for create_entities operation")
 	}
@@ -176,7 +176,7 @@ func (m *MemoryTool) handleCreateEntities(data map[string]any) (*mcp.CallToolRes
 }
 
 // handleCreateRelations handles relation creation
-func (m *MemoryTool) handleCreateRelations(data map[string]any) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleCreateRelations(data map[string]any) (*mcpapi.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for create_relations operation")
 	}
@@ -211,7 +211,7 @@ func (m *MemoryTool) handleCreateRelations(data map[string]any) (*mcp.CallToolRe
 }
 
 // handleAddObservations handles adding observations
-func (m *MemoryTool) handleAddObservations(data map[string]any) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleAddObservations(data map[string]any) (*mcpapi.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for add_observations operation")
 	}
@@ -246,7 +246,7 @@ func (m *MemoryTool) handleAddObservations(data map[string]any) (*mcp.CallToolRe
 }
 
 // handleDeleteEntities handles entity deletion
-func (m *MemoryTool) handleDeleteEntities(data map[string]any) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleDeleteEntities(data map[string]any) (*mcpapi.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for delete_entities operation")
 	}
@@ -280,7 +280,7 @@ func (m *MemoryTool) handleDeleteEntities(data map[string]any) (*mcp.CallToolRes
 }
 
 // handleDeleteObservations handles observation deletion
-func (m *MemoryTool) handleDeleteObservations(data map[string]any) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleDeleteObservations(data map[string]any) (*mcpapi.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for delete_observations operation")
 	}
@@ -314,7 +314,7 @@ func (m *MemoryTool) handleDeleteObservations(data map[string]any) (*mcp.CallToo
 }
 
 // handleDeleteRelations handles relation deletion
-func (m *MemoryTool) handleDeleteRelations(data map[string]any) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleDeleteRelations(data map[string]any) (*mcpapi.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for delete_relations operation")
 	}
@@ -348,7 +348,7 @@ func (m *MemoryTool) handleDeleteRelations(data map[string]any) (*mcp.CallToolRe
 }
 
 // handleReadGraph handles reading the complete graph
-func (m *MemoryTool) handleReadGraph() (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleReadGraph() (*mcpapi.CallToolResult, error) {
 	graph, err := m.graphManager.ReadGraph()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read graph: %w", err)
@@ -358,7 +358,7 @@ func (m *MemoryTool) handleReadGraph() (*mcp.CallToolResult, error) {
 }
 
 // handleSearchNodes handles node searching
-func (m *MemoryTool) handleSearchNodes(data map[string]any) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleSearchNodes(data map[string]any) (*mcpapi.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for search_nodes operation")
 	}
@@ -390,7 +390,7 @@ func (m *MemoryTool) handleSearchNodes(data map[string]any) (*mcp.CallToolResult
 }
 
 // handleOpenNodes handles opening specific nodes
-func (m *MemoryTool) handleOpenNodes(data map[string]any) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) handleOpenNodes(data map[string]any) (*mcpapi.CallToolResult, error) {
 	if data == nil {
 		return nil, fmt.Errorf("data parameter is required for open_nodes operation")
 	}
@@ -420,13 +420,13 @@ func (m *MemoryTool) handleOpenNodes(data map[string]any) (*mcp.CallToolResult, 
 }
 
 // newToolResultJSON creates a new tool result with JSON content
-func (m *MemoryTool) newToolResultJSON(data any) (*mcp.CallToolResult, error) {
+func (m *MemoryTool) newToolResultJSON(data any) (*mcpapi.CallToolResult, error) {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal response: %w", err)
 	}
 
-	return mcp.NewToolResultText(string(jsonData)), nil
+	return mcpapi.NewToolResultText(string(jsonData)), nil
 }
 
 // ProvideExtendedInfo provides detailed usage information for the memory tool

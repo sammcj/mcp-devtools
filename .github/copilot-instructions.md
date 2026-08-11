@@ -375,7 +375,7 @@ All tools follow this pattern:
 - All tools should work on both macOS and Linux unless otherwise specified (we do not need to support Windows).
 - Rather than creating lots of tools for one purpose / provider, instead favour creating a single tool with multiple functions and parameters.
 - When creating new MCP tools make sure descriptions are clear and concise as they are what is used as hints to the AI coding agent using the tool, you should also make good use of MCP's annotations.
-- The mcp-go package documentation contains useful examples of using the package which you can lookup when asked to implement specific MCP features https://mcp-go.dev/servers/tools
+- Tools use the `internal/mcpapi` package, which wraps the official https://github.com/modelcontextprotocol/go-sdk. See docs/creating-new-tools.md.
 
 ## Important Warnings and Reminders
 

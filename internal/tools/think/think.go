@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/registry"
 	"github.com/sirupsen/logrus"
 )
@@ -44,7 +44,7 @@ func init() {
 }
 
 // Definition returns the tool's definition for MCP registration
-func (t *ThinkTool) Definition() mcp.Tool {
+func (t *ThinkTool) Definition() mcpapi.Tool {
 	maxLen := getMaxThoughtLength()
 
 	// Build description, conditionally including sequential_thinking reference
@@ -60,28 +60,28 @@ func (t *ThinkTool) Definition() mcp.Tool {
 		thoughtDesc += " For lengthy analysis, use sequential_thinking."
 	}
 
-	return mcp.NewTool(
+	return mcpapi.NewTool(
 		"think",
-		mcp.WithDescription(desc),
-		mcp.WithString("thought",
-			mcp.Required(),
-			mcp.MaxLength(maxLen),
-			mcp.Description(thoughtDesc),
+		mcpapi.WithDescription(desc),
+		mcpapi.WithString("thought",
+			mcpapi.Required(),
+			mcpapi.MaxLength(maxLen),
+			mcpapi.Description(thoughtDesc),
 		),
-		mcp.WithString("how_hard",
-			mcp.Description("How hard to think about the problem. Options: 'hard' (default), 'harder', 'ultra'."),
-			mcp.Enum("hard", "harder", "ultra"),
+		mcpapi.WithString("how_hard",
+			mcpapi.Description("How hard to think about the problem. Options: 'hard' (default), 'harder', 'ultra'."),
+			mcpapi.Enum("hard", "harder", "ultra"),
 		),
 		// Read-only annotations for internal thought processing tool
-		mcp.WithReadOnlyHintAnnotation(true),     // Only processes thoughts internally, doesn't modify environment
-		mcp.WithDestructiveHintAnnotation(false), // No destructive operations
-		mcp.WithIdempotentHintAnnotation(true),   // Stateless: same input produces same output
-		mcp.WithOpenWorldHintAnnotation(false),   // No external interactions, internal processing only
+		mcpapi.WithReadOnlyHintAnnotation(true),     // Only processes thoughts internally, doesn't modify environment
+		mcpapi.WithDestructiveHintAnnotation(false), // No destructive operations
+		mcpapi.WithIdempotentHintAnnotation(true),   // Stateless: same input produces same output
+		mcpapi.WithOpenWorldHintAnnotation(false),   // No external interactions, internal processing only
 	)
 }
 
 // Execute executes the think tool
-func (t *ThinkTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcp.CallToolResult, error) {
+func (t *ThinkTool) Execute(ctx context.Context, logger *logrus.Logger, cache *sync.Map, args map[string]any) (*mcpapi.CallToolResult, error) {
 	// Parse and validate parameters
 	request, err := t.parseRequest(args)
 	if err != nil {
@@ -136,7 +136,7 @@ func (t *ThinkTool) parseRequest(args map[string]any) (*ThinkRequest, error) {
 }
 
 // newToolResultText creates a new tool result with text content
-func (t *ThinkTool) newToolResultText(howHard, thought string) (*mcp.CallToolResult, error) {
+func (t *ThinkTool) newToolResultText(howHard, thought string) (*mcpapi.CallToolResult, error) {
 	var toolName string
 	if howHard == "ultra" {
 		toolName = "ultrathink"
@@ -144,5 +144,5 @@ func (t *ThinkTool) newToolResultText(howHard, thought string) (*mcp.CallToolRes
 		toolName = fmt.Sprintf("think %s", howHard)
 	}
 	formattedThought := fmt.Sprintf("I should use the %s tool on this problem: %s", toolName, thought)
-	return mcp.NewToolResultText(formattedThought), nil
+	return mcpapi.NewToolResultText(formattedThought), nil
 }
