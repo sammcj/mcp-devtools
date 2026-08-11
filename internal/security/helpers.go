@@ -7,12 +7,40 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 	"unicode/utf8"
 
-	"github.com/sammcj/mcp-devtools/internal/telemetry"
+	"github.com/sammcj/mcp-devtools/internal/utils/httpclient"
 	"github.com/sirupsen/logrus"
 )
+
+// defaultHTTPTimeout bounds requests whose context carries no deadline of its own.
+// Override with SECURITY_HTTP_TIMEOUT (seconds).
+const defaultHTTPTimeout = 60 * time.Second
+
+// safeHTTPClient is shared so connections are pooled across tools. It is built
+// lazily because the proxy configuration is read from the environment.
+var safeHTTPClient = sync.OnceValue(func() *http.Client {
+	// Provides proxy support and OTEL instrumentation.
+	return httpclient.NewHTTPClientWithProxy(resolveHTTPTimeout(os.Getenv("SECURITY_HTTP_TIMEOUT")))
+})
+
+// resolveHTTPTimeout reads a timeout in seconds, falling back to the default for
+// anything that is not a positive whole number.
+func resolveHTTPTimeout(raw string) time.Duration {
+	if raw == "" {
+		return defaultHTTPTimeout
+	}
+	seconds, err := strconv.Atoi(raw)
+	if err != nil || seconds <= 0 {
+		logrus.WithField("value", raw).Warn("Invalid SECURITY_HTTP_TIMEOUT, using default")
+		return defaultHTTPTimeout
+	}
+	return time.Duration(seconds) * time.Second
+}
 
 // Operations provides simplified security-aware operations for tools
 type Operations struct {
@@ -60,12 +88,8 @@ func (o *Operations) SafeHTTPGet(ctx context.Context, urlStr string) (*SafeHTTPR
 		return nil, err
 	}
 
-	// 4. Use instrumented HTTP client
-	client := &http.Client{}
-	client = telemetry.WrapHTTPClient(client)
-
-	// 5. Fetch content normally (no modifications)
-	resp, err := client.Do(req)
+	// 4. Fetch content normally (no modifications)
+	resp, err := safeHTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -142,12 +166,8 @@ func (o *Operations) SafeHTTPPost(ctx context.Context, urlStr string, body io.Re
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	// 4. Use instrumented HTTP client
-	client := &http.Client{}
-	client = telemetry.WrapHTTPClient(client)
-
-	// 5. Fetch content normally (no modifications)
-	resp, err := client.Do(req)
+	// 4. Fetch content normally (no modifications)
+	resp, err := safeHTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -228,12 +248,8 @@ func (o *Operations) SafeHTTPGetWithHeaders(ctx context.Context, urlStr string, 
 		req.Header.Set(key, value)
 	}
 
-	// 4. Use instrumented HTTP client
-	client := &http.Client{}
-	client = telemetry.WrapHTTPClient(client)
-
-	// 5. Execute request
-	resp, err := client.Do(req)
+	// 4. Execute request
+	resp, err := safeHTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -320,8 +336,7 @@ func (o *Operations) SafeHTTPPostWithHeaders(ctx context.Context, urlStr string,
 	}
 
 	// 4. Execute request
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := safeHTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}

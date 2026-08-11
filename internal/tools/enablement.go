@@ -10,11 +10,10 @@ import (
 // The environment variable should contain a comma-separated list of tool names.
 // Tool names are case-insensitive and spaces are ignored.
 //
-// Example: ENABLE_ADDITIONAL_TOOLS="claude-agent,gemini-agent,filesystem,vulnerability_scan,sbom,aws,api"
+// Example: ENABLE_ADDITIONAL_TOOLS="claude-agent,gemini-agent,filesystem,vulnerability_scan,sbom,api"
 //
 // Supported tool names:
 // - api
-// - aws_documentation
 // - changelog
 // - claude-agent
 // - codex-agent

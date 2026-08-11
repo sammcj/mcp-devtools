@@ -12,6 +12,7 @@ Migration to the official [modelcontextprotocol/go-sdk](https://github.com/model
 - **`sequential_thinking` is stdio-only.** It keeps thought history in the server process, so it is no longer registered when running with `--transport http`. Tools can opt into this with the new `tools.StdioOnly` marker interface.
 - **Proxy speaks streamable HTTP only.** `"transport": "sse"` and `"http-first"` in `PROXY_UPSTREAMS` still parse, but the value is ignored; an `sse` value logs a warning. The proxy sends the 2026-07-28 framing and falls back to the older form for the rest of the connection if an upstream rejects it.
 - **Roots, Sampling and Logging are no longer used.** The `codesearch` indexing progress notification now goes to the log and an OTEL span event instead of `notifications/message`.
+- **`aws_documentation` tool removed.** Its search API host no longer resolves and the recommendations API returns 403, with no replacement published. The pricing actions went with it, dropping the AWS SDK; `fetch_url` still reads `docs.aws.amazon.com` pages.
 
 ### Security
 
@@ -33,19 +34,22 @@ Migration to the official [modelcontextprotocol/go-sdk](https://github.com/model
 
 - The proxy could not read a response from any server built on the official SDK, including mcp-devtools itself. Streamable HTTP lets a server answer a POST with an event stream and the SDK does, but the proxy fed every response body straight to a JSON decoder. It now decodes according to the response's content type, and reads on past any notification the upstream emits mid-call until the response to the request it sent arrives.
 - Calling a proxied tool failed with `upstream not found` whenever more than one upstream was configured. Both call sites resolved the upstream and then discarded it, leaving the manager to re-derive it from a tool name that carries no prefix. They now route to the upstream they already identified.
+- Go modules with an uppercase letter in their path always reported `unknown`. The module proxy needs those encoded as `!` plus the lowercase letter and 404s otherwise.
+- The security framework's HTTP helpers built a client per call with no timeout and no proxy support, so a hung server could block a tool indefinitely and `HTTP_PROXY` was ignored despite being documented as respected. They now share one instrumented, pooled client with a timeout (`SECURITY_HTTP_TIMEOUT`).
+- Package version lookups cancel with their caller's context, including while queued behind the rate limiter.
 
 ### Added
 
 - `application_type` on dynamic client registration, defaulting to `web`.
 - `internal/mcpapi`, a thin wrapper over the SDK that keeps the existing tool builder API (`mcpapi.NewTool`, `mcpapi.WithString`, and so on). Tool code did not need to change.
+- Go module checks use the [pkg.go.dev API](https://go.dev/blog/pkgsite-api), falling back to `proxy.golang.org`. Results gain `deprecated` and `newerMajor`, a newer major version published under a different import path. `latestVersion` stays on the major you depend on, since a major bump needs an import path change.
 
 ### Dependencies
 
-All direct dependencies updated to their latest stable releases. Three needed code changes:
+All direct dependencies updated to their latest stable releases. Two needed code changes:
 
-- `go.lsp.dev/protocol`, `go.lsp.dev/jsonrpc2` and `go.lsp.dev/uri` v0.x to v1.0.1. The v1 API is a full regeneration, so `code_rename`'s LSP client was ported to it.
-- `github.com/xuri/excelize/v2` 2.10.1 to 2.11.0. Chart and axis titles moved from `[]RichTextRun` to a `ChartTitle` struct, and `ChartLine` became `LineOptions`.
-- `github.com/openai/openai-go/v3` 3.39 to 3.50, `github.com/pdfcpu/pdfcpu` 0.12.1 to 0.14.0, `github.com/urfave/cli/v3` 3.9.1 to 3.10.1, all OpenTelemetry packages 1.44 to 1.45, and the AWS SDK.
+- The `go.lsp.dev` packages went to v1, a full regeneration of the API, so `code_rename`'s LSP client was ported to it.
+- `excelize` moved chart and axis titles from `[]RichTextRun` to a `ChartTitle` struct, and renamed `ChartLine` to `LineOptions`.
 
 ### Deprecated
 

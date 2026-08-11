@@ -2,9 +2,16 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"slices"
+	"strings"
 	"sync"
 	"testing"
 
+	"github.com/sammcj/mcp-devtools/internal/mcpapi"
 	"github.com/sammcj/mcp-devtools/internal/tools/packageversions"
 	go_tool "github.com/sammcj/mcp-devtools/internal/tools/packageversions/go"
 	"github.com/sirupsen/logrus"
@@ -155,5 +162,193 @@ func TestGoTool_Execute_InvalidDependenciesFormat(t *testing.T) {
 	expectedError := "invalid dependencies format: expected object"
 	if err.Error() != expectedError {
 		t.Fatalf("Expected error '%s', got '%s'", expectedError, err.Error())
+	}
+}
+
+// stubHTTPClient serves canned responses keyed by request URL and records the
+// order in which URLs were requested.
+type stubHTTPClient struct {
+	responses map[string]string
+	requested []string
+}
+
+func (s *stubHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	s.requested = append(s.requested, req.URL.String())
+	body, ok := s.responses[req.URL.String()]
+	if !ok {
+		return &http.Response{
+			StatusCode: http.StatusNotFound,
+			Body:       io.NopCloser(strings.NewReader("not found")),
+			Header:     http.Header{},
+		}, nil
+	}
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(body)),
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+	}, nil
+}
+
+// runGoTool executes the tool against the stub and returns the decoded results.
+func runGoTool(t *testing.T, stub *stubHTTPClient, deps map[string]any) []packageversions.PackageVersion {
+	t.Helper()
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel)
+
+	tool := go_tool.NewGoTool(stub)
+	result, err := tool.Execute(t.Context(), logger, &sync.Map{}, map[string]any{"dependencies": deps})
+	if err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+
+	payload := resultText(t, result)
+	var versions []packageversions.PackageVersion
+	if err := json.Unmarshal([]byte(payload), &versions); err != nil {
+		t.Fatalf("failed to decode result %q: %v", payload, err)
+	}
+	return versions
+}
+
+func resultText(t *testing.T, result *mcpapi.CallToolResult) string {
+	t.Helper()
+	for _, content := range result.Content {
+		if text, ok := content.(*mcpapi.TextContent); ok {
+			return text.Text
+		}
+	}
+	t.Fatal("result contained no text content")
+	return ""
+}
+
+func TestGoTool_ReportsDeprecation(t *testing.T) {
+	t.Parallel()
+	stub := &stubHTTPClient{responses: map[string]string{
+		"https://pkg.go.dev/v1beta/versions/github.com/golang/protobuf?limit=1": `{"items":[{"modulePath":"github.com/golang/protobuf","version":"v1.5.4","latestVersion":"v1.5.4","deprecated":true,"deprecationReason":"Use the \"google.golang.org/protobuf\" module instead."}]}`,
+	}}
+
+	versions := runGoTool(t, stub, map[string]any{"github.com/golang/protobuf": "v1.5.0"})
+	if len(versions) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(versions))
+	}
+	if versions[0].LatestVersion != "v1.5.4" {
+		t.Errorf("unexpected latest version %q", versions[0].LatestVersion)
+	}
+	if !strings.Contains(versions[0].Deprecated, "google.golang.org/protobuf") {
+		t.Errorf("deprecation reason not reported, got %q", versions[0].Deprecated)
+	}
+}
+
+// jwtListing mirrors a real pkg.go.dev listing: newest major first, and within a
+// major path the incompatible versions come last, so the requested major's own
+// latest is not the first entry carrying its module path.
+const jwtListing = `{"items":[
+	{"modulePath":"github.com/golang-jwt/jwt/v5","version":"v5.3.1","latestVersion":"v5.3.1"},
+	{"modulePath":"github.com/golang-jwt/jwt/v4","version":"v4.5.2","latestVersion":"v4.5.2"},
+	{"modulePath":"github.com/golang-jwt/jwt","version":"v1.0.2","latestVersion":"v3.2.2+incompatible"},
+	{"modulePath":"github.com/golang-jwt/jwt","version":"v3.2.2+incompatible","latestVersion":"v3.2.2+incompatible","deprecated":%t,"deprecationReason":"%s"}
+]}`
+
+func TestGoTool_ReportsNewerMajorSeparately(t *testing.T) {
+	t.Parallel()
+	stub := &stubHTTPClient{responses: map[string]string{
+		"https://pkg.go.dev/v1beta/versions/github.com/golang-jwt/jwt?limit=1":   `{"items":[{"modulePath":"github.com/golang-jwt/jwt/v5","version":"v5.3.1","latestVersion":"v5.3.1"}]}`,
+		"https://pkg.go.dev/v1beta/versions/github.com/golang-jwt/jwt?limit=100": fmt.Sprintf(jwtListing, false, ""),
+	}}
+
+	versions := runGoTool(t, stub, map[string]any{"github.com/golang-jwt/jwt": "v3.2.0+incompatible"})
+	if len(versions) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(versions))
+	}
+	// The same-major latest must not be replaced by the newer major, which needs
+	// an import path change, nor by the first listed release of that major.
+	if versions[0].LatestVersion != "v3.2.2+incompatible" {
+		t.Errorf("unexpected latest version %q", versions[0].LatestVersion)
+	}
+	if versions[0].NewerMajor != "github.com/golang-jwt/jwt/v5 v5.3.1" {
+		t.Errorf("unexpected newer major %q", versions[0].NewerMajor)
+	}
+}
+
+// Deprecation is only carried on version listings, so it must survive the extra
+// lookup that a newer major triggers.
+func TestGoTool_ReportsDeprecationAlongsideNewerMajor(t *testing.T) {
+	t.Parallel()
+	stub := &stubHTTPClient{responses: map[string]string{
+		"https://pkg.go.dev/v1beta/versions/github.com/golang-jwt/jwt?limit=1":   `{"items":[{"modulePath":"github.com/golang-jwt/jwt/v5","version":"v5.3.1","latestVersion":"v5.3.1"}]}`,
+		"https://pkg.go.dev/v1beta/versions/github.com/golang-jwt/jwt?limit=100": fmt.Sprintf(jwtListing, true, "Use v5 instead."),
+	}}
+
+	versions := runGoTool(t, stub, map[string]any{"github.com/golang-jwt/jwt": "v3.2.0+incompatible"})
+	if len(versions) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(versions))
+	}
+	if versions[0].Deprecated != "Use v5 instead." {
+		t.Errorf("deprecation reason not reported, got %q", versions[0].Deprecated)
+	}
+	if versions[0].LatestVersion != "v3.2.2+incompatible" {
+		t.Errorf("unexpected latest version %q", versions[0].LatestVersion)
+	}
+}
+
+// When the requested major is beyond the first page of the listing, the module
+// endpoint still supplies its latest version.
+func TestGoTool_FallsBackToModuleEndpointForSameMajor(t *testing.T) {
+	t.Parallel()
+	stub := &stubHTTPClient{responses: map[string]string{
+		"https://pkg.go.dev/v1beta/versions/github.com/golang-jwt/jwt?limit=1":   `{"items":[{"modulePath":"github.com/golang-jwt/jwt/v5","version":"v5.3.1","latestVersion":"v5.3.1"}]}`,
+		"https://pkg.go.dev/v1beta/versions/github.com/golang-jwt/jwt?limit=100": `{"items":[{"modulePath":"github.com/golang-jwt/jwt/v5","version":"v5.3.1","latestVersion":"v5.3.1"}],"nextPageToken":"abc"}`,
+		"https://pkg.go.dev/v1beta/module/github.com/golang-jwt/jwt":             `{"path":"github.com/golang-jwt/jwt","version":"v3.2.2+incompatible"}`,
+	}}
+
+	versions := runGoTool(t, stub, map[string]any{"github.com/golang-jwt/jwt": "v3.2.0+incompatible"})
+	if len(versions) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(versions))
+	}
+	if versions[0].LatestVersion != "v3.2.2+incompatible" {
+		t.Errorf("unexpected latest version %q", versions[0].LatestVersion)
+	}
+	if versions[0].NewerMajor != "github.com/golang-jwt/jwt/v5 v5.3.1" {
+		t.Errorf("unexpected newer major %q", versions[0].NewerMajor)
+	}
+}
+
+func TestGoTool_FallsBackToModuleProxy(t *testing.T) {
+	t.Parallel()
+	// pkg.go.dev is absent from the stub, so it returns 404 and the proxy is used.
+	// The proxy URL must carry the '!' case encoding for the uppercase path.
+	proxyURL := "https://proxy.golang.org/github.com/%21masterminds/semver/v3/@latest"
+	stub := &stubHTTPClient{responses: map[string]string{
+		proxyURL: `{"Version":"v3.5.0","Time":"2026-04-30T15:39:17Z"}`,
+	}}
+
+	versions := runGoTool(t, stub, map[string]any{"github.com/Masterminds/semver/v3": "v3.2.0"})
+	if len(versions) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(versions))
+	}
+	if versions[0].Skipped {
+		t.Fatalf("expected a successful fallback, got skip reason %q (requested: %v)", versions[0].SkipReason, stub.requested)
+	}
+	if versions[0].LatestVersion != "v3.5.0" {
+		t.Errorf("unexpected latest version %q", versions[0].LatestVersion)
+	}
+	if !slices.Contains(stub.requested, proxyURL) {
+		t.Errorf("module proxy was not queried with the case-encoded path, requested: %v", stub.requested)
+	}
+}
+
+func TestGoTool_SkipsPackageWhenBothSourcesFail(t *testing.T) {
+	t.Parallel()
+	stub := &stubHTTPClient{responses: map[string]string{}}
+
+	versions := runGoTool(t, stub, map[string]any{"github.com/not/a/real/module": "v1.0.0"})
+	if len(versions) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(versions))
+	}
+	if !versions[0].Skipped {
+		t.Error("expected the package to be skipped")
+	}
+	if versions[0].LatestVersion != "unknown" {
+		t.Errorf("unexpected latest version %q", versions[0].LatestVersion)
 	}
 }

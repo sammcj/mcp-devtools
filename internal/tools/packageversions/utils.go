@@ -80,8 +80,10 @@ func NewRateLimitedHTTPClient() *RateLimitedHTTPClient {
 
 // Do implements the HTTPClient interface with rate limiting
 func (c *RateLimitedHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	// Wait for rate limiter to allow the request (thread-safe)
-	err := c.limiter.Wait(context.Background())
+	// Wait for rate limiter to allow the request (thread-safe).
+	// Waiting on the request's context means a cancelled caller isn't left
+	// queued behind the limiter.
+	err := c.limiter.Wait(req.Context())
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +104,11 @@ func MakeRequest(client HTTPClient, method, url string, headers map[string]strin
 
 // MakeRequestWithLogger makes an HTTP request with logging and returns the response body
 func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, reqURL string, headers map[string]string) ([]byte, error) {
+	return MakeRequestWithContext(context.Background(), client, logger, method, reqURL, headers)
+}
+
+// MakeRequestWithContext makes an HTTP request that is cancelled when ctx is done
+func MakeRequestWithContext(ctx context.Context, client HTTPClient, logger *logrus.Logger, method, reqURL string, headers map[string]string) ([]byte, error) {
 	if logger != nil {
 		logger.WithFields(logrus.Fields{
 			"method": method,
@@ -123,7 +130,7 @@ func MakeRequestWithLogger(client HTTPClient, logger *logrus.Logger, method, req
 		return nil, err
 	}
 
-	req, err := http.NewRequest(method, reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, method, reqURL, nil)
 	if err != nil {
 		if logger != nil {
 			logger.WithFields(logrus.Fields{
