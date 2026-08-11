@@ -141,6 +141,21 @@ func (m *Manager) ExecuteTool(ctx context.Context, toolName string, args map[str
 	return conn.ExecuteTool(ctx, actualToolName, args)
 }
 
+// ExecuteToolOn runs a tool on a named upstream.
+//
+// Callers that already know which upstream a tool came from must use this
+// rather than ExecuteTool: passing the unprefixed name back through
+// parseToolName leaves it guessing, and with more than one upstream configured
+// it cannot, so every call fails as ambiguous.
+func (m *Manager) ExecuteToolOn(ctx context.Context, upstreamName, toolName string, args map[string]any) (*Message, error) {
+	conn, err := m.GetConnection(upstreamName)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn.ExecuteTool(ctx, toolName, args)
+}
+
 // parseToolName extracts the upstream name and tool name from a potentially prefixed tool name.
 // Format: "upstream:tool" or just "tool" (uses first available upstream).
 func (m *Manager) parseToolName(toolName string) (upstreamName string, actualToolName string) {

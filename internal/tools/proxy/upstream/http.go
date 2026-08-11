@@ -250,6 +250,19 @@ func (t *HTTPTransport) send(ctx context.Context, msg *Message, stateless bool) 
 		return nil, fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
 	}
 
+	// A server answers a POST with either a JSON body or an event stream, and
+	// picks per response, so the body is decoded according to what came back.
+	if isEventStream(resp.Header.Get("Content-Type")) {
+		logrus.Debug("HTTP: decoding event stream response")
+		response, err := decodeEventStream(resp.Body)
+		if err != nil {
+			logrus.WithError(err).Debug("HTTP: event stream decode failed")
+			return nil, err
+		}
+		logrus.WithField("id", response.ID).Debug("HTTP: successfully received response")
+		return response, nil
+	}
+
 	logrus.Debug("HTTP: decoding response JSON")
 	// Parse response
 	var response Message

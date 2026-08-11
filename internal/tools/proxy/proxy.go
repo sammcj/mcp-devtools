@@ -145,7 +145,7 @@ func (t *ProxyTool) handleCall(ctx context.Context, logger *logrus.Logger, args 
 	}).Debug("routing tool call to upstream")
 
 	// Execute tool on upstream
-	response, err := upstreamMgr.ExecuteTool(ctx, originalToolName, toolArgs)
+	response, err := upstreamMgr.ExecuteToolOn(ctx, upstreamName, originalToolName, toolArgs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute tool on upstream: %w", err)
 	}

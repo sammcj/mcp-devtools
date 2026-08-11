@@ -60,7 +60,7 @@ func (d *DynamicProxyTool) Execute(ctx context.Context, logger *logrus.Logger, c
 	}
 
 	// Execute tool via manager
-	response, err := d.manager.GetManager().ExecuteTool(ctx, d.originalToolName, toolArgs)
+	response, err := d.manager.GetManager().ExecuteToolOn(ctx, d.upstreamName, d.originalToolName, toolArgs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute tool on upstream: %w", err)
 	}

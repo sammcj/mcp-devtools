@@ -25,7 +25,13 @@ Migration to the official [modelcontextprotocol/go-sdk](https://github.com/model
 - Request bodies on the HTTP transport are capped at 8MB. There is no server-wide `WriteTimeout` (it would have capped tool runtime); a per-request write deadline bounds a client that stops reading.
 - The OAuth authorisation server metadata no longer advertises `/oauth/authorize`, `/oauth/token` or a local `jwks_uri`. mcp-devtools is a resource server and serves none of them; `jwks_uri` now reports the configured JWKS URL, and clients find the real authorisation server through the protected resource metadata.
 - A JWT whose header carries no `kid`, or a non-string one, is rejected rather than panicking.
-- Proxy metadata discovery validates the issuer against the URL the document was actually served from, so an off-host redirect cannot deliver an accepted document.
+- Proxy metadata discovery refuses a redirect that leaves the configured origin, and requires the RFC 8414 exact match between the document's `issuer` and the issuer its well-known URL was built from. Comparing only scheme and host let one tenant on a shared host answer for another.
+- The RFC 9207 `iss` comparison no longer normalises the trailing slash on the configured issuer. Issuer identifiers are compared exactly, and trimming one side could reject a server whose issuer genuinely ends in `/` as readily as it accepted the neighbouring identifier that does not.
+
+### Fixed
+
+- The proxy could not read a response from any server built on the official SDK, including mcp-devtools itself. Streamable HTTP lets a server answer a POST with an event stream and the SDK does, but the proxy fed every response body straight to a JSON decoder. It now decodes according to the response's content type.
+- Calling a proxied tool failed with `upstream not found` whenever more than one upstream was configured. Both call sites resolved the upstream and then discarded it, leaving the manager to re-derive it from a tool name that carries no prefix. They now route to the upstream they already identified.
 
 ### Added
 
