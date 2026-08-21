@@ -1,6 +1,6 @@
 module github.com/sammcj/mcp-devtools
 
-go 1.26.7
+go 1.27.0
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.2
@@ -17,16 +17,16 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/knights-analytics/hugot v0.7.7
 	github.com/modelcontextprotocol/go-sdk v1.7.0
-	github.com/openai/openai-go/v3 v3.50.0
+	github.com/openai/openai-go/v3 v3.52.0
 	github.com/pdfcpu/pdfcpu v0.15.0
 	github.com/philippgille/chromem-go v0.7.0
 	github.com/pkoukk/tiktoken-go v0.1.8
 	github.com/sahilm/fuzzy v0.1.3
 	github.com/sammcj/m2e v0.0.27
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.1
 	github.com/smacker/go-tree-sitter v0.0.0-20240827094217-dd81d9e9be82
-	github.com/stretchr/testify v1.11.1
-	github.com/urfave/cli/v3 v3.10.1
+	github.com/stretchr/testify v1.12.1
+	github.com/urfave/cli/v3 v3.11.0
 	github.com/xuri/excelize/v2 v2.11.0
 	go.lsp.dev/jsonrpc2 v1.0.1
 	go.lsp.dev/protocol v1.0.1
