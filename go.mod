@@ -1,6 +1,6 @@
 module github.com/sammcj/mcp-devtools
 
-go 1.26.7
+go 1.27.0
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.2
@@ -15,7 +15,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
-	github.com/knights-analytics/hugot v0.7.7
+	github.com/knights-analytics/hugot v0.7.8
 	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/openai/openai-go/v3 v3.50.0
 	github.com/pdfcpu/pdfcpu v0.15.0
@@ -64,12 +64,13 @@ require (
 	github.com/go-json-experiment/json v0.0.0-20260623181947-01eb4420fa68 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/gomlx/compute v0.1.2 // indirect
+	github.com/gomlx/compute v0.1.6 // indirect
+	github.com/gomlx/compute-onnx v0.1.5 // indirect
 	github.com/gomlx/exceptions v0.0.3 // indirect
-	github.com/gomlx/go-huggingface v0.4.1 // indirect
-	github.com/gomlx/go-xla v0.4.1 // indirect
-	github.com/gomlx/gomlx v0.28.2 // indirect
-	github.com/gomlx/onnx-gomlx v0.5.2 // indirect
+	github.com/gomlx/go-huggingface v0.4.3 // indirect
+	github.com/gomlx/go-xla v0.4.5 // indirect
+	github.com/gomlx/gomlx v0.28.8 // indirect
+	github.com/gomlx/onnx-gomlx v0.5.5 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/hhrutter/tiff v1.0.6 // indirect
@@ -93,14 +94,14 @@ require (
 	github.com/viant/afs v1.30.0 // indirect
 	github.com/xuri/efp v0.0.1 // indirect
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
-	github.com/yalue/onnxruntime_go v1.32.1 // indirect
+	github.com/yalue/onnxruntime_go v1.35.0 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
-	golang.org/x/exp v0.0.0-20260810151157-a8b543ca52da // indirect
-	golang.org/x/image v0.44.0 // indirect
+	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa // indirect
+	golang.org/x/image v0.45.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
