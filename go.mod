@@ -1,6 +1,6 @@
 module github.com/sammcj/mcp-devtools
 
-go 1.27.1
+go 1.27.2
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.2
