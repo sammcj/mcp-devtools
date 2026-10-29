@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.26-alpine AS builder
+FROM golang:1.27-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -25,7 +25,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
   -o mcp-devtools .
 
 # Final stage
-FROM python:3.14-alpine
+FROM python:3.15-alpine
 
 # Set working directory
 WORKDIR /app
