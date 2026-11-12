@@ -58,6 +58,27 @@ func (m *mockProvider) GetSupportedTypes() []string {
 	return m.supportedTypes
 }
 
+// You.com is opt-in and sits after the self-hosted/keyed providers but before DuckDuckGo
+func TestGetOrderedProviders_YouComBeforeDuckDuckGo(t *testing.T) {
+	tool := &InternetSearchTool{
+		providers: map[string]SearchProvider{
+			"duckduckgo": &mockProvider{name: "duckduckgo", supportedTypes: []string{"web"}},
+			"youcom":     &mockProvider{name: "youcom", supportedTypes: []string{"web"}},
+			"brave":      &mockProvider{name: "brave", supportedTypes: []string{"web", "news"}},
+		},
+	}
+
+	providers := tool.getOrderedProviders("web", "")
+	if len(providers) != 3 || providers[0] != "brave" || providers[1] != "youcom" || providers[2] != "duckduckgo" {
+		t.Errorf("Unexpected provider order: %v", providers)
+	}
+
+	providers = tool.getOrderedProviders("news", "")
+	if len(providers) != 1 || providers[0] != "brave" {
+		t.Errorf("Unexpected news provider order: %v", providers)
+	}
+}
+
 // Test getOrderedProviders with no provider specified
 func TestGetOrderedProviders_DefaultOrder(t *testing.T) {
 	tool := &InternetSearchTool{
