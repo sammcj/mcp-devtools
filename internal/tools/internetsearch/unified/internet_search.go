@@ -21,6 +21,7 @@ import (
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/google"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/kagi"
 	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/searxng"
+	"github.com/sammcj/mcp-devtools/internal/tools/internetsearch/youcom"
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,7 +46,7 @@ const (
 )
 
 // providerPriorityOrder defines the order providers are tried during fallback
-var providerPriorityOrder = []string{"brave", "google", "kagi", "searxng", "duckduckgo"}
+var providerPriorityOrder = []string{"brave", "google", "kagi", "searxng", "youcom", "duckduckgo"}
 
 // maxParallelSearches controls how many queries can execute concurrently
 var maxParallelSearches = defaultMaxParallelSearches
@@ -83,6 +84,11 @@ func init() {
 
 	if searxngProvider := searxng.NewSearXNGProvider(); searxngProvider != nil && searxngProvider.IsAvailable() {
 		tool.providers["searxng"] = searxngProvider
+	}
+
+	// You.com is opt-in: YDC_API_KEY, or YOUCOM_SEARCH_KEYLESS=true for the free keyless tier
+	if youcomProvider := youcom.NewYouComProvider(); youcomProvider != nil && youcomProvider.IsAvailable() {
+		tool.providers["youcom"] = youcomProvider
 	}
 
 	// DuckDuckGo is always available since it doesn't require an API key
