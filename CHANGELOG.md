@@ -43,6 +43,7 @@ Migration to the official [modelcontextprotocol/go-sdk](https://github.com/model
 - `application_type` on dynamic client registration, defaulting to `web`.
 - `internal/mcpapi`, a thin wrapper over the SDK that keeps the existing tool builder API (`mcpapi.NewTool`, `mcpapi.WithString`, and so on). Tool code did not need to change.
 - Go module checks use the [pkg.go.dev API](https://go.dev/blog/pkgsite-api), falling back to `proxy.golang.org`. Results gain `deprecated` and `newerMajor`, a newer major version published under a different import path. `latestVersion` stays on the major you depend on, since a major bump needs an import path change.
+- `internet_search` gains an opt-in You.com provider (`youcom`) for web search. It is registered only when `YDC_API_KEY` is set, or when `YOUCOM_SEARCH_KEYLESS=true` opts in to the free keyless tier. It sits before DuckDuckGo in the fallback order.
 
 ### Dependencies
 
