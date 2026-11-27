@@ -39,6 +39,11 @@ Requires free API key
 - **Internet Search**: Fast, privacy-focused search with high-quality results
 - **Note**: Requires Kagi API key (requires Kagi subscription and search API enabled, see https://help.kagi.com/kagi/api/search.html)
 
+### You.com
+Opt-in. Works without an API key on the free keyless tier, or with `YDC_API_KEY` for higher limits
+
+- **Internet Search**: General web search with page descriptions, snippets, and publish times where available
+
 ## Configuration
 
 Example MCP Client Configuration:
@@ -54,6 +59,7 @@ Example MCP Client Configuration:
         "GOOGLE_SEARCH_API_KEY": "your-google-api-key",
         "GOOGLE_SEARCH_ID": "your-search-engine-id",
         "KAGI_API_KEY": "your-kagi-api-key",
+        "YDC_API_KEY": "your-you-com-api-key",
         "SEARXNG_BASE_URL": "https://your-searxng-instance.com"
       }
     }
@@ -70,6 +76,7 @@ Providers are **only registered if properly configured**:
 - **Google**: Registered only if both `GOOGLE_SEARCH_API_KEY` and `GOOGLE_SEARCH_ID` are set
 - **SearXNG**: Registered only if `SEARXNG_BASE_URL` is set and valid
 - **Kagi**: Registered only if `KAGI_API_KEY` is set
+- **You.com**: Registered only if `YDC_API_KEY` is set, or if `YOUCOM_SEARCH_KEYLESS=true` is set to opt in to the free keyless tier
 
 The fallback chain automatically adjusts based on which providers are available with progressive delays (1s, 2s, 3s) between attempts to prevent rapid-fire rate limiting:
 
@@ -81,7 +88,8 @@ The fallback chain automatically adjusts based on which providers are available 
 | Only `GOOGLE_SEARCH_API_KEY` + `GOOGLE_SEARCH_ID` set | Google → DuckDuckGo                          | If Google fails, waits 1s then tries DuckDuckGo            |
 | Only `KAGI_API_KEY` set                               | Kagi → DuckDuckGo                            | If Kagi fails, waits 1s then tries DuckDuckGo              |
 | Only `SEARXNG_BASE_URL` set                           | SearXNG → DuckDuckGo                         | If SearXNG fails, waits 1s then tries DuckDuckGo           |
-| All providers configured                              | Brave → Google → Kagi → SearXNG → DuckDuckGo | Maximum resilience: tries all five with progressive delays |
+| Only `YDC_API_KEY` or `YOUCOM_SEARCH_KEYLESS=true` set | You.com → DuckDuckGo                         | If You.com fails, waits 1s then tries DuckDuckGo           |
+| All providers configured                              | Brave → Google → Kagi → SearXNG → You.com → DuckDuckGo | Maximum resilience: tries all six with progressive delays |
 | Nothing configured                                    | DuckDuckGo only                              | Only DuckDuckGo available, no fallback needed              |
 
 **Important**: Unconfigured providers are **not** included in the fallback chain. The tool won't waste time attempting to use providers that aren't properly set up.
@@ -101,6 +109,21 @@ KAGI_API_KEY="your-kagi-api-key"
 ```
 
 **Note**: Kagi API access requires an active Kagi subscription. API tokens can be generated from your Kagi account settings.
+
+### You.com Setup
+You.com is off unless you enable it. To use the free keyless tier (about 100 searches a day, no account):
+
+```bash
+YOUCOM_SEARCH_KEYLESS="true"
+```
+
+For higher limits, get a key from [You.com](https://you.com/platform?utm_source=sammcj-mcp-devtools&utm_medium=oss_integration&utm_campaign=2026-11-oss-integrations&utm_content=docs) and set:
+
+```bash
+YDC_API_KEY="your-you-com-api-key"
+```
+
+Without a key, requests go to `GET https://api.you.com/v1/agents/search`. With a key, they go to `POST https://ydc-index.io/v1/search` with an `X-API-Key` header. `count` accepts 1 to 50.
 
 ### SearXNG Setup
 For self-hosted or public SearXNG instances:
@@ -170,7 +193,7 @@ The Internet Search tool supports configurable rate limiting and parallel execut
 - **Rate Limiting**: Configurable request rate limiting protects against overwhelming external search provider APIs
 - **Input Validation**: Comprehensive validation of search parameters and provider selection
 - **Error Handling**: Graceful handling of network issues and API failures
-- **Trusted Sources**: Only queries established search provider APIs (Brave, Google, Kagi, SearXNG, DuckDuckGo)
+- **Trusted Sources**: Only queries established search provider APIs (Brave, Google, Kagi, SearXNG, You.com, DuckDuckGo)
 
 ## Usage Examples
 
@@ -268,6 +291,19 @@ While intended to be activated via a prompt to an agent, below are some example 
 }
 ```
 
+### You.com Internet Search
+```json
+{
+  "name": "internet_search",
+  "arguments": {
+    "type": "web",
+    "query": ["golang release"],
+    "count": 5,
+    "provider": "youcom"
+  }
+}
+```
+
 ### DuckDuckGo Internet Search
 ```json
 {
@@ -286,7 +322,7 @@ While intended to be activated via a prompt to an agent, below are some example 
 ### Core Parameters
 - **`type`** (optional): Search type - `web`, `image`, `news`, `video`, `local` (default: `web`)
 - **`query`** (required): Array of search query strings - multiple queries execute in parallel
-- **`provider`** (optional): Provider to use - `brave`, `google`, `kagi`, `searxng`, `duckduckgo`
+- **`provider`** (optional): Provider to use - `brave`, `google`, `kagi`, `searxng`, `youcom`, `duckduckgo`
 - **`count`** (optional): Number of results per query to return
 
 ### Brave-Specific Parameters
@@ -433,7 +469,8 @@ The tool uses this priority order when selecting providers:
 2. **Google** - High quality results with comprehensive metadata (when API key + CX configured)
 3. **Kagi** - Fast, privacy-focused search with high-quality results (when API key configured)
 4. **SearXNG** - Privacy-focused with language options (when instance configured)
-5. **DuckDuckGo** - Always available fallback (no configuration needed)
+5. **You.com** - Web search (when `YDC_API_KEY` or `YOUCOM_SEARCH_KEYLESS=true` is set)
+6. **DuckDuckGo** - Always available fallback (no configuration needed)
 
 ### Metadata in Fallback Results
 
@@ -463,6 +500,11 @@ When fallback occurs, search results include additional metadata:
 - **Best for**: Privacy-focused search, aggregated results
 - **Pros**: No tracking, multiple search engines, self-hostable
 - **Cons**: Requires instance setup, variable performance
+
+### When to Use You.com
+- **Best for**: Web search without scraping, with or without a key
+- **Pros**: Keyless tier needs no account, JSON API rather than HTML scraping, snippets in results
+- **Cons**: Opt-in, keyless tier is limited to about 100 searches a day
 
 ### When to Use DuckDuckGo
 - **Best for**: Quick internet searches without setup
@@ -509,6 +551,10 @@ When fallback occurs, search results include additional metadata:
 ### SearXNG
 - Depends on instance configuration
 - Self-hosted instances have no built-in limits
+
+### You.com
+- **Keyless**: About 100 searches/day (`YOUCOM_SEARCH_KEYLESS=true`)
+- **Keyed**: Based on your You.com plan (`YDC_API_KEY`)
 
 ### DuckDuckGo
 - No official limits for reasonable usage

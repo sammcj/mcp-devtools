@@ -382,7 +382,7 @@ Download the latest binary from [releases](https://github.com/sammcj/mcp-devtool
 
 Replacing `/path/to/mcp-devtools` with your actual binary path (e.g., `/Users/yourname/go/bin/mcp-devtools`).
 
-_Note: The `BRAVE_API_KEY` is optional and only needed if you want to use the Brave Search provider. Other providers like Google, Kagi, SearXNG, and DuckDuckGo are also available. See the [Internet Search documentation](docs/tools/internet_search.md) for more details._
+_Note: The `BRAVE_API_KEY` is optional and only needed if you want to use the Brave Search provider. Other providers like Google, Kagi, SearXNG, You.com, and DuckDuckGo are also available. See the [Internet Search documentation](docs/tools/internet_search.md) for more details._
 
 **Streamable HTTP**
 
@@ -477,6 +477,8 @@ All environment variables are optional, but if you want to use specific search p
 - `GOOGLE_SEARCH_ID` - Google Search Engine ID from [Programmable Search Engine](https://programmablesearchengine.google.com/) (required with `GOOGLE_SEARCH_API_KEY`, select "Search the entire web")
 - `KAGI_API_KEY` - Enable Kagi Search provider by providing your [Kagi API key](https://kagi.com/settings?p=api) (requires Kagi subscription)
 - `SEARXNG_BASE_URL` - Enable SearXNG search provider by providing the base URL (e.g. `https://searxng.example.com`)
+- `YDC_API_KEY` - Enable the You.com search provider with a [You.com API key](https://you.com/platform?utm_source=sammcj-mcp-devtools&utm_medium=oss_integration&utm_campaign=2026-11-oss-integrations&utm_content=readme)
+- `YOUCOM_SEARCH_KEYLESS` - Set to `true` to enable the You.com search provider on its free keyless tier (no API key needed)
 - `CONTEXT7_API_KEY` - Optional Context7 API key for higher rate limits and authentication with package documentation tools
 - `MEMORY_FILE_PATH` - Memory storage location (default: `~/.mcp-devtools/`)
 - `PACKAGE_COOLDOWN_HOURS` - Hours to wait before recommending newly published packages (default: `72`, set to `0` to disable)
